@@ -28,16 +28,21 @@ sdtab <- fit$sdtab
 ```{r}
 #| label: sdtab-cols
 names(sdtab)
-#> [1] "ID"    "TIME"  "DV"    "PRED"  "IPRED" "CWRES" "IWRES" "ETA_CL" "ETA_V" "ETA_KA"
+#> [1] "ID"    "TIME"  "DV"    "PRED"  "IPRED" "CWRES" "IWRES" "EBE_OFV" "N_OBS"
+names(fit$ebe_etas)
+#> [1] "ID"    "ETA_CL" "ETA_V" "ETA_KA"
 ```
 
-| Column | Description |
-|---|---|
-| `PRED` | Population prediction (eta = 0) |
-| `IPRED` | Individual prediction (fitted ETAs) |
-| `CWRES` | Conditional weighted residual |
-| `IWRES` | Individual weighted residual |
-| `ETA_*` | Empirical Bayes estimate (EBE) for each BSV parameter |
+`sdtab` contains per-observation diagnostics.
+Per-subject ETAs are in `fit$ebe_etas` (one row per subject).
+
+| Column | Location | Description |
+|---|---|---|
+| `PRED` | `sdtab` | Population prediction (eta = 0) |
+| `IPRED` | `sdtab` | Individual prediction (fitted ETAs) |
+| `CWRES` | `sdtab` | Conditional weighted residual |
+| `IWRES` | `sdtab` | Individual weighted residual |
+| `ETA_*` | `fit$ebe_etas` | Empirical Bayes estimate (EBE) for each BSV parameter |
 
 ## Core GOF plots
 
@@ -107,13 +112,12 @@ It does not mean the model is wrong, but ETA-based covariate plots and individua
 ## ETA distribution
 
 ETAs should be approximately normally distributed around zero.
+Per-subject EBEs are stored in `fit$ebe_etas` (one row per subject).
 
 ```{r}
 #| label: eta-dist
 #| fig-cap: "Distribution of empirical Bayes estimates. Roughly normal with mean near 0."
-etas_long <- sdtab |>
-  select(ID, starts_with("ETA_")) |>
-  distinct() |>
+etas_long <- fit$ebe_etas |>
   tidyr::pivot_longer(-ID, names_to = "eta", values_to = "value")
 
 ggplot(etas_long, aes(x = value)) +
