@@ -32,16 +32,9 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
 
-      - name: Install R package dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: |
-            ggplot2
-            dplyr
-            tidyr
-            patchwork
-            vpc
-            pak
+      - name: Install CRAN dependencies
+        run: |
+          Rscript -e "install.packages(c('pak', 'ggplot2', 'dplyr', 'tidyr', 'patchwork', 'vpc'), repos = 'https://cloud.r-project.org')"
 
       - name: Install ferx-r
         run: |
@@ -50,7 +43,7 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Restore Quarto cache
+      - name: Restore Quarto freeze cache
         uses: actions/cache@v4
         with:
           path: _freeze
