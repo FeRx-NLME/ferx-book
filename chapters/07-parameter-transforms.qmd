@@ -1,0 +1,170 @@
+---
+title: "Parameter Transforms"
+---
+
+## Overview {#sec-parameter-transforms}
+
+How an ETA is incorporated into the individual parameter determines the **distribution** of that parameter across subjects.
+ferx supports three common transforms: log-normal, additive, and logit-normal.
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+```
+
+## Log-normal (default)
+
+```
+[individual_parameters]
+  CL = TVCL * exp(ETA_CL)
+```
+
+The individual clearance `CL_i = TVCL × exp(η_i)` where `η_i ~ N(0, ω²)`.
+
+This parameterisation:
+
+- Keeps `CL_i > 0` by construction
+- `ω² ≈ (CV%)²` for small-to-moderate variability (the log-normal approximation)
+- The geometric mean of CL across subjects equals `TVCL`
+- The arithmetic CV% is approximately `√ω × 100`
+
+**When to use**: clearance, volume, rate constants — parameters that are always positive and whose variability is naturally multiplicative.
+
+### CV% formula
+
+For a log-normal ETA with omega variance $\omega^2$:
+
+$$\text{CV\%} \approx \sqrt{\omega^2} \times 100$$
+
+This is the _approximate_ formula.
+The exact formula is:
+
+$$\text{CV\%} = \sqrt{e^{\omega^2} - 1} \times 100$$
+
+For $\omega^2 < 0.25$ the two agree to within 1–2 percentage points.
+
+```{r}
+#| label: cv-formula
+omega_sq <- c(0.04, 0.09, 0.16, 0.25, 0.50)
+data.frame(
+  omega_sq = omega_sq,
+  cv_approx = sqrt(omega_sq) * 100,
+  cv_exact  = sqrt(exp(omega_sq) - 1) * 100
+)
+#>   omega_sq cv_approx cv_exact
+#>       0.04      20.0     20.2
+#>       0.09      30.0     30.5
+#>       0.16      40.0     41.5
+#>       0.25      50.0     52.8
+#>       0.50      70.7     79.7
+```
+
+## Additive ETA
+
+```
+[individual_parameters]
+  TLAG = TVTLAG + ETA_TLAG
+```
+
+The individual lag time `TLAG_i = TVTLAG + η_i` where `η_i ~ N(0, ω²)`.
+The omega variance is now in the same units as the parameter (e.g., hours²).
+
+**When to use**:
+
+- Parameters that can be zero or negative by physiology (some effect parameters)
+- Lag times constrained near zero — the additive form avoids inflation of CV% at small values
+- Log-scale parameters (take `log(TVCL)` as the typical value)
+
+Example from the bundled `warfarin_additive_eta` model:
+
+```{r}
+#| label: additive-model
+ex <- ferx_example("warfarin_additive_eta")
+ferx_model_show(ex$model)
+```
+
+```
+[individual_parameters]
+  CL   = TVCL  * exp(ETA_CL)
+  V    = TVV   * exp(ETA_V)
+  KA   = TVKA
+  TLAG = TVTLAG + ETA_TLAG      # additive — variance in h²
+```
+
+```{r}
+#| label: fit-additive
+#| cache: true
+fit_add <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE)
+summary(fit_add)
+```
+
+## Logit-normal for bounded parameters {#sec-logit-normal}
+
+For parameters bounded to `(0, 1)` — bioavailability, fraction absorbed — use the logit transformation:
+
+```
+[individual_parameters]
+  F = inv_logit(logit(THETA_F) + ETA_F)
+```
+
+`THETA_F` is specified on the `(0, 1)` scale in `[parameters]` with bounds `(0.001, 0.999)`.
+ferx maps it to the logit scale internally so the optimiser works on an unbounded parameter space.
+
+The individual bioavailability is:
+
+$$F_i = \text{logit}^{-1}(\text{logit}(\theta_F) + \eta_i) = \frac{e^{\text{logit}(\theta_F) + \eta_i}}{1 + e^{\text{logit}(\theta_F) + \eta_i}}$$
+
+**CV% is not meaningful** for logit-normal parameters because the distribution is asymmetric.
+Report the omega variance on the logit scale and the 5th–95th percentile range:
+
+```{r}
+#| label: logit-range
+theta_f <- 0.80   # typical bioavailability
+omega_f <- 0.10   # omega variance on logit scale
+
+logit    <- function(p) log(p / (1 - p))
+inv_logit <- function(x) 1 / (1 + exp(-x))
+
+logit_typical <- logit(theta_f)
+lo <- inv_logit(logit_typical - 1.96 * sqrt(omega_f))
+hi <- inv_logit(logit_typical + 1.96 * sqrt(omega_f))
+cat(sprintf("F: typical = %.2f, 95%% range = [%.2f, %.2f]\n", theta_f, lo, hi))
+#> F: typical = 0.80, 95% range = [0.64, 0.90]
+```
+
+Example using the bundled `warfarin_logit_f` model:
+
+```{r}
+#| label: fit-logit
+#| cache: true
+ex_lf <- ferx_example("warfarin_logit_f")
+fit_lf <- ferx_fit(ex_lf$model, ex_lf$data, method = "focei", covariance = TRUE)
+summary(fit_lf)
+```
+
+## Choosing the right transform
+
+| Situation | Parameterisation |
+|---|---|
+| Always positive, multiplicative variability | `TVCL * exp(ETA_CL)` |
+| Near-zero or could go negative | `TVTLAG + ETA_TLAG` |
+| Bounded `(0, 1)` | `inv_logit(logit(THETA_F) + ETA_F)` |
+| Log-scale typical value | `exp(log_TVCL + ETA_CL)` (equivalent to log-normal) |
+
+## Omega display in `summary()`
+
+The `summary()` output shows omega on the variance scale.
+To convert manually:
+
+```{r}
+#| label: omega-to-cv
+fit <- ferx_fit(ferx_example("warfarin")$model,
+                ferx_example("warfarin")$data)
+omega_diag <- diag(fit$omega)
+cv_approx  <- sqrt(omega_diag) * 100
+names(cv_approx) <- names(omega_diag)
+round(cv_approx, 1)
+#>  ETA_CL  ETA_V ETA_KA
+#>    20.6   12.7   57.2
+```

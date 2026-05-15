@@ -1,0 +1,168 @@
+---
+title: "Quickstart"
+---
+
+This chapter fits a one-compartment oral PK model to the bundled warfarin dataset.
+It covers the complete loop: data → model → fit → inspect → plot.
+
+## Load ferx
+
+```{r}
+#| label: setup
+library(ferx)
+library(ggplot2)
+```
+
+## The example dataset
+
+`ferx_example()` returns paths to a bundled model file and NONMEM-format CSV.
+
+```{r}
+#| label: example-paths
+ex <- ferx_example("warfarin")
+ex
+#> $model
+#> [1] "/path/to/ferx/examples/models/warfarin.ferx"
+#> $data
+#> [1] "/path/to/ferx/examples/data/warfarin.csv"
+```
+
+Peek at the data:
+
+```{r}
+#| label: peek-data
+obs <- read.csv(ex$data)
+head(obs)
+#>   ID TIME  DV EVID AMT CMT MDV
+#> 1  1  0.0  NA    1  70   1   1
+#> 2  1  0.5 3.1    0   0   2   0
+#> 3  1  1.0 5.4    0   0   2   0
+#> ...
+```
+
+The dataset follows the standard NONMEM column convention:
+`EVID = 1` for dose rows, `EVID = 0` for observations, `CMT = 1` for the depot compartment, `CMT = 2` for the central compartment.
+
+## The model file
+
+```{r}
+#| label: show-model
+ferx_model_show(ex$model)
+```
+
+```
+# One-compartment oral PK model (warfarin)
+
+[parameters]
+  theta TVCL(0.134, 0.001, 10.0)
+  theta TVV(8.1, 0.1, 500.0)
+  theta TVKA(1.0, 0.01, 50.0)
+
+  omega ETA_CL ~ 0.07
+  omega ETA_V  ~ 0.02
+  omega ETA_KA ~ 0.40
+
+  sigma PROP_ERR ~ 0.01
+
+[individual_parameters]
+  CL = TVCL * exp(ETA_CL)
+  V  = TVV  * exp(ETA_V)
+  KA = TVKA * exp(ETA_KA)
+
+[structural_model]
+  pk one_cpt_oral(cl=CL, v=V, ka=KA)
+
+[error_model]
+  DV ~ proportional(PROP_ERR)
+
+[initial_values]
+  theta = [0.2, 10.0, 1.5]
+  omega = [0.09, 0.04, 0.30]
+  sigma = [0.02]
+
+[fit_options]
+  method     = foce
+  maxiter    = 300
+  covariance = true
+```
+
+The model DSL is described in detail in @sec-model-dsl.
+
+## Fit the model
+
+```{r}
+#| label: fit
+#| cache: true
+fit <- ferx_fit(model = ex$model, data = ex$data)
+```
+
+Fitting prints progress to the console and terminates when the gradient norm drops below the convergence threshold.
+
+## Inspect results
+
+```{r}
+#| label: summary
+summary(fit)
+#>
+#> ferx fit — warfarin (one_cpt_oral, FOCE)
+#>
+#> THETA (fixed effects):
+#>   Parameter   Estimate   SE      CV%    95% CI
+#>   TVCL         0.133    0.006   4.8    [0.121, 0.145]
+#>   TVV          7.89     0.31    3.9    [7.28, 8.50]
+#>   TVKA         1.49     0.16   10.6    [1.17, 1.81]
+#>
+#> OMEGA (between-subject variance):
+#>   ETA_CL       0.0425   0.0109  CV~21%
+#>   ETA_V        0.0162   0.0068  CV~13%
+#>   ETA_KA       0.328    0.090   CV~63%
+#>
+#> SIGMA (residual variance):
+#>   PROP_ERR     0.0162   0.0021  CV~13%
+#>
+#> OFV: 344.2   AIC: 358.2   BIC: 378.1
+#> Subjects: 32   Observations: 251
+```
+
+Individual estimates and diagnostics are in `fit$sdtab`:
+
+```{r}
+#| label: sdtab
+head(fit$sdtab)
+#>   ID TIME  DV   PRED  IPRED   CWRES   IWRES ETA_CL ETA_V ETA_KA
+#> 1  1  0.5  3.1  3.44   3.18  -0.98  -0.25  -0.07  0.02   0.12
+#> ...
+```
+
+## Goodness-of-fit plots
+
+The two most informative GOF plots are IPRED vs DV and CWRES vs PRED.
+
+```{r}
+#| label: gof
+#| fig-width: 8
+#| fig-height: 4
+sdtab <- fit$sdtab
+
+p1 <- ggplot(sdtab, aes(x = IPRED, y = DV)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, colour = "#1F6B7A") +
+  labs(title = "IPRED vs DV", x = "Individual prediction", y = "Observed DV")
+
+p2 <- ggplot(sdtab, aes(x = PRED, y = CWRES)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, colour = "#1F6B7A") +
+  geom_hline(yintercept = c(-2, 2), linetype = "dashed", colour = "#C8893E") +
+  labs(title = "CWRES vs PRED", x = "Population prediction", y = "CWRES")
+
+patchwork::wrap_plots(p1, p2)
+```
+
+For a full treatment of diagnostics see @sec-diagnostics.
+
+## What's next
+
+- @sec-model-dsl — understand every section of the `.ferx` file
+- @sec-fitting — fitting options, methods, and convergence
+- @sec-diagnostics — full diagnostic suite and shrinkage
+- @sec-simulation — simulate from the fitted model and overlay a VPC

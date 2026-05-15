@@ -1,0 +1,184 @@
+---
+title: "Inter-Occasion Variability"
+---
+
+## Overview {#sec-iov}
+
+**Inter-occasion variability (IOV)** captures variability in PK parameters that changes between dosing occasions within the same subject — for example, day 1 vs day 7 clearance after a multi-dose study.
+
+In the ferx DSL, IOV is expressed with the `kappa` keyword.
+Kappas are analogous to ETAs, but they are re-drawn for each occasion rather than being fixed per subject.
+
+The individual parameter on occasion $k$ for subject $i$:
+
+$$CL_{ik} = \text{TVCL} \times \exp(\eta_i^{CL} + \kappa_{ik}^{CL})$$
+
+where $\eta_i^{CL} \sim N(0, \omega_{CL}^2)$ is the between-subject component (constant across occasions) and $\kappa_{ik}^{CL} \sim N(0, \omega_{IOV}^2)$ is the occasion-specific component.
+
+## Dataset requirements
+
+Add an `OCC` column (integer occasion index per row).
+Convention: `OCC = 1` for the first occasion, `OCC = 2` for the second, etc.
+
+```
+ID  TIME  DV   EVID  AMT  OCC
+ 1   0.0  NA     1    70    1
+ 1   1.0  5.2    0     0    1
+ ...
+ 1  24.0  NA     1    70    2     <- second dose, new occasion
+ 1  25.0  4.8    0     0    2
+```
+
+## The `kappa` keyword (diagonal IOV)
+
+Declare IOV parameters with `kappa` in `[parameters]`:
+
+```
+[parameters]
+  theta TVCL(0.2, 0.001, 10.0)
+  theta TVV(10.0, 0.1, 500.0)
+  theta TVKA(1.5, 0.01, 50.0)
+
+  omega ETA_CL ~ 0.09   # between-subject variance (constant per subject)
+  omega ETA_V  ~ 0.04
+  omega ETA_KA ~ 0.30
+
+  kappa KAPPA_CL ~ 0.01  # IOV variance (re-drawn each occasion)
+
+  sigma PROP_ERR ~ 0.02
+```
+
+Reference `KAPPA_CL` in `[individual_parameters]` just like an ETA:
+
+```
+[individual_parameters]
+  CL = TVCL * exp(ETA_CL + KAPPA_CL)
+  V  = TVV  * exp(ETA_V)
+  KA = TVKA * exp(ETA_KA)
+```
+
+Enable the IOV column in `[fit_options]`:
+
+```
+[fit_options]
+  method     = foce
+  iov_column = OCC
+  covariance = false
+```
+
+## Fitting an IOV model
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+```
+
+The IOV example models live in the `ferx-core` repository.
+Here we write the model inline using a temporary file:
+
+```{r}
+#| label: iov-model-write
+iov_model <- tempfile(fileext = ".ferx")
+writeLines(c(
+  "# Warfarin IOV model",
+  "[parameters]",
+  "  theta TVCL(0.2, 0.001, 10.0)",
+  "  theta TVV(10.0, 0.1, 500.0)",
+  "  theta TVKA(1.5, 0.01, 50.0)",
+  "  omega ETA_CL ~ 0.09",
+  "  omega ETA_V  ~ 0.04",
+  "  omega ETA_KA ~ 0.30",
+  "  kappa KAPPA_CL ~ 0.01",
+  "  sigma PROP_ERR ~ 0.02",
+  "[individual_parameters]",
+  "  CL = TVCL * exp(ETA_CL + KAPPA_CL)",
+  "  V  = TVV  * exp(ETA_V)",
+  "  KA = TVKA * exp(ETA_KA)",
+  "[structural_model]",
+  "  pk one_cpt_oral(cl=CL, v=V, ka=KA)",
+  "[error_model]",
+  "  DV ~ proportional(PROP_ERR)",
+  "[fit_options]",
+  "  method     = foce",
+  "  iov_column = OCC",
+  "  covariance = false"
+), iov_model)
+```
+
+Fit using a dataset that has an `OCC` column:
+
+```{r}
+#| eval: false
+fit_iov <- ferx_fit(iov_model, "warfarin_multi_dose.csv")
+summary(fit_iov)
+```
+
+The summary output includes an **OMEGA_IOV** block:
+
+```
+--- OMEGA_IOV Estimates (Inter-Occasion Variability) ---
+  Parameter   Estimate    SE    CV%
+  KAPPA_CL    0.0124     0.004  32%
+```
+
+## Correlated IOV: `block_kappa`
+
+When IOV on multiple parameters is correlated (e.g. CL and V co-vary across occasions), use `block_kappa`:
+
+```
+[parameters]
+  ...
+  block_kappa (KAPPA_CL, KAPPA_V) = [0.02, 0.005, 0.01]
+```
+
+The three values are the lower-triangle of the 2×2 covariance matrix (column-major order):
+
+| Position | Value | Meaning |
+|---|---|---|
+| `[1]` | 0.02 | Variance of KAPPA_CL |
+| `[2]` | 0.005 | Covariance of KAPPA_CL and KAPPA_V |
+| `[3]` | 0.01 | Variance of KAPPA_V |
+
+Both kappas are used in `[individual_parameters]` the same way:
+
+```
+[individual_parameters]
+  CL = TVCL * exp(ETA_CL + KAPPA_CL)
+  V  = TVV  * exp(ETA_V  + KAPPA_V)
+```
+
+## Interpreting IOV results
+
+### Partitioning variability
+
+The total clearance variance (on the log scale) is:
+
+$$\text{Var}(\log CL_i) = \omega_{CL}^2 + \omega_{IOV}^2$$
+
+The fraction of total variability attributable to IOV:
+
+```{r}
+#| label: iov-fraction
+#| eval: false
+omega_bsv <- fit_iov$omega["ETA_CL", "ETA_CL"]
+omega_iov <- fit_iov$omega_iov["KAPPA_CL", "KAPPA_CL"]
+cat(sprintf("BSV: %.1f%%   IOV: %.1f%%   of total log-scale variance\n",
+            100 * omega_bsv / (omega_bsv + omega_iov),
+            100 * omega_iov / (omega_bsv + omega_iov)))
+```
+
+### IOV shrinkage
+
+The IOV kappa shrinkage is reported in `fit$shrinkage_kappa`.
+High shrinkage (> 30%) means the data cannot reliably estimate per-occasion kappas — consider removing IOV from that parameter.
+
+## When to add IOV
+
+Add IOV when:
+
+- The study has multiple distinct dosing occasions with washout between them
+- You see residual correlation in ETA-vs-time plots that suggests within-subject variation across occasions
+- A model comparison (OFV difference) shows significant improvement with IOV included
+
+Do not add IOV to studies with sparse sampling where the data cannot support additional random effects.

@@ -1,0 +1,157 @@
+---
+title: "BLOQ & M3 Method"
+---
+
+## Overview {#sec-bloq-m3}
+
+Concentrations below the lower limit of quantification (LLOQ) are a routine challenge in PK/PD analysis.
+The simplest approach — discarding or replacing BLOQ values — introduces bias.
+Beal's M3 method handles BLOQ observations correctly by integrating the likelihood over the censored region.
+
+## The M3 likelihood
+
+For an uncensored observation:
+
+$$\ell_i = \log f(y_i \mid \theta, \eta_i)$$
+
+For a censored observation with LLOQ $c$:
+
+$$\ell_i = \log P(Y_i < c \mid \theta, \eta_i) = \log \Phi\!\left(\frac{c - \hat{y}_i}{\sigma_i}\right)$$
+
+where $\Phi$ is the standard normal CDF and $\hat{y}_i$ is the individual prediction at the LLOQ time.
+
+The M3 method treats each BLOQ observation as contributing its probability mass below the LLOQ rather than a point observation.
+This eliminates the downward bias in IPRED introduced by dropping or imputing BLOQ values.
+
+## Dataset requirements
+
+Add a `CENS` column to your dataset:
+
+| EVID | DV | CENS | Interpretation |
+|---|---|---|---|
+| 0 | observed value | 0 | Normal observation |
+| 0 | LLOQ value | 1 | Censored — DV carries the LLOQ |
+| 1 | AMT | 0 | Dose record |
+
+The `DV` column for censored rows should contain the LLOQ value (e.g., `2.0 mg/L`), not `NA` or `0`.
+
+## Model specification
+
+Enable M3 in `[fit_options]`:
+
+```
+[fit_options]
+  method       = focei
+  covariance   = true
+  bloq_method  = m3
+```
+
+Or override at run time:
+
+```{r}
+#| eval: false
+fit_m3 <- ferx_fit(ex$model, ex$data, bloq_method = "m3")
+```
+
+Setting `bloq_method = "m3"` at the call level overrides whatever is in the model file.
+Use `bloq_method = "drop"` to explicitly drop BLOQ rows (not recommended in general).
+
+## Fitting with M3
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+library(ggplot2)
+library(dplyr)
+
+ex     <- ferx_example("warfarin_bloq")
+obs    <- read.csv(ex$data)
+ferx_model_show(ex$model)
+```
+
+```{r}
+#| label: fit-m3
+#| cache: true
+fit_m3 <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE)
+summary(fit_m3)
+```
+
+## Comparing M3 vs naive BLOQ removal
+
+To quantify the bias from discarding BLOQ values, fit the same dataset both ways:
+
+```{r}
+#| label: fit-drop
+#| cache: true
+fit_drop <- ferx_fit(ex$model, ex$data, method = "focei",
+                     bloq_method = "drop", covariance = FALSE)
+```
+
+```{r}
+#| label: compare
+cat(sprintf("M3   OFV: %.1f\n", fit_m3$ofv))
+cat(sprintf("Drop OFV: %.1f\n", fit_drop$ofv))
+
+# Compare TVCL estimates
+cat(sprintf("TVCL M3:   %.3f\n", fit_m3$theta["TVCL"]))
+cat(sprintf("TVCL drop: %.3f\n", fit_drop$theta["TVCL"]))
+```
+
+Typical finding: dropping BLOQ underestimates CL because the model predicts lower concentrations than truly exist at BLOQ times.
+
+## Diagnostics with censored data
+
+Residuals (CWRES, IWRES) are only defined for uncensored observations.
+Filter before plotting:
+
+```{r}
+#| label: gof-m3
+sdtab <- fit_m3$sdtab |> filter(CENS == 0 | is.na(CENS))
+
+ggplot(sdtab, aes(x = PRED, y = CWRES)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0,      colour = "#1F6B7A", linewidth = 1) +
+  geom_hline(yintercept = c(-2, 2), linetype = "dashed", colour = "#C8893E") +
+  labs(x = "PRED", y = "CWRES", title = "CWRES (uncensored obs only)") +
+  theme_minimal()
+```
+
+## VPC with censored data
+
+For VPCs with BLOQ data, censor the simulated data at the same LLOQ:
+
+```{r}
+#| label: vpc-bloq
+#| cache: true
+lloq <- 2.0   # mg/L
+
+sim <- ferx_simulate(ex$model, ex$data, n_sim = 500, seed = 42, fit = fit_m3)
+
+# Apply same censoring to simulations
+sim <- sim |> mutate(DV_SIM_CENS = ifelse(DV_SIM < lloq, lloq, DV_SIM),
+                     CENS_SIM    = ifelse(DV_SIM < lloq, 1L, 0L))
+
+# Fraction BLOQ by time bin
+pct_bloq_obs <- obs |>
+  filter(EVID == 0) |>
+  group_by(TIME) |>
+  summarise(pct = mean(CENS == 1) * 100, .groups = "drop")
+
+pct_bloq_sim <- sim |>
+  group_by(SIM, TIME) |>
+  summarise(pct = mean(CENS_SIM == 1) * 100, .groups = "drop") |>
+  group_by(TIME) |>
+  summarise(lo = quantile(pct, 0.05), mid = median(pct),
+            hi = quantile(pct, 0.95), .groups = "drop")
+
+ggplot() +
+  geom_ribbon(data = pct_bloq_sim, aes(x = TIME, ymin = lo, ymax = hi),
+              fill = "#C9582A", alpha = 0.25) +
+  geom_line(data = pct_bloq_sim, aes(x = TIME, y = mid),
+            colour = "#C9582A", linewidth = 1) +
+  geom_point(data = pct_bloq_obs, aes(x = TIME, y = pct)) +
+  labs(x = "Time (h)", y = "% BLOQ",
+       title = "% BLOQ over time: observed vs simulated") +
+  theme_minimal()
+```

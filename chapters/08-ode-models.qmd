@@ -1,0 +1,125 @@
+---
+title: "ODE Models"
+---
+
+## Overview {#sec-ode-models}
+
+When no analytical solution exists — saturable elimination, receptor occupancy, PK/PD links — use the `[odes]` section.
+ferx integrates the ODE system numerically using an adaptive Runge-Kutta-45 solver (Dormand-Prince) for each subject and each EBE evaluation.
+
+## The Michaelis-Menten example
+
+The `mm_oral` bundled example is a one-compartment oral model with Michaelis-Menten (saturable) elimination.
+It cannot be solved analytically.
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+library(ggplot2)
+
+ex <- ferx_example("mm_oral")
+ferx_model_show(ex$model)
+```
+
+```
+# 1-compartment oral PK with Michaelis-Menten elimination
+
+[parameters]
+  theta TVVMAX(4.0, 0.1, 50.0)
+  theta TVKM(6.0, 0.1, 100.0)
+  theta TVV(12.0, 1.0, 200.0)
+  theta TVKA(1.5, 0.05, 20.0)
+
+  omega ETA_VMAX ~ 0.15
+  omega ETA_V    ~ 0.10
+
+  sigma PROP_ERR ~ 0.02
+
+[individual_parameters]
+  VMAX = TVVMAX * exp(ETA_VMAX)
+  KM   = TVKM
+  V    = TVV * exp(ETA_V)
+  KA   = TVKA
+
+[structural_model]
+  ode(obs_cmt=central, states=[depot, central])
+
+[odes]
+  d/dt(depot)   = -KA * depot
+  d/dt(central) = KA * depot / V - VMAX * central / (KM + central)
+
+[error_model]
+  DV ~ proportional(PROP_ERR)
+```
+
+### Key DSL syntax for ODEs
+
+**`[structural_model]`** declares the ODE system:
+
+```
+ode(obs_cmt=central, states=[depot, central])
+```
+
+- `obs_cmt` — the compartment name whose amount is divided by `V` to give the `IPRED` concentration
+- `states` — list of all compartment names in the order used in dose records (`CMT` column)
+
+**`[odes]`** contains one `d/dt(name) = ...` line per state:
+
+```
+d/dt(central) = KA * depot / V - VMAX * central / (KM + central)
+```
+
+Note that `central` here is the **amount** (not concentration).
+Concentrations are computed as `amount / V` and should appear in the ODE where needed.
+
+## Fitting an ODE model
+
+```{r}
+#| label: fit-ode
+#| cache: true
+fit <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE)
+summary(fit)
+```
+
+## Dosing into compartments
+
+The `CMT` column in the dataset routes doses to compartments.
+With `states=[depot, central]`:
+
+- `CMT = 1` → dose into `depot`
+- `CMT = 2` → dose into `central`
+
+Infusions use `RATE > 0` in the dose row; the solver handles the rate as a continuous input over the infusion duration.
+
+## Analytical vs ODE: when to choose each
+
+| Model feature | Analytical | ODE |
+|---|---|---|
+| Linear compartments, first-order absorption | Preferred | Possible |
+| Saturable (MM) elimination | Not possible | Required |
+| Effect compartment / PD link | Not possible | Required |
+| Two-cpt with zero-order absorption | Not directly | Possible |
+| Transit compartments | Not directly | Possible |
+
+Use analytical solutions when available — they are exact, faster, and have no step-size error.
+Reserve ODEs for nonlinear or structurally complex models.
+
+## Performance
+
+Each function evaluation requires integrating the ODE for every subject.
+A few tips:
+
+1. Use `method = c("gn", "focei")` as a chain — Gauss-Newton is fast for a warm start, then FOCEI provides the rigorous final estimate
+2. Pass `threads = parallel::detectCores(logical = FALSE)` to parallelise subject evaluations
+3. Cache the fit with `cache: true` in the Quarto chunk so the book does not re-run it every render
+
+## Tolerance and step size
+
+The Dormand-Prince solver uses adaptive step size with default tolerances:
+
+- Relative tolerance: `1e-6`
+- Absolute tolerance: `1e-8`
+
+These are set in the backend and cannot currently be overridden from R.
+For stiff systems (e.g. fast-equilibrating effect compartments), the solver will automatically take smaller steps, which increases runtime.

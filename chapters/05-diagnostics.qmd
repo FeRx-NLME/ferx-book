@@ -1,0 +1,177 @@
+---
+title: "Diagnostics"
+---
+
+## Overview {#sec-diagnostics}
+
+After fitting, the `$sdtab` data frame contains everything needed for standard goodness-of-fit diagnostics.
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+library(ggplot2)
+library(dplyr)
+
+ex  <- ferx_example("warfarin")
+```
+
+```{r}
+#| label: fit
+#| cache: true
+fit <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE)
+sdtab <- fit$sdtab
+```
+
+## The `sdtab` columns
+
+```{r}
+#| label: sdtab-cols
+names(sdtab)
+#> [1] "ID"    "TIME"  "DV"    "PRED"  "IPRED" "CWRES" "IWRES" "ETA_CL" "ETA_V" "ETA_KA"
+```
+
+| Column | Description |
+|---|---|
+| `PRED` | Population prediction (eta = 0) |
+| `IPRED` | Individual prediction (fitted ETAs) |
+| `CWRES` | Conditional weighted residual |
+| `IWRES` | Individual weighted residual |
+| `ETA_*` | Empirical Bayes estimate (EBE) for each BSV parameter |
+
+## Core GOF plots
+
+### IPRED vs DV
+
+```{r}
+#| label: ipred-dv
+#| fig-cap: "Individual predictions vs observed DV. Points should scatter symmetrically around the line of identity."
+ggplot(sdtab, aes(x = IPRED, y = DV)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, colour = "#1F6B7A", linewidth = 1) +
+  labs(x = "IPRED", y = "Observed DV") +
+  theme_minimal()
+```
+
+### CWRES vs PRED
+
+```{r}
+#| label: cwres-pred
+#| fig-cap: "CWRES vs population prediction. Should be centred near 0 with ≥95% of points within ±2."
+ggplot(sdtab, aes(x = PRED, y = CWRES)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0,      colour = "#1F6B7A", linewidth = 1) +
+  geom_hline(yintercept = c(-2, 2), linetype = "dashed", colour = "#C8893E") +
+  labs(x = "PRED", y = "CWRES") +
+  theme_minimal()
+```
+
+### CWRES vs TIME
+
+```{r}
+#| label: cwres-time
+ggplot(sdtab, aes(x = TIME, y = CWRES)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0,      colour = "#1F6B7A", linewidth = 1) +
+  geom_hline(yintercept = c(-2, 2), linetype = "dashed", colour = "#C8893E") +
+  labs(x = "TIME (h)", y = "CWRES") +
+  theme_minimal()
+```
+
+### PRED vs DV
+
+```{r}
+#| label: pred-dv
+ggplot(sdtab, aes(x = PRED, y = DV)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, colour = "#1F6B7A", linewidth = 1) +
+  labs(x = "PRED", y = "Observed DV") +
+  theme_minimal()
+```
+
+## ETA shrinkage
+
+Shrinkage measures how much the individual ETAs are pulled toward zero relative to the omega variance.
+High shrinkage (> 30%) means the data are not informative enough to reliably estimate individual deviations, and ETA-based diagnostics become unreliable.
+
+```{r}
+#| label: shrinkage
+summary(fit)$shrinkage_eta
+#>  ETA_CL   ETA_V  ETA_KA
+#>   0.142   0.283   0.452
+```
+
+ETA shrinkage > 0.3 is a warning sign.
+It does not mean the model is wrong, but ETA-based covariate plots and individual parameter histograms should be interpreted cautiously.
+
+## ETA distribution
+
+ETAs should be approximately normally distributed around zero.
+
+```{r}
+#| label: eta-dist
+#| fig-cap: "Distribution of empirical Bayes estimates. Roughly normal with mean near 0."
+etas_long <- sdtab |>
+  select(ID, starts_with("ETA_")) |>
+  distinct() |>
+  tidyr::pivot_longer(-ID, names_to = "eta", values_to = "value")
+
+ggplot(etas_long, aes(x = value)) +
+  geom_histogram(bins = 20, fill = "#1F6B7A", alpha = 0.7) +
+  facet_wrap(~eta, scales = "free") +
+  labs(x = "EBE", y = "Count") +
+  theme_minimal()
+```
+
+## ETA-covariate correlations
+
+`ferx_eta_cov()` computes Pearson correlations between ETAs and subject-level covariates.
+
+```{r}
+#| label: eta-cov
+obs <- read.csv(ex$data)
+ferx_eta_cov(fit, obs)
+#>    eta      covariate     r   p_val flag
+#>  ETA_CL   WT          0.42  0.016  *
+#>  ETA_V    WT          0.38  0.031  *
+#>  ...
+```
+
+Significant correlations (p < 0.05) flag covariates worth testing in the structural model.
+
+## Parameter correlation matrix
+
+After a covariance step, inspect correlations between estimated parameters.
+Off-diagonal values near ±1 indicate structural identifiability problems.
+
+```{r}
+#| label: cor-matrix
+ferx_cor_matrix(fit)
+```
+
+## Parameter estimates table
+
+`ferx_estimates()` returns a tidy data frame for programmatic use or table export:
+
+```{r}
+#| label: estimates
+ferx_estimates(fit)
+#>   parameter  estimate        se     rse_pct    ci_lo   ci_hi
+#>   TVCL        0.133      0.006       4.8      0.121   0.145
+#>   TVV         7.89       0.31        3.9      7.28    8.50
+#>   TVKA        1.49       0.16       10.6      1.17    1.81
+#>   ...
+```
+
+## Epsilon shrinkage
+
+Epsilon shrinkage measures compression in the residual distribution:
+
+```{r}
+#| label: eps-shrinkage
+summary(fit)$shrinkage_eps
+#>  PROP_ERR
+#>   0.094
+```
+
+Low epsilon shrinkage (< 20%) is generally acceptable.

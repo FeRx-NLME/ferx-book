@@ -1,0 +1,190 @@
+---
+title: "Fitting"
+---
+
+## Overview {#sec-fitting}
+
+`ferx_fit()` is the central function.
+It compiles the model, runs the optimiser, and returns a `ferx_fit` object with estimates, standard errors, and individual diagnostics.
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+ex <- ferx_example("warfarin")
+```
+
+## Estimation methods
+
+Pass `method` to choose the algorithm:
+
+| Method | Description | Typical use |
+|---|---|---|
+| `"foce"` | First-Order Conditional Estimation | Default, fast, well-tested |
+| `"focei"` | FOCE with interaction | When residual error depends on ETAs |
+| `"saem"` | Stochastic Approximation EM | Models with many ETAs or strong nonlinearity |
+| `"gn"` | Gauss-Newton / BHHH | Quick exploration; no covariance |
+| `"gn_hybrid"` | Gauss-Newton then FOCEI polish | Fast warm start, rigorous finish |
+
+```{r}
+#| label: fit-foce
+#| cache: true
+fit_foce <- ferx_fit(ex$model, ex$data, method = "foce")
+```
+
+```{r}
+#| label: fit-focei
+#| cache: true
+fit_focei <- ferx_fit(ex$model, ex$data, method = "focei")
+```
+
+### Method chains
+
+Pass a character vector to run methods in sequence.
+Each stage is seeded with the previous stage's converged parameters.
+Only the final stage produces the reported covariance and diagnostics.
+
+```{r}
+#| label: fit-chain
+#| cache: true
+fit_chain <- ferx_fit(ex$model, ex$data, method = c("saem", "focei"))
+summary(fit_chain)
+```
+
+The chain summary shows the full sequence:
+
+```
+Method chain: saem → focei
+```
+
+### FOCE vs FOCEI
+
+Both methods integrate over the ETA distribution using a second-order Laplace approximation.
+The difference is in how the residual error is treated:
+
+- **FOCE**: the residual function is linearised around ETA = 0 (no interaction between ETA and the error model)
+- **FOCEI**: the residual function is linearised around the individual EBE — captures the interaction when `ipred` appears inside the error model
+
+For proportional error on concentration data, FOCEI is typically more accurate.
+The performance difference is small; use FOCEI by default.
+
+## The covariance step
+
+`covariance = TRUE` triggers the Hessian-based covariance matrix after convergence.
+This provides standard errors, 95% confidence intervals, and the condition number.
+
+```{r}
+#| label: fit-cov
+#| cache: true
+fit <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE)
+```
+
+If the covariance matrix is non-positive-definite, ferx reports:
+
+```
+! Covariance step: Hessian is not positive definite.
+  Eigenvalues: [8.4, 2.1, 0.3, -0.01]
+  SE estimates not available.
+```
+
+A near-zero or negative eigenvalue usually indicates an over-parameterised model or a boundary estimate.
+
+## Parallelism
+
+The per-subject inner loops (EBE search, SAEM subjects) run in parallel on `threads` workers:
+
+```{r}
+#| eval: false
+fit <- ferx_fit(ex$model, ex$data, threads = parallel::detectCores(logical = FALSE))
+```
+
+Passing `NULL` (the default) uses one worker per logical CPU.
+On HPC shared nodes, cap the thread count to avoid contention:
+
+```{r}
+#| eval: false
+fit <- ferx_fit(ex$model, ex$data, threads = 4L)
+```
+
+## Reading the output
+
+```{r}
+#| label: summary
+summary(fit)
+```
+
+Key fields in the printed summary:
+
+| Field | Meaning |
+|---|---|
+| THETA estimate | Point estimate at convergence |
+| SE | Standard error from the covariance step |
+| CV% | Coefficient of variation = SE / estimate × 100 |
+| 95% CI | Estimate ± 1.96 SE |
+| OMEGA | Between-subject variance (diagonal elements) |
+| CV~ | Approximate BSV in % = √ω × 100 |
+| OFV | Objective function value (−2 log-likelihood) |
+| AIC | OFV + 2 × npar |
+| BIC | OFV + ln(nobs) × npar |
+
+### Accessing individual fields
+
+```{r}
+#| label: fields
+fit$theta         # named numeric vector of theta estimates
+fit$omega         # omega matrix
+fit$sigma         # sigma vector
+fit$se_theta      # SEs for theta
+fit$ofv           # scalar OFV
+fit$aic
+fit$bic
+fit$sdtab         # individual-level diagnostics (ID, TIME, DV, PRED, IPRED, CWRES, ...)
+```
+
+## Convergence diagnostics
+
+```{r}
+#| label: trace
+#| cache: true
+ferx_plot_trace(fit)
+```
+
+`ferx_plot_trace()` draws the OFV and each theta/omega/sigma parameter over iterations.
+A well-converged fit shows smooth descent with a stable plateau.
+
+If you want the raw trace data:
+
+```{r}
+#| label: trace-data
+tr <- ferx_trace(fit)
+head(tr)
+#>   iteration      ofv  TVCL   TVV  TVKA
+#> 1         1  423.1   0.134  8.10  1.00
+#> ...
+```
+
+## Common convergence issues
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| OFV oscillates | Step size too large | Lower `maxiter`; narrow bounds |
+| `maxiter` hit without convergence | Model is misspecified | Check structural model; simplify |
+| Covariance non-positive-definite | Over-parameterised | Remove insignificant ETAs or reduce model |
+| Parameter hits bound | Bound too tight | Widen bounds; re-parameterise |
+
+## Comparing models
+
+Use OFV differences for nested models (the likelihood ratio test) or AIC/BIC for non-nested:
+
+```{r}
+#| label: compare
+#| cache: true
+fit_base <- ferx_fit(ex$model, ex$data)
+
+# A model with fixed ETA_KA (simpler)
+ex_no_ka_bsv <- ferx_example("warfarin")   # would use a modified model
+# delta_ofv <- fit_base$ofv - fit_simpler$ofv
+# p_value   <- pchisq(delta_ofv, df = 1, lower.tail = FALSE)
+```
+
+The chi-squared test with df = difference in number of parameters.

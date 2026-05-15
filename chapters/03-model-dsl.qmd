@@ -1,0 +1,180 @@
+---
+title: "The Model DSL"
+---
+
+## Overview {#sec-model-dsl}
+
+ferx models live in plain-text `.ferx` files.
+Each file has up to seven sections in a fixed order.
+Three sections are required; the rest have sensible defaults.
+
+| Section | Required | Purpose |
+|---|---|---|
+| `[parameters]` | Yes | Declare thetas, omegas, sigmas with bounds |
+| `[individual_parameters]` | Yes | Express individual PK params in terms of thetas + ETAs |
+| `[structural_model]` | Yes | Analytical PK shorthand or ODE declaration |
+| `[odes]` | If ODE model | Differential equations (one per state) |
+| `[error_model]` | Yes | Residual error distribution |
+| `[initial_values]` | No | Override starting values without editing the bound lines |
+| `[fit_options]` | No | Estimation method, max iterations, covariance |
+
+## `[parameters]`
+
+Thetas use the form `theta NAME(typical, lower, upper)`.
+The three numbers are: typical value (starting estimate), lower bound, upper bound.
+
+```
+[parameters]
+  theta TVCL(0.134, 0.001, 10.0)   # CL typical value, bounded (0.001, 10)
+  theta TVV(8.1,   0.1,   500.0)
+  theta TVKA(1.0,  0.01,  50.0)
+```
+
+Omegas declare between-subject variability:
+
+```
+  omega ETA_CL ~ 0.07    # variance (not SD) — initial estimate
+  omega ETA_V  ~ 0.02
+  omega ETA_KA ~ 0.40
+```
+
+The `~` syntax means "variance of this ETA".
+ferx always treats the omega matrix as diagonal unless you use the block syntax (see @sec-iov).
+
+Sigma declares residual variance:
+
+```
+  sigma PROP_ERR ~ 0.01   # proportional error variance
+```
+
+## `[individual_parameters]`
+
+Each line assigns an individual PK parameter using thetas and ETAs.
+
+```
+[individual_parameters]
+  CL = TVCL * exp(ETA_CL)   # log-normal BSV
+  V  = TVV  * exp(ETA_V)
+  KA = TVKA * exp(ETA_KA)
+```
+
+Any expression valid in R-like syntax is accepted: arithmetic, `exp()`, `log()`, `inv_logit()`, `logit()`, covariate columns from the dataset.
+
+### Covariate effects
+
+Use dataset column names directly in expressions:
+
+```
+[individual_parameters]
+  CL = TVCL * (WT / 70)^THETA_WT * (CRCL / 100)^THETA_CRCL * exp(ETA_CL)
+  V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)
+```
+
+`WT` and `CRCL` are read from the dataset row for each subject.
+The power-model form `(cov / ref)^theta` is the conventional allometric scaling.
+
+## `[structural_model]`
+
+### Analytical PK shortcuts
+
+ferx provides built-in analytical solutions for common compartment models:
+
+| Keyword | Description |
+|---|---|
+| `one_cpt_oral(cl, v, ka)` | 1-compartment, first-order absorption |
+| `one_cpt_oral(cl, v, ka, tlag)` | Same with absorption lag time |
+| `one_cpt_oral(cl, v, ka, f)` | Same with bioavailability |
+| `one_cpt_iv(cl, v)` | 1-compartment, IV bolus |
+| `two_cpt_oral(cl, v1, q, v2, ka)` | 2-compartment, oral |
+| `two_cpt_iv(cl, v1, q, v2)` | 2-compartment, IV |
+
+These are invoked with named arguments:
+
+```
+[structural_model]
+  pk one_cpt_oral(cl=CL, v=V, ka=KA)
+```
+
+The `pk` keyword tells the parser to use the analytical solution engine.
+See @sec-pk-models for derivations.
+
+### ODE models
+
+When no analytical solution exists, declare `ode(...)` and write ODEs in `[odes]`:
+
+```
+[structural_model]
+  ode(obs_cmt=central, states=[depot, central])
+
+[odes]
+  d/dt(depot)   = -KA * depot
+  d/dt(central) = KA * depot / V - VMAX * central / (KM + central)
+```
+
+`obs_cmt` names the compartment whose amount is used for the `DV` prediction.
+See @sec-ode-models for a full ODE example.
+
+## `[error_model]`
+
+```
+[error_model]
+  DV ~ proportional(PROP_ERR)
+```
+
+Supported error distributions:
+
+| Syntax | Model | When to use |
+|---|---|---|
+| `proportional(sigma)` | `DV = IPRED * (1 + eps)` | Concentration data, relative variability |
+| `additive(sigma)` | `DV = IPRED + eps` | Log-scale or count data |
+| `combined(sigma_prop, sigma_add)` | Both | Transitional concentration ranges |
+
+`eps` is drawn from `N(0, sigma)` for each observation.
+
+## `[initial_values]`
+
+The `[initial_values]` section lets you override starting estimates without touching the bound lines.
+This is convenient for re-running after a first fit:
+
+```
+[initial_values]
+  theta = [0.133, 7.89, 1.49]
+  omega = [0.0425, 0.0162, 0.328]
+  sigma = [0.0162]
+```
+
+Values must be listed in the same order the parameters appear in `[parameters]`.
+
+## `[fit_options]`
+
+```
+[fit_options]
+  method     = focei    # foce | focei | saem | gn | gn_hybrid
+  maxiter    = 300
+  covariance = true
+```
+
+Omit this section to use the defaults (`method = foce`, `maxiter = 300`, `covariance = false`).
+
+## Validating a model
+
+Before running a long fit, check syntax:
+
+```{r}
+#| eval: false
+ferx_model_validate("my_model.ferx")
+```
+
+```
+✓ [parameters]         — OK (3 theta, 3 omega, 1 sigma)
+✓ [individual_parameters] — OK
+✓ [structural_model]   — OK (one_cpt_oral)
+✓ [error_model]        — OK (proportional)
+✓ Syntax: valid
+```
+
+If a section is missing or malformed, the validator reports the line and reason:
+
+```
+✗ [error_model] — missing required section
+```
