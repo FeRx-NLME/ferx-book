@@ -32,13 +32,10 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
 
-      - name: Install CRAN dependencies
+      - name: Install R packages
         run: |
-          Rscript -e "install.packages(c('pak', 'rmarkdown', 'knitr', 'ggplot2', 'dplyr', 'tidyr', 'patchwork', 'vpc'), repos = 'https://cloud.r-project.org')"
-
-      - name: Install ferx-r
-        run: |
-          Rscript -e "pak::pkg_install('FeRx-NLME/ferx-r')"
+          Rscript -e "install.packages('pak', repos = 'https://r-lib.github.io/p/pak/stable/')"
+          Rscript -e "pak::pkg_install(c('rmarkdown', 'knitr', 'ggplot2', 'dplyr', 'tidyr', 'patchwork', 'vpc', 'FeRx-NLME/ferx-r'))"
 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
