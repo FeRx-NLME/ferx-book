@@ -92,6 +92,137 @@ With `states=[depot, central]`:
 
 Infusions use `RATE > 0` in the dose row; the solver handles the rate as a continuous input over the infusion duration.
 
+## PK/PD effect compartment {#sec-effect-cmt}
+
+Plasma concentration and pharmacodynamic response often do not peak at the same time.
+An **effect compartment** (or _link model_) captures this equilibration lag: drug transfers from the central compartment to the effect site with a first-order rate constant **ke0**, and the response is driven by the effect-compartment concentration Ce rather than the plasma concentration.
+
+Because the effect compartment is assumed to be pharmacokinetically negligible (it does not measurably drain the central compartment), its ODE is:
+
+```
+d/dt(effect) = ke0 * (central / V1) - ke0 * effect
+```
+
+At equilibrium `d/dt(effect) = 0` implies `effect = central / V1 = Cp`, so Ce equals plasma concentration at steady-state — only the rate of approach differs.
+
+### Full 2-compartment + effect compartment model
+
+```{r}
+#| label: write-pkpd-model
+#| eval: false
+pkpd_txt <- c(
+  "# 2-compartment IV PK with effect compartment (PK/PD link)",
+  "",
+  "[parameters]",
+  "  theta TVCL(5.0,  0.01, 50.0)",
+  "  theta TVV1(20.0, 1.0,  500.0)",
+  "  theta TVQ(2.0,   0.01, 30.0)",
+  "  theta TVV2(40.0, 1.0,  1000.0)",
+  "  theta TVKE0(0.2, 0.001, 5.0)",
+  "  theta TVSLOPE(1.0, 0.001, 100.0)",
+  "",
+  "  omega ETA_CL   ~ 0.10",
+  "  omega ETA_V1   ~ 0.08",
+  "  omega ETA_KE0  ~ 0.20",
+  "",
+  "  sigma PROP_ERR ~ 0.02",
+  "",
+  "[individual_parameters]",
+  "  CL    = TVCL  * exp(ETA_CL)",
+  "  V1    = TVV1  * exp(ETA_V1)",
+  "  Q     = TVQ",
+  "  V2    = TVV2",
+  "  KE0   = TVKE0 * exp(ETA_KE0)",
+  "  SLOPE = TVSLOPE",
+  "",
+  "[structural_model]",
+  "  ode(obs_cmt=effect, states=[central, peripheral, effect])",
+  "",
+  "[odes]",
+  "  d/dt(central)    = -(CL/V1 + Q/V1) * central + (Q/V2) * peripheral",
+  "  d/dt(peripheral) =  (Q/V1) * central - (Q/V2) * peripheral",
+  "  d/dt(effect)     =  KE0 * central/V1 - KE0 * effect",
+  "",
+  "[error_model]",
+  "  DV ~ proportional(PROP_ERR)"
+)
+
+model_path <- tempfile(fileext = ".ferx")
+writeLines(pkpd_txt, model_path)
+ferx_model_validate(model_path)
+```
+
+Key points about this model:
+
+- **`states=[central, peripheral, effect]`** — doses with `CMT=1` go into `central`; `CMT=3` would target the effect compartment directly (unusual but valid).
+- **`obs_cmt=effect`** — the predicted DV is the effect-compartment concentration.
+  In this formulation `effect` is an amount with `Veff = 1`, so its value equals Ce directly.
+- **Between-subject variability on KE0** captures individual differences in the time to peak effect.
+- The PD link here is linear (`DV ~ SLOPE * Ce`); to add an Emax model, express `IPRED` via a custom expression in `[individual_parameters]` rather than by changing `obs_cmt`.
+
+### Fitting the PK/PD model
+
+```{r}
+#| label: fit-pkpd
+#| eval: false
+# Replace with a real dataset containing a TIME, DV, EVID, AMT, CMT, ID structure.
+# DV here is the measured effect-site proxy (e.g. BIS, SDMA).
+fit_pkpd <- ferx_fit(model_path, pkpd_data, method = "focei", covariance = TRUE)
+summary(fit_pkpd)
+```
+
+## Multi-dose event handling
+
+The dataset drives dosing via standard NONMEM-style columns.
+Understanding how the solver interprets event records is essential for multi-dose studies.
+
+**Bolus doses (`EVID = 1`, `RATE = 0`)**
+
+The AMT is added instantaneously to the compartment specified by `CMT` at the event time.
+The solver resets the state to `state[CMT] + AMT` and continues integration.
+
+**IV infusions (`EVID = 1`, `RATE > 0`)**
+
+A positive `RATE` column turns the dose record into a zero-order input lasting `AMT / RATE` hours.
+The solver treats it as a continuous forcing function added to the ODE right-hand side for the infusion duration:
+
+```
+d/dt(central) = RATE_input(t) - (CL/V1) * central
+```
+
+`RATE_input(t)` equals `RATE` during the infusion window and 0 otherwise.
+No special model syntax is needed — the event record is sufficient.
+
+**Steady-state flag (`SS = 1`)**
+
+Setting `SS = 1` in a dose record instructs the solver to compute the steady-state initial conditions analytically (for linear models) or iteratively (for ODE models) before advancing time.
+This avoids simulating hundreds of wash-in doses explicitly and is especially useful for rich Phase I designs with a loading dose followed by QD maintenance.
+
+**`CMT` column and `states` order**
+
+The integer in the `CMT` column maps to the `states=[...]` list by position (1-indexed):
+
+| CMT | Compartment |
+|-----|-------------|
+| 1   | `central`   |
+| 2   | `peripheral`|
+| 3   | `effect`    |
+
+Observation records (`EVID = 0`) use `CMT` to indicate which compartment the measured DV belongs to, which must match `obs_cmt`.
+
+## Common ODE pitfalls
+
+| Pitfall | What goes wrong | Fix |
+|---------|-----------------|-----|
+| Amounts vs concentrations in ODEs | Writing `d/dt(central) = -CL * central` treats `central` as a concentration, not an amount — CL is then dimensionless | Use `d/dt(central) = -(CL/V) * central`; divide by V wherever concentration is needed |
+| `obs_cmt` not in `states` | Parser error at validation time | Add the compartment name to the `states=[...]` list |
+| Stiff systems | Solver takes thousands of tiny steps, fit becomes very slow or fails to converge | Check for rate-constant mismatches (e.g. ke0 >> CL/V); consider re-parameterising on log scale or tightening bounds |
+| Fast absorption + slow elimination | The stiff ratio between KA and CL/V causes the solver to over-refine early time points | Either use an analytical solution for the PK part, or supply tighter initial bounds on KA |
+| Off-by-one in CMT | Dose enters the wrong compartment | Print `states` order explicitly and cross-check with your dataset's `CMT` values before fitting |
+
+A quick stiffness check: if the ratio of the largest to smallest eigenvalue of the Jacobian exceeds ~1000, the system is stiff.
+In pharmacokinetics this often surfaces when ke0 (effect-site equilibration) is much faster than the slowest elimination rate constant.
+
 ## Analytical vs ODE: when to choose each
 
 | Model feature | Analytical | ODE |
