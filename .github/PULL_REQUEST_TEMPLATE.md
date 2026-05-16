@@ -26,8 +26,8 @@
 
 ### Example execution (run locally on your CPU before marking ready for review)
 - [ ] Installed ferx-r from local build: `cd ../ferx-r && FERX_NO_AUTODIFF=1 R CMD INSTALL .`
-- [ ] All changed chapters render cleanly: `cd /Users/teun/ferx-book && quarto render chapters/<chapter>.qmd`
-- [ ] Full book renders without error: `cd /Users/teun/ferx-book && quarto render`
+- [ ] All changed chapters render cleanly: `quarto render chapters/<chapter>.qmd`
+- [ ] Full book renders without error: `quarto render`
 - [ ] No execution needed (structural / cross-link / non-code change)
 
 ## Checklist
