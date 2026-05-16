@@ -80,15 +80,12 @@ fit <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE,
                 optimizer_trace = TRUE)
 ```
 
-If the covariance matrix is non-positive-definite, ferx reports:
-
-```
-! Covariance step: Hessian is not positive definite.
-  Eigenvalues: [8.4, 2.1, 0.3, -0.01]
-  SE estimates not available.
-```
-
-A near-zero or negative eigenvalue usually indicates an over-parameterised model or a boundary estimate.
+If the covariance matrix is non-positive-definite or cannot be inverted, ferx
+emits a warning and sets `covariance_status` to `Failed`; all SE fields are
+`None`. A near-zero or negative eigenvalue usually indicates an
+over-parameterised model or a boundary estimate. A future release will include
+eigenvalue diagnostics in the warning
+([ferx-core#17](https://github.com/FeRx-NLME/ferx-core/issues/17)).
 
 ## Parallelism
 
