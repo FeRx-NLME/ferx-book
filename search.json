@@ -364,7 +364,7 @@
     "href": "chapters/05-diagnostics.html",
     "title": "6  Diagnostics",
     "section": "",
-    "text": "6.1 Overview\nAfter fitting, the $sdtab data frame contains everything needed for standard goodness-of-fit diagnostics.\nlibrary(ferx)\nlibrary(ggplot2)\nlibrary(dplyr)\n\nex  &lt;- ferx_example(\"warfarin\")\nfit &lt;- ferx_fit(ex$model, ex$data, method = \"focei\", covariance = TRUE)\n\nWarning: Model file [fit_options] sets `method = foce` but ferx_fit() argument\noverrides it with `focei`. The call-time value will be used.\n\n\nMu-referencing detected for: ETA_CL, ETA_KA, ETA_V\n\nsdtab &lt;- fit$sdtab",
+    "text": "6.1 Overview\nAfter fitting, the $sdtab data frame contains everything needed for standard goodness-of-fit diagnostics.\nlibrary(ferx)\nlibrary(ggplot2)\nlibrary(dplyr)\n\nex  &lt;- ferx_example(\"warfarin\")\nfit &lt;- ferx_fit(ex$model, ex$data, method = \"focei\", covariance = TRUE)\n\nWarning: Model file [fit_options] sets `method = foce` but ferx_fit() argument\noverrides it with `focei`. The call-time value will be used.\n\n\nMu-referencing detected for: ETA_CL, ETA_KA, ETA_V\n\n\nNegative IWRES autocorrelation detected (Durbin-Watson = 2.61, lag-1 r = -0.37).\nPossible over-parameterisation or misspecified residual error model.\n\nsdtab &lt;- fit$sdtab",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>6</span>  <span class='chapter-title'>Diagnostics</span>"
@@ -397,7 +397,7 @@
     "href": "chapters/05-diagnostics.html#eta-shrinkage",
     "title": "6  Diagnostics",
     "section": "6.4 ETA shrinkage",
-    "text": "6.4 ETA shrinkage\nShrinkage measures how much the individual ETAs are pulled toward zero relative to the omega variance. High shrinkage (&gt; 30%) means the data are not informative enough to reliably estimate individual deviations, and ETA-based diagnostics become unreliable.\n\nsummary(fit)$shrinkage_eta\n\n[1] -0.05376796 -0.05223391 -0.05351655\n\n#&gt;  ETA_CL   ETA_V  ETA_KA\n#&gt;   0.142   0.283   0.452\n\nETA shrinkage &gt; 0.3 is a warning sign. It does not mean the model is wrong, but ETA-based covariate plots and individual parameter histograms should be interpreted cautiously.",
+    "text": "6.4 ETA shrinkage\nShrinkage measures how much the individual ETAs are pulled toward zero relative to the omega variance. High shrinkage (&gt; 30%) means the data are not informative enough to reliably estimate individual deviations, and ETA-based diagnostics become unreliable.\n\nsummary(fit)$shrinkage_eta\n\n[1] -0.005236472  0.008379797  0.004024993\n\n#&gt;  ETA_CL   ETA_V  ETA_KA\n#&gt;   0.142   0.283   0.452\n\nETA shrinkage &gt; 0.3 is a warning sign. It does not mean the model is wrong, but ETA-based covariate plots and individual parameter histograms should be interpreted cautiously.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>6</span>  <span class='chapter-title'>Diagnostics</span>"
@@ -441,7 +441,7 @@
     "href": "chapters/05-diagnostics.html#parameter-estimates-table",
     "title": "6  Diagnostics",
     "section": "6.8 Parameter estimates table",
-    "text": "6.8 Parameter estimates table\nferx_estimates() returns a tidy data frame for programmatic use or table export:\n\nferx_estimates(fit)\n\n          param    transform    estimate se rse_pct lower_95 upper_95\n1          TVCL     identity 0.132695640 NA      NA       NA       NA\n2           TVV     identity 7.737706623 NA      NA       NA       NA\n3          TVKA     identity 0.810795004 NA      NA       NA       NA\n4 OMEGA(ETA_CL)     variance 0.028588829 NA      NA       NA       NA\n5  OMEGA(ETA_V)     variance 0.009592089 NA      NA       NA       NA\n6 OMEGA(ETA_KA)     variance 0.335864835 NA      NA       NA       NA\n7      PROP_ERR proportional 0.010565647 NA      NA       NA       NA\n  estimate_natural lower_95_natural upper_95_natural\n1               NA               NA               NA\n2               NA               NA               NA\n3               NA               NA               NA\n4               NA               NA               NA\n5               NA               NA               NA\n6               NA               NA               NA\n7               NA               NA               NA",
+    "text": "6.8 Parameter estimates table\nferx_estimates() returns a tidy data frame for programmatic use or table export:\n\nferx_estimates(fit)\n\n     param    transform    estimate se rse_pct lower_95 upper_95\n1     TVCL     identity 0.133774457 NA      NA       NA       NA\n2      TVV     identity 7.717878574 NA      NA       NA       NA\n3     TVKA     identity 0.716571853 NA      NA       NA       NA\n4   ETA_CL     variance 0.028335866 NA      NA       NA       NA\n5    ETA_V     variance 0.009724755 NA      NA       NA       NA\n6   ETA_KA     variance 0.353493122 NA      NA       NA       NA\n7 PROP_ERR proportional 0.010787611 NA      NA       NA       NA\n  estimate_natural lower_95_natural upper_95_natural\n1               NA               NA               NA\n2               NA               NA               NA\n3               NA               NA               NA\n4               NA               NA               NA\n5               NA               NA               NA\n6               NA               NA               NA\n7               NA               NA               NA",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>6</span>  <span class='chapter-title'>Diagnostics</span>"
@@ -452,7 +452,18 @@
     "href": "chapters/05-diagnostics.html#epsilon-shrinkage",
     "title": "6  Diagnostics",
     "section": "6.9 Epsilon shrinkage",
-    "text": "6.9 Epsilon shrinkage\nEpsilon shrinkage measures compression in the residual distribution:\n\nsummary(fit)$shrinkage_eps\n\n[1] 0.1430252\n\n#&gt;  PROP_ERR\n#&gt;   0.094\n\nLow epsilon shrinkage (&lt; 20%) is generally acceptable.",
+    "text": "6.9 Epsilon shrinkage\nEpsilon shrinkage measures compression in the residual distribution:\n\nsummary(fit)$shrinkage_eps\n\n[1] 0.1644439\n\n#&gt;  PROP_ERR\n#&gt;   0.094\n\nLow epsilon shrinkage (&lt; 20%) is generally acceptable.",
+    "crumbs": [
+      "Core workflow",
+      "<span class='chapter-number'>6</span>  <span class='chapter-title'>Diagnostics</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/05-diagnostics.html#iwres-autocorrelation-check_diagnostics",
+    "href": "chapters/05-diagnostics.html#iwres-autocorrelation-check_diagnostics",
+    "title": "6  Diagnostics",
+    "section": "6.10 IWRES autocorrelation (check_diagnostics)",
+    "text": "6.10 IWRES autocorrelation (check_diagnostics)\nResidual autocorrelation — IWRES values within a subject that are systematically positive then negative (or vice versa) — is a sign that the structural model is missing dynamics. ferx quantifies this with two pooled statistics computed across all subjects:\n\n\n\n\n\n\n\nStatistic\nMeaning\n\n\n\n\nDurbin-Watson (DW)\n2 = no autocorrelation; &lt; 1.5 = positive; &gt; 2.5 = negative\n\n\nLag-1 Pearson r\nDirection and magnitude of serial correlation\n\n\n\ncheck_diagnostics() returns both in a tidy list alongside shrinkage:\n\ndiag &lt;- check_diagnostics(fit)\ndiag$autocorrelation\n#&gt;   dw_statistic  lag1_r                  flag\n#&gt;           1.84  0.0821  no autocorrelation\ndiag$shrinkage\n#&gt;    param type shrinkage shrinkage_pct\n#&gt;   ETA_CL  eta     0.142          14.2\n#&gt;    ETA_V  eta     0.283          28.3\n#&gt;   ETA_KA  eta     0.452          45.2\n#&gt;      EPS  eps     0.094           9.4\n\nprint(fit) shows the same values in a --- Diagnostics --- block, and a message() is emitted automatically when DW &lt; 1.5 or DW &gt; 2.5 with ordered remedies.\n\n6.10.1 Interpreting the DW statistic\n\n\n\n\n\n\n\n\nDW range\nInterpretation\nSuggested action\n\n\n\n\n&lt; 1.5\nPositive autocorrelation\nCheck time ordering; add transit compartment; consider IOV on ka/F; SDE\n\n\n1.5 – 2.5\nNo concern\n—\n\n\n&gt; 2.5\nNegative autocorrelation\nCheck for over-parameterisation or misspecified error model\n\n\n\n\n\n6.10.2 IWRES vs time plot\n\nif (!is.null(diag$autocorrelation)) {\n  dw_val &lt;- diag$autocorrelation$dw_statistic\n  r_val  &lt;- diag$autocorrelation$lag1_r\n  ggplot(sdtab, aes(x = TIME, y = IWRES, colour = factor(ID))) +\n    geom_point(alpha = 0.6, size = 1.5) +\n    geom_hline(yintercept = 0, colour = \"#1F6B7A\", linewidth = 1) +\n    labs(\n      x = \"TIME (h)\", y = \"IWRES\", colour = \"Subject\",\n      title = sprintf(\"IWRES vs Time  |  DW = %.2f  lag-1 r = %.3f\", dw_val, r_val)\n    ) +\n    theme_minimal() +\n    theme(legend.position = \"none\")\n}",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>6</span>  <span class='chapter-title'>Diagnostics</span>"
