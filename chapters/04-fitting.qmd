@@ -89,7 +89,13 @@ eigenvalue diagnostics in the warning
 
 ## Parallelism
 
-The per-subject inner loops (EBE search, SAEM subjects) run in parallel on `threads` workers:
+ferx uses parallelism at two independent levels. Understanding both helps you
+get the most out of a multi-core machine.
+
+### Per-subject parallelism (`threads`)
+
+The inner loops — EBE search for FOCE/FOCEI, subject sampling for SAEM — run
+in parallel across subjects on `threads` workers:
 
 ```{r}
 #| eval: false
@@ -103,6 +109,85 @@ On HPC shared nodes, cap the thread count to avoid contention:
 #| eval: false
 fit <- ferx_fit(ex$model, ex$data, threads = 4L)
 ```
+
+This speeds up a **single fit** by distributing subjects across cores.
+It does not help when the model is stuck in a local minimum.
+
+### Multi-start optimization (`n_starts`)
+
+Some models have multimodal OFV surfaces where a single fit can converge to a
+local minimum rather than the global optimum. This is common with:
+
+- Michaelis-Menten (saturable) elimination — the Vmax/Km pair produces a
+  narrow ridge where many combinations give similar predicted concentrations.
+- Full-block omega with three or more ETAs.
+- Many correlated covariate parameters.
+
+`n_starts` runs independent fits from perturbed starting values **in parallel**
+and returns the result with the lowest OFV:
+
+```{r}
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  settings = list(n_starts = 8L)
+)
+```
+
+Start 0 always uses the exact initial values from the model file. Starts 1–7
+apply a log-space perturbation of size `start_sigma` (default 0.3, roughly
+±30% CV) to each theta. On an 8-core machine, 8 starts cost approximately the
+same wall time as a single run.
+
+For ridge-shaped surfaces — where the optimiser needs to explore a wider
+neighbourhood — increase `start_sigma`:
+
+```{r}
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  settings = list(
+    n_starts    = 8L,
+    start_sigma = 0.5   # wider perturbation; default is 0.3
+  )
+)
+```
+
+Pin `multi_start_seed` to reproduce a specific set of perturbations:
+
+```{r}
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  settings = list(
+    n_starts         = 8L,
+    multi_start_seed = 123L
+  )
+)
+```
+
+### Combining both levels
+
+`threads` and `n_starts` are orthogonal and compose naturally. With
+`n_starts = 4` and `threads = 2`, ferx runs four fits in parallel, each
+using two worker threads for its inner loops — fully utilizing an 8-core
+machine:
+
+```{r}
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  threads  = 2L,
+  settings = list(n_starts = 4L)
+)
+```
+
+::: callout-tip
+**Rule of thumb:** use `threads` to speed up a single well-conditioned fit;
+use `n_starts` when you suspect local minima. On a shared HPC node where you
+have 8 cores, `n_starts = 8, threads = 1` is usually better than
+`n_starts = 1, threads = 8` for poorly-identified models.
+:::
 
 ## Reading the output
 
