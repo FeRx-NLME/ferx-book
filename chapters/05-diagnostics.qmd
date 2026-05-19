@@ -178,3 +178,59 @@ summary(fit)$shrinkage_eps
 ```
 
 Low epsilon shrinkage (< 20%) is generally acceptable.
+
+## IWRES autocorrelation (`check_diagnostics`)
+
+Residual autocorrelation — IWRES values within a subject that are systematically positive then negative (or vice versa) — is a sign that the structural model is missing dynamics.
+ferx quantifies this with two pooled statistics computed across all subjects:
+
+| Statistic | Meaning |
+|---|---|
+| Durbin-Watson (DW) | 2 = no autocorrelation; < 1.5 = positive; > 2.5 = negative |
+| Lag-1 Pearson r | Direction and magnitude of serial correlation |
+
+`check_diagnostics()` returns both in a tidy list alongside shrinkage:
+
+```{r}
+#| label: check-diagnostics
+diag <- check_diagnostics(fit)
+diag$autocorrelation
+#>   dw_statistic  lag1_r                  flag
+#>           1.84  0.0821  no autocorrelation
+diag$shrinkage
+#>    param type shrinkage shrinkage_pct
+#>   ETA_CL  eta     0.142          14.2
+#>    ETA_V  eta     0.283          28.3
+#>   ETA_KA  eta     0.452          45.2
+#>      EPS  eps     0.094           9.4
+```
+
+`print(fit)` shows the same values in a `--- Diagnostics ---` block, and a `message()` is emitted automatically when DW < 1.5 or DW > 2.5 with ordered remedies.
+
+### Interpreting the DW statistic
+
+| DW range | Interpretation | Suggested action |
+|---|---|---|
+| < 1.5 | Positive autocorrelation | Check time ordering; add transit compartment; consider IOV on ka/F; SDE |
+| 1.5 – 2.5 | No concern | — |
+| > 2.5 | Negative autocorrelation | Check for over-parameterisation or misspecified error model |
+
+### IWRES vs time plot
+
+```{r}
+#| label: iwres-time
+#| fig-cap: "IWRES vs time coloured by subject. Systematic patterns within subjects indicate missing dynamics."
+if (!is.null(diag$autocorrelation)) {
+  dw_val <- diag$autocorrelation$dw_statistic
+  r_val  <- diag$autocorrelation$lag1_r
+  ggplot(sdtab, aes(x = TIME, y = IWRES, colour = factor(ID))) +
+    geom_point(alpha = 0.6, size = 1.5) +
+    geom_hline(yintercept = 0, colour = "#1F6B7A", linewidth = 1) +
+    labs(
+      x = "TIME (h)", y = "IWRES", colour = "Subject",
+      title = sprintf("IWRES vs Time  |  DW = %.2f  lag-1 r = %.3f", dw_val, r_val)
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
+}
+```
