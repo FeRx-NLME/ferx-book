@@ -94,8 +94,14 @@ get the most out of a multi-core machine.
 
 ### Per-subject parallelism (`threads`)
 
-The inner loops — EBE search for FOCE/FOCEI, subject sampling for SAEM — run
-in parallel across subjects on `threads` workers:
+The inner loops run in parallel across subjects on `threads` workers.
+This applies to all estimation methods:
+
+| Method | What is parallelised |
+|--------|----------------------|
+| FOCE / FOCEI | EBE (inner) optimisation per subject |
+| SAEM | Metropolis-Hastings sampling per subject |
+| GN / GN hybrid | Per-subject gradient evaluations |
 
 ```{r}
 #| eval: false
@@ -112,6 +118,9 @@ fit <- ferx_fit(ex$model, ex$data, threads = 4L)
 
 This speeds up a **single fit** by distributing subjects across cores.
 It does not help when the model is stuck in a local minimum.
+
+`threads` controls the inner-loop pool only. The `n_starts` outer parallelism
+(see below) always uses the global rayon pool regardless of `threads`.
 
 ### Multi-start optimization (`n_starts`)
 
@@ -165,6 +174,26 @@ fit <- ferx_fit(
   )
 )
 ```
+
+**Method and optimizer behaviour:**
+
+| Method | Multi-start behaviour |
+|--------|-----------------------|
+| FOCE / FOCEI | Fully supported; most useful — gradient-based methods are most prone to local minima |
+| GN / GN hybrid | Fully supported; same local-minimum risk as FOCE |
+| SAEM | Supported; each start gets an independent MH sampler seed (`saem_seed + k`) so trajectories are stochastically distinct. SAEM is inherently more robust to local minima than FOCE, but multi-start still helps on very multimodal surfaces |
+
+`n_starts` is optimizer-agnostic: it works with any `optimizer` setting
+(`slsqp`, `bobyqa`, `trust_region`, `lbfgs`, etc.) — each start runs the
+full local optimisation pipeline with its own perturbed theta.
+
+::: callout-warning
+**`global_search` interaction:** when `global_search = true` and `n_starts > 1`,
+the CRS2-LM gradient-free pre-search only runs on start 0. CRS2-LM ignores the
+starting point by design, so running it on perturbed starts would override the
+perturbation and waste cores. ferx emits a warning on `fit$warnings` when this
+combination is detected.
+:::
 
 ### Combining both levels
 
