@@ -529,39 +529,34 @@ window.Quarto = {
 <p>This parameterisation:</p>
 <ul>
 <li>Keeps <code>CL_i &gt; 0</code> by construction</li>
-<li><code>ω² ≈ (CV%)²</code> for small-to-moderate variability (the log-normal approximation)</li>
 <li>The geometric mean of CL across subjects equals <code>TVCL</code></li>
-<li>The arithmetic CV% is approximately <code>√ω × 100</code></li>
+<li>CV% grows with ω²; ferx reports <code>√(exp(ω²) − 1) × 100</code></li>
 </ul>
 <p><strong>When to use</strong>: clearance, volume, rate constants — parameters that are always positive and whose variability is naturally multiplicative.</p>
 <section id="cv-formula" class="level3" data-number="8.2.1">
 <h3 data-number="8.2.1" class="anchored" data-anchor-id="cv-formula"><span class="header-section-number">8.2.1</span> CV% formula</h3>
-<p>For a log-normal ETA with omega variance <span class="math inline">\(\omega^2\)</span>:</p>
-<p><span class="math display">\[\text{CV\%} \approx \sqrt{\omega^2} \times 100\]</span></p>
-<p>This is the <em>approximate</em> formula. The exact formula is:</p>
+<p>For a log-normal ETA with omega variance <span class="math inline">\(\omega^2\)</span>, ferx reports:</p>
 <p><span class="math display">\[\text{CV\%} = \sqrt{e^{\omega^2} - 1} \times 100\]</span></p>
-<p>For <span class="math inline">\(\omega^2 &lt; 0.25\)</span> the two agree to within 1–2 percentage points.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>omega_sq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.04</span>, <span class="fl">0.09</span>, <span class="fl">0.16</span>, <span class="fl">0.25</span>, <span class="fl">0.50</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">omega_sq =</span> omega_sq,</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cv_approx =</span> <span class="fu">sqrt</span>(omega_sq) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">cv_exact  =</span> <span class="fu">sqrt</span>(<span class="fu">exp</span>(omega_sq) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">cv_pct   =</span> <span class="fu">sqrt</span>(<span class="fu">exp</span>(omega_sq) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  omega_sq cv_approx cv_exact
-1     0.04  20.00000 20.20168
-2     0.09  30.00000 30.68783
-3     0.16  40.00000 41.65464
-4     0.25  50.00000 53.29404
-5     0.50  70.71068 80.54324</code></pre>
+<pre><code>  omega_sq   cv_pct
+1     0.04 20.20168
+2     0.09 30.68783
+3     0.16 41.65464
+4     0.25 53.29404
+5     0.50 80.54324</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   omega_sq cv_approx cv_exact</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.04      20.0     20.2</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.09      30.0     30.5</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.16      40.0     41.5</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.25      50.0     52.8</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.50      70.7     79.7</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   omega_sq cv_pct</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.04   20.2</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.09   30.5</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.16   41.5</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.25   52.8</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       0.50   79.7</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
@@ -590,6 +585,10 @@ window.Quarto = {
 # natural additive variability structure and cannot go negative by definition
 # (or is bounded away from zero by the individual's biology).
 #
+# Lag time is routed via the `lagtime=` PK parameter (NONMEM-style `alag=`
+# is also accepted) — the variable name on the left of the assignment can
+# be anything (here, `TLAG`).
+#
 # Use ferx_example("warfarin_additive_eta") to get file paths.
 
 [parameters]
@@ -611,7 +610,7 @@ window.Quarto = {
   TLAG = TVTLAG + ETA_TLAG
 
 [structural_model]
-  pk one_cpt_oral(cl=CL, v=V, ka=KA, tlag=TLAG)
+  pk one_cpt_oral(cl=CL, v=V, ka=KA, lagtime=TLAG)
 
 [error_model]
   DV ~ proportional(PROP_ERR)
@@ -636,7 +635,15 @@ argument overrides it with `false`. The call-time value will be used.</code></pr
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_TLAG, ETA_V</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_add)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Positive IWRES autocorrelation detected (Durbin-Watson = 1.13, lag-1 r = 0.39).
+Structural model may be missing dynamics. Consider in order:
+  1. Check observation time ordering within each subject
+  2. Transit absorption model or additional compartment
+  3. IOV on ka or F
+  4. For ODE models: consider SDE process noise ([diffusion] block)</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_add)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>--------------------------------------------------
 ferx NLME Fit Summary
@@ -655,15 +662,19 @@ Settings (model file / call-time override):
 
 Structure: 1-cpt oral  (TVCL, TVV, TVKA, TVTLAG)  |  IIV: ETA_CL, ETA_V, ETA_TLAG  |  IOV: none  |  Residual: proportional
 
-OFV: 125.7837  AIC: 141.7837  BIC: 163.3875
-Subjects: 10  Obs: 110  Params: 8  Iter: 436
-Shrinkage: ETA1=-0.4%  ETA2=2.6%  ETA3=100.0% 
-EPS shrinkage: 6.9%
+OFV: 56.6687  AIC: 72.6687  BIC: 94.2725
+Subjects: 10  Obs: 110  Params: 8  Iter: 69
+Shrinkage: ETA1=-120.7%  ETA2=76.3%  ETA3=-32.4% 
+EPS shrinkage: 18.6%
+DW: 1.13 [positive autocorrelation]
+lag-1 r: 0.394
 Covariance: not requested  |  Wall time: 0.2s
 
 Warnings:
   * mu-ref: ETA_CL, ETA_TLAG, ETA_V 
-  * 10 EBE fallback(s) 
+  * Positive IWRES autocorrelation detected (Durbin-Watson = 1.13). Structural model may be missing dynamics. Consider a transit absorption model, additional compartment, or IOV on ka/F. 
+  * ETA_TLAG Shapiro-Wilk p=0.0333 - distribution may be non-normal 
+  * 99 EBE fallback(s) 
 --------------------------------------------------</code></pre>
 </div>
 </div>
@@ -678,25 +689,25 @@ Warnings:
 <p><span class="math display">\[F_i = \text{logit}^{-1}(\text{logit}(\theta_F) + \eta_i) = \frac{e^{\text{logit}(\theta_F) + \eta_i}}{1 + e^{\text{logit}(\theta_F) + \eta_i}}\]</span></p>
 <p><strong>CV% is not meaningful</strong> for logit-normal parameters because the distribution is asymmetric. Report the omega variance on the logit scale and the 5th–95th percentile range:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>theta_f <span class="ot">&lt;-</span> <span class="fl">0.80</span>   <span class="co"># typical bioavailability</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>omega_f <span class="ot">&lt;-</span> <span class="fl">0.10</span>   <span class="co"># omega variance on logit scale</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>logit    <span class="ot">&lt;-</span> <span class="cf">function</span>(p) <span class="fu">log</span>(p <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> p))</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>inv_logit <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>x))</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>logit_typical <span class="ot">&lt;-</span> <span class="fu">logit</span>(theta_f)</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>lo <span class="ot">&lt;-</span> <span class="fu">inv_logit</span>(logit_typical <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> <span class="fu">sqrt</span>(omega_f))</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>hi <span class="ot">&lt;-</span> <span class="fu">inv_logit</span>(logit_typical <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> <span class="fu">sqrt</span>(omega_f))</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"F: typical = %.2f, 95%% range = [%.2f, %.2f]</span><span class="sc">\n</span><span class="st">"</span>, theta_f, lo, hi))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>theta_f <span class="ot">&lt;-</span> <span class="fl">0.80</span>   <span class="co"># typical bioavailability</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>omega_f <span class="ot">&lt;-</span> <span class="fl">0.10</span>   <span class="co"># omega variance on logit scale</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>logit    <span class="ot">&lt;-</span> <span class="cf">function</span>(p) <span class="fu">log</span>(p <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> p))</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>inv_logit <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>x))</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>logit_typical <span class="ot">&lt;-</span> <span class="fu">logit</span>(theta_f)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>lo <span class="ot">&lt;-</span> <span class="fu">inv_logit</span>(logit_typical <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> <span class="fu">sqrt</span>(omega_f))</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>hi <span class="ot">&lt;-</span> <span class="fu">inv_logit</span>(logit_typical <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> <span class="fu">sqrt</span>(omega_f))</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"F: typical = %.2f, 95%% range = [%.2f, %.2f]</span><span class="sc">\n</span><span class="st">"</span>, theta_f, lo, hi))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>F: typical = 0.80, 95% range = [0.68, 0.88]</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; F: typical = 0.80, 95% range = [0.64, 0.90]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; F: typical = 0.80, 95% range = [0.64, 0.90]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Example using the bundled <code>warfarin_logit_f</code> model:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>ex_lf <span class="ot">&lt;-</span> <span class="fu">ferx_example</span>(<span class="st">"warfarin_logit_f"</span>)</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>fit_lf <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(ex_lf<span class="sc">$</span>model, ex_lf<span class="sc">$</span>data, <span class="at">method =</span> <span class="st">"focei"</span>, <span class="at">covariance =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>ex_lf <span class="ot">&lt;-</span> <span class="fu">ferx_example</span>(<span class="st">"warfarin_logit_f"</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>fit_lf <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(ex_lf<span class="sc">$</span>model, ex_lf<span class="sc">$</span>data, <span class="at">method =</span> <span class="st">"focei"</span>, <span class="at">covariance =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: Model file [fit_options] sets `covariance = true` but ferx_fit()
 argument overrides it with `false`. The call-time value will be used.</code></pre>
@@ -704,7 +715,15 @@ argument overrides it with `false`. The call-time value will be used.</code></pr
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_V</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_lf)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Positive IWRES autocorrelation detected (Durbin-Watson = 0.36, lag-1 r = 0.79).
+Structural model may be missing dynamics. Consider in order:
+  1. Check observation time ordering within each subject
+  2. Transit absorption model or additional compartment
+  3. IOV on ka or F
+  4. For ODE models: consider SDE process noise ([diffusion] block)</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_lf)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>--------------------------------------------------
 ferx NLME Fit Summary
@@ -723,15 +742,19 @@ Settings (model file / call-time override):
 
 Structure: 1-cpt oral  (TVCL, TVV, TVKA, THETA_F)  |  IIV: ETA_CL, ETA_V, ETA_F  |  IOV: none  |  Residual: proportional
 
-OFV: 122.7933  AIC: 138.7933  BIC: 160.3972
-Subjects: 10  Obs: 110  Params: 8  Iter: 1269
-Shrinkage: ETA1=13.7%  ETA2=33.5%  ETA3=14.2% 
-EPS shrinkage: 6.7%
-Covariance: not requested  |  Wall time: 0.8s
+OFV: 194.3365  AIC: 210.3365  BIC: 231.9404
+Subjects: 10  Obs: 110  Params: 8  Iter: 140
+Shrinkage: ETA1=38.0%  ETA2=18.7%  ETA3=77.8% 
+EPS shrinkage: -8.0%
+DW: 0.36 [positive autocorrelation]
+lag-1 r: 0.791
+Covariance: not requested  |  Wall time: 0.2s
 
 Warnings:
   * mu-ref: ETA_CL, ETA_V 
-  * 27 EBE fallback(s) 
+  * EPS shrinkage is notably negative (-8.0%): mean(IWRES^2) &gt; 1, which means the residual error model does not absorb the residuals at the final EBE etas. Common causes: SAEM converged to a local optimum with under-fit sigma (try `method = [saem, focei]` to polish with FOCEI, or different starts); model misspecification on a subset of subjects; sigma at a bound. Inspect the IWRES distribution in the sdtab. 
+  * Positive IWRES autocorrelation detected (Durbin-Watson = 0.36). Structural model may be missing dynamics. Consider a transit absorption model, additional compartment, or IOV on ka/F. 
+  * 83 EBE fallback(s) 
 --------------------------------------------------</code></pre>
 </div>
 </div>
@@ -773,20 +796,25 @@ Warnings:
 <h2 data-number="8.6" class="anchored" data-anchor-id="omega-display-in-summary"><span class="header-section-number">8.6</span> Omega display in <code>summary()</code></h2>
 <p>The <code>summary()</code> output shows omega on the variance scale. To convert manually:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(<span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)<span class="sc">$</span>model,</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                <span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)<span class="sc">$</span>data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(<span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)<span class="sc">$</span>model,</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                <span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)<span class="sc">$</span>data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_V</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>omega_diag <span class="ot">&lt;-</span> <span class="fu">diag</span>(fit<span class="sc">$</span>omega)</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>cv_approx  <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(omega_diag) <span class="sc">*</span> <span class="dv">100</span></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(cv_approx) <span class="ot">&lt;-</span> <span class="fu">names</span>(omega_diag)</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(cv_approx, <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 16.9  9.8 58.0</code></pre>
+<div class="cell-output cell-output-stderr">
+<pre><code>Negative IWRES autocorrelation detected (Durbin-Watson = 2.61, lag-1 r = -0.37).
+Possible over-parameterisation or misspecified residual error model.</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  ETA_CL  ETA_V ETA_KA</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    20.6   12.7   57.2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>omega_diag <span class="ot">&lt;-</span> <span class="fu">diag</span>(fit<span class="sc">$</span>omega)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>cv_pct     <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">exp</span>(omega_diag) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(cv_pct) <span class="ot">&lt;-</span> <span class="fu">names</span>(omega_diag)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(cv_pct, <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>ETA_CL  ETA_V ETA_KA 
+  17.0    9.9   65.1 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  ETA_CL  ETA_V ETA_KA</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    20.6   12.7   57.2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 
 
