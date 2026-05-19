@@ -83,6 +83,28 @@ For a full worked example, see [Example: IOV](https://ferx-nlme.github.io/ferx-s
 
 Verify that linked pages exist in `../ferx-site/examples/` before merging.
 
+## R output in documentation — no fabricated output
+
+**Never hand-write or invent R output in `.qmd` chapter files.** All comment blocks showing function output (lines starting with `#>` inside ` ```{r} ` chunks, or bare `#` lines in fenced ` ``` ` blocks) must exactly match what the current ferx-r code produces.
+
+### Why this matters
+Past incidents introduced a fabricated theta/omega table under `summary(fit)` when `print.ferx_summary()` produces only run metadata; wrong IOV section headers (`--- KAPPA (IOV) Estimates ---` vs the real `--- OMEGA_IOV Estimates (Inter-Occasion Variability) ---`); wrong CV% values (RSE % shown instead of log-normal CV%); and spurious column-header rows that don't exist in the actual print format. Users copy these snippets and are confused when they differ from real output.
+
+### Rules
+
+1. **Derive output from source, not memory.** Before writing any output snippet, read the relevant print/format function in `../ferx-r/R/` (primarily `fit.R` and `diagnostics.R`). Key facts:
+   - `summary(fit)` calls `print.ferx_summary()` — shows run metadata (convergence, OFV/AIC/BIC, method, shrinkage, wall time). **It does not print a theta/omega table.**
+   - `print(fit)` calls `print.ferx_fit()` — sections: `--- Objective Function ---`, `--- THETA Estimates ---`, `--- OMEGA Estimates ---`, `--- SIGMA Estimates ---`, `--- OMEGA_IOV Estimates (Inter-Occasion Variability) ---`
+   - `ferx_estimates()` in `diagnostics.R` — omega rows use `fit$eta_names[i]` directly (e.g. `ETA_CL`), not wrapped in `OMEGA(...)`
+   - SIGMA rows: value is on the **SD scale**; format is `  %-16s %-14s = %.6f  (var = %.6f, CV% = %.1f)  SE = %s`
+   - IOV rows: format is `  %s = %.6f  (CV%% = %s)  SE = %s  Shrinkage = %s` — no column header row
+
+2. **Preferred: run the actual code.** Render the chapter (`quarto render chapters/<chapter>.qmd`) and copy the console output verbatim. See "Example execution" above.
+
+3. **If output must be approximate** (e.g. numbers vary by platform), add a comment: `# (values are illustrative; run the model to get exact numbers)` — never silently invent values.
+
+4. **Audit before every PR.** For any PR touching `.qmd` files with output snippets, verify each snippet against the current `../ferx-r/R/` source or a live render.
+
 ## Pull Requests
 
 When creating a PR in this repo, always read `.github/PULL_REQUEST_TEMPLATE.md` and fill every section before calling `gh pr create`.

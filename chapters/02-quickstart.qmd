@@ -103,25 +103,51 @@ Fitting prints progress to the console and terminates when the gradient norm dro
 ```{r}
 #| label: summary
 summary(fit)
+#> --------------------------------------------------
+#> ferx NLME Fit Summary
+#> --------------------------------------------------
+#> Model:     warfarin
+#> Dataset:   warfarin.csv
+#> Converged: YES
+#> Method:    FOCE
+#> Gradient:  auto (requested)
+#> ferx vX.X.X
 #>
-#> ferx fit — warfarin (one_cpt_oral, FOCE)
+#> OFV: 344.2000  AIC: 358.2000  BIC: 378.1000
+#> Subjects: 32  Obs: 251  Params: 7  Iter: XX
+#> Shrinkage: ETA_CL=XX.X%  ETA_V=XX.X%  ETA_KA=XX.X%
+#> EPS shrinkage: XX.X%
+#> Covariance: computed  Cond: XX.X  |  Wall time: X.Xs
+#> --------------------------------------------------
+```
+
+To see the parameter estimates with standard errors, use `print(fit)` or `ferx_estimates(fit)`:
+
+```{r}
+#| label: estimates
+print(fit)
 #>
-#> THETA (fixed effects):
-#>   Parameter   Estimate   SE      CV%    95% CI
-#>   TVCL         0.133    0.006   4.8    [0.121, 0.145]
-#>   TVV          7.89     0.31    3.9    [7.28, 8.50]
-#>   TVKA         1.49     0.16   10.6    [1.17, 1.81]
+#> --- Objective Function ---
+#> OFV:  344.2000
+#> AIC:  358.2000
+#> BIC:  378.1000
 #>
-#> OMEGA (between-subject variance):
-#>   ETA_CL       0.0425   0.0109  CV~21%
-#>   ETA_V        0.0162   0.0068  CV~13%
-#>   ETA_KA       0.328    0.090   CV~63%
+#> Subjects: 32  Observations: 251  Parameters: 7
 #>
-#> SIGMA (residual variance):
-#>   PROP_ERR     0.0162   0.0021  CV~13%
+#> --- THETA Estimates ---
+#> Parameter           Estimate           SE       %RSE
+#> ----------------------------------------------------
+#> TVCL              0.133000     0.006000      4.5
+#> TVV               7.890000     0.310000      3.9
+#> TVKA              1.490000     0.160000     10.7
 #>
-#> OFV: 344.2   AIC: 358.2   BIC: 378.1
-#> Subjects: 32   Observations: 251
+#> --- OMEGA Estimates ---
+#>   ETA_CL                   [log-normal]  = 0.042500  CV% = 21.0  SE = 0.010900
+#>   ETA_V                    [log-normal]  = 0.016200  CV% = 12.8  SE = 0.006800
+#>   ETA_KA                   [log-normal]  = 0.328000  CV% = 60.1  SE = 0.090000
+#>
+#> --- SIGMA Estimates ---
+#>   PROP_ERR         [proportional]  = 0.127300  (var = 0.016205, CV% = 12.7)  SE = 0.002100
 ```
 
 Individual estimates and diagnostics are in `fit$sdtab`:
