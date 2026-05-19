@@ -25,39 +25,30 @@ The individual clearance `CL_i = TVCL × exp(η_i)` where `η_i ~ N(0, ω²)`.
 This parameterisation:
 
 - Keeps `CL_i > 0` by construction
-- `ω² ≈ (CV%)²` for small-to-moderate variability (the log-normal approximation)
 - The geometric mean of CL across subjects equals `TVCL`
-- The arithmetic CV% is approximately `√ω × 100`
+- CV% grows with ω²; ferx reports `√(exp(ω²) − 1) × 100`
 
 **When to use**: clearance, volume, rate constants — parameters that are always positive and whose variability is naturally multiplicative.
 
 ### CV% formula
 
-For a log-normal ETA with omega variance $\omega^2$:
-
-$$\text{CV\%} \approx \sqrt{\omega^2} \times 100$$
-
-This is the _approximate_ formula.
-The exact formula is:
+For a log-normal ETA with omega variance $\omega^2$, ferx reports:
 
 $$\text{CV\%} = \sqrt{e^{\omega^2} - 1} \times 100$$
-
-For $\omega^2 < 0.25$ the two agree to within 1–2 percentage points.
 
 ```{r}
 #| label: cv-formula
 omega_sq <- c(0.04, 0.09, 0.16, 0.25, 0.50)
 data.frame(
   omega_sq = omega_sq,
-  cv_approx = sqrt(omega_sq) * 100,
-  cv_exact  = sqrt(exp(omega_sq) - 1) * 100
+  cv_pct   = sqrt(exp(omega_sq) - 1) * 100
 )
-#>   omega_sq cv_approx cv_exact
-#>       0.04      20.0     20.2
-#>       0.09      30.0     30.5
-#>       0.16      40.0     41.5
-#>       0.25      50.0     52.8
-#>       0.50      70.7     79.7
+#>   omega_sq cv_pct
+#>       0.04   20.2
+#>       0.09   30.5
+#>       0.16   41.5
+#>       0.25   52.8
+#>       0.50   79.7
 ```
 
 ## Additive ETA
@@ -162,9 +153,9 @@ To convert manually:
 fit <- ferx_fit(ferx_example("warfarin")$model,
                 ferx_example("warfarin")$data)
 omega_diag <- diag(fit$omega)
-cv_approx  <- sqrt(omega_diag) * 100
-names(cv_approx) <- names(omega_diag)
-round(cv_approx, 1)
+cv_pct     <- sqrt(exp(omega_diag) - 1) * 100
+names(cv_pct) <- names(omega_diag)
+round(cv_pct, 1)
 #>  ETA_CL  ETA_V ETA_KA
 #>    20.6   12.7   57.2
 ```
