@@ -450,17 +450,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#sec-installation" id="toc-sec-installation" class="nav-link active" data-scroll-target="#sec-installation"><span class="header-section-number">2.1</span> Prerequisites</a>
+  <li><a href="#sec-installation" id="toc-sec-installation" class="nav-link active" data-scroll-target="#sec-installation"><span class="header-section-number">2.1</span> Prerequisites</a></li>
+  <li><a href="#quick-install-by-platform" id="toc-quick-install-by-platform" class="nav-link" data-scroll-target="#quick-install-by-platform"><span class="header-section-number">2.2</span> Quick install by platform</a>
   <ul class="collapse">
-  <li><a href="#installing-rust" id="toc-installing-rust" class="nav-link" data-scroll-target="#installing-rust"><span class="header-section-number">2.1.1</span> Installing Rust</a></li>
+  <li><a href="#sec-macos" id="toc-sec-macos" class="nav-link" data-scroll-target="#sec-macos"><span class="header-section-number">2.2.1</span> macOS</a></li>
+  <li><a href="#windows" id="toc-windows" class="nav-link" data-scroll-target="#windows"><span class="header-section-number">2.2.2</span> Windows</a></li>
+  <li><a href="#linux" id="toc-linux" class="nav-link" data-scroll-target="#linux"><span class="header-section-number">2.2.3</span> Linux</a></li>
   </ul></li>
-  <li><a href="#installing-ferx-r" id="toc-installing-ferx-r" class="nav-link" data-scroll-target="#installing-ferx-r"><span class="header-section-number">2.2</span> Installing ferx-r</a>
-  <ul class="collapse">
-  <li><a href="#verify-the-installation" id="toc-verify-the-installation" class="nav-link" data-scroll-target="#verify-the-installation"><span class="header-section-number">2.2.1</span> Verify the installation</a></li>
-  </ul></li>
-  <li><a href="#sec-no-autodiff" id="toc-sec-no-autodiff" class="nav-link" data-scroll-target="#sec-no-autodiff"><span class="header-section-number">2.3</span> The FERX_NO_AUTODIFF flag</a></li>
-  <li><a href="#setting-up-enzyme-optional" id="toc-setting-up-enzyme-optional" class="nav-link" data-scroll-target="#setting-up-enzyme-optional"><span class="header-section-number">2.4</span> Setting up Enzyme (optional)</a></li>
-  <li><a href="#docker-reproducible-environments" id="toc-docker-reproducible-environments" class="nav-link" data-scroll-target="#docker-reproducible-environments"><span class="header-section-number">2.5</span> Docker / reproducible environments</a></li>
+  <li><a href="#verify-the-installation" id="toc-verify-the-installation" class="nav-link" data-scroll-target="#verify-the-installation"><span class="header-section-number">2.3</span> Verify the installation</a></li>
+  <li><a href="#sec-no-autodiff" id="toc-sec-no-autodiff" class="nav-link" data-scroll-target="#sec-no-autodiff"><span class="header-section-number">2.4</span> The FERX_NO_AUTODIFF flag</a></li>
+  <li><a href="#sec-enzyme" id="toc-sec-enzyme" class="nav-link" data-scroll-target="#sec-enzyme"><span class="header-section-number">2.5</span> Advanced: Enzyme build</a></li>
+  <li><a href="#docker-reproducible-environments" id="toc-docker-reproducible-environments" class="nav-link" data-scroll-target="#docker-reproducible-environments"><span class="header-section-number">2.6</span> Docker / reproducible environments</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -489,7 +489,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="sec-installation" class="level2" data-number="2.1">
 <h2 data-number="2.1" class="anchored" data-anchor-id="sec-installation"><span class="header-section-number">2.1</span> Prerequisites</h2>
-<p>ferx has two layers of dependencies:</p>
+<p>ferx requires R ≥ 4.2, Rust (stable toolchain), and cmake. Enzyme (LLVM) is optional — it enables exact automatic differentiation for faster gradients, but is not needed to get started.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -498,9 +498,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </colgroup>
 <thead>
 <tr class="header">
-<th>Layer</th>
+<th>Dependency</th>
 <th>Required</th>
-<th>Purpose</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
@@ -512,75 +512,96 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td>Rust / Cargo</td>
 <td>Yes</td>
-<td>Compile the ferx-core backend</td>
+<td>Compile the ferx-core backend; stable toolchain is sufficient</td>
 </tr>
 <tr class="odd">
+<td>cmake</td>
+<td>Yes</td>
+<td>Used by the Rust build</td>
+</tr>
+<tr class="even">
 <td>Enzyme (LLVM)</td>
 <td>No</td>
-<td>Exact automatic differentiation for faster gradients</td>
+<td>Faster gradients via autodiff; documented in <a href="#sec-enzyme" class="quarto-xref"><span>Section 2.5</span></a></td>
 </tr>
 </tbody>
 </table>
-<section id="installing-rust" class="level3" data-number="2.1.1">
-<h3 data-number="2.1.1" class="anchored" data-anchor-id="installing-rust"><span class="header-section-number">2.1.1</span> Installing Rust</h3>
-<p>If you do not have Rust, install it via <a href="https://rustup.rs">rustup</a>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Verify:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">rustc</span> <span class="at">--version</span>   <span class="co">#&gt; rustc 1.78.0 (9b00956e5 2024-04-29) or newer</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> <span class="at">--version</span>   <span class="co">#&gt; cargo 1.78.0 ...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>ferx requires the <strong>nightly</strong> toolchain for Enzyme builds, but a stable toolchain is sufficient when autodiff is disabled (see <a href="#sec-no-autodiff" class="quarto-xref"><span>Section 2.3</span></a>).</p>
+</section>
+<section id="quick-install-by-platform" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="quick-install-by-platform"><span class="header-section-number">2.2</span> Quick install by platform</h2>
+<section id="sec-macos" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="sec-macos"><span class="header-section-number">2.2.1</span> macOS</h3>
+<p>cmake is the only non-standard system dependency. A stable Rust toolchain is sufficient.</p>
+<p><strong>Step 1 — Install Homebrew</strong> (skip if already installed)</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-fsSL</span> https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Step 2 — Install cmake</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install cmake</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Step 3 — Install Rust</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Follow the on-screen instructions to add Rust to your PATH (usually <code>source "$HOME/.cargo/env"</code>, or restart the terminal).</p>
+<p><strong>Step 4 — Install ferx from R</strong></p>
+<p>RStudio on macOS launches with a restricted PATH that does not include the Homebrew cmake bin directory, even when the shell profile is configured correctly. Add it explicitly before installing:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Apple Silicon (M1/M2/M3):</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">PATH =</span> <span class="fu">paste</span>(<span class="st">"/opt/homebrew/opt/cmake/bin"</span>, <span class="fu">Sys.getenv</span>(<span class="st">"PATH"</span>), <span class="at">sep =</span> <span class="st">":"</span>))</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Intel Mac — use this line instead:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Sys.setenv(PATH = paste("/usr/local/opt/cmake/bin", Sys.getenv("PATH"), sep = ":"))</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">FERX_NO_AUTODIFF =</span> <span class="st">"1"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Without the <code>Sys.setenv(PATH = ...)</code> line, the Rust build fails with a <code>cmake not found</code> error when launched from RStudio.</p>
+</section>
+<section id="windows" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="windows"><span class="header-section-number">2.2.2</span> Windows</h3>
+<p>Install <a href="https://cran.r-project.org/bin/windows/Rtools/rtools44/rtools.html">Rtools44</a> and <a href="https://rustup.rs">Rust via rustup</a>. cmake ships with Rtools44, so no separate cmake install is needed, and the PATH workaround is not required.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">FERX_NO_AUTODIFF =</span> <span class="st">"1"</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="linux" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="linux"><span class="header-section-number">2.2.3</span> Linux</h3>
+<p>Install cmake and Rust via your system package manager plus rustup. RStudio on Linux inherits the system PATH, so no PATH workaround is needed.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Debian / Ubuntu</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install cmake</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">FERX_NO_AUTODIFF =</span> <span class="st">"1"</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
-<section id="installing-ferx-r" class="level2" data-number="2.2">
-<h2 data-number="2.2" class="anchored" data-anchor-id="installing-ferx-r"><span class="header-section-number">2.2</span> Installing ferx-r</h2>
-<p>With Rust in your <code>PATH</code>, install from GitHub:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("pak")</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pkg_install</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Or with <code>remotes</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="verify-the-installation" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="verify-the-installation"><span class="header-section-number">2.3</span> Verify the installation</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ferx)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ferx_example</span>()          <span class="co"># lists all bundled examples</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>ex <span class="ot">&lt;-</span> <span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(ex<span class="sc">$</span>model, ex<span class="sc">$</span>data)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The install compiles the Rust backend, which takes 1–3 minutes on a modern machine. Subsequent installs reuse Cargo’s artifact cache and are faster.</p>
-<section id="verify-the-installation" class="level3" data-number="2.2.1">
-<h3 data-number="2.2.1" class="anchored" data-anchor-id="verify-the-installation"><span class="header-section-number">2.2.1</span> Verify the installation</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ferx)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ferx_check_init</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>A successful output looks like:</p>
-<pre><code>✓ ferx backend loaded
-✓ Rust backend version: 0.x.y</code></pre>
 </section>
+<section id="sec-no-autodiff" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="sec-no-autodiff"><span class="header-section-number">2.4</span> The FERX_NO_AUTODIFF flag</h2>
+<p>Setting <code>FERX_NO_AUTODIFF = "1"</code> skips the Enzyme autodiff toolchain. ferx falls back to <strong>finite-difference gradients</strong>, which are slightly slower but produce identical estimates. LLVM is not needed. All examples in this book run with <code>FERX_NO_AUTODIFF=1</code> on CI.</p>
 </section>
-<section id="sec-no-autodiff" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="sec-no-autodiff"><span class="header-section-number">2.3</span> The FERX_NO_AUTODIFF flag</h2>
-<p>By default, ferx uses <a href="https://enzyme.mit.edu">Enzyme</a> to compute exact gradients via automatic differentiation of the Rust source. This requires a nightly Rust toolchain and LLVM support.</p>
-<p>If you just want to evaluate ferx without the full Enzyme setup, set:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="va">FERX_NO_AUTODIFF</span><span class="op">=</span>1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>before installation:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">FERX_NO_AUTODIFF =</span> <span class="st">"1"</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>In this mode ferx falls back to <strong>finite-difference gradients</strong>, which are slightly slower but otherwise produce identical estimates. All examples in this book run with <code>FERX_NO_AUTODIFF=1</code> on CI.</p>
-</section>
-<section id="setting-up-enzyme-optional" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="setting-up-enzyme-optional"><span class="header-section-number">2.4</span> Setting up Enzyme (optional)</h2>
-<p>Enzyme unlocks exact gradients. It requires:</p>
+<section id="sec-enzyme" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="sec-enzyme"><span class="header-section-number">2.5</span> Advanced: Enzyme build</h2>
+<p>Enzyme unlocks exact gradients via automatic differentiation of the Rust source. It requires a nightly Rust toolchain and LLVM ≥ 17.</p>
 <ol type="1">
-<li>A nightly Rust toolchain:</li>
+<li>Install the nightly toolchain:</li>
 </ol>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">rustup</span> toolchain install nightly</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">rustup</span> override set nightly</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ol start="2" type="1">
-<li><p>LLVM ≥ 17 on your system PATH.</p></li>
-<li><p>Unset <code>FERX_NO_AUTODIFF</code> (or remove it from your environment), then reinstall:</p></li>
+<li><p>Ensure LLVM ≥ 17 is on your system PATH.</p></li>
+<li><p>Reinstall without the <code>FERX_NO_AUTODIFF</code> flag:</p></li>
 </ol>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.unsetenv</span>(<span class="st">"FERX_NO_AUTODIFF"</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>If Enzyme is available the install log will contain:</p>
 <pre><code>[build] autodiff: Enzyme backend enabled</code></pre>
 </section>
-<section id="docker-reproducible-environments" class="level2" data-number="2.5">
-<h2 data-number="2.5" class="anchored" data-anchor-id="docker-reproducible-environments"><span class="header-section-number">2.5</span> Docker / reproducible environments</h2>
+<section id="docker-reproducible-environments" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="docker-reproducible-environments"><span class="header-section-number">2.6</span> Docker / reproducible environments</h2>
 <p>A minimal <code>Dockerfile</code> is included in the ferx-r repository. It installs Rust + the package in a stable, reproducible layer suitable for CI:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode dockerfile code-with-copy"><code class="sourceCode dockerfile"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> rocker/r-ver:4.4.0</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> FERX_NO_AUTODIFF=1</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"remotes::install_github('FeRx-NLME/ferx-r')"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"devtools::install_github('FeRx-NLME/ferx-r')"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For production workflows where runtime matters, use the Enzyme-enabled image documented in the repo README.</p>
 
 

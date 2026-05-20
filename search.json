@@ -34,7 +34,7 @@
     "href": "chapters/01-installation.html",
     "title": "2  Installation",
     "section": "",
-    "text": "2.1 Prerequisites\nferx has two layers of dependencies:",
+    "text": "2.1 Prerequisites\nferx requires R ≥ 4.2, Rust (stable toolchain), and cmake. Enzyme (LLVM) is optional — it enables exact automatic differentiation for faster gradients, but is not needed to get started.",
     "crumbs": [
       "Getting started",
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Installation</span>"
@@ -45,18 +45,29 @@
     "href": "chapters/01-installation.html#sec-installation",
     "title": "2  Installation",
     "section": "",
-    "text": "Layer\nRequired\nPurpose\n\n\n\n\nR ≥ 4.2\nYes\nPackage interface\n\n\nRust / Cargo\nYes\nCompile the ferx-core backend\n\n\nEnzyme (LLVM)\nNo\nExact automatic differentiation for faster gradients\n\n\n\n\n2.1.1 Installing Rust\nIf you do not have Rust, install it via rustup:\ncurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\nVerify:\nrustc --version   #&gt; rustc 1.78.0 (9b00956e5 2024-04-29) or newer\ncargo --version   #&gt; cargo 1.78.0 ...\nferx requires the nightly toolchain for Enzyme builds, but a stable toolchain is sufficient when autodiff is disabled (see Section 2.3).",
+    "text": "Dependency\nRequired\nNotes\n\n\n\n\nR ≥ 4.2\nYes\nPackage interface\n\n\nRust / Cargo\nYes\nCompile the ferx-core backend; stable toolchain is sufficient\n\n\ncmake\nYes\nUsed by the Rust build\n\n\nEnzyme (LLVM)\nNo\nFaster gradients via autodiff; documented in Section 2.5",
     "crumbs": [
       "Getting started",
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Installation</span>"
     ]
   },
   {
-    "objectID": "chapters/01-installation.html#installing-ferx-r",
-    "href": "chapters/01-installation.html#installing-ferx-r",
+    "objectID": "chapters/01-installation.html#quick-install-by-platform",
+    "href": "chapters/01-installation.html#quick-install-by-platform",
     "title": "2  Installation",
-    "section": "2.2 Installing ferx-r",
-    "text": "2.2 Installing ferx-r\nWith Rust in your PATH, install from GitHub:\n# install.packages(\"pak\")\npak::pkg_install(\"FeRx-NLME/ferx-r\")\nOr with remotes:\nremotes::install_github(\"FeRx-NLME/ferx-r\")\nThe install compiles the Rust backend, which takes 1–3 minutes on a modern machine. Subsequent installs reuse Cargo’s artifact cache and are faster.\n\n2.2.1 Verify the installation\nlibrary(ferx)\nferx_check_init()\nA successful output looks like:\n✓ ferx backend loaded\n✓ Rust backend version: 0.x.y",
+    "section": "2.2 Quick install by platform",
+    "text": "2.2 Quick install by platform\n\n2.2.1 macOS\ncmake is the only non-standard system dependency. A stable Rust toolchain is sufficient.\nStep 1 — Install Homebrew (skip if already installed)\n/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"\nStep 2 — Install cmake\nbrew install cmake\nStep 3 — Install Rust\ncurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\nFollow the on-screen instructions to add Rust to your PATH (usually source \"$HOME/.cargo/env\", or restart the terminal).\nStep 4 — Install ferx from R\nRStudio on macOS launches with a restricted PATH that does not include the Homebrew cmake bin directory, even when the shell profile is configured correctly. Add it explicitly before installing:\n# Apple Silicon (M1/M2/M3):\nSys.setenv(PATH = paste(\"/opt/homebrew/opt/cmake/bin\", Sys.getenv(\"PATH\"), sep = \":\"))\n# Intel Mac — use this line instead:\n# Sys.setenv(PATH = paste(\"/usr/local/opt/cmake/bin\", Sys.getenv(\"PATH\"), sep = \":\"))\n\nSys.setenv(FERX_NO_AUTODIFF = \"1\")\ndevtools::install_github(\"FeRx-NLME/ferx-r\")\nWithout the Sys.setenv(PATH = ...) line, the Rust build fails with a cmake not found error when launched from RStudio.\n\n\n2.2.2 Windows\nInstall Rtools44 and Rust via rustup. cmake ships with Rtools44, so no separate cmake install is needed, and the PATH workaround is not required.\nSys.setenv(FERX_NO_AUTODIFF = \"1\")\ndevtools::install_github(\"FeRx-NLME/ferx-r\")\n\n\n2.2.3 Linux\nInstall cmake and Rust via your system package manager plus rustup. RStudio on Linux inherits the system PATH, so no PATH workaround is needed.\n# Debian / Ubuntu\nsudo apt-get install cmake\ncurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\nSys.setenv(FERX_NO_AUTODIFF = \"1\")\ndevtools::install_github(\"FeRx-NLME/ferx-r\")",
+    "crumbs": [
+      "Getting started",
+      "<span class='chapter-number'>2</span>  <span class='chapter-title'>Installation</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/01-installation.html#verify-the-installation",
+    "href": "chapters/01-installation.html#verify-the-installation",
+    "title": "2  Installation",
+    "section": "2.3 Verify the installation",
+    "text": "2.3 Verify the installation\nlibrary(ferx)\nferx_example()          # lists all bundled examples\nex &lt;- ferx_example(\"warfarin\")\nfit &lt;- ferx_fit(ex$model, ex$data)\nprint(fit)\nThe install compiles the Rust backend, which takes 1–3 minutes on a modern machine. Subsequent installs reuse Cargo’s artifact cache and are faster.",
     "crumbs": [
       "Getting started",
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Installation</span>"
@@ -66,19 +77,19 @@
     "objectID": "chapters/01-installation.html#sec-no-autodiff",
     "href": "chapters/01-installation.html#sec-no-autodiff",
     "title": "2  Installation",
-    "section": "2.3 The FERX_NO_AUTODIFF flag",
-    "text": "2.3 The FERX_NO_AUTODIFF flag\nBy default, ferx uses Enzyme to compute exact gradients via automatic differentiation of the Rust source. This requires a nightly Rust toolchain and LLVM support.\nIf you just want to evaluate ferx without the full Enzyme setup, set:\nFERX_NO_AUTODIFF=1\nbefore installation:\nSys.setenv(FERX_NO_AUTODIFF = \"1\")\nremotes::install_github(\"FeRx-NLME/ferx-r\")\nIn this mode ferx falls back to finite-difference gradients, which are slightly slower but otherwise produce identical estimates. All examples in this book run with FERX_NO_AUTODIFF=1 on CI.",
+    "section": "2.4 The FERX_NO_AUTODIFF flag",
+    "text": "2.4 The FERX_NO_AUTODIFF flag\nSetting FERX_NO_AUTODIFF = \"1\" skips the Enzyme autodiff toolchain. ferx falls back to finite-difference gradients, which are slightly slower but produce identical estimates. LLVM is not needed. All examples in this book run with FERX_NO_AUTODIFF=1 on CI.",
     "crumbs": [
       "Getting started",
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Installation</span>"
     ]
   },
   {
-    "objectID": "chapters/01-installation.html#setting-up-enzyme-optional",
-    "href": "chapters/01-installation.html#setting-up-enzyme-optional",
+    "objectID": "chapters/01-installation.html#sec-enzyme",
+    "href": "chapters/01-installation.html#sec-enzyme",
     "title": "2  Installation",
-    "section": "2.4 Setting up Enzyme (optional)",
-    "text": "2.4 Setting up Enzyme (optional)\nEnzyme unlocks exact gradients. It requires:\n\nA nightly Rust toolchain:\n\nrustup toolchain install nightly\nrustup override set nightly\n\nLLVM ≥ 17 on your system PATH.\nUnset FERX_NO_AUTODIFF (or remove it from your environment), then reinstall:\n\nSys.unsetenv(\"FERX_NO_AUTODIFF\")\nremotes::install_github(\"FeRx-NLME/ferx-r\")\nIf Enzyme is available the install log will contain:\n[build] autodiff: Enzyme backend enabled",
+    "section": "2.5 Advanced: Enzyme build",
+    "text": "2.5 Advanced: Enzyme build\nEnzyme unlocks exact gradients via automatic differentiation of the Rust source. It requires a nightly Rust toolchain and LLVM ≥ 17.\n\nInstall the nightly toolchain:\n\nrustup toolchain install nightly\nrustup override set nightly\n\nEnsure LLVM ≥ 17 is on your system PATH.\nReinstall without the FERX_NO_AUTODIFF flag:\n\nSys.unsetenv(\"FERX_NO_AUTODIFF\")\ndevtools::install_github(\"FeRx-NLME/ferx-r\")\nIf Enzyme is available the install log will contain:\n[build] autodiff: Enzyme backend enabled",
     "crumbs": [
       "Getting started",
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Installation</span>"
@@ -88,8 +99,8 @@
     "objectID": "chapters/01-installation.html#docker-reproducible-environments",
     "href": "chapters/01-installation.html#docker-reproducible-environments",
     "title": "2  Installation",
-    "section": "2.5 Docker / reproducible environments",
-    "text": "2.5 Docker / reproducible environments\nA minimal Dockerfile is included in the ferx-r repository. It installs Rust + the package in a stable, reproducible layer suitable for CI:\nFROM rocker/r-ver:4.4.0\nENV FERX_NO_AUTODIFF=1\nRUN Rscript -e \"remotes::install_github('FeRx-NLME/ferx-r')\"\nFor production workflows where runtime matters, use the Enzyme-enabled image documented in the repo README.",
+    "section": "2.6 Docker / reproducible environments",
+    "text": "2.6 Docker / reproducible environments\nA minimal Dockerfile is included in the ferx-r repository. It installs Rust + the package in a stable, reproducible layer suitable for CI:\nFROM rocker/r-ver:4.4.0\nENV FERX_NO_AUTODIFF=1\nRUN Rscript -e \"devtools::install_github('FeRx-NLME/ferx-r')\"\nFor production workflows where runtime matters, use the Enzyme-enabled image documented in the repo README.",
     "crumbs": [
       "Getting started",
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Installation</span>"
