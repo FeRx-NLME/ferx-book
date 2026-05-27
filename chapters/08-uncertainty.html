@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>2&nbsp; Installation – ferx: Nonlinear Mixed Effects Modeling in R</title>
+<title>9&nbsp; Uncertainty &amp; SIR – ferx: Nonlinear Mixed Effects Modeling in R</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -68,8 +68,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../chapters/02-quickstart.html" rel="next">
-<link href="../index.html" rel="prev">
+<link href="../chapters/07-parameter-transforms.html" rel="next">
+<link href="../chapters/06-simulation-vpc.html" rel="prev">
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -113,6 +113,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -323,7 +352,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/01-installation.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Installation</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-model-dsl.html">Core workflow</a></li><li class="breadcrumb-item"><a href="../chapters/08-uncertainty.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Uncertainty &amp; SIR</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -358,7 +387,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link active">
+  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Installation</span></span></a>
   </div>
 </li>
@@ -411,7 +440,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../chapters/08-uncertainty.html" class="sidebar-item-text sidebar-link">
+  <a href="../chapters/08-uncertainty.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Uncertainty &amp; SIR</span></span></a>
   </div>
 </li>
@@ -474,27 +503,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#sec-installation" id="toc-sec-installation" class="nav-link active" data-scroll-target="#sec-installation"><span class="header-section-number">2.1</span> Prerequisites</a></li>
-  <li><a href="#quick-install-by-platform" id="toc-quick-install-by-platform" class="nav-link" data-scroll-target="#quick-install-by-platform"><span class="header-section-number">2.2</span> Quick install by platform</a>
+  <li><a href="#sec-uncertainty" id="toc-sec-uncertainty" class="nav-link active" data-scroll-target="#sec-uncertainty"><span class="header-section-number">9.1</span> Overview</a></li>
+  <li><a href="#sampling-importance-resampling" id="toc-sampling-importance-resampling" class="nav-link" data-scroll-target="#sampling-importance-resampling"><span class="header-section-number">9.2</span> Sampling Importance Resampling</a>
   <ul class="collapse">
-  <li><a href="#sec-macos" id="toc-sec-macos" class="nav-link" data-scroll-target="#sec-macos"><span class="header-section-number">2.2.1</span> macOS</a></li>
-  <li><a href="#windows" id="toc-windows" class="nav-link" data-scroll-target="#windows"><span class="header-section-number">2.2.2</span> Windows</a></li>
-  <li><a href="#linux" id="toc-linux" class="nav-link" data-scroll-target="#linux"><span class="header-section-number">2.2.3</span> Linux</a></li>
+  <li><a href="#sir-diagnostics" id="toc-sir-diagnostics" class="nav-link" data-scroll-target="#sir-diagnostics"><span class="header-section-number">9.2.1</span> SIR diagnostics</a></li>
   </ul></li>
-  <li><a href="#verify-the-installation" id="toc-verify-the-installation" class="nav-link" data-scroll-target="#verify-the-installation"><span class="header-section-number">2.3</span> Verify the installation</a></li>
-  <li><a href="#sec-no-autodiff" id="toc-sec-no-autodiff" class="nav-link" data-scroll-target="#sec-no-autodiff"><span class="header-section-number">2.4</span> The FERX_NO_AUTODIFF flag</a></li>
-  <li><a href="#sec-enzyme" id="toc-sec-enzyme" class="nav-link" data-scroll-target="#sec-enzyme"><span class="header-section-number">2.5</span> Advanced: Enzyme build</a></li>
-  <li><a href="#docker-reproducible-environments" id="toc-docker-reproducible-environments" class="nav-link" data-scroll-target="#docker-reproducible-environments"><span class="header-section-number">2.6</span> Docker / reproducible environments</a></li>
+  <li><a href="#propagating-uncertainty-into-simulations" id="toc-propagating-uncertainty-into-simulations" class="nav-link" data-scroll-target="#propagating-uncertainty-into-simulations"><span class="header-section-number">9.3</span> Propagating uncertainty into simulations</a>
+  <ul class="collapse">
+  <li><a href="#choosing-method" id="toc-choosing-method" class="nav-link" data-scroll-target="#choosing-method"><span class="header-section-number">9.3.1</span> Choosing <code>method</code></a></li>
+  </ul></li>
+  <li><a href="#the-imp-final-stage" id="toc-the-imp-final-stage" class="nav-link" data-scroll-target="#the-imp-final-stage"><span class="header-section-number">9.4</span> The <code>imp</code> final stage</a></li>
+  <li><a href="#when-to-reach-for-which-tool" id="toc-when-to-reach-for-which-tool" class="nav-link" data-scroll-target="#when-to-reach-for-which-tool"><span class="header-section-number">9.5</span> When to reach for which tool</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/08-uncertainty.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/01-installation.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Installation</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-model-dsl.html">Core workflow</a></li><li class="breadcrumb-item"><a href="../chapters/08-uncertainty.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Uncertainty &amp; SIR</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Installation</span></h1>
+<h1 class="title"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Uncertainty &amp; SIR</span></h1>
 </div>
 
 
@@ -511,122 +540,170 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="sec-installation" class="level2" data-number="2.1">
-<h2 data-number="2.1" class="anchored" data-anchor-id="sec-installation"><span class="header-section-number">2.1</span> Prerequisites</h2>
-<p>ferx requires R ≥ 4.2, Rust (stable toolchain), and cmake. Enzyme (LLVM) is optional — it enables exact automatic differentiation for faster gradients, but is not needed to get started.</p>
+<section id="sec-uncertainty" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="sec-uncertainty"><span class="header-section-number">9.1</span> Overview</h2>
+<p>The covariance step gives <strong>asymptotic</strong> standard errors — exact only for a locally quadratic log-likelihood and infinite data. When that assumption is shaky (small sample, parameters near a bound, highly nonlinear model), ferx offers two non-asymptotic tools:</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
+<col style="width: 50%">
+<col style="width: 50%">
 </colgroup>
 <thead>
 <tr class="header">
-<th>Dependency</th>
-<th>Required</th>
-<th>Notes</th>
+<th>Tool</th>
+<th>What it gives you</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>R ≥ 4.2</td>
-<td>Yes</td>
-<td>Package interface</td>
+<td><code>ferx_sir()</code></td>
+<td>Sampling-importance-resampling: a non-parametric set of joint parameter draws</td>
 </tr>
 <tr class="even">
-<td>Rust / Cargo</td>
-<td>Yes</td>
-<td>Compile the ferx-core backend; stable toolchain is sufficient</td>
+<td><code>ferx_simulate_with_uncertainty()</code></td>
+<td>Population-parameter uncertainty propagated through <code>ferx_simulate()</code></td>
 </tr>
 <tr class="odd">
-<td>cmake</td>
-<td>Yes</td>
-<td>Used by the Rust build</td>
-</tr>
-<tr class="even">
-<td>Enzyme (LLVM)</td>
-<td>No</td>
-<td>Faster gradients via autodiff; documented in <a href="#sec-enzyme" class="quarto-xref"><span>Section 2.5</span></a></td>
+<td><code>method = c("...", "imp")</code></td>
+<td>A final importance-sampling stage that yields a marginal log-likelihood and effective sample size</td>
 </tr>
 </tbody>
 </table>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ferx)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>ex  <span class="ot">&lt;-</span> <span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(ex<span class="sc">$</span>model, ex<span class="sc">$</span>data, <span class="at">method =</span> <span class="st">"foce"</span>, <span class="at">covariance =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_V</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Negative IWRES autocorrelation detected (Durbin-Watson = 2.61, lag-1 r = -0.37).
+Possible over-parameterisation or misspecified residual error model.</code></pre>
+</div>
+</div>
 </section>
-<section id="quick-install-by-platform" class="level2" data-number="2.2">
-<h2 data-number="2.2" class="anchored" data-anchor-id="quick-install-by-platform"><span class="header-section-number">2.2</span> Quick install by platform</h2>
-<section id="sec-macos" class="level3" data-number="2.2.1">
-<h3 data-number="2.2.1" class="anchored" data-anchor-id="sec-macos"><span class="header-section-number">2.2.1</span> macOS</h3>
-<p>cmake is the only non-standard system dependency. A stable Rust toolchain is sufficient.</p>
-<p><strong>Step 1 — Install Homebrew</strong> (skip if already installed)</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/bin/bash</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-fsSL</span> https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>Step 2 — Install cmake</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install cmake</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>Step 3 — Install Rust</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Follow the on-screen instructions to add Rust to your PATH (usually <code>source "$HOME/.cargo/env"</code>, or restart the terminal).</p>
-<p><strong>Step 4 — Install ferx from R</strong></p>
-<p>RStudio on macOS launches with a restricted PATH that does not include the Homebrew cmake bin directory, even when the shell profile is configured correctly. Add it explicitly before installing:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Apple Silicon (M1/M2/M3):</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">PATH =</span> <span class="fu">paste</span>(<span class="st">"/opt/homebrew/opt/cmake/bin"</span>, <span class="fu">Sys.getenv</span>(<span class="st">"PATH"</span>), <span class="at">sep =</span> <span class="st">":"</span>))</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Intel Mac — use this line instead:</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Sys.setenv(PATH = paste("/usr/local/opt/cmake/bin", Sys.getenv("PATH"), sep = ":"))</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">FERX_NO_AUTODIFF =</span> <span class="st">"1"</span>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Without the <code>Sys.setenv(PATH = ...)</code> line, the Rust build fails with a <code>cmake not found</code> error when launched from RStudio.</p>
-</section>
-<section id="windows" class="level3" data-number="2.2.2">
-<h3 data-number="2.2.2" class="anchored" data-anchor-id="windows"><span class="header-section-number">2.2.2</span> Windows</h3>
-<p>Install <a href="https://cran.r-project.org/bin/windows/Rtools/rtools44/rtools.html">Rtools44</a> and <a href="https://rustup.rs">Rust via rustup</a>. cmake ships with Rtools44, so no separate cmake install is needed, and the PATH workaround is not required.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">FERX_NO_AUTODIFF =</span> <span class="st">"1"</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="linux" class="level3" data-number="2.2.3">
-<h3 data-number="2.2.3" class="anchored" data-anchor-id="linux"><span class="header-section-number">2.2.3</span> Linux</h3>
-<p>Install cmake and Rust via your system package manager plus rustup. RStudio on Linux inherits the system PATH, so no PATH workaround is needed.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Debian / Ubuntu</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install cmake</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">FERX_NO_AUTODIFF =</span> <span class="st">"1"</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="sampling-importance-resampling" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="sampling-importance-resampling"><span class="header-section-number">9.2</span> Sampling Importance Resampling</h2>
+<p><code>ferx_sir()</code> takes a converged fit and returns an updated <code>ferx_fit</code> object that carries a non-parametric joint sample of the population parameters in <code>$sir_resamples</code>. It draws candidate vectors from a multivariate proposal centred at the point estimate (built from the asymptotic covariance), weights each by the likelihood ratio, and resamples to give a usable empirical distribution.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sir_res <span class="ot">&lt;-</span> <span class="fu">ferx_sir</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  fit,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">sir_samples       =</span> <span class="dv">1000</span>,    <span class="co"># candidate draws</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">sir_resamples     =</span> <span class="dv">250</span>,     <span class="co"># kept after resampling</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">sir_seed          =</span> <span class="dv">1</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">sir_keep_samples  =</span> <span class="cn">TRUE</span>     <span class="co"># keep the raw draws for diagnostics</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>When the asymptotic ellipsoid and the true likelihood diverge, the resampled distribution becomes skewed or has heavier tails than the SE-based 95% CI — that disagreement is the signal SIR is designed to surface.</p>
+<section id="sir-diagnostics" class="level3" data-number="9.2.1">
+<h3 data-number="9.2.1" class="anchored" data-anchor-id="sir-diagnostics"><span class="header-section-number">9.2.1</span> SIR diagnostics</h3>
+<p>The resampling step itself has diagnostics: the effective sample size (ESS) of the importance weights, and how many of the <code>sir_samples</code> were actually kept. A low ESS means the proposal was a poor match for the true likelihood — widen the proposal or run more samples.</p>
+<p>For a deeper treatment of SIR practice, see <a href="https://ferx-nlme.github.io/ferx-site/learn/uncertainty-sir.html">Example: Uncertainty (SIR)</a> on the ferx site.</p>
 </section>
 </section>
-<section id="verify-the-installation" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="verify-the-installation"><span class="header-section-number">2.3</span> Verify the installation</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ferx)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ferx_example</span>()          <span class="co"># lists all bundled examples</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>ex <span class="ot">&lt;-</span> <span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(ex<span class="sc">$</span>model, ex<span class="sc">$</span>data)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The install compiles the Rust backend, which takes 1–3 minutes on a modern machine. Subsequent installs reuse Cargo’s artifact cache and are faster.</p>
+<section id="propagating-uncertainty-into-simulations" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="propagating-uncertainty-into-simulations"><span class="header-section-number">9.3</span> Propagating uncertainty into simulations</h2>
+<p><code>ferx_simulate()</code> simulates with the <strong>point estimate</strong> held fixed. For dose- response predictions, label predictions, or “what does my model say at a new weight band” questions, the right object to propagate is the <em>joint</em> uncertainty of the population parameters — not just the asymptotic SE on each theta one at a time.</p>
+<p><code>ferx_simulate_with_uncertainty()</code> does exactly that:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>sim_u <span class="ot">&lt;-</span> <span class="fu">ferx_simulate_with_uncertainty</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">model               =</span> ex<span class="sc">$</span>model,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data                =</span> ex<span class="sc">$</span>data,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">fit                 =</span> fit,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_uncertainty_draws =</span> <span class="dv">100</span>,         <span class="co"># draws of (theta, omega, sigma)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_sim_per_draw      =</span> <span class="dv">1</span>,           <span class="co"># ETA/EPS replicates per draw</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">method              =</span> <span class="st">"asymptotic"</span>,  <span class="co"># or "sir"</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed                =</span> <span class="dv">1</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The returned data frame carries the same columns as <code>ferx_simulate()</code> plus a <code>DRAW</code> index that identifies which population-parameter draw produced each row. Summarise across <code>DRAW</code> to get prediction intervals that include estimation uncertainty:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>sim_u <span class="sc">|&gt;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(ID, TIME) <span class="sc">|&gt;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">lo  =</span> <span class="fu">quantile</span>(DV_SIM, <span class="fl">0.05</span>),</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">mid =</span> <span class="fu">median</span>(DV_SIM),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">hi  =</span> <span class="fu">quantile</span>(DV_SIM, <span class="fl">0.95</span>),</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">"drop"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="choosing-method" class="level3" data-number="9.3.1">
+<h3 data-number="9.3.1" class="anchored" data-anchor-id="choosing-method"><span class="header-section-number">9.3.1</span> Choosing <code>method</code></h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><code>method</code></th>
+<th>Where the parameter draws come from</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>"asymptotic"</code> (default)</td>
+<td>Multivariate normal centred at the point estimate, covariance from the Hessian. Requires the covariance step to have succeeded.</td>
+</tr>
+<tr class="even">
+<td><code>"sir"</code></td>
+<td>Resamples from a SIR run. Honest about non-Gaussian likelihood shape but requires <code>sir = TRUE</code> (or a separate <code>ferx_sir()</code> call) so the resamples exist.</td>
+</tr>
+</tbody>
+</table>
+<p>Use <code>"asymptotic"</code> for routine reporting once the fit is clearly identified. Use <code>"sir"</code> when SIR has already flagged that the asymptotic covariance is a poor approximation.</p>
 </section>
-<section id="sec-no-autodiff" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="sec-no-autodiff"><span class="header-section-number">2.4</span> The FERX_NO_AUTODIFF flag</h2>
-<p>Setting <code>FERX_NO_AUTODIFF = "1"</code> skips the Enzyme autodiff toolchain. ferx falls back to <strong>finite-difference gradients</strong>, which are slightly slower but produce identical estimates. LLVM is not needed. All examples in this book run with <code>FERX_NO_AUTODIFF=1</code> on CI.</p>
 </section>
-<section id="sec-enzyme" class="level2" data-number="2.5">
-<h2 data-number="2.5" class="anchored" data-anchor-id="sec-enzyme"><span class="header-section-number">2.5</span> Advanced: Enzyme build</h2>
-<p>Enzyme unlocks exact gradients via automatic differentiation of the Rust source. It requires a nightly Rust toolchain and LLVM ≥ 17.</p>
-<ol type="1">
-<li>Install the nightly toolchain:</li>
-</ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">rustup</span> toolchain install nightly</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">rustup</span> override set nightly</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<ol start="2" type="1">
-<li><p>Ensure LLVM ≥ 17 is on your system PATH.</p></li>
-<li><p>Reinstall without the <code>FERX_NO_AUTODIFF</code> flag:</p></li>
-</ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.unsetenv</span>(<span class="st">"FERX_NO_AUTODIFF"</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>If Enzyme is available the install log will contain:</p>
-<pre><code>[build] autodiff: Enzyme backend enabled</code></pre>
+<section id="the-imp-final-stage" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="the-imp-final-stage"><span class="header-section-number">9.4</span> The <code>imp</code> final stage</h2>
+<p>For a converged FOCE/FOCEI fit, the asymptotic OFV is an approximation of <span class="math inline">\(-2\log L\)</span> — adequate for likelihood-ratio tests on nested models, but biased in absolute terms. Appending <code>"imp"</code> to the method chain runs an importance sampling pass at the converged estimate and reports the marginal log-likelihood directly:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fit_imp <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  ex<span class="sc">$</span>model, ex<span class="sc">$</span>data,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="fu">c</span>(<span class="st">"focei"</span>, <span class="st">"imp"</span>),</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">settings =</span> <span class="fu">list</span>(</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_samples     =</span> <span class="dv">1000</span>,    <span class="co"># importance-sampling draws per subject</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_proposal_df =</span> <span class="dv">5</span>        <span class="co"># heavy-tailed proposal (t with df)</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The IMP stage adds the marginal log-likelihood and an effective-sample-size diagnostic to the fit object (<code>fit_imp$importance_sampling</code>). Low ESS means the FOCE-conditional proposal does not cover the integrand well — try more samples, fewer degrees of freedom (heavier tails), or check whether the Laplace approximation is breaking down (highly nonlinear models, sparse data).</p>
 </section>
-<section id="docker-reproducible-environments" class="level2" data-number="2.6">
-<h2 data-number="2.6" class="anchored" data-anchor-id="docker-reproducible-environments"><span class="header-section-number">2.6</span> Docker / reproducible environments</h2>
-<p>A minimal <code>Dockerfile</code> is included in the ferx-r repository. It installs Rust + the package in a stable, reproducible layer suitable for CI:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode dockerfile code-with-copy"><code class="sourceCode dockerfile"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> rocker/r-ver:4.4.0</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> FERX_NO_AUTODIFF=1</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"devtools::install_github('FeRx-NLME/ferx-r')"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>For production workflows where runtime matters, use the Enzyme-enabled image documented in the repo README.</p>
+<section id="when-to-reach-for-which-tool" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="when-to-reach-for-which-tool"><span class="header-section-number">9.5</span> When to reach for which tool</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Situation</th>
+<th>Reach for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Reporting parameter SE/CI on a well-identified model</td>
+<td><code>covariance = TRUE</code> (default)</td>
+</tr>
+<tr class="even">
+<td>Boundary estimates, weak identifiability, small N</td>
+<td><code>ferx_sir()</code></td>
+</tr>
+<tr class="odd">
+<td>Forward predictions with full uncertainty (dosing, exposure-response)</td>
+<td><code>ferx_simulate_with_uncertainty()</code></td>
+</tr>
+<tr class="even">
+<td>Honest marginal log-likelihood for model selection</td>
+<td><code>method = c("focei", "imp")</code></td>
+</tr>
+</tbody>
+</table>
 
 
 </section>
@@ -1047,13 +1124,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../index.html" class="pagination-link" aria-label="Preface">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preface</span></span>
+      <a href="../chapters/06-simulation-vpc.html" class="pagination-link" aria-label="Simulation &amp; VPC">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Simulation &amp; VPC</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../chapters/02-quickstart.html" class="pagination-link" aria-label="Quickstart">
-        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Quickstart</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../chapters/07-parameter-transforms.html" class="pagination-link" aria-label="Parameter Transforms">
+        <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Parameter Transforms</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -1062,4 +1139,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/08-uncertainty.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
