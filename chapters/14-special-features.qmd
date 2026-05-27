@@ -88,9 +88,10 @@ fit_ss <- ferx_fit(ex_ss$model, ex_ss$data, verbose = FALSE)
 ```
 
 The structural model is unchanged from the single-dose case — only the data
-columns and the dose row's `SS`/`II` values differ. ferx handles the
-analytical SS resolution for the supported PK shortcuts; for ODE models, the
-solver pre-runs additional simulated doses to reach SS numerically.
+columns and the dose row's `SS`/`II` values differ. ferx resolves the
+steady-state initial condition from the dose, the interval, and the current
+individual parameters; the supported PK shortcuts use an analytical
+closed-form.
 
 ## Absorption lag time
 
@@ -124,7 +125,9 @@ ex_lag <- ferx_example("transit_2cpt")
 ferx_model_show(ex_lag$model)
 ```
 
-Both forms appear in `fit$individual_estimates` as a per-subject lag value.
+In both forms the individual lag value flows through `[individual_parameters]`
+like any other PK parameter — meaning it can be ETA-driven and recovered
+per subject from `fit$individual_estimates`.
 
 ## Saving and reloading fits
 

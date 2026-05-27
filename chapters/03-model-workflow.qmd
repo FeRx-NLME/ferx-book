@@ -100,18 +100,22 @@ running non-interactively, e.g. in a knitted chapter or a CI pipeline.
 
 Before kicking off a 30-minute SAEM fit, verify that the model and the initial
 estimates produce a finite, sensible OFV. `ferx_check_init()` runs a handful
-of optimiser iterations and reports back:
+of FOCEI iterations and returns a list with `$trace` (per-iteration OFV,
+gradient norm, step norm) and `$summary` (start/end OFV, OFV drop,
+convergence flag):
 
 ```{r}
 #| label: check-init
 #| eval: false
-ferx_check_init(ex$model, ex$data)
+ci <- ferx_check_init(ex$model, ex$data)
+ci$summary
+head(ci$trace)
 ```
 
-A clean run reports finite OFV and no boundary hits. Common failure modes it
-catches early: missing columns, wrong CMT numbering, predictions off by orders
-of magnitude (often a unit-conversion problem solvable by `[scaling]`), or a
-parameter bound that excludes the true value.
+A finite start OFV with a downward trajectory means the model and inits are
+healthy enough to commit to a real fit. A non-finite start OFV or an
+explosive gradient norm usually points to a scale mismatch, the wrong CMT
+numbering, or a parameter bound that excludes the true value.
 
 ### `ferx_inits_from_nca()`
 

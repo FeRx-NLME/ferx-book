@@ -74,11 +74,13 @@ Two helpers run before the expensive fit and catch most "won't converge" problem
 
 ### Initial-value check
 
-`ferx_check_init()` runs a handful of optimiser iterations from the model file's
-initial estimates and reports whether the OFV is finite, whether predictions
-match the observed scale, and whether the gradient is well-defined. It is much
-faster than a full fit and detects sign errors, scale mismatches, and missing
-columns without burning CPU time.
+`ferx_check_init()` runs a handful of optimiser iterations from the model
+file's initial estimates and returns a list with a `$trace` data frame (per-
+iteration OFV, gradient norm, step norm) and a `$summary` row (start OFV,
+end OFV, OFV drop, convergence flag). A finite start OFV and a non-degenerate
+gradient mean the model is set up correctly enough to attempt the full fit;
+a non-finite OFV or an explosive gradient norm flags scale or specification
+problems before you commit to a long run.
 
 ```{r}
 #| label: check-init
