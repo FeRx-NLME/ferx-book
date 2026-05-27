@@ -1,0 +1,168 @@
+---
+title: "Model Workflow"
+---
+
+## Overview {#sec-model-workflow}
+
+`ferx_fit()` is the punch line, but a productive modeling session spends most
+of its time *before* and *between* fits — scaffolding a model file, sanity-checking
+initial estimates, editing one section, refitting. This chapter shows the
+helpers that make that loop fast.
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+```
+
+## Scaffolding a new model file
+
+`ferx_model_new()` writes a complete, valid `.ferx` file from a template.
+Five templates ship today: `1cpt_oral`, `1cpt_iv`, `2cpt_oral`, `2cpt_iv`, and
+`ode` (a generic ODE skeleton).
+
+```{r}
+#| label: scaffold-print
+ferx_model_new(
+  path      = tempfile(fileext = ".ferx"),
+  template  = "1cpt_oral",
+  edit      = FALSE,
+  print     = TRUE,
+  overwrite = TRUE
+)
+```
+
+`print = TRUE` echoes the generated file. With `edit = TRUE` (the default), the
+file is opened in your editor; `overwrite = FALSE` (the default) refuses to
+clobber an existing file.
+
+## Inspecting a model before fitting
+
+`ferx_model_inspect()` parses the file and reports its structural shape — model
+type, ETA list, IOV, residual error — without compiling or fitting:
+
+```{r}
+#| label: inspect
+ex <- ferx_example("warfarin")
+ferx_model_inspect(ex$model)
+```
+
+This is the cheapest way to confirm that the file you just edited still
+declares the structure you think it does.
+
+`ferx_model_validate()` is the syntax check: it returns `TRUE` if every
+required section is present and parseable, and prints a per-section status
+line:
+
+```{r}
+#| label: validate
+ferx_model_validate(ex$model)
+```
+
+`ferx_model_show()` prints the raw file contents — handy in a Quarto chunk
+when the reader wants to see what is being fit.
+
+## Editing sections programmatically
+
+For scripted workflows (e.g. covariate-search loops, simulation studies that
+sweep theta starts), `ferx_model_section()` and `ferx_model_set_section()`
+read and replace one block at a time:
+
+```{r}
+#| label: read-section
+ferx_model_section(ex$model, "individual_parameters")
+```
+
+```{r}
+#| label: edit-section
+#| eval: false
+# Copy the bundled model somewhere we can edit it
+tmp <- tempfile(fileext = ".ferx")
+ferx_model_edit(ex$model, dest = dirname(tmp),
+                save_as = basename(tmp), .editor = identity)
+
+# Replace one section
+new_ip <- c(
+  "  CL = TVCL * (WT / 70)^0.75 * exp(ETA_CL)",
+  "  V  = TVV  * (WT / 70)      * exp(ETA_V)",
+  "  KA = TVKA                  * exp(ETA_KA)"
+)
+ferx_model_set_section(tmp, "individual_parameters", new_ip)
+```
+
+`ferx_model_edit()` copies a bundled (or any read-only) model to a writable
+location and opens it. Pass `.editor = identity` (or any no-op function) when
+running non-interactively, e.g. in a knitted chapter or a CI pipeline.
+
+## Pre-fit sanity checks
+
+### `ferx_check_init()`
+
+Before kicking off a 30-minute SAEM fit, verify that the model and the initial
+estimates produce a finite, sensible OFV. `ferx_check_init()` runs a handful
+of FOCEI iterations and returns a list with `$trace` (per-iteration OFV,
+gradient norm, step norm) and `$summary` (start/end OFV, OFV drop,
+convergence flag):
+
+```{r}
+#| label: check-init
+#| eval: false
+ci <- ferx_check_init(ex$model, ex$data)
+ci$summary
+head(ci$trace)
+```
+
+A finite start OFV with a downward trajectory means the model and inits are
+healthy enough to commit to a real fit. A non-finite start OFV or an
+explosive gradient norm usually points to a scale mismatch, the wrong CMT
+numbering, or a parameter bound that excludes the true value.
+
+### `ferx_inits_from_nca()`
+
+For a new drug — or when porting a model from another tool — non-compartmental
+analysis is a cheap source of starting values. `ferx_inits_from_nca()` runs an
+NCA on the dataset and returns `theta` and `omega` starting values:
+
+```{r}
+#| label: inits-nca
+#| cache: true
+inits <- ferx_inits_from_nca(ex$model, ex$data, method = "nca")
+inits$theta
+inits$omega
+```
+
+The same routine is invoked from `ferx_fit()` via the `inits_from_nca`
+argument:
+
+| Value | Behaviour |
+|---|---|
+| `FALSE` (default) | Use initial values from the model file |
+| `TRUE` / `"nca_sweep"` | Try both file inits and NCA inits; keep the lower-OFV fit |
+| `"nca"` | Replace file inits with NCA-derived values |
+| `"nca_ebe"` | Use NCA inits, then refine with a quick EBE pass |
+
+## Putting it together
+
+A typical first-pass workflow on a new dataset:
+
+```{r}
+#| eval: false
+# 1. Scaffold a model from a template
+path <- "my_model.ferx"
+ferx_model_new(path, template = "1cpt_oral")
+
+# 2. Edit (manually or programmatically), then validate
+ferx_model_validate(path)
+ferx_model_inspect(path)
+
+# 3. Sanity-check inits before the real fit
+ferx_check_init(path, "my_data.csv")
+
+# 4. Fit (optionally bootstrap inits from NCA)
+fit <- ferx_fit(path, "my_data.csv", inits_from_nca = TRUE)
+```
+
+## What's next
+
+- @sec-model-dsl — every block of the `.ferx` file
+- @sec-fitting — choosing methods, optimizers, and multi-start

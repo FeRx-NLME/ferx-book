@@ -1,0 +1,173 @@
+---
+title: "Special features"
+---
+
+## Overview {#sec-special-features}
+
+This chapter is a tour of optional `.ferx` blocks and `ferx_fit()` modes that
+each cover a narrow but important case: unit conversion (`[scaling]`),
+steady-state dosing (`SS` / `II` columns), absorption lag time, and persisting
+fits to disk for later analysis.
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+```
+
+## `[scaling]` — unit conversion and custom readouts
+
+The `[scaling]` block performs a post-prediction transform before the
+likelihood is computed. It has three forms.
+
+### Form A — scalar `obs_scale`
+
+The simplest case: divide every prediction by a constant, e.g. when `AMT` is
+recorded in micrograms but `DV` in mg/L. The bundled `warfarin_scaled` example
+uses this:
+
+```
+[scaling]
+  obs_scale = 1000
+```
+
+```{r}
+#| label: scaled-show
+ferx_model_show(ferx_example("warfarin_scaled")$model)
+```
+
+The scalar form is gradient-safe: it does not interfere with the AD path, so
+the model can keep `gradient = ad`.
+
+### Form B — per-CMT `obs_scale[CMT=N]`
+
+Different scale per observation compartment:
+
+```
+[scaling]
+  obs_scale[CMT=2] = 1       # plasma — already in obs units
+  obs_scale[CMT=3] = 0.001   # effect — convert ng to ug
+```
+
+### Form C — explicit `y[CMT=N] = <expression>`
+
+A full custom readout. Used in `emax_pkpd` (see @sec-multi-endpoint) to drive
+a Hill-Emax response off the effect-compartment amount:
+
+```
+[scaling]
+  y[CMT=2] = central / V
+  y[CMT=3] = E0 + EMAX * effect^GAMMA / (EC50^GAMMA + effect^GAMMA)
+```
+
+Form C and the per-CMT variants of Form B move the model onto the
+finite-difference gradient path (`gradient = fd`).
+
+## Steady-state dosing (`SS`, `II` columns)
+
+For studies recorded after the pre-study dosing has reached steady state, add
+two columns to the dose record:
+
+- `SS = 1` on the dose row: ferx computes analytical steady-state initial
+  conditions from the dose, interval, and the current individual parameters.
+- `II` (inter-dose interval) in the same time units as `TIME`.
+
+The bundled `warfarin_ss` example is one-compartment oral at QD steady state:
+
+```{r}
+#| label: ss-data
+ex_ss <- ferx_example("warfarin_ss")
+head(read.csv(ex_ss$data))
+```
+
+```{r}
+#| label: ss-fit
+#| cache: true
+#| eval: false
+fit_ss <- ferx_fit(ex_ss$model, ex_ss$data, verbose = FALSE)
+```
+
+The structural model is unchanged from the single-dose case — only the data
+columns and the dose row's `SS`/`II` values differ. ferx resolves the
+steady-state initial condition from the dose, the interval, and the current
+individual parameters; the supported PK shortcuts use an analytical
+closed-form.
+
+## Absorption lag time
+
+Lag time can be expressed in two equivalent ways depending on which structural
+model you use.
+
+### As an argument to an analytical PK shortcut
+
+```
+[structural_model]
+  pk one_cpt_oral(cl=CL, v=V, ka=KA, tlag=TLAG)
+```
+
+The named keyword `tlag` is accepted by the oral analytical solvers.
+
+### As an `LAGTIME` keyword in `[individual_parameters]` (ODE models)
+
+For ODE models the convention is to assign a special-named individual
+parameter, which the solver consumes when processing dose events. The
+`transit_2cpt` example uses this form:
+
+```
+[individual_parameters]
+  ...
+  LAGTIME = TVLAG
+```
+
+```{r}
+#| label: lag-show
+ex_lag <- ferx_example("transit_2cpt")
+ferx_model_show(ex_lag$model)
+```
+
+In both forms the individual lag value flows through `[individual_parameters]`
+like any other PK parameter — meaning it can be ETA-driven and recovered
+per subject from `fit$individual_estimates`.
+
+## Saving and reloading fits
+
+Long-running fits should be persisted so you do not pay the estimation cost
+twice. `ferx_save_fit()` writes a `.fitrx` file with the full fit object plus
+SHA-256 hashes of the model file and dataset; `ferx_load_fit()` restores it
+and warns if either has changed.
+
+```{r}
+#| label: save-load
+#| eval: false
+ferx_save_fit(fit, "warfarin.fitrx")                     # data not embedded
+ferx_save_fit(fit, "warfarin.fitrx", include_data = TRUE)
+
+fit_reloaded <- ferx_load_fit("warfarin.fitrx")
+```
+
+`include_data = TRUE` embeds the dataset as a base64 blob in the `.fitrx`
+file. The file is then self-contained — useful for sharing across machines,
+attaching to a regulatory submission, or moving a fit between branches of an
+analysis without the dataset's path drifting.
+
+## Bioavailability
+
+Estimating bioavailability `F` as a population parameter benefits from a
+logit transform so it stays in `(0, 1)`. The bundled `bioavailability`
+example uses `inv_logit(logit(THETA_F) + ETA_F)`; see @sec-logit-normal for
+the parameterisation and reporting conventions.
+
+## Beyond this chapter
+
+The ferx engine has two further advanced blocks that this book does not yet
+cover in depth:
+
+- **`[diffusion]`** — stochastic differential equations (process noise) for
+  ODE models where the structural dynamics themselves are uncertain. See
+  [`warfarin_sde`](https://github.com/FeRx-NLME/ferx-r/tree/main/inst/examples)
+  for a working example and the ferx-site
+  [SDE example page](https://ferx-nlme.github.io/ferx-site/examples/sde.html).
+- **`[covariate_nn NAME]`** — Deep Compartment Models, a neural-network map
+  from covariates to PK parameters. Feature-flagged (`cargo --features nn`);
+  see the ferx-site
+  [DCM example](https://ferx-nlme.github.io/ferx-site/examples/dcm.html).

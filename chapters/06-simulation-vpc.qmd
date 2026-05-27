@@ -21,7 +21,8 @@ obs <- read.csv(ex$data)
 ```{r}
 #| label: fit
 #| cache: true
-fit <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE)
+fit <- ferx_fit(ex$model, ex$data, method = "foce", covariance = TRUE,
+                verbose = FALSE)
 ```
 
 ## Simulating from the fitted model
@@ -39,10 +40,6 @@ sim <- ferx_simulate(
   fit    = fit
 )
 head(sim)
-#>   SIM ID TIME   IPRED  DV_SIM
-#>     1  1  0.5   3.18    3.41
-#>     1  1  1.0   5.01    5.12
-#>   ...
 ```
 
 `n_sim = 500` replicates is sufficient for a standard VPC.
@@ -52,7 +49,8 @@ Set `seed` for reproducibility.
 
 | Column | Meaning |
 |---|---|
-| `SIM` | Replicate index (1 to `n_sim`) |
+| `DRAW` | Population-parameter draw index. With `ferx_simulate()` this is always 1 (the point estimate); `ferx_simulate_with_uncertainty()` increments it across uncertainty draws — see @sec-uncertainty. |
+| `SIM` | Replicate index within a draw (1 to `n_sim`) |
 | `ID` | Subject ID (same population structure as observed data) |
 | `TIME` | Time (matched to observation schedule in `data`) |
 | `IPRED` | Individual prediction for this replicate (no residual error) |
@@ -74,8 +72,7 @@ sim_prior <- ferx_simulate(ex$model, ex$data, n_sim = 200, seed = 1)
 
 ```{r}
 #| label: vpc-pkg
-#| cache: true
-#| message: false
+#| eval: false
 library(vpc)
 
 vpc(
@@ -85,6 +82,9 @@ vpc(
   sim_cols = list(dv = "DV_SIM")
 )
 ```
+
+(The `vpc` package is an optional dependency; install with
+`install.packages("vpc")`.)
 
 ### Manual ggplot2 VPC
 
@@ -143,11 +143,11 @@ Useful for overlaying the typical profile on observed data:
 #| cache: true
 preds <- ferx_predict(ex$model, ex$data, fit = fit)
 head(preds)
-#>   ID TIME  PRED
-#>    1  0.5  3.44
-#>    1  1.0  5.51
-#>  ...
 ```
+
+`ferx_predict()` returns a data frame with `ID`, `TIME`, and `PRED` (population
+prediction at ETA = 0). For uncertainty-propagated predictions, see
+`ferx_simulate_with_uncertainty()` in @sec-uncertainty.
 
 ## Interpreting the VPC
 

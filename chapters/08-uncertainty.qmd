@@ -1,0 +1,153 @@
+---
+title: "Uncertainty & SIR"
+---
+
+## Overview {#sec-uncertainty}
+
+The covariance step gives **asymptotic** standard errors — exact only for a
+locally quadratic log-likelihood and infinite data. When that assumption is
+shaky (small sample, parameters near a bound, highly nonlinear model), ferx
+offers two non-asymptotic tools:
+
+| Tool | What it gives you |
+|---|---|
+| `ferx_sir()` | Sampling-importance-resampling: a non-parametric set of joint parameter draws |
+| `ferx_simulate_with_uncertainty()` | Population-parameter uncertainty propagated through `ferx_simulate()` |
+| `method = c("...", "imp")` | A final importance-sampling stage that yields a marginal log-likelihood and effective sample size |
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+ex  <- ferx_example("warfarin")
+```
+
+```{r}
+#| label: fit
+#| cache: true
+fit <- ferx_fit(ex$model, ex$data, method = "foce", covariance = TRUE,
+                verbose = FALSE)
+```
+
+## Sampling Importance Resampling
+
+`ferx_sir()` takes a converged fit and returns an updated `ferx_fit` object
+that carries a non-parametric joint sample of the population parameters in
+`$sir_resamples`. It draws candidate vectors from a multivariate proposal
+centred at the point estimate (built from the asymptotic covariance), weights
+each by the likelihood ratio, and resamples to give a usable empirical
+distribution.
+
+```{r}
+#| label: sir
+#| eval: false
+sir_res <- ferx_sir(
+  fit,
+  sir_samples       = 1000,    # candidate draws
+  sir_resamples     = 250,     # kept after resampling
+  sir_seed          = 1,
+  sir_keep_samples  = TRUE     # keep the raw draws for diagnostics
+)
+```
+
+When the asymptotic ellipsoid and the true likelihood diverge, the resampled
+distribution becomes skewed or has heavier tails than the SE-based 95% CI —
+that disagreement is the signal SIR is designed to surface.
+
+### SIR diagnostics
+
+The resampling step itself has diagnostics: the effective sample size (ESS) of
+the importance weights, and how many of the `sir_samples` were actually kept.
+A low ESS means the proposal was a poor match for the true likelihood — widen
+the proposal or run more samples.
+
+For a deeper treatment of SIR practice, see
+[Example: Uncertainty (SIR)](https://ferx-nlme.github.io/ferx-site/learn/uncertainty-sir.html)
+on the ferx site.
+
+## Propagating uncertainty into simulations
+
+`ferx_simulate()` simulates with the **point estimate** held fixed. For dose-
+response predictions, label predictions, or "what does my model say at a new
+weight band" questions, the right object to propagate is the *joint*
+uncertainty of the population parameters — not just the asymptotic SE on each
+theta one at a time.
+
+`ferx_simulate_with_uncertainty()` does exactly that:
+
+```{r}
+#| label: sim-uncertainty
+#| eval: false
+sim_u <- ferx_simulate_with_uncertainty(
+  model               = ex$model,
+  data                = ex$data,
+  fit                 = fit,
+  n_uncertainty_draws = 100,         # draws of (theta, omega, sigma)
+  n_sim_per_draw      = 1,           # ETA/EPS replicates per draw
+  method              = "asymptotic",  # or "sir"
+  seed                = 1
+)
+```
+
+The returned data frame carries the same columns as `ferx_simulate()` plus a
+`DRAW` index that identifies which population-parameter draw produced each
+row. Summarise across `DRAW` to get prediction intervals that include
+estimation uncertainty:
+
+```{r}
+#| eval: false
+library(dplyr)
+
+sim_u |>
+  group_by(ID, TIME) |>
+  summarise(lo  = quantile(DV_SIM, 0.05),
+            mid = median(DV_SIM),
+            hi  = quantile(DV_SIM, 0.95),
+            .groups = "drop")
+```
+
+### Choosing `method`
+
+| `method` | Where the parameter draws come from |
+|---|---|
+| `"asymptotic"` (default) | Multivariate normal centred at the point estimate, covariance from the Hessian. Requires the covariance step to have succeeded. |
+| `"sir"` | Resamples from a SIR run. Honest about non-Gaussian likelihood shape but requires `sir = TRUE` (or a separate `ferx_sir()` call) so the resamples exist. |
+
+Use `"asymptotic"` for routine reporting once the fit is clearly identified.
+Use `"sir"` when SIR has already flagged that the asymptotic covariance is a
+poor approximation.
+
+## The `imp` final stage
+
+For a converged FOCE/FOCEI fit, the asymptotic OFV is an approximation of
+$-2\log L$ — adequate for likelihood-ratio tests on nested models, but biased
+in absolute terms. Appending `"imp"` to the method chain runs an importance
+sampling pass at the converged estimate and reports the marginal
+log-likelihood directly:
+
+```{r}
+#| eval: false
+fit_imp <- ferx_fit(
+  ex$model, ex$data,
+  method = c("focei", "imp"),
+  settings = list(
+    is_samples     = 1000,    # importance-sampling draws per subject
+    is_proposal_df = 5        # heavy-tailed proposal (t with df)
+  )
+)
+```
+
+The IMP stage adds the marginal log-likelihood and an effective-sample-size
+diagnostic to the fit object (`fit_imp$importance_sampling`). Low ESS means
+the FOCE-conditional proposal does not cover the integrand well — try
+more samples, fewer degrees of freedom (heavier tails), or check whether the
+Laplace approximation is breaking down (highly nonlinear models, sparse data).
+
+## When to reach for which tool
+
+| Situation | Reach for |
+|---|---|
+| Reporting parameter SE/CI on a well-identified model | `covariance = TRUE` (default) |
+| Boundary estimates, weak identifiability, small N | `ferx_sir()` |
+| Forward predictions with full uncertainty (dosing, exposure-response) | `ferx_simulate_with_uncertainty()` |
+| Honest marginal log-likelihood for model selection | `method = c("focei", "imp")` |
