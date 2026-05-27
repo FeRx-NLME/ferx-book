@@ -46,16 +46,16 @@ Only the final stage produces the reported covariance and diagnostics.
 
 ```{r}
 #| label: fit-chain
-#| cache: true
+#| eval: false
 fit_chain <- ferx_fit(ex$model, ex$data, method = c("saem", "focei"))
-summary(fit_chain)
 ```
 
-The chain summary shows the full sequence:
-
-```
-Method chain: saem → focei
-```
+A common production pattern is `c("saem", "focei")` — SAEM finds the basin of
+attraction robustly, FOCEI polishes and produces the covariance step. A second
+useful chain is `c("focei", "imp")`: the final `imp` stage runs importance
+sampling around the FOCEI mode and reports the marginal log-likelihood and
+effective sample size, which give an honest read on the Laplace
+approximation. See @sec-uncertainty for the `imp` diagnostics.
 
 ### FOCE vs FOCEI
 
@@ -68,6 +68,42 @@ The difference is in how the residual error is treated:
 For proportional error on concentration data, FOCEI is typically more accurate.
 The performance difference is small; use FOCEI by default.
 
+## Pre-fit sanity checks
+
+Two helpers run before the expensive fit and catch most "won't converge" problems early.
+
+### Initial-value check
+
+`ferx_check_init()` runs a handful of optimiser iterations from the model file's
+initial estimates and reports whether the OFV is finite, whether predictions
+match the observed scale, and whether the gradient is well-defined. It is much
+faster than a full fit and detects sign errors, scale mismatches, and missing
+columns without burning CPU time.
+
+```{r}
+#| label: check-init
+#| eval: false
+ferx_check_init(ex$model, ex$data)
+```
+
+### NCA-based initial estimates
+
+If you do not have good initial estimates, `ferx_inits_from_nca()` derives them
+from a per-subject non-compartmental analysis and returns starting `theta` and
+`omega` values:
+
+```{r}
+#| label: inits-nca
+#| eval: false
+inits <- ferx_inits_from_nca(ex$model, ex$data, method = "nca")
+inits$theta
+inits$omega
+```
+
+The same routine is also available inside `ferx_fit()` via the `inits_from_nca`
+argument; pass `"nca"`, `"nca_sweep"` (default when `inits_from_nca = TRUE`), or
+`"nca_ebe"` to swap initial values in automatically.
+
 ## The covariance step
 
 `covariance = TRUE` triggers the Hessian-based covariance matrix after convergence.
@@ -76,16 +112,18 @@ This provides standard errors, 95% confidence intervals, and the condition numbe
 ```{r}
 #| label: fit-cov
 #| cache: true
-fit <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE,
-                optimizer_trace = TRUE)
+fit <- ferx_fit(ex$model, ex$data, method = "foce", covariance = TRUE,
+                optimizer_trace = TRUE, verbose = FALSE)
 ```
 
-If the covariance matrix is non-positive-definite or cannot be inverted, ferx
-emits a warning and sets `covariance_status` to `Failed`; all SE fields are
-`None`. A near-zero or negative eigenvalue usually indicates an
-over-parameterised model or a boundary estimate. A future release will include
-eigenvalue diagnostics in the warning
-([ferx-core#17](https://github.com/FeRx-NLME/ferx-core/issues/17)).
+After convergence inspect `fit$covariance_status`:
+
+- `"computed"` — Hessian is positive-definite; SEs and 95% CIs are available in `ferx_estimates(fit)`.
+- `"failed"` — covariance matrix could not be inverted or was non-positive-definite. `fit$cov_matrix` and the `se`/CI columns are `NA`. Likely causes are over-parameterisation, a boundary estimate, or a parameter that is structurally non-identifiable.
+
+When the covariance step fails, try (a) removing one ETA at a time to find the
+unidentified component, (b) checking for parameters at their bounds, or
+(c) switching to SAEM, which does not depend on the Hessian for convergence.
 
 ## Parallelism
 
@@ -218,6 +256,46 @@ have 8 cores, `n_starts = 8, threads = 1` is usually better than
 `n_starts = 1, threads = 8` for poorly-identified models.
 :::
 
+## Optimizer choice
+
+The estimation **method** (FOCE/FOCEI/SAEM/GN) decides what likelihood is
+maximised; the **optimizer** decides how. ferx exposes several optimisers
+through the `[fit_options]` block (or `settings = list(optimizer = ...)`):
+
+| Optimizer | Notes |
+|---|---|
+| `slsqp` (default) | Sequential quadratic programming; gradient-based, handles bounds. Robust for FOCE/FOCEI. |
+| `bfgs`, `lbfgs`, `nlopt_lbfgs` | Quasi-Newton variants; sometimes faster on smooth surfaces. |
+| `mma` | Method of moving asymptotes; alternative SQP-style. |
+| `bobyqa` | Gradient-free; useful when finite-difference gradients are noisy. |
+| `trust_region` | Trust-region with bound handling; good for poorly-scaled problems. |
+
+```{r}
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  settings = list(optimizer = "trust_region")
+)
+```
+
+### Global pre-search
+
+`global_search = TRUE` runs NLopt's CRS2-LM gradient-free search to find a good
+basin before the local optimiser kicks in. Useful when initial estimates are
+weak (e.g. translated from a different drug) and you do not want to invoke a
+full SAEM stage:
+
+```{r}
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  settings = list(global_search = TRUE, global_maxeval = 200)
+)
+```
+
+Combine with `n_starts` (see below) only when you understand the interaction
+described in the warning further down.
+
 ## Reading the output
 
 ```{r}
@@ -225,19 +303,10 @@ have 8 cores, `n_starts = 8, threads = 1` is usually better than
 summary(fit)
 ```
 
-Key fields in the printed summary:
-
-| Field | Meaning |
-|---|---|
-| THETA estimate | Point estimate at convergence |
-| SE | Standard error from the covariance step |
-| CV% | Coefficient of variation = SE / estimate × 100 |
-| 95% CI | Estimate ± 1.96 SE |
-| OMEGA | Between-subject variance (diagonal elements) |
-| CV~ | Approximate BSV in % = √ω × 100 |
-| OFV | Objective function value (−2 log-likelihood) |
-| AIC | OFV + 2 × npar |
-| BIC | OFV + ln(nobs) × npar |
+`summary(fit)` is the run report: convergence, method, OFV/AIC/BIC, shrinkage,
+covariance status, the effective `[fit_options]`, and any warnings. The
+parameter table itself (THETA / OMEGA / SIGMA point estimates + SE) is shown
+by `print(fit)` or as a tidy data frame by `ferx_estimates(fit)`.
 
 ### Accessing individual fields
 
@@ -270,10 +339,28 @@ If you want the raw trace data:
 #| label: trace-data
 tr <- ferx_trace(fit)
 head(tr)
-#>   iteration      ofv  TVCL   TVV  TVKA
-#> 1         1  423.1   0.134  8.10  1.00
-#> ...
 ```
+
+`ferx_trace()` requires the fit to have been produced with
+`optimizer_trace = TRUE` (as in the fit at the top of this section); otherwise
+it errors with a clear message.
+
+## Saving and reloading a fit
+
+For long-running fits, persist the result to disk and reload later without
+re-fitting. The fit object embeds SHA-256 hashes of the model file and dataset
+so `ferx_load_fit()` warns you if either has changed since the fit was saved.
+
+```{r}
+#| eval: false
+ferx_save_fit(fit, "warfarin.fitrx")           # data not embedded by default
+ferx_save_fit(fit, "warfarin.fitrx", include_data = TRUE)
+
+fit_reloaded <- ferx_load_fit("warfarin.fitrx")
+```
+
+`include_data = TRUE` embeds the dataset as a base64 blob so the `.fitrx` file
+is self-contained — useful for sharing a fit across machines.
 
 ## Common convergence issues
 

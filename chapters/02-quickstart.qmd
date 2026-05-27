@@ -15,16 +15,18 @@ library(ggplot2)
 
 ## The example dataset
 
-`ferx_example()` returns paths to a bundled model file and NONMEM-format CSV.
+`ferx_example()` returns paths to a bundled model file and a NONMEM-format CSV.
+Calling it with no argument lists all bundled examples:
+
+```{r}
+#| label: list-examples
+ferx_example()
+```
 
 ```{r}
 #| label: example-paths
 ex <- ferx_example("warfarin")
 ex
-#> $model
-#> [1] "/path/to/ferx/examples/models/warfarin.ferx"
-#> $data
-#> [1] "/path/to/ferx/examples/data/warfarin.csv"
 ```
 
 Peek at the data:
@@ -33,57 +35,24 @@ Peek at the data:
 #| label: peek-data
 obs <- read.csv(ex$data)
 head(obs)
-#>   ID TIME  DV EVID AMT CMT MDV
-#> 1  1  0.0  NA    1  70   1   1
-#> 2  1  0.5 3.1    0   0   2   0
-#> 3  1  1.0 5.4    0   0   2   0
-#> ...
 ```
 
 The dataset follows the standard NONMEM column convention:
-`EVID = 1` for dose rows, `EVID = 0` for observations, `CMT = 1` for the depot compartment, `CMT = 2` for the central compartment.
+
+- `EVID = 1` for dose records (with non-zero `AMT`), `EVID = 0` for observations.
+- `MDV = 1` masks a row from the likelihood (typically every dose row); `MDV = 0` for observed concentrations.
+- `CMT` selects the compartment for dose / observation. For a one-compartment oral model with a single endpoint the dose lands in the absorption compartment and observations come from the central compartment — both are `CMT = 1` here because the analytical `one_cpt_oral` solver tracks them together.
+- `RATE = 0` is a bolus dose; non-zero `RATE` indicates an infusion (zero-order input).
+
+`DV` values written as `.` (NONMEM convention for missing) are read by `read.csv()` as text; ferx parses them as `NA` internally.
+
+The warfarin dataset bundled with ferx has 10 subjects and 110 observations after dose rows are excluded.
 
 ## The model file
 
 ```{r}
 #| label: show-model
 ferx_model_show(ex$model)
-```
-
-```
-# One-compartment oral PK model (warfarin)
-
-[parameters]
-  theta TVCL(0.134, 0.001, 10.0)
-  theta TVV(8.1, 0.1, 500.0)
-  theta TVKA(1.0, 0.01, 50.0)
-
-  omega ETA_CL ~ 0.07
-  omega ETA_V  ~ 0.02
-  omega ETA_KA ~ 0.40
-
-  sigma PROP_ERR ~ 0.01
-
-[individual_parameters]
-  CL = TVCL * exp(ETA_CL)
-  V  = TVV  * exp(ETA_V)
-  KA = TVKA * exp(ETA_KA)
-
-[structural_model]
-  pk one_cpt_oral(cl=CL, v=V, ka=KA)
-
-[error_model]
-  DV ~ proportional(PROP_ERR)
-
-[initial_values]
-  theta = [0.2, 10.0, 1.5]
-  omega = [0.09, 0.04, 0.30]
-  sigma = [0.02]
-
-[fit_options]
-  method     = foce
-  maxiter    = 300
-  covariance = true
 ```
 
 The model DSL is described in detail in @sec-model-dsl.
@@ -93,77 +62,55 @@ The model DSL is described in detail in @sec-model-dsl.
 ```{r}
 #| label: fit
 #| cache: true
-fit <- ferx_fit(model = ex$model, data = ex$data)
+fit <- ferx_fit(model = ex$model, data = ex$data, verbose = FALSE)
 ```
 
-Fitting prints progress to the console and terminates when the gradient norm drops below the convergence threshold.
+`verbose = FALSE` silences per-iteration progress; omit it to watch the optimiser.
+Convergence is reached when the optimiser's stopping criterion is met (gradient
+norm or function tolerance, depending on the optimiser).
 
 ## Inspect results
 
 ```{r}
 #| label: summary
 summary(fit)
-#> --------------------------------------------------
-#> ferx NLME Fit Summary
-#> --------------------------------------------------
-#> Model:     warfarin
-#> Dataset:   warfarin.csv
-#> Converged: YES
-#> Method:    FOCE
-#> Gradient:  auto (requested)
-#> ferx vX.X.X
-#>
-#> OFV: 344.2000  AIC: 358.2000  BIC: 378.1000
-#> Subjects: 32  Obs: 251  Params: 7  Iter: XX
-#> Shrinkage: ETA_CL=XX.X%  ETA_V=XX.X%  ETA_KA=XX.X%
-#> EPS shrinkage: XX.X%
-#> Covariance: computed  Cond: XX.X  |  Wall time: X.Xs
-#> --------------------------------------------------
 ```
 
-To see the parameter estimates with standard errors, use `print(fit)` or `ferx_estimates(fit)`:
+`summary(fit)` prints a compact run report: convergence, method, OFV/AIC/BIC,
+shrinkage, the Durbin-Watson autocorrelation statistic, the covariance step
+status, and any active warnings. It also lists the `[fit_options]` actually in
+effect (model file vs. call-time overrides).
+
+For the full parameter table including standard errors, use `print(fit)`:
+
+```{r}
+#| label: print
+print(fit)
+```
+
+For programmatic access, `ferx_estimates()` returns a tidy data frame:
 
 ```{r}
 #| label: estimates
-print(fit)
-#>
-#> --- Objective Function ---
-#> OFV:  344.2000
-#> AIC:  358.2000
-#> BIC:  378.1000
-#>
-#> Subjects: 32  Observations: 251  Parameters: 7
-#>
-#> --- THETA Estimates ---
-#> Parameter           Estimate           SE       %RSE
-#> ----------------------------------------------------
-#> TVCL              0.133000     0.006000      4.5
-#> TVV               7.890000     0.310000      3.9
-#> TVKA              1.490000     0.160000     10.7
-#>
-#> --- OMEGA Estimates ---
-#>   ETA_CL                   [log-normal]  = 0.042500  CV% = 21.0  SE = 0.010900
-#>   ETA_V                    [log-normal]  = 0.016200  CV% = 12.8  SE = 0.006800
-#>   ETA_KA                   [log-normal]  = 0.328000  CV% = 60.1  SE = 0.090000
-#>
-#> --- SIGMA Estimates ---
-#>   PROP_ERR         [proportional]  = 0.127300  (var = 0.016205, CV% = 12.7)  SE = 0.002100
+ferx_estimates(fit)
 ```
 
-Individual estimates and diagnostics are in `fit$sdtab`:
+Notable columns:
+
+- `transform` — natural scale of the parameter (`identity`, `variance`, `proportional`, ...).
+- `estimate`, `se`, `rse_pct` — point estimate, standard error, and relative SE.
+- `lower_95`, `upper_95` — asymptotic 95% confidence interval on the estimation scale.
+- `estimate_natural` / `lower_95_natural` / `upper_95_natural` — back-transformed values where applicable (e.g. CV% from a log-normal omega).
+- `init_as_sd` — `TRUE` if the model file declared the initial value on the SD scale (`(sd)` qualifier) rather than variance.
+
+## Individual diagnostics
+
+Per-observation diagnostics live in `fit$sdtab`; per-subject EBEs in `fit$ebe_etas`.
 
 ```{r}
 #| label: sdtab
 head(fit$sdtab)
-#>   ID TIME  DV   PRED  IPRED   CWRES   IWRES  EBE_OFV N_OBS
-#> 1  1  0.5  3.1  3.44   3.18  -0.98  -0.25   12.4     8
-#> ...
-
-# Per-subject ETAs are in fit$ebe_etas
 head(fit$ebe_etas)
-#>   ID  ETA_CL   ETA_V  ETA_KA
-#> 1  1  -0.07    0.02    0.12
-#> ...
 ```
 
 ## Goodness-of-fit plots
@@ -194,6 +141,7 @@ For a full treatment of diagnostics see @sec-diagnostics.
 
 ## What's next
 
+- @sec-model-workflow — pre-fit inspection and editing of `.ferx` files
 - @sec-model-dsl — understand every section of the `.ferx` file
 - @sec-fitting — fitting options, methods, and convergence
 - @sec-diagnostics — full diagnostic suite and shrinkage

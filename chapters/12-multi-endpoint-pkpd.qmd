@@ -1,0 +1,137 @@
+---
+title: "Multi-endpoint PK/PD"
+---
+
+## Overview {#sec-multi-endpoint}
+
+A model with **more than one type of observation** — for example, plasma
+concentration **and** a pharmacodynamic readout — must apply a different
+residual error model to each endpoint. The historical workaround is the
+*sequential* approach (fit PK, freeze it, then fit PD), which is convenient
+but biased: it ignores the cross-information the joint likelihood carries.
+
+ferx solves this directly with **per-CMT dispatch in `[error_model]`**: each
+observation row's `CMT` column selects which residual error model contributes
+its likelihood. PK and PD are fit jointly, in one FOCEI likelihood, with their
+own sigmas.
+
+```{r}
+#| label: setup
+#| message: false
+library(ferx)
+```
+
+## The bundled example: oral PK + Emax PD
+
+The `emax_pkpd` example is an oral one-compartment PK linked to an effect
+compartment with a Hill-Emax readout. Plasma concentration (CMT = 2) has
+proportional error; the PD effect (CMT = 3) has additive error.
+
+```{r}
+#| label: show-model
+ex <- ferx_example("emax_pkpd")
+ferx_model_show(ex$model)
+```
+
+Three things make this work:
+
+1. **Multi-state ODE.** `[structural_model]` declares `ode(states = [...])`
+   *without* a single `obs_cmt`, because there is no single observation
+   compartment.
+2. **Per-CMT readout in `[scaling]`.** `y[CMT=2] = central / V` and
+   `y[CMT=3] = E0 + ...` define exactly what is predicted for each
+   compartment's observations.
+3. **Per-CMT residual in `[error_model]`.** Each `CMT=N: DV ~ ...` line is a
+   separate error model with its own sigma.
+
+```
+[scaling]
+  y[CMT=2] = central / V
+  y[CMT=3] = E0 + EMAX * effect^GAMMA / (EC50^GAMMA + effect^GAMMA)
+
+[error_model]
+  CMT=2: DV ~ proportional(PROP_ERR_PK)
+  CMT=3: DV ~ additive(ADD_ERR_PD)
+```
+
+## Data layout
+
+For a joint dataset, each subject contributes both PK and PD observation
+rows, distinguished by the `CMT` column:
+
+```
+ID  TIME  DV   EVID  AMT  CMT   ...
+ 1   0.0   .     1    50    1    <- dose into depot
+ 1   0.5  5.4    0     .    2    <- PK observation (plasma)
+ 1   1.0  7.1    0     .    2
+ 1   1.0  4.8    0     .    3    <- PD observation (effect)
+ ...
+```
+
+ferx routes each row to the appropriate readout and error model purely from
+the `CMT` value — no separate datasets or merging required.
+
+## Fitting
+
+```{r}
+#| label: fit
+#| cache: true
+#| eval: false
+fit_pkpd <- ferx_fit(ex$model, ex$data, method = "focei", verbose = FALSE)
+print(fit_pkpd)
+```
+
+The printed fit shows both sigmas on separate lines (one labelled
+`[proportional]`, one `[additive]`), and the SIGMA block lists them in the
+order they appear in `[parameters]`.
+
+::: callout-note
+**FD gradients.** Per-CMT error models live in the finite-difference
+likelihood path. The model file therefore sets `gradient = fd` — automatic
+differentiation is not available for the per-CMT dispatch in the current
+release. Fits remain numerically reliable, just somewhat slower per
+iteration than the AD-supported analytical PK shortcuts.
+:::
+
+## Diagnostics with multiple endpoints
+
+Goodness-of-fit plots should be **separated by `CMT`** so each endpoint can be
+inspected on its own scale:
+
+```{r}
+#| label: gof
+#| eval: false
+library(ggplot2)
+library(dplyr)
+
+sdtab <- fit_pkpd$sdtab |>
+  mutate(endpoint = factor(CMT, levels = c(2, 3),
+                           labels = c("Plasma (PK)", "Effect (PD)")))
+
+ggplot(sdtab, aes(x = IPRED, y = DV)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, colour = "#1F6B7A") +
+  facet_wrap(~ endpoint, scales = "free") +
+  labs(x = "Individual prediction", y = "Observed") +
+  theme_minimal()
+```
+
+Shrinkage is reported per ETA (not per endpoint); high shrinkage on a PD-only
+ETA usually means the PD design is too sparse to estimate that effect
+individually.
+
+## When sequential is still appropriate
+
+Joint estimation is the gold standard, but a sequential PK → PD workflow is
+defensible when:
+
+- The PK is already a published, well-validated model and you do not want PD
+  data to perturb the PK estimates.
+- PD endpoints are far slower than PK (very different time scales) and the
+  joint Hessian becomes ill-conditioned.
+- You are exploring a new PD model and want to iterate quickly without
+  re-fitting PK each time.
+
+For routine modeling, prefer joint estimation — the residuals on each
+endpoint are then conditional on the *correct* PK uncertainty, not a fixed
+point estimate.

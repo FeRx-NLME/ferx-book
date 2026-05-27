@@ -19,18 +19,24 @@ ex  <- ferx_example("warfarin")
 ```{r}
 #| label: fit
 #| cache: true
-fit <- ferx_fit(ex$model, ex$data, method = "focei", covariance = TRUE)
+fit <- ferx_fit(ex$model, ex$data, method = "foce", covariance = TRUE,
+                verbose = FALSE)
 sdtab <- fit$sdtab
 ```
+
+::: callout-note
+We use `method = "foce"` here (matching the model file) because on this small
+dataset the FOCEI Hessian is not positive-definite and the covariance step
+fails. With FOCE the covariance step is computed and `ferx_cor_matrix()`
+returns a valid matrix.
+:::
 
 ## The `sdtab` columns
 
 ```{r}
 #| label: sdtab-cols
 names(sdtab)
-#> [1] "ID"    "TIME"  "DV"    "PRED"  "IPRED" "CWRES" "IWRES" "EBE_OFV" "N_OBS"
 names(fit$ebe_etas)
-#> [1] "ID"    "ETA_CL" "ETA_V" "ETA_KA"
 ```
 
 `sdtab` contains per-observation diagnostics.
@@ -101,10 +107,10 @@ High shrinkage (> 30%) means the data are not informative enough to reliably est
 
 ```{r}
 #| label: shrinkage
-summary(fit)$shrinkage_eta
-#>  ETA_CL   ETA_V  ETA_KA
-#>   0.142   0.283   0.452
+fit$shrinkage_eta
 ```
+
+(`summary(fit)` also prints shrinkage in its header block.)
 
 ETA shrinkage > 0.3 is a warning sign.
 It does not mean the model is wrong, but ETA-based covariate plots and individual parameter histograms should be interpreted cautiously.
@@ -130,18 +136,18 @@ ggplot(etas_long, aes(x = value)) +
 ## ETA-covariate correlations
 
 `ferx_eta_cov()` computes Pearson correlations between ETAs and subject-level covariates.
+The dataset must include numeric covariate columns (the warfarin example
+has none, so we switch to `two_cpt_oral_cov`, which carries `WT` and `CRCL`):
 
 ```{r}
 #| label: eta-cov
-obs <- read.csv(ex$data)
-ferx_eta_cov(fit, obs)
-#>    eta      covariate     r   p_val flag
-#>  ETA_CL   WT          0.42  0.016  *
-#>  ETA_V    WT          0.38  0.031  *
-#>  ...
+#| cache: true
+ex_cov  <- ferx_example("two_cpt_oral_cov")
+fit_cov <- ferx_fit(ex_cov$model, ex_cov$data, verbose = FALSE)
+ferx_eta_cov(fit_cov, read.csv(ex_cov$data))
 ```
 
-Significant correlations (p < 0.05) flag covariates worth testing in the structural model.
+`ferx_eta_cov()` flags candidates for a covariate search at |r| ≥ 0.3.
 
 ## Parameter correlation matrix
 
@@ -150,10 +156,11 @@ Off-diagonal values near ±1 indicate structural identifiability problems.
 
 ```{r}
 #| label: cor-matrix
-if (!is.null(fit$cov_matrix)) {
+if (identical(fit$covariance_status, "computed")) {
   ferx_cor_matrix(fit)
 } else {
-  message("Covariance matrix not available (covariance step may have failed).")
+  message("Covariance step did not produce a usable matrix (status: ",
+          fit$covariance_status, ").")
 }
 ```
 
@@ -172,9 +179,7 @@ Epsilon shrinkage measures compression in the residual distribution:
 
 ```{r}
 #| label: eps-shrinkage
-summary(fit)$shrinkage_eps
-#>  PROP_ERR
-#>   0.094
+fit$shrinkage_eps
 ```
 
 Low epsilon shrinkage (< 20%) is generally acceptable.
@@ -193,17 +198,9 @@ ferx quantifies this with two pooled statistics computed across all subjects:
 
 ```{r}
 #| label: check-diagnostics
-#| eval: false
 diag <- check_diagnostics(fit)
 diag$autocorrelation
-#>   dw_statistic  lag1_r                  flag
-#>           1.84  0.0821  no autocorrelation
 diag$shrinkage
-#>    param type shrinkage shrinkage_pct
-#>   ETA_CL  eta     0.142          14.2
-#>    ETA_V  eta     0.283          28.3
-#>   ETA_KA  eta     0.452          45.2
-#>      EPS  eps     0.094           9.4
 ```
 
 `print(fit)` shows the same values in a `--- Diagnostics ---` block, and a `message()` is emitted automatically when DW < 1.5 or DW > 2.5 with ordered remedies.

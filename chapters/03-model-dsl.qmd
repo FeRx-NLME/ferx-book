@@ -47,6 +47,34 @@ Sigma declares residual variance:
   sigma PROP_ERR ~ 0.01   # proportional error variance
 ```
 
+The optional `(sd)` qualifier lets you specify the initial value on the
+**standard-deviation** scale instead of variance — usually more intuitive for
+sigmas and IIV alike:
+
+```
+  sigma PROP_ERR ~ 0.10 (sd)     # 10% on the SD scale -> var = 0.01
+  omega  ETA_CL  ~ 0.30 (sd)     # 30% CV on the log scale
+```
+
+The estimate, the `init_as_sd` column in `ferx_estimates()`, and the printed
+output all preserve this distinction so users always know which scale the
+initial value was declared on.
+
+### Block / correlated random effects
+
+For correlated ETAs (or kappas), use the block form with the column-major
+lower-triangle of the covariance matrix:
+
+```
+[parameters]
+  block_omega (ETA_CL, ETA_V) = [0.09, 0.02, 0.04]   # var(CL), cov(CL,V), var(V)
+  block_kappa (KAPPA_CL, KAPPA_V) = [0.02, 0.005, 0.01]
+```
+
+### `kappa` — inter-occasion variability
+
+The `kappa` keyword declares an occasion-level random effect; see @sec-iov.
+
 ## `[individual_parameters]`
 
 Each line assigns an individual PK parameter using thetas and ETAs.
@@ -156,25 +184,29 @@ Values must be listed in the same order the parameters appear in `[parameters]`.
 
 Omit this section to use the defaults (`method = foce`, `maxiter = 300`, `covariance = false`).
 
+## Optional blocks
+
+A complete reference of advanced blocks is in @sec-special-features; the
+short form:
+
+| Block | Purpose | Chapter |
+|---|---|---|
+| `[scaling]` | Unit conversion (`obs_scale`) and per-CMT readouts (`y[CMT=N] = ...`) | @sec-special-features |
+| `[diffusion]` | Stochastic differential equations (process noise) | — (advanced) |
+| `[covariate_nn NAME]` | Neural-network covariate effect (Deep Compartment Models) | — (advanced) |
+| `[simulation]` | Embedded simulation trial design | @sec-simulation |
+
 ## Validating a model
 
 Before running a long fit, check syntax:
 
 ```{r}
-#| eval: false
-ferx_model_validate("my_model.ferx")
+#| label: validate
+#| message: false
+library(ferx)
+ferx_model_validate(ferx_example("warfarin")$model)
 ```
 
-```
-✓ [parameters]         — OK (3 theta, 3 omega, 1 sigma)
-✓ [individual_parameters] — OK
-✓ [structural_model]   — OK (one_cpt_oral)
-✓ [error_model]        — OK (proportional)
-✓ Syntax: valid
-```
-
-If a section is missing or malformed, the validator reports the line and reason:
-
-```
-✗ [error_model] — missing required section
-```
+If a section is missing or malformed, the validator reports which section
+failed and `Result: INVALID`. The return value is `TRUE` / `FALSE`, so the
+function can be used programmatically.

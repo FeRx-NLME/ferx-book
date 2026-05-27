@@ -74,51 +74,47 @@ Enable the IOV column in `[fit_options]`:
 library(ferx)
 ```
 
-The IOV example models live in the `ferx-core` repository.
-Here we write the model inline using a temporary file:
+ferx ships two bundled IOV examples:
+
+| Example | Method | Notes |
+|---|---|---|
+| `warfarin_iov` | FOCE | Diagonal `kappa` on CL |
+| `warfarin_iov_saem` | SAEM | Same structural model fit with SAEM |
 
 ```{r}
-#| label: iov-model-write
-iov_model <- tempfile(fileext = ".ferx")
-writeLines(c(
-  "# Warfarin IOV model",
-  "[parameters]",
-  "  theta TVCL(0.2, 0.001, 10.0)",
-  "  theta TVV(10.0, 0.1, 500.0)",
-  "  theta TVKA(1.5, 0.01, 50.0)",
-  "  omega ETA_CL ~ 0.09",
-  "  omega ETA_V  ~ 0.04",
-  "  omega ETA_KA ~ 0.30",
-  "  kappa KAPPA_CL ~ 0.01",
-  "  sigma PROP_ERR ~ 0.02",
-  "[individual_parameters]",
-  "  CL = TVCL * exp(ETA_CL + KAPPA_CL)",
-  "  V  = TVV  * exp(ETA_V)",
-  "  KA = TVKA * exp(ETA_KA)",
-  "[structural_model]",
-  "  pk one_cpt_oral(cl=CL, v=V, ka=KA)",
-  "[error_model]",
-  "  DV ~ proportional(PROP_ERR)",
-  "[fit_options]",
-  "  method     = foce",
-  "  iov_column = OCC",
-  "  covariance = false"
-), iov_model)
+#| label: iov-fit
+#| cache: true
+ex_iov  <- ferx_example("warfarin_iov")
+fit_iov <- ferx_fit(ex_iov$model, ex_iov$data, method = "foce",
+                    verbose = FALSE)
 ```
 
-Fit using a dataset that has an `OCC` column:
+The printed fit shows a dedicated `OMEGA_IOV` block:
 
 ```{r}
+#| label: iov-print
+print(fit_iov)
+```
+
+The omega for `KAPPA_CL` is stored separately from `fit_iov$omega`:
+
+```{r}
+#| label: iov-storage
+fit_iov$model_structure$iov   # names of kappa parameters
+fit_iov$shrinkage_kappa       # per-kappa shrinkage (may be NA for some methods)
+```
+
+### SAEM with IOV
+
+`warfarin_iov_saem` uses the same DSL with `method = saem` in `[fit_options]`.
+SAEM now estimates kappa parameters directly (older versions required the
+FOCE chain to do so):
+
+```{r}
+#| label: iov-saem
 #| eval: false
-fit_iov <- ferx_fit(iov_model, "warfarin_multi_dose.csv")
-summary(fit_iov)
-```
-
-The summary output includes an **OMEGA_IOV** block:
-
-```
---- OMEGA_IOV Estimates (Inter-Occasion Variability) ---
-  KAPPA_CL = 0.012400  (CV% = 11.1)  SE = 0.004000  Shrinkage = N/A
+ex_saem  <- ferx_example("warfarin_iov_saem")
+fit_saem <- ferx_fit(ex_saem$model, ex_saem$data)
 ```
 
 ## Correlated IOV: `block_kappa`
