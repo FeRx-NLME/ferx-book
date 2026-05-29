@@ -5,20 +5,52 @@ title: "Installation"
 ## Prerequisites {#sec-installation}
 
 ferx requires R ≥ 4.2, Rust (stable toolchain), and cmake.
-Enzyme (LLVM) is optional — it enables exact automatic differentiation for faster gradients, but is not needed to get started.
+Enzyme (LLVM) is optional — it enables exact automatic differentiation for
+faster gradients, but is not needed to get started.
 
 | Dependency | Required | Notes |
 |---|---|---|
 | R ≥ 4.2 | Yes | Package interface |
 | Rust / Cargo | Yes | Compile the ferx-core backend; stable toolchain is sufficient |
-| cmake | Yes | Used by the Rust build |
+| cmake | Yes | Used by the Rust build (Linux/macOS; bundled with Rtools44 on Windows) |
 | Enzyme (LLVM) | No | Faster gradients via autodiff; documented in @sec-enzyme |
 
-## Quick install by platform
+Two installation paths are described below:
+
+- **Quick install** (@sec-quick-install) — stable Rust + finite-difference
+  gradients. Works on all platforms. Identical estimates to the autodiff
+  path, slightly slower. **Start here.**
+- **Full Enzyme install** (@sec-enzyme) — a custom Rust fork with the
+  Enzyme autodiff plugin. Recommended once you start fitting larger models or
+  using AD-only features.
+
+### Two separate one-time costs {#sec-two-costs}
+
+The "full install takes hours" reputation conflates **two distinct,
+one-time** steps. Knowing which you are paying for avoids confusion:
+
+| Step | What it is | Roughly | When |
+|---|---|---|---|
+| **1. Build the Enzyme toolchain** | Compile a custom nightly `rustc` + LLVM with Enzyme from source (@sec-enzyme) | ~45–60 min | **Once per machine.** The toolchain is reused forever (lives at `~/.local/share/enzyme-toolchain`). *Autodiff path only.* |
+| **2. Compile ferx** | Build the `ferx` / `ferx-core` Rust crates and link them | ~1–2 h (autodiff) / faster (FD) | **First install only.** Cargo caches dependencies, so later reinstalls/updates take minutes. |
+
+So:
+
+- **First-time autodiff user** pays both → ~2–3 h end-to-end.
+- **First-time finite-difference user** pays only a faster version of step 2
+  (no step 1; the FD build uses thin LTO and links noticeably faster).
+- **Returning user** pays neither — both are cached.
+
+Step 2 is slower on the autodiff path specifically because it uses **fat
+LTO**, which is required for cross-crate Enzyme correctness — see the note in
+@sec-enzyme.
+
+## Quick install by platform {#sec-quick-install}
 
 ### macOS {#sec-macos}
 
-cmake is the only non-standard system dependency. A stable Rust toolchain is sufficient.
+cmake is the only non-standard system dependency. A stable Rust toolchain
+is sufficient.
 
 **Step 1 — Install Homebrew** (skip if already installed)
 
@@ -38,11 +70,14 @@ brew install cmake
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Follow the on-screen instructions to add Rust to your PATH (usually `source "$HOME/.cargo/env"`, or restart the terminal).
+Follow the on-screen instructions to add Rust to your PATH (usually
+`source "$HOME/.cargo/env"`, or restart the terminal).
 
 **Step 4 — Install ferx from R**
 
-RStudio on macOS launches with a restricted PATH that does not include the Homebrew cmake bin directory, even when the shell profile is configured correctly. Add it explicitly before installing:
+RStudio on macOS launches with a restricted PATH that does not include the
+Homebrew cmake bin directory, even when the shell profile is configured
+correctly. Add it explicitly before installing:
 
 ```r
 # Apple Silicon (M1/M2/M3):
@@ -51,33 +86,68 @@ Sys.setenv(PATH = paste("/opt/homebrew/opt/cmake/bin", Sys.getenv("PATH"), sep =
 # Sys.setenv(PATH = paste("/usr/local/opt/cmake/bin", Sys.getenv("PATH"), sep = ":"))
 
 Sys.setenv(FERX_NO_AUTODIFF = "1")
-devtools::install_github("FeRx-NLME/ferx-r")
+pak::pak("FeRx-NLME/ferx-r")
+# or: devtools::install_github("FeRx-NLME/ferx-r")
 ```
 
-Without the `Sys.setenv(PATH = ...)` line, the Rust build fails with a `cmake not found` error when launched from RStudio.
+Without the `Sys.setenv(PATH = ...)` line, the Rust build fails with a
+`cmake not found` error when launched from RStudio.
 
-### Windows
+### Windows {#sec-windows}
 
-Install [Rtools44](https://cran.r-project.org/bin/windows/Rtools/rtools44/rtools.html) and [Rust via rustup](https://rustup.rs). cmake ships with Rtools44, so no separate cmake install is needed, and the PATH workaround is not required.
+Native Windows installs are supported with finite-difference gradients.
+The `ferx-r` build auto-detects the missing Enzyme toolchain and falls back
+automatically — no `FERX_NO_AUTODIFF=1` flag is needed on Windows. All
+estimation methods work; AD-only features are unavailable.
+
+Native Enzyme autodiff is **not** available on Windows because the custom
+Rust fork does not currently build there. For autodiff on Windows, use the
+Docker image (@sec-docker), WSL2 + Ubuntu, or a remote Linux host.
+
+**Step 1 — Install Rtools44**
+
+[Rtools44](https://cran.r-project.org/bin/windows/Rtools/rtools44/rtools.html)
+ships cmake and the MinGW gcc that R uses to link the package, so no
+separate cmake install is needed.
+
+**Step 2 — Install rustup with the GNU-ABI toolchain**
+
+Download from <https://www.rust-lang.org/tools/install>, then in PowerShell:
+
+```powershell
+rustup toolchain install stable-x86_64-pc-windows-gnu
+```
+
+You do **not** need to `rustup default` it — the package's build pins this
+toolchain automatically on Windows. (The rustup default on Windows is the
+MSVC ABI, which is not link-compatible with Rtools' MinGW linker.)
+
+**Step 3 — Install ferx from R**
 
 ```r
-Sys.setenv(FERX_NO_AUTODIFF = "1")
-devtools::install_github("FeRx-NLME/ferx-r")
+pak::pak("FeRx-NLME/ferx-r")
+# or: devtools::install_github("FeRx-NLME/ferx-r")
 ```
 
-### Linux
+First install takes ~1–2 hours (Rust compile from scratch); subsequent
+installs are fast.
 
-Install cmake and Rust via your system package manager plus rustup. RStudio on Linux inherits the system PATH, so no PATH workaround is needed.
+### Linux {#sec-linux}
+
+Install cmake and Rust via your system package manager plus rustup.
+RStudio on Linux inherits the system PATH, so no PATH workaround is needed.
 
 ```bash
 # Debian / Ubuntu
-sudo apt-get install cmake
+sudo apt-get install -y cmake build-essential curl git
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
 ```
 
 ```r
 Sys.setenv(FERX_NO_AUTODIFF = "1")
-devtools::install_github("FeRx-NLME/ferx-r")
+pak::pak("FeRx-NLME/ferx-r")
+# or: devtools::install_github("FeRx-NLME/ferx-r")
 ```
 
 ## Verify the installation
@@ -90,33 +160,250 @@ fit <- ferx_fit(ex$model, ex$data)
 print(fit)
 ```
 
-The install compiles the Rust backend, which takes 1–3 minutes on a modern machine.
-Subsequent installs reuse Cargo's artifact cache and are faster.
+The first install compiles the Rust backend, which takes ~1–2 hours.
+Subsequent installs reuse Cargo's artifact cache and are much faster.
 
 ## The FERX_NO_AUTODIFF flag {#sec-no-autodiff}
 
-Setting `FERX_NO_AUTODIFF = "1"` skips the Enzyme autodiff toolchain. ferx falls back to **finite-difference gradients**, which are slightly slower but produce identical estimates. LLVM is not needed. All examples in this book run with `FERX_NO_AUTODIFF=1` on CI.
+Setting `FERX_NO_AUTODIFF = "1"` skips the Enzyme autodiff toolchain probe
+and forces **finite-difference gradients**. FD is slightly slower but
+produces identical estimates. LLVM/Enzyme are not needed. All examples in
+this book run with `FERX_NO_AUTODIFF=1` on CI.
 
-## Advanced: Enzyme build {#sec-enzyme}
+The flag is only required when you want to skip the probe in scripts or
+CI; the build will automatically fall back to FD when no Enzyme toolchain
+is found.
 
-Enzyme unlocks exact gradients via automatic differentiation of the Rust source.
-It requires a nightly Rust toolchain and LLVM ≥ 17.
+## Advanced: full Enzyme install {#sec-enzyme}
 
-1. Install the nightly toolchain:
+Enzyme unlocks exact gradients via automatic differentiation of the Rust
+source, and is required for a few AD-only features (e.g. SAEM HMC
+proposals via `n_leapfrog`). The toolchain is a custom fork of nightly
+Rust built from source.
+
+- **Total time:** ~45–60 min toolchain build + ~1–2 h first `ferx-r` install.
+- **One-time setup.** Once steps 1–4 are done, the Enzyme toolchain lives
+  at `~/.local/share/enzyme-toolchain` and survives reboots and `/tmp`
+  purges. To reinstall or update ferx-r later, you only need step 5.
+
+::: {.callout-note}
+## The first autodiff compile is slow — and the end *looks* like a hang
+
+The autodiff build uses **fat LTO** (`lto = "fat"`), which is *required* for
+cross-crate Enzyme correctness: the `ferx-core` functions being
+differentiated are inlined into the final `ferx` crate so Enzyme can see
+through the call boundary. Fat LTO re-optimizes the whole dependency graph
+in one pass, so the **final crate (`Compiling ferx …`) routinely takes many
+minutes** with no further per-crate progress output — this is normal, not a
+stall. Confirm it is working with `ps aux | grep rustc` (you'll see one busy
+`rustc --crate-name ferx` process).
+
+This is distinct from the *quick install* path (@sec-quick-install), which
+uses **thin LTO** and links noticeably faster. Only the **first** autodiff
+compile pays the full cost; Cargo caches dependencies, so later reinstalls
+are fast.
+
+If `rustc` instead pins a core at 100% CPU *during the autodiff verification
+step* (@sec-enzyme, Step 3) and never returns, that is a different problem —
+an LLVM/Enzyme mismatch — covered there.
+:::
+
+::: {.panel-tabset}
+
+### macOS
+
+#### Step 1. Build dependencies
 
 ```bash
-rustup toolchain install nightly
-rustup override set nightly
+xcode-select --install                       # clang, git (skip if already installed)
+brew install cmake ninja python3             # needed by the rust build system
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+rustup toolchain install nightly --profile minimal
 ```
 
-2. Ensure LLVM ≥ 17 is on your system PATH.
+#### Step 2. Build the Enzyme-enabled Rust toolchain from source (~45–60 min)
 
-3. Reinstall without the `FERX_NO_AUTODIFF` flag:
+```bash
+git clone --depth 1 https://github.com/rust-lang/rust /tmp/rust-src
+cd /tmp/rust-src
+
+# IMPORTANT: --set llvm.download-ci-llvm=false avoids the LLVM/Enzyme mismatch
+# that causes rustc to hang silently when compiling autodiff code.
+./configure \
+    --release-channel=nightly \
+    --enable-llvm-enzyme \
+    --enable-llvm-link-shared \
+    --enable-ninja \
+    --disable-docs \
+    --set llvm.download-ci-llvm=false
+
+./x build --stage 1 library                  # the long step (~45–60 min)
+
+# Register the freshly built toolchain with rustup under the name "enzyme"
+rustup toolchain link enzyme build/host/stage1
+rustc +enzyme --version --verbose            # sanity check: prints version info
+```
+
+#### Step 3. Verify autodiff works (fat LTO is mandatory for Enzyme)
+
+```bash
+cat > /tmp/ad_check.rs <<'EOF'
+#![feature(autodiff)]
+use std::autodiff::autodiff_forward;
+
+#[autodiff_forward(df, Dual, Const, Dual)]
+#[inline(never)]
+fn f(x: f64, y: f64) -> f64 { (x * y).exp() + x * x }
+
+fn main() {
+    let (val, dfdx) = df(1.5, 1.0, 2.0);
+    let expect = 2.0 * (1.5 * 2.0_f64).exp() + 2.0 * 1.5;
+    assert!((dfdx - expect).abs() < 1e-9);
+    println!("autodiff OK: f={val:.4}, df/dx={dfdx:.4}");
+}
+EOF
+
+rustc +enzyme -Zautodiff=Enable -Clto=fat -Copt-level=2 /tmp/ad_check.rs -o /tmp/ad_check
+/tmp/ad_check
+```
+
+Expected: compiles in seconds, prints `autodiff OK: f=22.3355, df/dx=43.1711`.
+
+::: {.callout-warning}
+If `rustc` hangs at low/constant memory for many minutes (RSS stays under
+~100 MB and never grows), the LLVM/Enzyme link is broken. Rebuild Step 2,
+making sure `--set llvm.download-ci-llvm=false` is set.
+:::
+
+#### Step 4. Move the toolchain to a permanent location (macOS purges `/tmp`)
+
+```bash
+mkdir -p ~/.local/share
+
+# -L dereferences the LLVM/Enzyme dylib symlinks into real files, so the copy
+# still works after /tmp/rust-src is deleted. Cycle warnings are harmless.
+cp -aL /tmp/rust-src/build/host/stage1 ~/.local/share/enzyme-toolchain
+
+# Prune the bundled rust source tree (only used for IDE source browsing).
+# Without this the copy is ~14-30 GB; after pruning it is ~640 MB.
+rm -rf ~/.local/share/enzyme-toolchain/lib/rustlib/rustc-src \
+       ~/.local/share/enzyme-toolchain/lib/rustlib/src
+
+du -sh ~/.local/share/enzyme-toolchain        # should be ~640 MB
+
+# Re-point the rustup "enzyme" toolchain at the permanent path
+rustup toolchain uninstall enzyme
+rustup toolchain link enzyme ~/.local/share/enzyme-toolchain
+
+# Re-verify against the new path
+rustc +enzyme -Zautodiff=Enable -Clto=fat -Copt-level=2 /tmp/ad_check.rs -o /tmp/ad_check && /tmp/ad_check
+
+# Reclaim ~8 GB now that the permanent copy is verified
+rm -rf /tmp/rust-src
+```
+
+#### Step 5. Install ferx-r (in R, ~1–2 h first time, fast thereafter)
 
 ```r
-Sys.unsetenv("FERX_NO_AUTODIFF")
-devtools::install_github("FeRx-NLME/ferx-r")
+pak::pak("FeRx-NLME/ferx-r")
+# or: devtools::install_github("FeRx-NLME/ferx-r")
 ```
+
+::: {.callout-tip}
+As long as `/tmp/rust-src` is gone but `~/.local/share/enzyme-toolchain`
+survives, you only ever need to repeat **Step 5** to reinstall or update
+ferx-r.
+:::
+
+### Linux
+
+Tested on Ubuntu 22.04 / 24.04. Other distributions work with
+package-manager adjustments (substitute `apt` for `dnf`, `pacman`, etc.).
+
+#### Step 1. Build dependencies and rustup
+
+```bash
+# Remove snap rustup if present (it conflicts with the rustup.rs installer):
+sudo snap remove rustup 2>/dev/null || true
+
+# Install build dependencies:
+sudo apt update
+sudo apt install -y cmake ninja-build clang g++ python3 \
+                    build-essential curl git pkg-config libssl-dev libzstd-dev
+
+# Install rustup and nightly:
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+rustup toolchain install nightly --profile minimal
+```
+
+#### Step 2. Build the Enzyme-enabled Rust toolchain from source (~45–60 min)
+
+```bash
+git clone --depth 1 https://github.com/rust-lang/rust /tmp/rust-src
+cd /tmp/rust-src
+
+./configure \
+    --release-channel=nightly \
+    --enable-llvm-enzyme \
+    --enable-llvm-link-shared \
+    --enable-ninja \
+    --disable-docs \
+    --set llvm.download-ci-llvm=false
+
+./x build --stage 1 library
+
+rustup toolchain link enzyme build/host/stage1
+rustc +enzyme --version --verbose
+```
+
+#### Step 3. Verify autodiff works
+
+Same as the macOS Step 3 above — compile and run `/tmp/ad_check.rs` with
+`rustc +enzyme -Zautodiff=Enable -Clto=fat -Copt-level=2`.
+
+#### Step 4. Move the toolchain to a permanent location
+
+`/tmp` is cleared on reboot on most Linux distros (and by
+`systemd-tmpfiles` periodic cleanup on Ubuntu), which would silently
+break the toolchain link.
+
+```bash
+mkdir -p ~/.local/share
+cp -aL /tmp/rust-src/build/host/stage1 ~/.local/share/enzyme-toolchain
+rm -rf ~/.local/share/enzyme-toolchain/lib/rustlib/rustc-src \
+       ~/.local/share/enzyme-toolchain/lib/rustlib/src
+du -sh ~/.local/share/enzyme-toolchain        # should be ~640 MB
+
+rustup toolchain uninstall enzyme
+rustup toolchain link enzyme ~/.local/share/enzyme-toolchain
+
+rm -rf /tmp/rust-src
+```
+
+For multi-user / shared-host installs at `/opt/rust-nightly`, see
+[`INSTALL-SYSADMIN.md`](https://github.com/FeRx-NLME/ferx-r/blob/main/INSTALL-SYSADMIN.md)
+in the ferx-r repository.
+
+#### Step 5. Install ferx-r
+
+```r
+pak::pak("FeRx-NLME/ferx-r")
+```
+
+### Windows
+
+The Enzyme-enabled Rust fork does not currently build on native Windows.
+Use one of:
+
+- **WSL2 + Ubuntu** — `wsl --install -d Ubuntu`, then follow the Linux
+  workflow inside the Ubuntu shell.
+- **Docker image** (@sec-docker) — bundles a pre-built Enzyme toolchain.
+- **Remote Linux host** — SSH into a Linux server or cloud VM.
+
+:::
 
 If Enzyme is available the install log will contain:
 
@@ -124,15 +411,29 @@ If Enzyme is available the install log will contain:
 [build] autodiff: Enzyme backend enabled
 ```
 
-## Docker / reproducible environments
+## Docker / reproducible environments {#sec-docker}
 
-A minimal `Dockerfile` is included in the ferx-r repository.
-It installs Rust + the package in a stable, reproducible layer suitable for CI:
+The `ferx-r` repo ships a `Dockerfile` that bundles the Enzyme toolchain
+(built from source), the `ferx` CLI, the `ferx` R package, and RStudio
+Server — no local Rust/Enzyme setup required. On Windows this is the
+recommended path if you need Enzyme autodiff.
+
+```bash
+git clone https://github.com/FeRx-NLME/ferx-r
+cd ferx-r
+
+# Build (first build takes ~45–60 min; cached after that)
+docker build -t ferx:latest .
+
+# Run RStudio Server
+docker run --rm -p 8787:8787 -e PASSWORD=ferx ferx:latest
+# -> open http://localhost:8787   user: rstudio   password: ferx
+```
+
+For CI without Enzyme, a minimal image is sufficient:
 
 ```dockerfile
 FROM rocker/r-ver:4.4.0
 ENV FERX_NO_AUTODIFF=1
-RUN Rscript -e "devtools::install_github('FeRx-NLME/ferx-r')"
+RUN Rscript -e "pak::pak('FeRx-NLME/ferx-r')"
 ```
-
-For production workflows where runtime matters, use the Enzyme-enabled image documented in the repo README.
