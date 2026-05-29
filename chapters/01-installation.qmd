@@ -32,16 +32,30 @@ one-time** steps. Knowing which you are paying for avoids confusion:
 | Step | What it is | Roughly | When |
 |---|---|---|---|
 | **1. Build the Enzyme toolchain** | Compile a custom nightly `rustc` + LLVM with Enzyme from source (@sec-enzyme) | ~45–60 min | **Once per machine.** The toolchain is reused forever (lives at `~/.local/share/enzyme-toolchain`). *Autodiff path only.* |
-| **2. Compile ferx** | Build the `ferx` / `ferx-core` Rust crates and link them | ~1–2 h (autodiff) / faster (FD) | **First install only.** Cargo caches dependencies, so later reinstalls/updates take minutes. |
+| **2. Compile ferx** | Build the `ferx` / `ferx-core` Rust crates and link them | **highly CPU-dependent** (see below) | **First install only.** Cargo caches dependencies, so later reinstalls/updates take minutes. |
 
-So:
+Step 2's duration depends almost entirely on **single-core CPU speed**, because
+the autodiff build's final link is a **single-threaded fat-LTO** pass (extra
+cores do not help). As a rough guide:
 
-- **First-time autodiff user** pays both → ~2–3 h end-to-end.
+- **Fast modern CPU** (recent desktop, or native Apple Silicon arm64): **~15–30 min**.
+- **Older / mobile laptop CPU** (e.g. a 2019 Intel i7, which also thermal-throttles under sustained single-core load): **up to ~1–2 h**.
+
+The **finite-difference** build is much quicker either way — it skips fat LTO
+and uses thin LTO. So:
+
+- **First-time autodiff user** pays both steps → roughly **1.5–3 h** end-to-end,
+  dominated by your CPU.
 - **First-time finite-difference user** pays only a faster version of step 2
-  (no step 1; the FD build uses thin LTO and links noticeably faster).
+  (no step 1; thin LTO links noticeably faster).
 - **Returning user** pays neither — both are cached.
 
-Step 2 is slower on the autodiff path specifically because it uses **fat
+::: {.callout-tip}
+If you would rather not compile at all, the Docker image (@sec-docker) ships a
+prebuilt toolchain and package — no local Rust/Enzyme build, no wait.
+:::
+
+Step 2 is slower on the autodiff path specifically because of that **fat
 LTO**, which is required for cross-crate Enzyme correctness — see the note in
 @sec-enzyme.
 
@@ -129,8 +143,9 @@ pak::pak("FeRx-NLME/ferx-r")
 # or: devtools::install_github("FeRx-NLME/ferx-r")
 ```
 
-First install takes ~1–2 hours (Rust compile from scratch); subsequent
-installs are fast.
+First install compiles the Rust backend; how long depends heavily on your
+CPU (~15–30 min on a fast modern machine, up to ~1–2 h on an older laptop —
+see @sec-two-costs). Subsequent installs are fast.
 
 ### Linux {#sec-linux}
 
@@ -160,7 +175,9 @@ fit <- ferx_fit(ex$model, ex$data)
 print(fit)
 ```
 
-The first install compiles the Rust backend, which takes ~1–2 hours.
+The first install compiles the Rust backend; the time is CPU-dependent
+(~15–30 min on a fast machine, up to ~1–2 h on an older laptop — see
+@sec-two-costs).
 Subsequent installs reuse Cargo's artifact cache and are much faster.
 
 ## The FERX_NO_AUTODIFF flag {#sec-no-autodiff}
@@ -181,7 +198,9 @@ source, and is required for a few AD-only features (e.g. SAEM HMC
 proposals via `n_leapfrog`). The toolchain is a custom fork of nightly
 Rust built from source.
 
-- **Total time:** ~45–60 min toolchain build + ~1–2 h first `ferx-r` install.
+- **Total time:** ~45–60 min toolchain build + a CPU-dependent first
+  `ferx-r` compile (~15–30 min on a fast machine, up to ~1–2 h on an older
+  laptop — see @sec-two-costs).
 - **One-time setup.** Once steps 1–4 are done, the Enzyme toolchain lives
   at `~/.local/share/enzyme-toolchain` and survives reboots and `/tmp`
   purges. To reinstall or update ferx-r later, you only need step 5.
@@ -304,7 +323,7 @@ rustc +enzyme -Zautodiff=Enable -Clto=fat -Copt-level=2 /tmp/ad_check.rs -o /tmp
 rm -rf /tmp/rust-src
 ```
 
-#### Step 5. Install ferx-r (in R, ~1–2 h first time, fast thereafter)
+#### Step 5. Install ferx-r (in R; first compile is CPU-dependent, ~15 min–2 h; fast thereafter)
 
 ```r
 pak::pak("FeRx-NLME/ferx-r")
