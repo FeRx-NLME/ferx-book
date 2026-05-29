@@ -586,18 +586,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td><strong>2. Compile ferx</strong></td>
 <td>Build the <code>ferx</code> / <code>ferx-core</code> Rust crates and link them</td>
-<td>~1–2 h (autodiff) / faster (FD)</td>
+<td><strong>highly CPU-dependent</strong> (see below)</td>
 <td><strong>First install only.</strong> Cargo caches dependencies, so later reinstalls/updates take minutes.</td>
 </tr>
 </tbody>
 </table>
-<p>So:</p>
+<p>Step 2’s duration depends almost entirely on <strong>single-core CPU speed</strong>, because the autodiff build’s final link is a <strong>single-threaded fat-LTO</strong> pass (extra cores do not help). As a rough guide:</p>
 <ul>
-<li><strong>First-time autodiff user</strong> pays both → ~2–3 h end-to-end.</li>
-<li><strong>First-time finite-difference user</strong> pays only a faster version of step 2 (no step 1; the FD build uses thin LTO and links noticeably faster).</li>
+<li><strong>Fast modern CPU</strong> (recent desktop, or native Apple Silicon arm64): <strong>~15–30 min</strong>.</li>
+<li><strong>Older / mobile laptop CPU</strong> (e.g.&nbsp;a 2019 Intel i7, which also thermal-throttles under sustained single-core load): <strong>up to ~1–2 h</strong>.</li>
+</ul>
+<p>The <strong>finite-difference</strong> build is much quicker either way — it skips fat LTO and uses thin LTO. So:</p>
+<ul>
+<li><strong>First-time autodiff user</strong> pays both steps → roughly <strong>1.5–3 h</strong> end-to-end, dominated by your CPU.</li>
+<li><strong>First-time finite-difference user</strong> pays only a faster version of step 2 (no step 1; thin LTO links noticeably faster).</li>
 <li><strong>Returning user</strong> pays neither — both are cached.</li>
 </ul>
-<p>Step 2 is slower on the autodiff path specifically because it uses <strong>fat LTO</strong>, which is required for cross-crate Enzyme correctness — see the note in <a href="#sec-enzyme" class="quarto-xref"><span>Section 2.5</span></a>.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you would rather not compile at all, the Docker image (<a href="#sec-docker" class="quarto-xref"><span>Section 2.6</span></a>) ships a prebuilt toolchain and package — no local Rust/Enzyme build, no wait.</p>
+</div>
+</div>
+<p>Step 2 is slower on the autodiff path specifically because of that <strong>fat LTO</strong>, which is required for cross-crate Enzyme correctness — see the note in <a href="#sec-enzyme" class="quarto-xref"><span>Section 2.5</span></a>.</p>
 </section>
 </section>
 <section id="sec-quick-install" class="level2" data-number="2.2">
@@ -637,7 +655,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>Step 3 — Install ferx from R</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or: devtools::install_github("FeRx-NLME/ferx-r")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>First install takes ~1–2 hours (Rust compile from scratch); subsequent installs are fast.</p>
+<p>First install compiles the Rust backend; how long depends heavily on your CPU (~15–30 min on a fast modern machine, up to ~1–2 h on an older laptop — see <a href="#sec-two-costs" class="quarto-xref"><span>Section 2.1.1</span></a>). Subsequent installs are fast.</p>
 </section>
 <section id="sec-linux" class="level3" data-number="2.2.3">
 <h3 data-number="2.2.3" class="anchored" data-anchor-id="sec-linux"><span class="header-section-number">2.2.3</span> Linux</h3>
@@ -658,7 +676,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>ex <span class="ot">&lt;-</span> <span class="fu">ferx_example</span>(<span class="st">"warfarin"</span>)</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ferx_fit</span>(ex<span class="sc">$</span>model, ex<span class="sc">$</span>data)</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The first install compiles the Rust backend, which takes ~1–2 hours. Subsequent installs reuse Cargo’s artifact cache and are much faster.</p>
+<p>The first install compiles the Rust backend; the time is CPU-dependent (~15–30 min on a fast machine, up to ~1–2 h on an older laptop — see <a href="#sec-two-costs" class="quarto-xref"><span>Section 2.1.1</span></a>). Subsequent installs reuse Cargo’s artifact cache and are much faster.</p>
 </section>
 <section id="sec-no-autodiff" class="level2" data-number="2.4">
 <h2 data-number="2.4" class="anchored" data-anchor-id="sec-no-autodiff"><span class="header-section-number">2.4</span> The FERX_NO_AUTODIFF flag</h2>
@@ -669,7 +687,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="2.5" class="anchored" data-anchor-id="sec-enzyme"><span class="header-section-number">2.5</span> Advanced: full Enzyme install</h2>
 <p>Enzyme unlocks exact gradients via automatic differentiation of the Rust source, and is required for a few AD-only features (e.g.&nbsp;SAEM HMC proposals via <code>n_leapfrog</code>). The toolchain is a custom fork of nightly Rust built from source.</p>
 <ul>
-<li><strong>Total time:</strong> ~45–60 min toolchain build + ~1–2 h first <code>ferx-r</code> install.</li>
+<li><strong>Total time:</strong> ~45–60 min toolchain build + a CPU-dependent first <code>ferx-r</code> compile (~15–30 min on a fast machine, up to ~1–2 h on an older laptop — see <a href="#sec-two-costs" class="quarto-xref"><span>Section 2.1.1</span></a>).</li>
 <li><strong>One-time setup.</strong> Once steps 1–4 are done, the Enzyme toolchain lives at <code>~/.local/share/enzyme-toolchain</code> and survives reboots and <code>/tmp</code> purges. To reinstall or update ferx-r later, you only need step 5.</li>
 </ul>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -781,8 +799,8 @@ Warning
 <span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Reclaim ~8 GB now that the permanent copy is verified</span></span>
 <span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-rf</span> /tmp/rust-src</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="step-5.-install-ferx-r-in-r-12-h-first-time-fast-thereafter" class="level4" data-number="2.5.0.5">
-<h4 data-number="2.5.0.5" class="anchored" data-anchor-id="step-5.-install-ferx-r-in-r-12-h-first-time-fast-thereafter"><span class="header-section-number">2.5.0.5</span> Step 5. Install ferx-r (in R, ~1–2 h first time, fast thereafter)</h4>
+<section id="step-5.-install-ferx-r-in-r-first-compile-is-cpu-dependent-15-min2-h-fast-thereafter" class="level4" data-number="2.5.0.5">
+<h4 data-number="2.5.0.5" class="anchored" data-anchor-id="step-5.-install-ferx-r-in-r-first-compile-is-cpu-dependent-15-min2-h-fast-thereafter"><span class="header-section-number">2.5.0.5</span> Step 5. Install ferx-r (in R; first compile is CPU-dependent, ~15 min–2 h; fast thereafter)</h4>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or: devtools::install_github("FeRx-NLME/ferx-r")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="callout callout-style-default callout-tip callout-titled">
