@@ -102,7 +102,7 @@ problems before you commit to a long run.
 ferx_check_init(ex$model, ex$data)
 ```
 
-### NCA-based initial estimates
+### NCA-based initial estimates {#sec-nca-inits}
 
 If you do not have good initial estimates, `ferx_inits_from_nca()` derives them
 from a per-subject non-compartmental analysis and returns starting `theta` and
@@ -318,7 +318,7 @@ optimizer minimises the population OFV over the transformed parameter vector
 |---|---|---|
 | `bobyqa` **(default)** | Derivative-free quadratic trust-region | Start here. Re-evaluates the EBEs at every trial point, so it never sees the fixed-EBE gradient bias that stalls gradient methods on ODE/PD models, sparse data, and Hill-ridge identifiability problems. |
 | `slsqp` | Gradient-based SQP | A smooth, well-conditioned analytical-PK model with many parameters, where derivative-free search needs too many samples to triangulate the surface. |
-| `trust_region` | Newton trust-region (Steihaug CG) | Large θ + Ω, or paired with `inits_from_nca` — second-order curvature helps when you are already in the right basin. |
+| `trust_region` | Newton trust-region (Steihaug CG) | Large θ + Ω, or paired with `inits_from_nca` (see [NCA-based initial estimates](#sec-nca-inits)) — second-order curvature helps when you are already in the right basin. |
 | `lbfgs`, `nlopt_lbfgs`, `mma`, `bfgs` | Quasi-Newton / SQP variants | Rarely needed; prefer `bobyqa` or `slsqp`. |
 
 ```{r}
@@ -445,6 +445,7 @@ the classic Ω-collapse the burn-in is there to prevent.
 | `steihaug_max_iters` | `trust_region` | engine | CG iteration budget for the trust-region subproblem; raise on ill-conditioned problems. |
 | `is_samples` | `imp` stage | 1000 | Importance samples per subject (halving the MC SE needs 4× the samples). |
 | `is_proposal_df` | `imp` stage | 5 | Degrees of freedom for the Student-t proposal. |
+| `is_seed` | `imp` stage | engine | RNG seed for the importance-sampling step. |
 | `is_low_ess_threshold` | `imp` stage | 0.1 | ESS fraction below which a subject is flagged. |
 
 For the SIR (`sir_samples`, `sir_resamples`, `sir_seed`) and multi-start
