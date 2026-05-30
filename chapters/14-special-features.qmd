@@ -6,8 +6,9 @@ title: "Special features"
 
 This chapter is a tour of optional `.ferx` blocks and `ferx_fit()` modes that
 each cover a narrow but important case: unit conversion (`[scaling]`),
-steady-state dosing (`SS` / `II` columns), absorption lag time, and persisting
-fits to disk for later analysis.
+steady-state dosing (`SS` / `II` columns), absorption lag time, persisting
+fits to disk for later analysis, and log-transform-both-sides residual
+error.
 
 ```{r}
 #| label: setup
@@ -156,6 +157,32 @@ Estimating bioavailability `F` as a population parameter benefits from a
 logit transform so it stays in `(0, 1)`. The bundled `bioavailability`
 example uses `inv_logit(logit(THETA_F) + ETA_F)`; see @sec-logit-normal for
 the parameterisation and reporting conventions.
+
+## Log-transform-both-sides (LTBS) residual error {#sec-ltbs}
+
+The familiar NONMEM idiom `Y = LOG(F) + EPS(1)` — fit log-transformed
+observations against log-predictions with additive error on the log scale
+— is written in `.ferx` as one of two equivalent forms:
+
+```
+[error_model]
+  log(DV) ~ additive(SIGMA_LOG)   # DV on the natural scale; engine logs it
+
+[error_model]
+  DV ~ log_additive(SIGMA_LOG)    # DV already log-transformed in the data
+```
+
+The bundled `warfarin_ltbs` example uses the first form:
+
+```{r}
+#| label: ltbs-show
+ferx_model_show(ferx_example("warfarin_ltbs")$model)
+```
+
+Under LTBS the diagnostic outputs (`IPRED`, `PRED`, `CWRES`, `IWRES` in
+`sdtab`, and `DV_SIM` from `ferx_simulate()`) are on the log scale.
+`ferx_model_inspect()` reports the residual type as
+`additive (log-transformed)`.
 
 ## Beyond this chapter
 
