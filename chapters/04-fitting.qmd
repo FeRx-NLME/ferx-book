@@ -16,15 +16,29 @@ ex <- ferx_example("warfarin")
 
 ## Estimation methods
 
+A fit has two layers that are worth keeping distinct from the start:
+
+- the **method** (`foce`, `focei`, `saem`, `gn`, `gn_hybrid`, `imp`) decides
+  *what* objective is maximised — how the likelihood integrates over the
+  random effects;
+- the **optimizer** (`bobyqa`, `slsqp`, `trust_region`, …) decides *how* that
+  objective is minimised over the parameter vector.
+
+Not every optimizer applies to every method, and each method has its own
+tuning knobs. The [Optimizer and method settings](#sec-optimizer-settings)
+section below lays out the full grid; this section covers the method choice
+itself.
+
 Pass `method` to choose the algorithm:
 
 | Method | Description | Typical use |
 |---|---|---|
 | `"foce"` | First-Order Conditional Estimation | Default, fast, well-tested |
 | `"focei"` | FOCE with interaction | When residual error depends on ETAs |
-| `"saem"` | Stochastic Approximation EM | Models with many ETAs or strong nonlinearity |
-| `"gn"` | Gauss-Newton / BHHH | Quick exploration; no covariance |
+| `"saem"` | Stochastic Approximation EM | Models with many ETAs or strong nonlinearity; supports IOV |
+| `"gn"` | Gauss-Newton / BHHH | Quick exploration; runs its own loop, no covariance |
 | `"gn_hybrid"` | Gauss-Newton then FOCEI polish | Fast warm start, rigorous finish |
+| `"imp"` | Importance-sampling marginal log-likelihood | Terminal diagnostic stage only; see @sec-uncertainty |
 
 ```{r}
 #| label: fit-foce
@@ -162,7 +176,7 @@ It does not help when the model is stuck in a local minimum.
 `threads` controls the inner-loop pool only. The `n_starts` outer parallelism
 (see below) always uses the global rayon pool regardless of `threads`.
 
-### Multi-start optimization (`n_starts`)
+### Multi-start optimization (`n_starts`) {#sec-multistart}
 
 Some models have multimodal OFV surfaces where a single fit can converge to a
 local minimum rather than the global optimum. This is common with:
@@ -258,45 +272,185 @@ have 8 cores, `n_starts = 8, threads = 1` is usually better than
 `n_starts = 1, threads = 8` for poorly-identified models.
 :::
 
-## Optimizer choice
+## Optimizer and method settings {#sec-optimizer-settings}
 
-The estimation **method** (FOCE/FOCEI/SAEM/GN) decides what likelihood is
-maximised; the **optimizer** decides how. ferx exposes several optimisers
-through the `[fit_options]` block (or `settings = list(optimizer = ...)`):
+Everything beyond the dedicated `ferx_fit()` arguments is tuned through the
+`settings` list (or, equivalently, the model file's `[fit_options]` block).
+Keys are validated — an unknown key, a malformed value, or a key that
+duplicates a dedicated argument (`method`, `covariance`, `bloq_method`,
+`threads`, `sir`) raises an error rather than being silently ignored.
 
-| Optimizer | Notes |
-|---|---|
-| `slsqp` (default) | Sequential quadratic programming; gradient-based, handles bounds. Robust for FOCE/FOCEI. |
-| `bfgs`, `lbfgs`, `nlopt_lbfgs` | Quasi-Newton variants; sometimes faster on smooth surfaces. |
-| `mma` | Method of moving asymptotes; alternative SQP-style. |
-| `bobyqa` | Gradient-free; useful when finite-difference gradients are noisy. |
-| `trust_region` | Trust-region with bound handling; good for poorly-scaled problems. |
+**Precedence.** Dedicated arguments win over `settings`, which win over the
+model file's `[fit_options]`. A `warning()` fires whenever a call-time value
+overrides a *different* value baked into the model file. Inspect
+`fit$call_settings` and `fit$model_file_settings` to audit what actually took
+effect.
+
+### Which settings apply to which method
+
+The single most common source of confusion is passing an option to a method
+that ignores it. This grid is the map:
+
+| Setting | FOCE / FOCEI | GN-hybrid | pure GN | SAEM | IMP stage |
+|---|:--:|:--:|:--:|:--:|:--:|
+| `optimizer` | ✓ | polish only | — | — | — |
+| `maxiter` | ✓ | ✓ | ✓ | — (use `n_*`) | — |
+| `global_search`, `global_maxeval` | ✓ | polish only | — | — | — |
+| `stagnation_guard` | ✓ | ✓ | — | — | — |
+| `reconverge_gradient_interval` | ✓ | ✓ | — | — | — |
+| `steihaug_max_iters` (trust-region) | ✓ | ✓ | — | — | — |
+| `gn_lambda` | — | ✓ | ✓ | — | — |
+| `n_exploration`, `n_convergence`, `n_mh_steps`, `adapt_interval`, `omega_burnin`, `n_leapfrog` | — | — | — | ✓ | — |
+| `is_samples`, `is_proposal_df`, `is_seed`, `is_low_ess_threshold` | — | — | — | — | ✓ |
+| `inner_maxiter`, `inner_tol` (shared) | ✓ | ✓ | ✓ | ✓ | — |
+
+Setting an option that the active method ignores is harmless for most keys but
+`optimizer` under `method = "saem"` emits a warning — SAEM has no single outer
+minimisation, so there is no algorithm to select.
+
+### The outer optimizer
+
+For FOCE / FOCEI (and the FOCEI **polish** phase of `gn_hybrid`), the outer
+optimizer minimises the population OFV over the transformed parameter vector
+`[log θ, chol(Ω), log σ]`:
+
+| Optimizer | Kind | Use it when |
+|---|---|---|
+| `bobyqa` **(default)** | Derivative-free quadratic trust-region | Start here. Re-evaluates the EBEs at every trial point, so it never sees the fixed-EBE gradient bias that stalls gradient methods on ODE/PD models, sparse data, and Hill-ridge identifiability problems. |
+| `slsqp` | Gradient-based SQP | A smooth, well-conditioned analytical-PK model with many parameters, where derivative-free search needs too many samples to triangulate the surface. |
+| `trust_region` | Newton trust-region (Steihaug CG) | Large θ + Ω, or paired with `inits_from_nca` — second-order curvature helps when you are already in the right basin. |
+| `lbfgs`, `nlopt_lbfgs`, `mma`, `bfgs` | Quasi-Newton / SQP variants | Rarely needed; prefer `bobyqa` or `slsqp`. |
 
 ```{r}
 #| eval: false
 fit <- ferx_fit(
   ex$model, ex$data,
-  settings = list(optimizer = "trust_region")
+  settings = list(optimizer = "slsqp")   # gradient-based; bobyqa is the default
+)
+```
+
+::: {.callout-note}
+## Why `bobyqa` is the default
+The default was `slsqp` in earlier releases. On ODE/PD models and sparse data,
+the cheap fixed-EBE finite-difference gradient drives `slsqp` to local minima
+*hundreds* of OFV units above the true optimum. `bobyqa` doesn't use a gradient,
+doesn't see the bias, and reaches the same or lower OFV in the same or less wall
+time. Pure `gn` and pure `saem` ignore `optimizer` entirely.
+:::
+
+### Fixed-EBE gradient bias and `reconverge_gradient_interval`
+
+This is the knob behind the default change, and the first thing to reach for
+when a *gradient-based* optimizer stalls above an OFV you expected to beat.
+
+By default (`reconverge_gradient_interval = 0`) the population gradient holds
+each subject's inner EBE solution fixed — cheap, but it omits the response of
+that inner solution to θ and Ω. On ill-conditioned non-IOV models the omitted
+term is exactly what lets `slsqp` stall. Reconverging the inner loop during the
+gradient recovers the full surface at roughly **5–6× the per-gradient cost**:
+
+- `0` — never reconverge (cheap fixed-EBE gradient, the default);
+- `1` — reconverge on every gradient evaluation (full surface, full cost);
+- `N` — reconverge every `N`-th evaluation, cheap gradient in between, which
+  often closes most of the gap for a fraction of the cost.
+
+On a cefepime 2-compartment benchmark the trade-off looks like this:
+
+| Configuration | OFV | Wall time |
+|---|---:|---:|
+| `slsqp` (fixed-EBE) | 68,252 | 390 s |
+| `slsqp` + `interval = 10` | 66,118 | 633 s |
+| `slsqp` + `interval = 1` | **65,485** | 1,871 s |
+| `bobyqa` (default, derivative-free) | 65,598 | 315 s |
+
+The lesson the default encodes: `bobyqa` reaches a near-optimal OFV faster than
+any reconverged `slsqp` setting. Reach for reconvergence only when you *must*
+use a gradient optimizer (e.g. a very high parameter count where derivative-free
+search is too slow). **IOV models always reconverge and ignore this setting.**
+
+### Letting the optimizer run: `stagnation_guard`
+
+By default ferx short-circuits the NLopt outer loop once the OFV plateau is
+numerically flat (no improvement above `1e-3` over a rolling window), so SLSQP /
+L-BFGS terminate quickly instead of grinding through the full `maxiter` budget
+at full inner-loop cost. Set `stagnation_guard = FALSE` to disable the guard and
+let the optimizer run to its own xtol / ftol or to `maxiter` — useful when real
+OFV improvements are genuinely smaller than the guard's threshold (some
+γ-bearing FOCEI problems), or when debugging.
+
+```{r}
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  settings = list(
+    optimizer                    = "slsqp",
+    reconverge_gradient_interval = 1,      # recover the full gradient surface
+    stagnation_guard             = FALSE   # run to slsqp's own tolerances
+  )
 )
 ```
 
 ### Global pre-search
 
-`global_search = TRUE` runs NLopt's CRS2-LM gradient-free search to find a good
-basin before the local optimiser kicks in. Useful when initial estimates are
-weak (e.g. translated from a different drug) and you do not want to invoke a
-full SAEM stage:
+`global_search = TRUE` runs NLopt's CRS2-LM derivative-free search to find a
+good basin *before* the local optimizer takes over — useful when initial
+estimates are weak (e.g. translated from a different drug) and you would rather
+not spend a full SAEM stage. It requires lower/upper bounds on every theta and
+hands off to the `optimizer` once `global_maxeval` is exhausted.
 
 ```{r}
 #| eval: false
 fit <- ferx_fit(
   ex$model, ex$data,
-  settings = list(global_search = TRUE, global_maxeval = 200)
+  settings = list(global_search = TRUE, global_maxeval = 2000)
 )
 ```
 
-Combine with `n_starts` (see below) only when you understand the interaction
-described in the warning further down.
+Combine with `n_starts` (see [Multi-start optimization](#sec-multistart)) only
+when you understand the interaction described in that section's warning.
+
+### SAEM-specific settings
+
+SAEM controls its own iteration budget instead of `maxiter`, and exposes the
+sampler internals:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `n_exploration` | 150 | Stochastic exploration-phase iterations. |
+| `n_convergence` | 250 | Averaging / convergence-phase iterations. |
+| `n_mh_steps` | 10 | Metropolis-Hastings steps per subject per iteration. |
+| `adapt_interval` | 50 | How often (iterations) the MH proposal covariance is adapted. |
+| `omega_burnin` | 20 | Iterations holding Ω fixed while the sampler warms up. Guards against Ω collapse on sparse data; set `0` to disable. |
+| `seed` / `saem_seed` | 12345 | RNG seed for the MH sampler. |
+| `n_leapfrog` / `saem_n_leapfrog` | 0 | `0` = Metropolis-Hastings; a positive value swaps in one **HMC** proposal per subject per iteration. Requires an autodiff build. |
+
+```{r}
+#| eval: false
+fit_saem <- ferx_fit(
+  ex$model, ex$data,
+  method   = "saem",
+  settings = list(n_exploration = 300, n_convergence = 400, omega_burnin = 30)
+)
+```
+
+If your SAEM fit on sparse data shows a tiny `omega` paired with an inflated
+additive `sigma`, raise `omega_burnin` before anything else — that pattern is
+the classic Ω-collapse the burn-in is there to prevent.
+
+### Gauss-Newton, IMP and SIR settings
+
+| Setting | Applies to | Default | What it does |
+|---|---|---|---|
+| `gn_lambda` | `gn`, `gn_hybrid` | 0.01 | Levenberg-Marquardt damping; larger = more conservative steps. |
+| `steihaug_max_iters` | `trust_region` | engine | CG iteration budget for the trust-region subproblem; raise on ill-conditioned problems. |
+| `is_samples` | `imp` stage | 1000 | Importance samples per subject (halving the MC SE needs 4× the samples). |
+| `is_proposal_df` | `imp` stage | 5 | Degrees of freedom for the Student-t proposal. |
+| `is_low_ess_threshold` | `imp` stage | 0.1 | ESS fraction below which a subject is flagged. |
+
+For the SIR (`sir_samples`, `sir_resamples`, `sir_seed`) and multi-start
+(`n_starts`, `start_sigma`, `multi_start_seed`) knobs, see @sec-uncertainty and
+[Multi-start optimization](#sec-multistart) respectively — they have dedicated
+sections rather than being repeated here.
 
 ## Reading the output
 
