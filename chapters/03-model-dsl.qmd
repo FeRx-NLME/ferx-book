@@ -71,6 +71,19 @@ lower-triangle of the covariance matrix:
   block_kappa (KAPPA_CL, KAPPA_V) = [0.02, 0.005, 0.01]
 ```
 
+The three values for a 2×2 block are `[var1, cov12, var2]` — column-major
+lower triangle (subscripts: row, col). For a 3×3 block the six values are
+`[var1, cov21, cov31, var2, cov32, var3]`, where `cov_ij` means row=i, col=j.
+
+Use a block omega when CL and V are expected to co-vary (e.g. allometric
+subjects with both higher CL and larger V). A positive off-diagonal `cov12`
+means subjects with higher-than-typical CL also tend to have higher-than-typical
+V. The diagonal-only default (`omega ETA_CL ~ 0.09`) assumes independence.
+
+`ferx_cor_matrix(fit)` reports the estimated correlation matrix for a block
+omega after fitting. The bundled `warfarin_block_omega` example demonstrates
+this; see `ferx_example("warfarin_block_omega")`.
+
 ### `kappa` — inter-occasion variability
 
 The `kappa` keyword declares an occasion-level random effect; see @sec-iov.
@@ -101,20 +114,60 @@ Use dataset column names directly in expressions:
 `WT` and `CRCL` are read from the dataset row for each subject.
 The power-model form `(cov / ref)^theta` is the conventional allometric scaling.
 
+### Conditional logic (`if` / `else`)
+
+`[individual_parameters]` supports `if`/`else` for covariate-driven branching.
+
+**Block form** — use when the body contains multiple assignments or more than
+two branches:
+
+```
+[individual_parameters]
+  if (WT > 70) {
+    CL = TVCL * (WT / 70)^0.75 * exp(ETA_CL)
+  } else {
+    CL = TVCL * exp(ETA_CL)
+  }
+  V = TVV * exp(ETA_V)
+```
+
+**Inline (ternary) form** — use for a single-value branch:
+
+```
+[individual_parameters]
+  CL = if (SEX == 1) TVCL * 1.5 * exp(ETA_CL) else TVCL * exp(ETA_CL)
+  V  = TVV * exp(ETA_V)
+```
+
+Conditions support `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`, `!`.
+Both forms can be combined freely in the same block.
+
+Note: ferx skips mu-reference detection for parameters assigned inside an
+`if` block, since the ETA→THETA relationship is not unconditional there.
+Unconditional assignments in the same block are unaffected.
+
+The bundled `warfarin_if` example demonstrates a two-branch allometric CL
+model; see `ferx_example("warfarin_if")`.
+
 ## `[structural_model]`
 
 ### Analytical PK shortcuts
 
 ferx provides built-in analytical solutions for common compartment models:
 
-| Keyword | Description |
-|---|---|
-| `one_cpt_oral(cl, v, ka)` | 1-compartment, first-order absorption |
-| `one_cpt_oral(cl, v, ka, tlag)` | Same with absorption lag time |
-| `one_cpt_oral(cl, v, ka, f)` | Same with bioavailability |
-| `one_cpt_iv(cl, v)` | 1-compartment, IV bolus |
-| `two_cpt_oral(cl, v1, q, v2, ka)` | 2-compartment, oral |
-| `two_cpt_iv(cl, v1, q, v2)` | 2-compartment, IV |
+| Keyword | Cmts | Route | Parameters |
+|---|---|---|---|
+| `one_cpt_oral(cl, v, ka)` | 1 | Oral | `cl`, `v`, `ka` |
+| `one_cpt_iv_bolus(cl, v)` | 1 | IV bolus | `cl`, `v` |
+| `one_cpt_infusion(cl, v)` | 1 | IV infusion | `cl`, `v` |
+| `two_cpt_oral(cl, v1, q, v2, ka)` | 2 | Oral | `cl`, `v1`, `q`, `v2`, `ka` |
+| `two_cpt_iv_bolus(cl, v1, q, v2)` | 2 | IV bolus | `cl`, `v1`, `q`, `v2` |
+| `two_cpt_infusion(cl, v1, q, v2)` | 2 | IV infusion | `cl`, `v1`, `q`, `v2` |
+| `three_cpt_oral(cl, v1, q2, v2, q3, v3, ka)` | 3 | Oral | `cl`, `v1`, `q2`, `v2`, `q3`, `v3`, `ka` |
+| `three_cpt_iv_bolus(cl, v1, q2, v2, q3, v3)` | 3 | IV bolus | `cl`, `v1`, `q2`, `v2`, `q3`, `v3` |
+| `three_cpt_infusion(cl, v1, q2, v2, q3, v3)` | 3 | IV infusion | `cl`, `v1`, `q2`, `v2`, `q3`, `v3` |
+
+All analytical models accept an optional `lagtime=` (or `alag=`) argument; oral models additionally accept an optional `f=` bioavailability argument. See @sec-lagtime and @sec-bioavailability.
 
 These are invoked with named arguments:
 
@@ -156,8 +209,26 @@ Supported error distributions:
 | `proportional(sigma)` | `DV = IPRED * (1 + eps)` | Concentration data, relative variability |
 | `additive(sigma)` | `DV = IPRED + eps` | Log-scale or count data |
 | `combined(sigma_prop, sigma_add)` | Both | Transitional concentration ranges |
+| `log_additive(sigma)` | Additive on log scale; DV already log-transformed | Importing pre-logged data |
 
-`eps` is drawn from `N(0, sigma)` for each observation.
+`eps` is drawn from `N(0, sigma)` for each observation. All sigma parameters
+are on the standard-deviation scale.
+
+For log-transform-both-sides (LTBS) with DV on the **natural scale**, use the
+alternative declaration `log(DV) ~ additive(sigma)` — the engine log-transforms
+the DV column at load time. Use `DV ~ log_additive(sigma)` when the dataset
+already contains log-transformed values. See @sec-ltbs for full details.
+
+For multi-endpoint models (simultaneous PK/PD), prefix each line with `CMT=N:`
+to assign a distinct error model per compartment:
+
+```
+[error_model]
+  CMT=2: DV ~ proportional(PROP_ERR_PK)
+  CMT=3: DV ~ additive(ADD_ERR_PD)
+```
+
+See @sec-ltbs for LTBS details and @sec-multi-endpoint for per-CMT error models.
 
 ## `[initial_values]`
 
@@ -192,7 +263,7 @@ short form:
 | Block | Purpose | Chapter |
 |---|---|---|
 | `[scaling]` | Unit conversion (`obs_scale`) and per-CMT readouts (`y[CMT=N] = ...`) | @sec-special-features |
-| `[diffusion]` | Stochastic differential equations (process noise) | — (advanced) |
+| `[diffusion]` | Stochastic differential equations (process noise) | @sec-sde |
 | `[covariate_nn NAME]` | Neural-network covariate effect (Deep Compartment Models) | — (advanced) |
 | `[simulation]` | Embedded simulation trial design | @sec-simulation |
 

@@ -197,10 +197,13 @@ fit <- ferx_fit(
 )
 ```
 
-Start 0 always uses the exact initial values from the model file. Starts 1–7
-apply a log-space perturbation of size `start_sigma` (default 0.3, roughly
-±30% CV) to each theta. On an 8-core machine, 8 starts cost approximately the
-same wall time as a single run.
+The default is `n_starts = 1`, which runs a single fit with no perturbation —
+multi-start is opt-in. With `n_starts = 8`, the first run (internally labelled
+start 0) uses the exact initial values from the model file; starts 1–7 apply a
+log-space perturbation of size `start_sigma` (default 0.3, roughly ±30% CV) to
+each theta. Setting `n_starts = 0` is rejected at parse time with an error.
+On an 8-core machine, 8 starts cost approximately the same wall time as a
+single run.
 
 For ridge-shaped surfaces — where the optimiser needs to explore a wider
 neighbourhood — increase `start_sigma`:
