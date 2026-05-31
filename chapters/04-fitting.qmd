@@ -460,10 +460,11 @@ sections rather than being repeated here.
 summary(fit)
 ```
 
-`summary(fit)` is the run report: convergence, method, OFV/AIC/BIC, shrinkage,
-covariance status, the effective `[fit_options]`, and any warnings. The
-parameter table itself (THETA / OMEGA / SIGMA point estimates + SE) is shown
-by `print(fit)` or as a tidy data frame by `ferx_estimates(fit)`.
+`summary(fit)` is the run report: convergence, method, OFV/AIC/BIC,
+auto-derived model structure, shrinkage, DW statistic, gradient method
+requested vs used, covariance status and condition number, wall time, and
+warnings. The parameter table itself (THETA / OMEGA / SIGMA point estimates +
+SE) is shown by `print(fit)` or as a tidy data frame by `ferx_estimates(fit)`.
 
 ### Accessing individual fields
 
@@ -518,6 +519,56 @@ fit_reloaded <- ferx_load_fit("warfarin.fitrx")
 
 `include_data = TRUE` embeds the dataset as a base64 blob so the `.fitrx` file
 is self-contained — useful for sharing a fit across machines.
+
+## Async fitting (`ferx_fit_async` / `ferx_collect`) {#sec-async}
+
+For long fits you can keep the R session free while the optimizer runs in the
+background:
+
+```{r}
+#| eval: false
+handle <- ferx_fit_async(ex$model, ex$data, method = "saem", verbose = FALSE)
+# ... do other work ...
+fit <- ferx_collect(handle)   # block until done; shows live trace if verbose = TRUE
+```
+
+`ferx_fit_async()` returns a `ferx_job` handle immediately.
+`ferx_collect(handle)` blocks until the fit finishes and returns the same
+`ferx_fit` object you would get from `ferx_fit()`. In RStudio the job appears
+in the Jobs pane.
+
+::: {.callout-important}
+## Breaking change
+In earlier releases `ferx_fit_async()` blocked and returned the fit directly.
+It now returns a **handle** that must be passed to `ferx_collect()`. Code that
+did `fit <- ferx_fit_async(...)` must become
+`fit <- ferx_collect(ferx_fit_async(...))`.
+:::
+
+## Gradient method and `$gradient_used`
+
+`ferx_fit()` accepts a `gradient` argument (`"auto"`, `"ad"`, or `"fd"`).
+With `"auto"` (the default) the engine probes for the Enzyme autodiff build
+and falls back to finite differences when it is absent. ODE models
+additionally fall back silently from AD to FD even when AD was requested.
+
+The field `fit$gradient_used` tells you which gradient method the engine
+**actually used** — `"ad"`, `"fd"`, or `"N/A"` for methods that have no
+inner gradient (pure SAEM). Both `print(fit)` and `summary(fit)` display the
+requested and used methods side by side:
+
+```
+ Gradient (requested): auto   (used: fd)
+```
+
+For a quick programmatic check:
+
+```{r}
+#| eval: false
+fit$gradient_used          # "ad" | "fd" | "N/A"
+fit$gradient_method_inner  # raw engine label
+fit$gradient_method_outer  # raw engine label for the outer loop
+```
 
 ## Common convergence issues
 
