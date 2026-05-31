@@ -496,8 +496,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
   <li><a href="#convergence-diagnostics" id="toc-convergence-diagnostics" class="nav-link" data-scroll-target="#convergence-diagnostics"><span class="header-section-number">6.8</span> Convergence diagnostics</a></li>
   <li><a href="#saving-and-reloading-a-fit" id="toc-saving-and-reloading-a-fit" class="nav-link" data-scroll-target="#saving-and-reloading-a-fit"><span class="header-section-number">6.9</span> Saving and reloading a fit</a></li>
-  <li><a href="#common-convergence-issues" id="toc-common-convergence-issues" class="nav-link" data-scroll-target="#common-convergence-issues"><span class="header-section-number">6.10</span> Common convergence issues</a></li>
-  <li><a href="#comparing-models" id="toc-comparing-models" class="nav-link" data-scroll-target="#comparing-models"><span class="header-section-number">6.11</span> Comparing models</a></li>
+  <li><a href="#sec-async" id="toc-sec-async" class="nav-link" data-scroll-target="#sec-async"><span class="header-section-number">6.10</span> Async fitting (<code>ferx_fit_async</code> / <code>ferx_collect</code>)</a></li>
+  <li><a href="#gradient-method-and-gradient_used" id="toc-gradient-method-and-gradient_used" class="nav-link" data-scroll-target="#gradient-method-and-gradient_used"><span class="header-section-number">6.11</span> Gradient method and <code>$gradient_used</code></a></li>
+  <li><a href="#common-convergence-issues" id="toc-common-convergence-issues" class="nav-link" data-scroll-target="#common-convergence-issues"><span class="header-section-number">6.12</span> Common convergence issues</a></li>
+  <li><a href="#comparing-models" id="toc-comparing-models" class="nav-link" data-scroll-target="#comparing-models"><span class="header-section-number">6.13</span> Comparing models</a></li>
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/04-fitting.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
@@ -1053,7 +1055,7 @@ Tip
 </tr>
 <tr class="odd">
 <td><code>n_mh_steps</code></td>
-<td>10</td>
+<td>3</td>
 <td>Metropolis-Hastings steps per subject per iteration.</td>
 </tr>
 <tr class="even">
@@ -1189,7 +1191,7 @@ Warnings:
 --------------------------------------------------</code></pre>
 </div>
 </div>
-<p><code>summary(fit)</code> is the run report: convergence, method, OFV/AIC/BIC, shrinkage, covariance status, the effective <code>[fit_options]</code>, and any warnings. The parameter table itself (THETA / OMEGA / SIGMA point estimates + SE) is shown by <code>print(fit)</code> or as a tidy data frame by <code>ferx_estimates(fit)</code>.</p>
+<p><code>summary(fit)</code> is the run report: convergence, method, OFV/AIC/BIC, auto-derived model structure, shrinkage, DW statistic, gradient method requested vs used, covariance status and condition number, wall time, and warnings. The parameter table itself (THETA / OMEGA / SIGMA point estimates + SE) is shown by <code>print(fit)</code> or as a tidy data frame by <code>ferx_estimates(fit)</code>.</p>
 <section id="accessing-individual-fields" class="level3" data-number="6.7.1"><h3 data-number="6.7.1" class="anchored" data-anchor-id="accessing-individual-fields">
 <span class="header-section-number">6.7.1</span> Accessing individual fields</h3>
 <div class="cell">
@@ -1473,9 +1475,9 @@ ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
 1    1   foce    NA -269.92406       0        NA        NA               NA
 2    2   foce    NA   97.17279       1        NA  0.500000               NA
 3    3   foce    NA  -27.59852       2        NA  0.707107               NA
-4    4   foce    NA -254.37535       2        NA  0.707107               NA
+4    4   foce    NA -254.37535       3        NA  0.707107               NA
 5    5   foce    NA -262.51825       3        NA  0.707107               NA
-6    6   foce    NA -263.61975       3        NA  0.707107               NA
+6    6   foce    NA -263.61975       4        NA  0.707107               NA
   optimizer lm_lambda ofv_delta step_accepted cond_nll gamma mh_accept_rate
 1    bobyqa        NA        NA            NA       NA    NA             NA
 2    bobyqa        NA        NA            NA       NA    NA             NA
@@ -1503,8 +1505,43 @@ ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
 <span><span class="va">fit_reloaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_load_fit.html">ferx_load_fit</a></span><span class="op">(</span><span class="st">"warfarin.fitrx"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>include_data = TRUE</code> embeds the dataset as a base64 blob so the <code>.fitrx</code> file is self-contained — useful for sharing a fit across machines.</p>
-</section><section id="common-convergence-issues" class="level2" data-number="6.10"><h2 data-number="6.10" class="anchored" data-anchor-id="common-convergence-issues">
-<span class="header-section-number">6.10</span> Common convergence issues</h2>
+</section><section id="sec-async" class="level2" data-number="6.10"><h2 data-number="6.10" class="anchored" data-anchor-id="sec-async">
+<span class="header-section-number">6.10</span> Async fitting (<code>ferx_fit_async</code> / <code>ferx_collect</code>)</h2>
+<p>For long fits you can keep the R session free while the optimizer runs in the background:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">handle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit_async.html">ferx_fit_async</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"saem"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co"># ... do other work ...</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_collect.html">ferx_collect</a></span><span class="op">(</span><span class="va">handle</span><span class="op">)</span>   <span class="co"># block until done; shows live trace if verbose = TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_fit_async.html">ferx_fit_async()</a></code> returns a <code>ferx_job</code> handle immediately. <code>ferx_collect(handle)</code> blocks until the fit finishes and returns the same <code>ferx_fit</code> object you would get from <code><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit()</a></code>. In RStudio the job appears in the Jobs pane.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_fit_async.html">ferx_fit_async()</a></code> returns a job <strong>handle</strong>, not a fit object. Pass the handle to <code><a href="https://rdrr.io/pkg/ferx/man/ferx_collect.html">ferx_collect()</a></code> to retrieve the completed fit:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_collect.html">ferx_collect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit_async.html">ferx_fit_async</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</section><section id="gradient-method-and-gradient_used" class="level2" data-number="6.11"><h2 data-number="6.11" class="anchored" data-anchor-id="gradient-method-and-gradient_used">
+<span class="header-section-number">6.11</span> Gradient method and <code>$gradient_used</code>
+</h2>
+<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit()</a></code> accepts a <code>gradient</code> argument (<code>"auto"</code>, <code>"ad"</code>, or <code>"fd"</code>). With <code>"auto"</code> (the default) the engine probes for the Enzyme autodiff build and falls back to finite differences when it is absent. ODE models additionally fall back silently from AD to FD even when AD was requested.</p>
+<p>The field <code>fit$gradient_used</code> tells you which gradient method the engine <strong>actually used</strong> — <code>"ad"</code>, <code>"fd"</code>, or <code>"N/A"</code> for methods that have no inner gradient (pure SAEM). Both <code>print(fit)</code> and <code>summary(fit)</code> display the requested and used methods side by side:</p>
+<pre><code> Gradient (requested): auto   (used: fd)</code></pre>
+<p>For a quick programmatic check:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">gradient_used</span>          <span class="co"># "ad" | "fd" | "N/A"</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">gradient_method_inner</span>  <span class="co"># raw engine label</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">gradient_method_outer</span>  <span class="co"># raw engine label for the outer loop</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="common-convergence-issues" class="level2" data-number="6.12"><h2 data-number="6.12" class="anchored" data-anchor-id="common-convergence-issues">
+<span class="header-section-number">6.12</span> Common convergence issues</h2>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -1539,15 +1576,15 @@ ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
 <td>Widen bounds; re-parameterise</td>
 </tr>
 </tbody>
-</table></section><section id="comparing-models" class="level2" data-number="6.11"><h2 data-number="6.11" class="anchored" data-anchor-id="comparing-models">
-<span class="header-section-number">6.11</span> Comparing models</h2>
+</table></section><section id="comparing-models" class="level2" data-number="6.13"><h2 data-number="6.13" class="anchored" data-anchor-id="comparing-models">
+<span class="header-section-number">6.13</span> Comparing models</h2>
 <p>Use OFV differences for nested models (the likelihood ratio test) or AIC/BIC for non-nested:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_V</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb46"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># A model with fixed ETA_KA (simpler)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># A model with fixed ETA_KA (simpler)</span></span>
 <span><span class="va">ex_no_ka_bsv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span>   <span class="co"># would use a modified model</span></span>
 <span><span class="co"># delta_ofv &lt;- fit_base$ofv - fit_simpler$ofv</span></span>
 <span><span class="co"># p_value   &lt;- pchisq(delta_ofv, df = 1, lower.tail = FALSE)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

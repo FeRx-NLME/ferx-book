@@ -476,6 +476,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#iwres-vs-time-plot" id="toc-iwres-vs-time-plot" class="nav-link" data-scroll-target="#iwres-vs-time-plot"><span class="header-section-number">7.10.2</span> IWRES vs time plot</a></li>
   </ul>
 </li>
+  <li><a href="#fit-warnings-ferx_warnings" id="toc-fit-warnings-ferx_warnings" class="nav-link" data-scroll-target="#fit-warnings-ferx_warnings"><span class="header-section-number">7.11</span> Fit warnings (<code>ferx_warnings</code>)</a></li>
+  <li><a href="#covariance-condition-number" id="toc-covariance-condition-number" class="nav-link" data-scroll-target="#covariance-condition-number"><span class="header-section-number">7.12</span> Covariance condition number</a></li>
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/05-diagnostics.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
@@ -512,11 +514,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_V</code></pre>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Negative IWRES autocorrelation detected (Durbin-Watson = 2.61, lag-1 r = -0.37).
-Possible over-parameterisation or misspecified residual error model.</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sdtab</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sdtab</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -534,12 +532,12 @@ Note
 </section><section id="the-sdtab-columns" class="level2" data-number="7.2"><h2 data-number="7.2" class="anchored" data-anchor-id="the-sdtab-columns">
 <span class="header-section-number">7.2</span> The <code>sdtab</code> columns</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">sdtab</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">sdtab</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "ID"      "TIME"    "DV"      "PRED"    "IPRED"   "CWRES"   "IWRES"  
 [8] "EBE_OFV" "N_OBS"  </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "ID"     "ETA_CL" "ETA_V"  "ETA_KA"</code></pre>
 </div>
@@ -588,7 +586,7 @@ Note
 <section id="ipred-vs-dv" class="level3" data-number="7.3.1"><h3 data-number="7.3.1" class="anchored" data-anchor-id="ipred-vs-dv">
 <span class="header-section-number">7.3.1</span> IPRED vs DV</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">IPRED</span>, y <span class="op">=</span> <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">IPRED</span>, y <span class="op">=</span> <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, intercept <span class="op">=</span> <span class="fl">0</span>, colour <span class="op">=</span> <span class="st">"#1F6B7A"</span>, linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"IPRED"</span>, y <span class="op">=</span> <span class="st">"Observed DV"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -603,7 +601,7 @@ Note
 </section><section id="cwres-vs-pred" class="level3" data-number="7.3.2"><h3 data-number="7.3.2" class="anchored" data-anchor-id="cwres-vs-pred">
 <span class="header-section-number">7.3.2</span> CWRES vs PRED</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRED</span>, y <span class="op">=</span> <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRED</span>, y <span class="op">=</span> <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>,      colour <span class="op">=</span> <span class="st">"#1F6B7A"</span>, linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>, colour <span class="op">=</span> <span class="st">"#C8893E"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -619,7 +617,7 @@ Note
 </section><section id="cwres-vs-time" class="level3" data-number="7.3.3"><h3 data-number="7.3.3" class="anchored" data-anchor-id="cwres-vs-time">
 <span class="header-section-number">7.3.3</span> CWRES vs TIME</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">TIME</span>, y <span class="op">=</span> <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">TIME</span>, y <span class="op">=</span> <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>,      colour <span class="op">=</span> <span class="st">"#1F6B7A"</span>, linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>, colour <span class="op">=</span> <span class="st">"#C8893E"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -635,7 +633,7 @@ Note
 </section><section id="pred-vs-dv" class="level3" data-number="7.3.4"><h3 data-number="7.3.4" class="anchored" data-anchor-id="pred-vs-dv">
 <span class="header-section-number">7.3.4</span> PRED vs DV</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRED</span>, y <span class="op">=</span> <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PRED</span>, y <span class="op">=</span> <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, intercept <span class="op">=</span> <span class="fl">0</span>, colour <span class="op">=</span> <span class="st">"#1F6B7A"</span>, linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"PRED"</span>, y <span class="op">=</span> <span class="st">"Observed DV"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -651,9 +649,9 @@ Note
 <span class="header-section-number">7.4</span> ETA shrinkage</h2>
 <p>Shrinkage measures how much the individual ETAs are pulled toward zero relative to the omega variance. High shrinkage (&gt; 30%) means the data are not informative enough to reliably estimate individual deviations, and ETA-based diagnostics become unreliable.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eta</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eta</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.0002997811 0.0013375402 0.0010189518</code></pre>
+<pre><code>[1] -0.0013369140  0.0003782162  0.0006176730</code></pre>
 </div>
 </div>
 <p>(<code>summary(fit)</code> also prints shrinkage in its header block.)</p>
@@ -662,7 +660,7 @@ Note
 <span class="header-section-number">7.5</span> ETA distribution</h2>
 <p>ETAs should be approximately normally distributed around zero. Per-subject EBEs are stored in <code>fit$ebe_etas</code> (one row per subject).</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">etas_long</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span> <span class="op">|&gt;</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">etas_long</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html">pivot_longer</a></span><span class="op">(</span><span class="op">-</span><span class="va">ID</span>, names_to <span class="op">=</span> <span class="st">"eta"</span>, values_to <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">etas_long</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -681,28 +679,24 @@ Note
 <span class="header-section-number">7.6</span> ETA-covariate correlations</h2>
 <p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_eta_cov.html">ferx_eta_cov()</a></code> computes Pearson correlations between ETAs and subject-level covariates. The dataset must include numeric covariate columns (the warfarin example has none, so we switch to <code>two_cpt_oral_cov</code>, which carries <code>WT</code> and <code>CRCL</code>):</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex_cov</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex_cov</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
 <span><span class="va">fit_cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex_cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex_cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_Q, ETA_V1, ETA_V2</code></pre>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Negative IWRES autocorrelation detected (Durbin-Watson = 2.90, lag-1 r = -0.53).
-Possible over-parameterisation or misspecified residual error model.</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_eta_cov.html">ferx_eta_cov</a></span><span class="op">(</span><span class="va">fit_cov</span>, <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex_cov</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_eta_cov.html">ferx_eta_cov</a></span><span class="op">(</span><span class="va">fit_cov</span>, <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex_cov</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>      eta covariate      r  p_val flag
-1  ETA_KA        WT  0.144 0.4492     
-2   ETA_Q        WT  0.105 0.5791     
-3  ETA_V1        WT -0.085 0.6544     
-4  ETA_V2      CRCL  0.083 0.6642     
-5  ETA_V2        WT  0.071 0.7098     
-6  ETA_CL      CRCL  0.046 0.8074     
-7   ETA_Q      CRCL  0.043 0.8208     
-8  ETA_CL        WT -0.018 0.9249     
-9  ETA_V1      CRCL -0.007 0.9709     
-10 ETA_KA      CRCL -0.002 0.9931     </code></pre>
+1  ETA_KA        WT  0.143 0.4500     
+2   ETA_Q        WT  0.106 0.5772     
+3  ETA_V2      CRCL  0.083 0.6638     
+4  ETA_V2        WT  0.071 0.7080     
+5   ETA_Q      CRCL  0.043 0.8233     
+6  ETA_V1        WT -0.042 0.8239     
+7  ETA_CL      CRCL  0.039 0.8391     
+8  ETA_CL        WT  0.021 0.9137     
+9  ETA_V1      CRCL  0.001 0.9956     
+10 ETA_KA      CRCL -0.001 0.9953     </code></pre>
 </div>
 </div>
 <p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_eta_cov.html">ferx_eta_cov()</a></code> flags candidates for a covariate search at |r| ≥ 0.3.</p>
@@ -710,7 +704,7 @@ Possible over-parameterisation or misspecified residual error model.</code></pre
 <span class="header-section-number">7.7</span> Parameter correlation matrix</h2>
 <p>After a covariance step, inspect correlations between estimated parameters. Off-diagonal values near ±1 indicate structural identifiability problems.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">covariance_status</span>, <span class="st">"computed"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">covariance_status</span>, <span class="st">"computed"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_cor_matrix.html">ferx_cor_matrix</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html">message</a></span><span class="op">(</span><span class="st">"Covariance step did not produce a usable matrix (status: "</span>,</span>
@@ -718,46 +712,46 @@ Possible over-parameterisation or misspecified residual error model.</code></pre
 <span><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>           TVCL    TVV   TVKA ETA_CL  ETA_V ETA_KA PROP_ERR
-TVCL      1.000 -0.745 -0.155  0.002  0.076  0.006    0.630
-TVV      -0.745  1.000  0.139 -0.001 -0.100 -0.005   -0.355
-TVKA     -0.155  0.139  1.000  0.000 -0.015 -0.041   -0.157
-ETA_CL    0.002 -0.001  0.000  1.000  0.000  0.000    0.001
-ETA_V     0.076 -0.100 -0.015  0.000  1.000  0.001    0.036
-ETA_KA    0.006 -0.005 -0.041  0.000  0.001  1.000    0.006
-PROP_ERR  0.630 -0.355 -0.157  0.001  0.036  0.006    1.000</code></pre>
+TVCL      1.000 -0.740 -0.153  0.007  0.079  0.006    0.625
+TVV      -0.740  1.000  0.137 -0.005 -0.105 -0.006   -0.347
+TVKA     -0.153  0.137  1.000 -0.001 -0.015 -0.042   -0.155
+ETA_CL    0.007 -0.005 -0.001  1.000  0.001  0.000    0.004
+ETA_V     0.079 -0.105 -0.015  0.001  1.000  0.001    0.037
+ETA_KA    0.006 -0.006 -0.042  0.000  0.001  1.000    0.006
+PROP_ERR  0.625 -0.347 -0.155  0.004  0.037  0.006    1.000</code></pre>
 </div>
 </div>
 </section><section id="parameter-estimates-table" class="level2" data-number="7.8"><h2 data-number="7.8" class="anchored" data-anchor-id="parameter-estimates-table">
 <span class="header-section-number">7.8</span> Parameter estimates table</h2>
 <p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_estimates.html">ferx_estimates()</a></code> returns a tidy data frame for programmatic use or table export:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_estimates.html">ferx_estimates</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_estimates.html">ferx_estimates</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     param    transform    estimate           se   rse_pct    lower_95
-1     TVCL     identity 0.132738955 0.0145402547 10.954022 0.104240056
-2      TVV     identity 7.695089515 0.2928633034  3.805847 7.121077441
-3     TVKA     identity 0.757464910 0.0349844867  4.618628 0.688895316
-4   ETA_CL     variance 0.028586727 0.0063944510 22.368601 0.016053603
-5    ETA_V     variance 0.009613097 0.0021651030 22.522429 0.005369495
-6   ETA_KA     variance 0.340761295 0.0763151067 22.395474 0.191183686
-7 PROP_ERR proportional 0.010638896 0.0007876821  7.403795 0.009095040
+1     TVCL     identity 0.132778591 0.0143349764 10.796150 0.104682037
+2      TVV     identity 7.692731178 0.2899338576  3.768933 7.124460817
+3     TVKA     identity 0.756317509 0.0349056621  4.615213 0.687902412
+4   ETA_CL     variance 0.028493442 0.0063633209 22.332581 0.016021333
+5    ETA_V     variance 0.009597946 0.0021605930 22.510993 0.005363184
+6   ETA_KA     variance 0.340694154 0.0762721191 22.387270 0.191200801
+7 PROP_ERR proportional 0.010640100 0.0007838148  7.366612 0.009103823
     upper_95 estimate_natural lower_95_natural upper_95_natural init_as_sd
-1 0.16123785               NA               NA               NA      FALSE
-2 8.26910159               NA               NA               NA      FALSE
-3 0.82603450               NA               NA               NA      FALSE
-4 0.04111985               NA               NA               NA      FALSE
-5 0.01385670               NA               NA               NA      FALSE
-6 0.49033890               NA               NA               NA      FALSE
-7 0.01218275               NA               NA               NA       TRUE</code></pre>
+1 0.16087514               NA               NA               NA      FALSE
+2 8.26100154               NA               NA               NA      FALSE
+3 0.82473261               NA               NA               NA      FALSE
+4 0.04096555               NA               NA               NA      FALSE
+5 0.01383271               NA               NA               NA      FALSE
+6 0.49018751               NA               NA               NA      FALSE
+7 0.01217638               NA               NA               NA       TRUE</code></pre>
 </div>
 </div>
 </section><section id="epsilon-shrinkage" class="level2" data-number="7.9"><h2 data-number="7.9" class="anchored" data-anchor-id="epsilon-shrinkage">
 <span class="header-section-number">7.9</span> Epsilon shrinkage</h2>
 <p>Epsilon shrinkage measures compression in the residual distribution:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eps</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eps</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.1527897</code></pre>
+<pre><code>[1] 0.1528842</code></pre>
 </div>
 </div>
 <p>Low epsilon shrinkage (&lt; 20%) is generally acceptable.</p>
@@ -786,22 +780,22 @@ PROP_ERR  0.630 -0.355 -0.157  0.001  0.036  0.006    1.000</code></pre>
 </table>
 <p><code><a href="https://rdrr.io/pkg/ferx/man/check_diagnostics.html">check_diagnostics()</a></code> returns both in a tidy list alongside shrinkage:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/check_diagnostics.html">check_diagnostics</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/check_diagnostics.html">check_diagnostics</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="va">diag</span><span class="op">$</span><span class="va">autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  dw_statistic     lag1_r                     flag
-1     2.608949 -0.3652228 negative autocorrelation</code></pre>
+1     2.608941 -0.3652154 negative autocorrelation</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">diag</span><span class="op">$</span><span class="va">shrinkage</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">diag</span><span class="op">$</span><span class="va">shrinkage</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>     param type    shrinkage shrinkage_pct
-1   ETA_CL  eta 0.0002997811    0.02997811
-2    ETA_V  eta 0.0013375402    0.13375402
-3   ETA_KA  eta 0.0010189518    0.10189518
-4 PROP_ERR  eps 0.1527896669   15.27896669</code></pre>
+<pre><code>     param type     shrinkage shrinkage_pct
+1   ETA_CL  eta -0.0013369140   -0.13369140
+2    ETA_V  eta  0.0003782162    0.03782162
+3   ETA_KA  eta  0.0006176730    0.06176730
+4 PROP_ERR  eps  0.1528842331   15.28842331</code></pre>
 </div>
 </div>
-<p><code>print(fit)</code> shows the same values in a <code>--- Diagnostics ---</code> block, and a <code><a href="https://rdrr.io/r/base/message.html">message()</a></code> is emitted automatically when DW &lt; 1.5 or DW &gt; 2.5 with ordered remedies.</p>
+<p><code>print(fit)</code> shows the same values in its <code>DIAGNOSTICS</code> section (one compact line: <code>Covariance: computed   Cond: 6.7   DW: 2.61 [negative autocorrelation]   IWRES lag-1 r: -0.365</code>), and a <code><a href="https://rdrr.io/r/base/message.html">message()</a></code> is emitted automatically when DW &lt; 1.5 or DW &gt; 2.5 with ordered remedies.</p>
 <section id="interpreting-the-dw-statistic" class="level3" data-number="7.10.1"><h3 data-number="7.10.1" class="anchored" data-anchor-id="interpreting-the-dw-statistic">
 <span class="header-section-number">7.10.1</span> Interpreting the DW statistic</h3>
 <table class="caption-top table">
@@ -835,7 +829,7 @@ PROP_ERR  0.630 -0.355 -0.157  0.001  0.036  0.006    1.000</code></pre>
 </table></section><section id="iwres-vs-time-plot" class="level3" data-number="7.10.2"><h3 data-number="7.10.2" class="anchored" data-anchor-id="iwres-vs-time-plot">
 <span class="header-section-number">7.10.2</span> IWRES vs time plot</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">diag</span><span class="op">$</span><span class="va">autocorrelation</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">diag</span><span class="op">$</span><span class="va">autocorrelation</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">dw_val</span> <span class="op">&lt;-</span> <span class="va">diag</span><span class="op">$</span><span class="va">autocorrelation</span><span class="op">$</span><span class="va">dw_statistic</span></span>
 <span>  <span class="va">r_val</span>  <span class="op">&lt;-</span> <span class="va">diag</span><span class="op">$</span><span class="va">autocorrelation</span><span class="op">$</span><span class="va">lag1_r</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">TIME</span>, y <span class="op">=</span> <span class="va">IWRES</span>, colour <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -849,9 +843,80 @@ PROP_ERR  0.630 -0.355 -0.157  0.001  0.036  0.006    1.000</code></pre>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+</section></section><section id="fit-warnings-ferx_warnings" class="level2" data-number="7.11"><h2 data-number="7.11" class="anchored" data-anchor-id="fit-warnings-ferx_warnings">
+<span class="header-section-number">7.11</span> Fit warnings (<code>ferx_warnings</code>)</h2>
+<p><code>print(fit)</code> ends with a colour-coded warning-count footer (e.g. <code>1 warning   2 info  --  call ferx_warnings(fit) for details</code>). Call <code>ferx_warnings(fit)</code> to see the full grouped output with per-category remediation guidance:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_warnings.html">ferx_warnings</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Warnings are grouped by severity:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead><tr class="header">
+<th>Severity</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>critical</code></td>
+<td>Convergence or covariance failure — results may be unreliable</td>
+</tr>
+<tr class="even">
+<td><code>warning</code></td>
+<td>Something worth investigating (e.g.&nbsp;autocorrelation, high %RSE)</td>
+</tr>
+<tr class="odd">
+<td><code>info</code></td>
+<td>Informational (e.g.&nbsp;mu-referencing detected, thread-pool sizing)</td>
+</tr>
+</tbody>
+</table>
+<p>For programmatic use, <code>ferx_warnings(fit, as_df = TRUE)</code> returns the underlying data frame with columns <code>severity</code>, <code>category</code>, <code>message</code>, and <code>source_method</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_warnings.html">ferx_warnings</a></span><span class="op">(</span><span class="va">fit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="covariance-condition-number" class="level2" data-number="7.12"><h2 data-number="7.12" class="anchored" data-anchor-id="covariance-condition-number">
+<span class="header-section-number">7.12</span> Covariance condition number</h2>
+<p>After the covariance step, <code>fit$condition_number</code> gives the ratio of the largest to smallest eigenvalue of the correlation matrix of estimates. It is shown in <code>print(fit)</code> and <code>summary(fit)</code> as <code>Cond: &lt;value&gt;</code>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead><tr class="header">
+<th>Condition number</th>
+<th>Interpretation</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>&lt; 100</td>
+<td>Well-conditioned; estimates are stable</td>
+</tr>
+<tr class="even">
+<td>100 – 1000</td>
+<td>Mild ill-conditioning; inspect high-correlation parameter pairs</td>
+</tr>
+<tr class="odd">
+<td>&gt; 1000</td>
+<td>Severe ill-conditioning; ferx emits a warning. Consider removing parameters or re-parameterising</td>
+</tr>
+<tr class="even">
+<td><code>Inf</code></td>
+<td>Non-positive eigenvalue — covariance matrix is singular</td>
+</tr>
+</tbody>
+</table>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">condition_number</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">eigenvalues</span>      <span class="co"># full sorted vector; the ratio of first to last is condition_number</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>ferx_cor_matrix(fit)</code> shows the off-diagonal parameter correlations that drive a high condition number — pairs near ±1 are the culprits.</p>
 
 
-</section></section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {

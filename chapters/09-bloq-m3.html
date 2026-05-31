@@ -577,15 +577,15 @@ window.Quarto = {
 # (data/warfarin-bloq.csv); their DV cell carries the LLOQ value.
 
 [parameters]
-  theta TVCL(0.2, 0.001, 10.0)
-  theta TVV(10.0, 0.1, 500.0)
-  theta TVKA(1.5, 0.01, 50.0)
+  theta TVCL(0.134, 0.001, 10.0)
+  theta TVV(8.1, 0.1, 500.0)
+  theta TVKA(1.0, 0.01, 50.0)
 
-  omega ETA_CL ~ 0.09
-  omega ETA_V  ~ 0.04
-  omega ETA_KA ~ 0.30
+  omega ETA_CL ~ 0.07
+  omega ETA_V  ~ 0.02
+  omega ETA_KA ~ 0.40
 
-  sigma PROP_ERR ~ 0.02
+  sigma PROP_ERR ~ 0.01 (sd)
 
 [individual_parameters]
   CL = TVCL * exp(ETA_CL)
@@ -620,7 +620,7 @@ Dataset:   warfarin_bloq
 Converged: YES
 Method:    FOCEI
 Gradient:  auto (requested) -&gt; fd (used)
-ferx v0.1.0
+ferx v0.1.5 (core v0.1.0)
 
 Settings (model file / call-time override):
   method                       focei  [model only]
@@ -630,18 +630,21 @@ Settings (model file / call-time override):
 
 Structure: 1-cpt oral  (TVCL, TVV, TVKA)  |  IIV: ETA_CL, ETA_V, ETA_KA  |  IOV: none  |  Residual: proportional
 
-OFV: -217.3148  AIC: -203.3148  BIC: -184.4115
-Subjects: 10  Obs: 110  Params: 7  Iter: 540
-Shrinkage: ETA1=-5.4%  ETA2=-5.2%  ETA3=-5.3% 
-EPS shrinkage: 15.7%
-Covariance: computed  Cond: 55.3  |  Wall time: 0.9s
+OFV: -217.1748  AIC: -203.1748  BIC: -184.2714
+Subjects: 10  Obs: 110  Params: 7  Iter: 71
+Shrinkage: ETA1=1.7%  ETA2=-0.3%  ETA3=-0.2% 
+EPS shrinkage: 16.2%
+DW: 2.65 [negative autocorrelation]
+lag-1 r: -0.395
+Covariance: computed  Cond: 5.7  |  Wall time: 0.0s
 
 Warnings:
   * mu-ref: ETA_CL, ETA_KA, ETA_V 
-  * 89 EBE fallback(s) 
+  * Negative IWRES autocorrelation detected (Durbin-Watson = 2.65). Possible over-parameterization or misspecified error model. 
 --------------------------------------------------</code></pre>
 </div>
 </div>
+<p><code>summary(fit_m3)</code> includes the model structure, covariance condition number, and any warnings — use <code>ferx_warnings(fit_m3)</code> to inspect them grouped by severity.</p>
 </section><section id="comparing-m3-vs-naive-bloq-removal" class="level2" data-number="13.6"><h2 data-number="13.6" class="anchored" data-anchor-id="comparing-m3-vs-naive-bloq-removal">
 <span class="header-section-number">13.6</span> Comparing M3 vs naive BLOQ removal</h2>
 <p>To quantify the bias from discarding BLOQ values, fit the same dataset both ways:</p>
@@ -663,11 +666,11 @@ argument overrides it with `drop`. The call-time value will be used.</code></pre
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"M3   OFV: %.1f\n"</span>, <span class="va">fit_m3</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>M3   OFV: -217.3</code></pre>
+<pre><code>M3   OFV: -217.2</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"Drop OFV: %.1f\n"</span>, <span class="va">fit_drop</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Drop OFV: 27.3</code></pre>
+<pre><code>Drop OFV: 29.7</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># Compare TVCL estimates</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"TVCL M3:   %.3f\n"</span>, <span class="va">fit_m3</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="st">"TVCL"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
