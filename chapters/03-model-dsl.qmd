@@ -72,8 +72,8 @@ lower-triangle of the covariance matrix:
 ```
 
 The three values for a 2×2 block are `[var1, cov12, var2]` — column-major
-lower triangle. For a 3×3 block the six values are
-`[var1, cov21, cov31, var2, cov32, var3]`.
+lower triangle (subscripts: row, col). For a 3×3 block the six values are
+`[var1, cov21, cov31, var2, cov32, var3]`, where `cov_ij` means row=i, col=j.
 
 Use a block omega when CL and V are expected to co-vary (e.g. allometric
 subjects with both higher CL and larger V). A positive off-diagonal `cov12`
@@ -142,10 +142,9 @@ two branches:
 Conditions support `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`, `!`.
 Both forms can be combined freely in the same block.
 
-Note: when a parameter assignment is inside an `if` block, ferx cannot
-unconditionally detect the ETA→THETA mu-referencing relationship for that
-parameter, so mu-referencing is skipped for it. Unconditional assignments in
-the same block are unaffected.
+Note: ferx skips mu-reference detection for parameters assigned inside an
+`if` block, since the ETA→THETA relationship is not unconditional there.
+Unconditional assignments in the same block are unaffected.
 
 The bundled `warfarin_if` example demonstrates a two-branch allometric CL
 model; see `ferx_example("warfarin_if")`.
@@ -168,7 +167,7 @@ ferx provides built-in analytical solutions for common compartment models:
 | `three_cpt_iv_bolus(cl, v1, q2, v2, q3, v3)` | 3 | IV bolus | `cl`, `v1`, `q2`, `v2`, `q3`, `v3` |
 | `three_cpt_infusion(cl, v1, q2, v2, q3, v3)` | 3 | IV infusion | `cl`, `v1`, `q2`, `v2`, `q3`, `v3` |
 
-All analytical models accept an optional `lagtime=` (or `alag=`) argument and an optional `f=` bioavailability argument (oral models only); see @sec-lagtime and @sec-bioavailability.
+All analytical models accept an optional `lagtime=` (or `alag=`) argument; oral models additionally accept an optional `f=` bioavailability argument. See @sec-lagtime and @sec-bioavailability.
 
 These are invoked with named arguments:
 
@@ -210,11 +209,15 @@ Supported error distributions:
 | `proportional(sigma)` | `DV = IPRED * (1 + eps)` | Concentration data, relative variability |
 | `additive(sigma)` | `DV = IPRED + eps` | Log-scale or count data |
 | `combined(sigma_prop, sigma_add)` | Both | Transitional concentration ranges |
-| `log(DV) ~ additive(sigma)` | Additive on log scale; DV on natural scale | Multiplicative error, NONMEM log-scale convention |
-| `DV ~ log_additive(sigma)` | Same; DV already log-transformed in dataset | Importing pre-logged NONMEM data |
+| `log_additive(sigma)` | Additive on log scale; DV already log-transformed | Importing pre-logged data |
 
 `eps` is drawn from `N(0, sigma)` for each observation. All sigma parameters
 are on the standard-deviation scale.
+
+For log-transform-both-sides (LTBS) with DV on the **natural scale**, use the
+alternative declaration `log(DV) ~ additive(sigma)` — the engine log-transforms
+the DV column at load time. Use `DV ~ log_additive(sigma)` when the dataset
+already contains log-transformed values. See @sec-ltbs for full details.
 
 For multi-endpoint models (simultaneous PK/PD), prefix each line with `CMT=N:`
 to assign a distinct error model per compartment:
