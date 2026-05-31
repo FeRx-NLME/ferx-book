@@ -155,13 +155,14 @@ ex$data |>
   summary()
 ```
 
-Intermediate steps (inspect, section edit, init check) slot in the same chain:
+To peek at a section mid-chain, use `ferx_get_section()` — it returns the
+requested block and passes the `ferx_model` through invisibly:
 
 ```{r}
 #| eval: false
 ex$data |>
   ferx_model(ex$model) |>
-  ferx_model_inspect()  |>   # prints structure; passes ferx_model through invisibly
+  ferx_get_section("parameters") |>   # prints [parameters] block; chain continues
   ferx_fit()
 ```
 
@@ -195,12 +196,13 @@ A typical first-pass workflow on a new dataset:
 path <- "my_model.ferx"
 ferx_model_new(path, template = "1cpt_oral")
 
-# 2. Edit (manually or programmatically), then validate
-ferx_model_validate(path)
-ferx_model_inspect(path)
+# 2. Edit (manually or programmatically), then validate and inspect
+m <- ferx_model("my_data.csv", path)
+ferx_model_validate(m)
+ferx_model_inspect(m)
 
 # 3. Sanity-check inits before the real fit
-ferx_check_init(path, "my_data.csv")
+ferx_check_init(m)
 
 # 4. Fit (optionally bootstrap inits from NCA) — pipe style
 fit <- "my_data.csv" |>

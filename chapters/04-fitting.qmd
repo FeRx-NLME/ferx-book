@@ -418,7 +418,7 @@ sampler internals:
 |---|---|---|
 | `n_exploration` | 150 | Stochastic exploration-phase iterations. |
 | `n_convergence` | 250 | Averaging / convergence-phase iterations. |
-| `n_mh_steps` | 10 | Metropolis-Hastings steps per subject per iteration. |
+| `n_mh_steps` | 3 | Metropolis-Hastings steps per subject per iteration. |
 | `adapt_interval` | 50 | How often (iterations) the MH proposal covariance is adapted. |
 | `omega_burnin` | 20 | Iterations holding Ω fixed while the sampler warms up. Guards against Ω collapse on sparse data; set `0` to disable. |
 | `seed` / `saem_seed` | 12345 | RNG seed for the MH sampler. |
@@ -538,10 +538,16 @@ fit <- ferx_collect(handle)   # block until done; shows live trace if verbose = 
 in the Jobs pane.
 
 ::: {.callout-important}
-## Two-step pattern required
-`ferx_fit_async()` returns a job handle, not a fit object.
+## Breaking change — two-step pattern required
+`ferx_fit_async()` returns a job **handle**, not a fit object.
 Always pass the handle to `ferx_collect()` to retrieve the result:
-`fit <- ferx_collect(ferx_fit_async(...))`.
+
+```r
+fit <- ferx_collect(ferx_fit_async(...))
+```
+
+Code that assigned the result of `ferx_fit_async()` directly to a fit object
+must be updated to include the `ferx_collect()` step.
 :::
 
 ## Gradient method and `$gradient_used`

@@ -244,12 +244,12 @@ ferx_estimates(fit_sde)        # DIFF_CENTRAL appears in the theta block
 ### SDE-specific notes
 
 ::: {.callout-important}
-**Gradient method**: SDE models are **incompatible with Enzyme autodiff**.
-`gradient_method = fd` is required and is set automatically in the model file.
-Finite-difference gradients make each function evaluation significantly slower
-than an equivalent analytical PK model. The Enzyme toolchain is recommended
-for wall-time speed — without it, fitting a moderately complex SDE model can
-take 10–30× longer than FOCE on an analytical model.
+**Gradient method**: SDE models require `gradient_method = fd`; Enzyme autodiff
+is not compatible with the EKF covariance propagation step.
+`gradient_method = fd` is set automatically in the model file — no manual
+override is needed. Finite-difference gradients make each function evaluation
+significantly slower than an equivalent analytical PK model; this slowdown is
+inherent to SDE fitting and cannot be mitigated by the Enzyme autodiff build.
 :::
 
 | Property | SDE model | Standard ODE |
