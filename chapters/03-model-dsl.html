@@ -464,6 +464,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <a href="#individual_parameters" id="toc-individual_parameters" class="nav-link" data-scroll-target="#individual_parameters"><span class="header-section-number">5.3</span> <code>[individual_parameters]</code></a>
   <ul class="collapse">
 <li><a href="#covariate-effects" id="toc-covariate-effects" class="nav-link" data-scroll-target="#covariate-effects"><span class="header-section-number">5.3.1</span> Covariate effects</a></li>
+  <li><a href="#conditional-logic-if-else" id="toc-conditional-logic-if-else" class="nav-link" data-scroll-target="#conditional-logic-if-else"><span class="header-section-number">5.3.2</span> Conditional logic (<code>if</code> / <code>else</code>)</a></li>
   </ul>
 </li>
   <li>
@@ -574,6 +575,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>[parameters]
   block_omega (ETA_CL, ETA_V) = [0.09, 0.02, 0.04]   # var(CL), cov(CL,V), var(V)
   block_kappa (KAPPA_CL, KAPPA_V) = [0.02, 0.005, 0.01]</code></pre>
+<p>The three values for a 2×2 block are <code>[var1, cov12, var2]</code> — column-major lower triangle (subscripts: row, col). For a 3×3 block the six values are <code>[var1, cov21, cov31, var2, cov32, var3]</code>, where <code>cov_ij</code> means row=i, col=j.</p>
+<p>Use a block omega when CL and V are expected to co-vary (e.g.&nbsp;allometric subjects with both higher CL and larger V). A positive off-diagonal <code>cov12</code> means subjects with higher-than-typical CL also tend to have higher-than-typical V. The diagonal-only default (<code>omega ETA_CL ~ 0.09</code>) assumes independence.</p>
+<p><code>ferx_cor_matrix(fit)</code> reports the estimated correlation matrix for a block omega after fitting. The bundled <code>warfarin_block_omega</code> example demonstrates this; see <code>ferx_example("warfarin_block_omega")</code>.</p>
 </section><section id="kappa-inter-occasion-variability" class="level3" data-number="5.2.2"><h3 data-number="5.2.2" class="anchored" data-anchor-id="kappa-inter-occasion-variability">
 <span class="header-section-number">5.2.2</span> <code>kappa</code> — inter-occasion variability</h3>
 <p>The <code>kappa</code> keyword declares an occasion-level random effect; see <a href="10-iov.html#sec-iov" class="quarto-xref"><span>Section 14.1</span></a>.</p>
@@ -593,6 +597,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   CL = TVCL * (WT / 70)^THETA_WT * (CRCL / 100)^THETA_CRCL * exp(ETA_CL)
   V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)</code></pre>
 <p><code>WT</code> and <code>CRCL</code> are read from the dataset row for each subject. The power-model form <code>(cov / ref)^theta</code> is the conventional allometric scaling.</p>
+</section><section id="conditional-logic-if-else" class="level3" data-number="5.3.2"><h3 data-number="5.3.2" class="anchored" data-anchor-id="conditional-logic-if-else">
+<span class="header-section-number">5.3.2</span> Conditional logic (<code>if</code> / <code>else</code>)</h3>
+<p><code>[individual_parameters]</code> supports <code>if</code>/<code>else</code> for covariate-driven branching.</p>
+<p><strong>Block form</strong> — use when the body contains multiple assignments or more than two branches:</p>
+<pre><code>[individual_parameters]
+  if (WT &gt; 70) {
+    CL = TVCL * (WT / 70)^0.75 * exp(ETA_CL)
+  } else {
+    CL = TVCL * exp(ETA_CL)
+  }
+  V = TVV * exp(ETA_V)</code></pre>
+<p><strong>Inline (ternary) form</strong> — use for a single-value branch:</p>
+<pre><code>[individual_parameters]
+  CL = if (SEX == 1) TVCL * 1.5 * exp(ETA_CL) else TVCL * exp(ETA_CL)
+  V  = TVV * exp(ETA_V)</code></pre>
+<p>Conditions support <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>==</code>, <code>!=</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>. Both forms can be combined freely in the same block.</p>
+<p>Note: ferx skips mu-reference detection for parameters assigned inside an <code>if</code> block, since the ETA→THETA relationship is not unconditional there. Unconditional assignments in the same block are unaffected.</p>
+<p>The bundled <code>warfarin_if</code> example demonstrates a two-branch allometric CL model; see <code>ferx_example("warfarin_if")</code>.</p>
 </section></section><section id="structural_model" class="level2" data-number="5.4"><h2 data-number="5.4" class="anchored" data-anchor-id="structural_model">
 <span class="header-section-number">5.4</span> <code>[structural_model]</code>
 </h2>
@@ -600,37 +622,94 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="header-section-number">5.4.1</span> Analytical PK shortcuts</h3>
 <p>ferx provides built-in analytical solutions for common compartment models:</p>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
 <thead><tr class="header">
 <th>Keyword</th>
-<th>Description</th>
+<th>Cmts</th>
+<th>Route</th>
+<th>Parameters</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>one_cpt_oral(cl, v, ka)</code></td>
-<td>1-compartment, first-order absorption</td>
+<td>1</td>
+<td>Oral</td>
+<td>
+<code>cl</code>, <code>v</code>, <code>ka</code>
+</td>
 </tr>
 <tr class="even">
-<td><code>one_cpt_oral(cl, v, ka, tlag)</code></td>
-<td>Same with absorption lag time</td>
+<td><code>one_cpt_iv_bolus(cl, v)</code></td>
+<td>1</td>
+<td>IV bolus</td>
+<td>
+<code>cl</code>, <code>v</code>
+</td>
 </tr>
 <tr class="odd">
-<td><code>one_cpt_oral(cl, v, ka, f)</code></td>
-<td>Same with bioavailability</td>
+<td><code>one_cpt_infusion(cl, v)</code></td>
+<td>1</td>
+<td>IV infusion</td>
+<td>
+<code>cl</code>, <code>v</code>
+</td>
 </tr>
 <tr class="even">
-<td><code>one_cpt_iv(cl, v)</code></td>
-<td>1-compartment, IV bolus</td>
-</tr>
-<tr class="odd">
 <td><code>two_cpt_oral(cl, v1, q, v2, ka)</code></td>
-<td>2-compartment, oral</td>
+<td>2</td>
+<td>Oral</td>
+<td>
+<code>cl</code>, <code>v1</code>, <code>q</code>, <code>v2</code>, <code>ka</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>two_cpt_iv_bolus(cl, v1, q, v2)</code></td>
+<td>2</td>
+<td>IV bolus</td>
+<td>
+<code>cl</code>, <code>v1</code>, <code>q</code>, <code>v2</code>
+</td>
 </tr>
 <tr class="even">
-<td><code>two_cpt_iv(cl, v1, q, v2)</code></td>
-<td>2-compartment, IV</td>
+<td><code>two_cpt_infusion(cl, v1, q, v2)</code></td>
+<td>2</td>
+<td>IV infusion</td>
+<td>
+<code>cl</code>, <code>v1</code>, <code>q</code>, <code>v2</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>three_cpt_oral(cl, v1, q2, v2, q3, v3, ka)</code></td>
+<td>3</td>
+<td>Oral</td>
+<td>
+<code>cl</code>, <code>v1</code>, <code>q2</code>, <code>v2</code>, <code>q3</code>, <code>v3</code>, <code>ka</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>three_cpt_iv_bolus(cl, v1, q2, v2, q3, v3)</code></td>
+<td>3</td>
+<td>IV bolus</td>
+<td>
+<code>cl</code>, <code>v1</code>, <code>q2</code>, <code>v2</code>, <code>q3</code>, <code>v3</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>three_cpt_infusion(cl, v1, q2, v2, q3, v3)</code></td>
+<td>3</td>
+<td>IV infusion</td>
+<td>
+<code>cl</code>, <code>v1</code>, <code>q2</code>, <code>v2</code>, <code>q3</code>, <code>v3</code>
+</td>
 </tr>
 </tbody>
 </table>
+<p>All analytical models accept an optional <code>lagtime=</code> (or <code>alag=</code>) argument; oral models additionally accept an optional <code>f=</code> bioavailability argument. See <a href="14-special-features.html#sec-lagtime" class="quarto-xref"><span>Section 15.4</span></a> and <a href="14-special-features.html#sec-bioavailability" class="quarto-xref"><span>Section 15.6</span></a>.</p>
 <p>These are invoked with named arguments:</p>
 <pre><code>[structural_model]
   pk one_cpt_oral(cl=CL, v=V, ka=KA)</code></pre>
@@ -678,9 +757,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Both</td>
 <td>Transitional concentration ranges</td>
 </tr>
+<tr class="even">
+<td><code>log_additive(sigma)</code></td>
+<td>Additive on log scale; DV already log-transformed</td>
+<td>Importing pre-logged data</td>
+</tr>
 </tbody>
 </table>
-<p><code>eps</code> is drawn from <code>N(0, sigma)</code> for each observation.</p>
+<p><code>eps</code> is drawn from <code>N(0, sigma)</code> for each observation. All sigma parameters are on the standard-deviation scale.</p>
+<p>For log-transform-both-sides (LTBS) with DV on the <strong>natural scale</strong>, use the alternative declaration <code>log(DV) ~ additive(sigma)</code> — the engine log-transforms the DV column at load time. Use <code>DV ~ log_additive(sigma)</code> when the dataset already contains log-transformed values. See <a href="14-special-features.html#sec-ltbs" class="quarto-xref"><span>Section 15.7</span></a> for full details.</p>
+<p>For multi-endpoint models (simultaneous PK/PD), prefix each line with <code>CMT=N:</code> to assign a distinct error model per compartment:</p>
+<pre><code>[error_model]
+  CMT=2: DV ~ proportional(PROP_ERR_PK)
+  CMT=3: DV ~ additive(ADD_ERR_PD)</code></pre>
+<p>See <a href="14-special-features.html#sec-ltbs" class="quarto-xref"><span>Section 15.7</span></a> for LTBS details and <a href="12-multi-endpoint-pkpd.html#sec-multi-endpoint" class="quarto-xref"><span>Section 12.1</span></a> for per-CMT error models.</p>
 </section><section id="initial_values" class="level2" data-number="5.6"><h2 data-number="5.6" class="anchored" data-anchor-id="initial_values">
 <span class="header-section-number">5.6</span> <code>[initial_values]</code>
 </h2>
@@ -721,7 +811,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td><code>[diffusion]</code></td>
 <td>Stochastic differential equations (process noise)</td>
-<td>— (advanced)</td>
+<td><a href="14-special-features.html#sec-sde" class="quarto-xref"><span>Section 15.8</span></a></td>
 </tr>
 <tr class="odd">
 <td><code>[covariate_nn NAME]</code></td>
@@ -738,7 +828,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="header-section-number">5.9</span> Validating a model</h2>
 <p>Before running a long fit, check syntax:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">ferx</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">ferx</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Validating: warfarin.ferx 
