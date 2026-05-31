@@ -141,6 +141,50 @@ argument:
 | `"nca"` | Replace file inits with NCA-derived values |
 | `"nca_ebe"` | Use NCA inits, then refine with a quick EBE pass |
 
+## Pipe-style fitting with `ferx_model()`
+
+`ferx_model(data, model)` bundles a data path and a model path into a single
+object so the whole workflow can be expressed as a native pipe chain.
+The data path flows in as the first argument, which makes `|>` natural:
+
+```{r}
+#| eval: false
+ex$data |>
+  ferx_model(ex$model) |>
+  ferx_fit(method = "focei", covariance = TRUE) |>
+  summary()
+```
+
+Intermediate steps (inspect, section edit, init check) slot in the same chain:
+
+```{r}
+#| eval: false
+ex$data |>
+  ferx_model(ex$model) |>
+  ferx_model_inspect()  |>   # prints structure; passes ferx_model through invisibly
+  ferx_fit()
+```
+
+You can also construct the object first, then reuse it:
+
+```{r}
+#| eval: false
+m <- ferx_model(ex$data, ex$model)
+
+ferx_check_init(m)
+fit <- ferx_fit(m, method = "foce")
+```
+
+`ferx_fit()` reads `$data` from the `ferx_model` object automatically; supply
+`data =` explicitly to override it.
+
+::: {.callout-note}
+**Argument order**: the first argument to `ferx_model()` is **data**, the
+second is **model** — this is the reverse of the old `ferx_model("pk.ferx")`
+positional style. Old-style calls are still detected and handled, but the
+data-first form is strongly preferred for new code.
+:::
+
 ## Putting it together
 
 A typical first-pass workflow on a new dataset:
@@ -158,8 +202,10 @@ ferx_model_inspect(path)
 # 3. Sanity-check inits before the real fit
 ferx_check_init(path, "my_data.csv")
 
-# 4. Fit (optionally bootstrap inits from NCA)
-fit <- ferx_fit(path, "my_data.csv", inits_from_nca = TRUE)
+# 4. Fit (optionally bootstrap inits from NCA) — pipe style
+fit <- "my_data.csv" |>
+  ferx_model(path) |>
+  ferx_fit(inits_from_nca = TRUE)
 ```
 
 ## What's next
