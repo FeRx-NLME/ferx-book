@@ -203,7 +203,9 @@ diag$autocorrelation
 diag$shrinkage
 ```
 
-`print(fit)` shows the same values in a `--- Diagnostics ---` block, and a `message()` is emitted automatically when DW < 1.5 or DW > 2.5 with ordered remedies.
+`print(fit)` shows the same values in its `DIAGNOSTICS` section (one compact line:
+`Covariance: computed   Cond: 6.7   DW: 2.61 [negative autocorrelation]   IWRES lag-1 r: -0.365`),
+and a `message()` is emitted automatically when DW < 1.5 or DW > 2.5 with ordered remedies.
 
 ### Interpreting the DW statistic
 
@@ -233,3 +235,57 @@ if (!is.null(diag$autocorrelation)) {
     theme(legend.position = "none")
 }
 ```
+
+## Fit warnings (`ferx_warnings`)
+
+`print(fit)` ends with a colour-coded warning-count footer (e.g.
+`1 warning   2 info  --  call ferx_warnings(fit) for details`).
+Call `ferx_warnings(fit)` to see the full grouped output with
+per-category remediation guidance:
+
+```{r}
+#| label: warnings
+#| eval: false
+ferx_warnings(fit)
+```
+
+Warnings are grouped by severity:
+
+| Severity | Meaning |
+|---|---|
+| `critical` | Convergence or covariance failure — results may be unreliable |
+| `warning` | Something worth investigating (e.g. autocorrelation, high %RSE) |
+| `info` | Informational (e.g. mu-referencing detected, thread-pool sizing) |
+
+For programmatic use, `ferx_warnings(fit, as_df = TRUE)` returns the
+underlying data frame with columns `severity`, `category`, `message`, and
+`source_method`:
+
+```{r}
+#| label: warnings-df
+#| eval: false
+ferx_warnings(fit, as_df = TRUE)
+```
+
+## Covariance condition number
+
+After the covariance step, `fit$condition_number` gives the ratio of the
+largest to smallest eigenvalue of the correlation matrix of estimates.
+It is shown in `print(fit)` and `summary(fit)` as `Cond: <value>`.
+
+| Condition number | Interpretation |
+|---|---|
+| < 100 | Well-conditioned; estimates are stable |
+| 100 – 1000 | Mild ill-conditioning; inspect high-correlation parameter pairs |
+| > 1000 | Severe ill-conditioning; ferx emits a warning. Consider removing parameters or re-parameterising |
+| `Inf` | Non-positive eigenvalue — covariance matrix is singular |
+
+```{r}
+#| label: condition-number
+#| eval: false
+fit$condition_number
+fit$eigenvalues      # full sorted vector; the ratio of first to last is condition_number
+```
+
+`ferx_cor_matrix(fit)` shows the off-diagonal parameter correlations that
+drive a high condition number — pairs near ±1 are the culprits.
