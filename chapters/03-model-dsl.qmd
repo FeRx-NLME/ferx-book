@@ -88,6 +88,48 @@ this; see `ferx_example("warfarin_block_omega")`.
 
 The `kappa` keyword declares an occasion-level random effect; see @sec-iov.
 
+### Fixing parameters (`FIX`) {#sec-fix}
+
+Append `FIX` to any `theta`, `omega`, `sigma`, or `kappa` declaration to hold
+the parameter at its initial value during estimation:
+
+```
+[parameters]
+  theta TVCL(0.134, 0.001, 10.0)
+  theta TVLAG(0.25, 0.0, 2.0) FIX   # lag time fixed at 0.25
+  omega ETA_CL ~ 0.07
+  omega ETA_KA ~ 0.40 FIX            # BSV on KA fixed
+  sigma PROP_ERR ~ 0.01 (sd) FIX     # sigma fixed on SD scale
+  kappa KAPPA_CL ~ 0.05 FIX          # IOV variance fixed
+```
+
+**Placement is flexible.** `FIX` may appear at the end of the line (after the
+closing parenthesis) or, for theta, inside the parentheses:
+
+```
+theta TVLAG(0.25, 0.0, 2.0) FIX   # end of line — traditional NONMEM style
+theta TVLAG(0.25, FIX)             # two-element form: init + FIX, no bounds
+theta CL (FIX) (0.1, 0.001, 10.0) # FIX anywhere before the bound triple
+omega ETA_CL (FIX) ~ 0.07         # FIX before the tilde
+```
+
+Fixed parameters appear in `print(fit)` and `ferx_estimates()` with
+`SE = FIXED` and `%RSE = FIXED`; they are excluded from the covariance matrix.
+
+**Theta bounds.** The full form is `(initial, lower, upper)`.
+You may omit the upper bound when there is no natural ceiling:
+
+```
+theta CL(0.134, 0.001, 10.0)   # three-element: init, lower, upper
+theta CL(0.134, 0.001)         # lower-bound only; no upper bound
+```
+
+**Unused-parameter warning.** Declaring a parameter in `[parameters]` but not
+referencing it in `[individual_parameters]` or `[error_model]` triggers a
+`warning`-severity message with category `"unused_parameter"`.  This usually
+indicates a commented-out expression or a typo.  Inspect `ferx_warnings(fit)` or
+run `ferx_model_validate()` before fitting.
+
 ## `[individual_parameters]`
 
 Each line assigns an individual PK parameter using thetas and ETAs.

@@ -103,8 +103,28 @@ The kappa omega is stored separately from `fit_iov$omega`:
 ```{r}
 #| label: iov-storage
 fit_iov$model_structure$iov   # names of kappa parameters
-fit_iov$shrinkage_kappa       # per-kappa shrinkage (may be NA for some methods)
+fit_iov$shrinkage_kappa       # per-kappa shrinkage (pooled across occasions)
+fit_iov$shrinkage_kappa_by_occ  # per-occasion shrinkage data frame
 ```
+
+`shrinkage_kappa_by_occ` is a data frame with one row per occasion and one
+column per kappa parameter.  The `occ` column holds a 1-based occasion index:
+
+```{r}
+#| label: iov-shrinkage-by-occ
+#| eval: false
+# Print the per-occasion shrinkage table
+fit_iov$shrinkage_kappa_by_occ
+#   occ  KAPPA_CL
+# 1   1    0.182
+# 2   2    0.153
+# (values are illustrative; run the model to get exact numbers)
+```
+
+High shrinkage (> 30%) on a particular occasion indicates that the data for
+that occasion are too sparse to estimate per-occasion kappa EBEs reliably.
+If shrinkage is high on all occasions, consider removing IOV from that
+parameter or using a sparser model (fewer kappas).
 
 ### SAEM with IOV
 
@@ -166,8 +186,16 @@ cat(sprintf("BSV: %.1f%%   IOV: %.1f%%   of total log-scale variance\n",
 
 ### IOV shrinkage
 
-The IOV kappa shrinkage is reported in `fit$shrinkage_kappa`.
-High shrinkage (> 30%) means the data cannot reliably estimate per-occasion kappas — consider removing IOV from that parameter.
+Two shrinkage summaries are available after fitting:
+
+- `fit$shrinkage_kappa` — pooled shrinkage (scalar per kappa parameter)
+- `fit$shrinkage_kappa_by_occ` — per-occasion shrinkage data frame (one row per occasion, one column per kappa)
+
+High shrinkage (> 30%) means the data cannot reliably estimate per-occasion
+kappas — consider removing IOV from that parameter.  The per-occasion table
+is especially useful when occasions differ in sampling density: an early
+rich-sampling occasion may have low shrinkage while a later sparse occasion
+has high shrinkage, pointing to where the IOV is not supported by the data.
 
 ## When to add IOV
 

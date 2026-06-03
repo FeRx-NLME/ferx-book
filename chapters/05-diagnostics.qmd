@@ -48,6 +48,9 @@ Per-subject ETAs are in `fit$ebe_etas` (one row per subject).
 | `IPRED` | `sdtab` | Individual prediction (fitted ETAs) |
 | `CWRES` | `sdtab` | Conditional weighted residual |
 | `IWRES` | `sdtab` | Individual weighted residual |
+| `CMT` | `sdtab` | Observation compartment — present only in multi-endpoint models (when any row has `CMT != 1`). Use this column to split GOF plots by endpoint. |
+| `OCC` | `sdtab` | Occasion index — present only in IOV models. |
+| `CENS` | `sdtab` | Below-LLOQ flag (0/1) — present only when the dataset has a `CENS` column. |
 | `ETA_*` | `fit$ebe_etas` | Empirical Bayes estimate (EBE) for each BSV parameter |
 
 ## Core GOF plots
@@ -265,6 +268,53 @@ underlying data frame with columns `severity`, `category`, `message`, and
 #| label: warnings-df
 #| eval: false
 ferx_warnings(fit, as_df = TRUE)
+```
+
+## Run log — `ferx_runlog()` {#sec-runlog}
+
+`ferx_runlog()` prints a NONMEM-style `.lst` summary of a completed fit.
+It is useful for archiving runs, spotting convergence problems at a glance,
+and sharing results with colleagues who expect a NONMEM-style output.
+
+```{r}
+#| label: runlog
+#| eval: false
+ferx_runlog(fit)
+```
+
+The output contains these sections (those that depend on optional fields are
+silently omitted when the fields are absent, so the function degrades
+gracefully on older `.fitrx` bundles):
+
+| Section | Contents |
+|---|---|
+| **Run header** | Model name, estimation method, ferx version, timestamp |
+| **Model file** | Verbatim content of the `.ferx` file |
+| **Data summary** | Subject count, observation count, time range |
+| **Parameter estimates** | INITIAL / FINAL / SE / %RSE for every theta, omega, and sigma |
+| **Estimation settings** | Optimizer, max iterations, BLOQ method, NCA warm-start, seeds, covariate columns |
+| **Objective function** | OFV, AIC, BIC, convergence flag |
+| **Covariance step** | Condition number and eigenvalues (requires `covariance = TRUE`) |
+| **Diagnostics** | ETA/EPS shrinkage, Durbin-Watson, Shapiro-Wilk normality |
+| **Final gradient** | Convergence check for gradient-based optimizers; `N/A` for BOBYQA/GN/SAEM |
+| **Runtime** | Wall time, gradient methods used |
+
+To capture the output as a string (e.g. for writing to a file):
+
+```{r}
+#| label: runlog-capture
+#| eval: false
+log_text <- ferx_runlog(fit, verbose = FALSE)
+writeLines(log_text, "warfarin_run1.log")
+```
+
+The `gradient_tol` argument (default `0.01`) controls the threshold for
+flagging individual gradient components as non-converged:
+
+```{r}
+#| label: runlog-tol
+#| eval: false
+ferx_runlog(fit, gradient_tol = 0.001)  # stricter than the default
 ```
 
 ## Covariance condition number
