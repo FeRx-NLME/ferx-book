@@ -477,7 +477,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul>
 </li>
   <li><a href="#fit-warnings-ferx_warnings" id="toc-fit-warnings-ferx_warnings" class="nav-link" data-scroll-target="#fit-warnings-ferx_warnings"><span class="header-section-number">7.11</span> Fit warnings (<code>ferx_warnings</code>)</a></li>
-  <li><a href="#covariance-condition-number" id="toc-covariance-condition-number" class="nav-link" data-scroll-target="#covariance-condition-number"><span class="header-section-number">7.12</span> Covariance condition number</a></li>
+  <li><a href="#sec-runlog" id="toc-sec-runlog" class="nav-link" data-scroll-target="#sec-runlog"><span class="header-section-number">7.12</span> Run log — <code>ferx_runlog()</code></a></li>
+  <li><a href="#covariance-condition-number" id="toc-covariance-condition-number" class="nav-link" data-scroll-target="#covariance-condition-number"><span class="header-section-number">7.13</span> Covariance condition number</a></li>
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/05-diagnostics.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
@@ -576,6 +577,21 @@ Note
 <td>Individual weighted residual</td>
 </tr>
 <tr class="odd">
+<td><code>CMT</code></td>
+<td><code>sdtab</code></td>
+<td>Observation compartment — present only in multi-endpoint models (when any row has <code>CMT != 1</code>). Use this column to split GOF plots by endpoint.</td>
+</tr>
+<tr class="even">
+<td><code>OCC</code></td>
+<td><code>sdtab</code></td>
+<td>Occasion index — present only in IOV models.</td>
+</tr>
+<tr class="odd">
+<td><code>CENS</code></td>
+<td><code>sdtab</code></td>
+<td>Below-LLOQ flag (0/1) — present only when the dataset has a <code>CENS</code> column.</td>
+</tr>
+<tr class="even">
 <td><code>ETA_*</code></td>
 <td><code>fit$ebe_etas</code></td>
 <td>Empirical Bayes estimate (EBE) for each BSV parameter</td>
@@ -878,8 +894,77 @@ PROP_ERR  0.625 -0.347 -0.155  0.004  0.037  0.006    1.000</code></pre>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_warnings.html">ferx_warnings</a></span><span class="op">(</span><span class="va">fit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</section><section id="covariance-condition-number" class="level2" data-number="7.12"><h2 data-number="7.12" class="anchored" data-anchor-id="covariance-condition-number">
-<span class="header-section-number">7.12</span> Covariance condition number</h2>
+</section><section id="sec-runlog" class="level2" data-number="7.12"><h2 data-number="7.12" class="anchored" data-anchor-id="sec-runlog">
+<span class="header-section-number">7.12</span> Run log — <code>ferx_runlog()</code>
+</h2>
+<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_runlog.html">ferx_runlog()</a></code> prints a NONMEM-style <code>.lst</code> summary of a completed fit. It is useful for archiving runs, spotting convergence problems at a glance, and sharing results with colleagues who expect a NONMEM-style output.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_runlog.html">ferx_runlog</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The output contains these sections (those that depend on optional fields are silently omitted when the fields are absent, so the function degrades gracefully on older <code>.fitrx</code> bundles):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead><tr class="header">
+<th>Section</th>
+<th>Contents</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong>Run header</strong></td>
+<td>Model name, estimation method, ferx version, timestamp</td>
+</tr>
+<tr class="even">
+<td><strong>Model file</strong></td>
+<td>Verbatim content of the <code>.ferx</code> file</td>
+</tr>
+<tr class="odd">
+<td><strong>Data summary</strong></td>
+<td>Subject count, observation count, time range</td>
+</tr>
+<tr class="even">
+<td><strong>Parameter estimates</strong></td>
+<td>INITIAL / FINAL / SE / %RSE for every theta, omega, and sigma</td>
+</tr>
+<tr class="odd">
+<td><strong>Estimation settings</strong></td>
+<td>Optimizer, max iterations, BLOQ method, NCA warm-start, seeds, covariate columns</td>
+</tr>
+<tr class="even">
+<td><strong>Objective function</strong></td>
+<td>OFV, AIC, BIC, convergence flag</td>
+</tr>
+<tr class="odd">
+<td><strong>Covariance step</strong></td>
+<td>Condition number and eigenvalues (requires <code>covariance = TRUE</code>)</td>
+</tr>
+<tr class="even">
+<td><strong>Diagnostics</strong></td>
+<td>ETA/EPS shrinkage, Durbin-Watson, Shapiro-Wilk normality</td>
+</tr>
+<tr class="odd">
+<td><strong>Final gradient</strong></td>
+<td>Convergence check for gradient-based optimizers; <code>N/A</code> for BOBYQA/GN/SAEM</td>
+</tr>
+<tr class="even">
+<td><strong>Runtime</strong></td>
+<td>Wall time, gradient methods used</td>
+</tr>
+</tbody>
+</table>
+<p>To capture the output as a string (e.g.&nbsp;for writing to a file):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">log_text</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_runlog.html">ferx_runlog</a></span><span class="op">(</span><span class="va">fit</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">log_text</span>, <span class="st">"warfarin_run1.log"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The <code>gradient_tol</code> argument (default <code>0.01</code>) controls the threshold for flagging individual gradient components as non-converged:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_runlog.html">ferx_runlog</a></span><span class="op">(</span><span class="va">fit</span>, gradient_tol <span class="op">=</span> <span class="fl">0.001</span><span class="op">)</span>  <span class="co"># stricter than the default</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="covariance-condition-number" class="level2" data-number="7.13"><h2 data-number="7.13" class="anchored" data-anchor-id="covariance-condition-number">
+<span class="header-section-number">7.13</span> Covariance condition number</h2>
 <p>After the covariance step, <code>fit$condition_number</code> gives the ratio of the largest to smallest eigenvalue of the correlation matrix of estimates. It is shown in <code>print(fit)</code> and <code>summary(fit)</code> as <code>Cond: &lt;value&gt;</code>.</p>
 <table class="caption-top table">
 <colgroup>
@@ -910,7 +995,7 @@ PROP_ERR  0.625 -0.347 -0.155  0.004  0.037  0.006    1.000</code></pre>
 </tbody>
 </table>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">condition_number</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">condition_number</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">eigenvalues</span>      <span class="co"># full sorted vector; the ratio of first to last is condition_number</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>ferx_cor_matrix(fit)</code> shows the off-diagonal parameter correlations that drive a high condition number — pairs near ±1 are the culprits.</p>

@@ -645,7 +645,7 @@ DIAGNOSTICS
 RUN INFO
 ------------------------------------------------------------
  Gradient (requested): auto   (used: fd)
- ferx v0.1.5 (core v0.1.0)
+ ferx v0.1.5 (core v0.1.5)
 
 SETTINGS  (model file / call-time override)
 ------------------------------------------------------------
@@ -664,17 +664,33 @@ SETTINGS  (model file / call-time override)
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "KAPPA_CL"</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_iov</span><span class="op">$</span><span class="va">shrinkage_kappa</span>       <span class="co"># per-kappa shrinkage (may be NA for some methods)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_iov</span><span class="op">$</span><span class="va">shrinkage_kappa</span>       <span class="co"># per-kappa shrinkage (pooled across occasions)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code> KAPPA_CL 
 0.2047197 </code></pre>
 </div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_iov</span><span class="op">$</span><span class="va">shrinkage_kappa_by_occ</span>  <span class="co"># per-occasion shrinkage data frame</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  occ   KAPPA_CL
+1   1 0.04045391
+2   2 0.41330340</code></pre>
 </div>
+</div>
+<p><code>shrinkage_kappa_by_occ</code> is a data frame with one row per occasion and one column per kappa parameter. The <code>occ</code> column holds a 1-based occasion index:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># Print the per-occasion shrinkage table</span></span>
+<span><span class="va">fit_iov</span><span class="op">$</span><span class="va">shrinkage_kappa_by_occ</span></span>
+<span><span class="co">#   occ  KAPPA_CL</span></span>
+<span><span class="co"># 1   1    0.182</span></span>
+<span><span class="co"># 2   2    0.153</span></span>
+<span><span class="co"># (values are illustrative; run the model to get exact numbers)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>High shrinkage (&gt; 30%) on a particular occasion indicates that the data for that occasion are too sparse to estimate per-occasion kappa EBEs reliably. If shrinkage is high on all occasions, consider removing IOV from that parameter or using a sparser model (fewer kappas).</p>
 <section id="saem-with-iov" class="level3" data-number="14.4.1"><h3 data-number="14.4.1" class="anchored" data-anchor-id="saem-with-iov">
 <span class="header-section-number">14.4.1</span> SAEM with IOV</h3>
 <p><code>warfarin_iov_saem</code> uses the same DSL with <code>method = saem</code> in <code>[fit_options]</code>. SAEM estimates kappa parameters directly — no FOCE pre-fit is required:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex_saem</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_iov_saem"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex_saem</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_iov_saem"</span><span class="op">)</span></span>
 <span><span class="va">fit_saem</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex_saem</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex_saem</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section></section><section id="correlated-iov-block_kappa" class="level2" data-number="14.5"><h2 data-number="14.5" class="anchored" data-anchor-id="correlated-iov-block_kappa">
@@ -721,7 +737,7 @@ SETTINGS  (model file / call-time override)
 <p><span class="math display">\[\text{Var}(\log CL_i) = \omega_{CL}^2 + \omega_{IOV}^2\]</span></p>
 <p>The fraction of total variability attributable to IOV:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">omega_bsv</span> <span class="op">&lt;-</span> <span class="va">fit_iov</span><span class="op">$</span><span class="va">omega</span><span class="op">[</span><span class="st">"ETA_CL"</span>, <span class="st">"ETA_CL"</span><span class="op">]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">omega_bsv</span> <span class="op">&lt;-</span> <span class="va">fit_iov</span><span class="op">$</span><span class="va">omega</span><span class="op">[</span><span class="st">"ETA_CL"</span>, <span class="st">"ETA_CL"</span><span class="op">]</span></span>
 <span><span class="va">omega_iov</span> <span class="op">&lt;-</span> <span class="va">fit_iov</span><span class="op">$</span><span class="va">omega_iov</span><span class="op">[</span><span class="st">"KAPPA_CL"</span>, <span class="st">"KAPPA_CL"</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"BSV: %.1f%%   IOV: %.1f%%   of total log-scale variance\n"</span>,</span>
 <span>            <span class="fl">100</span> <span class="op">*</span> <span class="va">omega_bsv</span> <span class="op">/</span> <span class="op">(</span><span class="va">omega_bsv</span> <span class="op">+</span> <span class="va">omega_iov</span><span class="op">)</span>,</span>
@@ -729,7 +745,14 @@ SETTINGS  (model file / call-time override)
 </div>
 </section><section id="iov-shrinkage" class="level3" data-number="14.6.2"><h3 data-number="14.6.2" class="anchored" data-anchor-id="iov-shrinkage">
 <span class="header-section-number">14.6.2</span> IOV shrinkage</h3>
-<p>The IOV kappa shrinkage is reported in <code>fit$shrinkage_kappa</code>. High shrinkage (&gt; 30%) means the data cannot reliably estimate per-occasion kappas — consider removing IOV from that parameter.</p>
+<p>Two shrinkage summaries are available after fitting:</p>
+<ul>
+<li>
+<code>fit$shrinkage_kappa</code> — pooled shrinkage (scalar per kappa parameter)</li>
+<li>
+<code>fit$shrinkage_kappa_by_occ</code> — per-occasion shrinkage data frame (one row per occasion, one column per kappa)</li>
+</ul>
+<p>High shrinkage (&gt; 30%) means the data cannot reliably estimate per-occasion kappas — consider removing IOV from that parameter. The per-occasion table is especially useful when occasions differ in sampling density: an early rich-sampling occasion may have low shrinkage while a later sparse occasion has high shrinkage, pointing to where the IOV is not supported by the data.</p>
 </section></section><section id="when-to-add-iov" class="level2" data-number="14.7"><h2 data-number="14.7" class="anchored" data-anchor-id="when-to-add-iov">
 <span class="header-section-number">14.7</span> When to add IOV</h2>
 <p>Add IOV when:</p>
