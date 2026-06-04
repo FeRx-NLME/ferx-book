@@ -291,6 +291,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link" href="https://ferx-nlme.github.io"> 
 <span class="menu-text">ferx site</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/reference/"> 
+<span class="menu-text">Reference</span></a>
+  </li>  
 </ul>
 <ul class="navbar-nav navbar-nav-scroll ms-auto">
 <li class="nav-item compact">
@@ -483,14 +487,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A model with <strong>more than one type of observation</strong> — for example, plasma concentration <strong>and</strong> a pharmacodynamic readout — must apply a different residual error model to each endpoint. The historical workaround is the <em>sequential</em> approach (fit PK, freeze it, then fit PD), which is convenient but biased: it ignores the cross-information the joint likelihood carries.</p>
 <p>ferx solves this directly with <strong>per-CMT dispatch in <code>[error_model]</code></strong>: each observation row’s <code>CMT</code> column selects which residual error model contributes its likelihood. PK and PD are fit jointly, in one FOCEI likelihood, with their own sigmas.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">ferx</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="the-bundled-example-oral-pk-emax-pd" class="level2" data-number="12.2"><h2 data-number="12.2" class="anchored" data-anchor-id="the-bundled-example-oral-pk-emax-pd">
 <span class="header-section-number">12.2</span> The bundled example: oral PK + Emax PD</h2>
 <p>The <code>emax_pkpd</code> example is an oral one-compartment PK linked to an effect compartment with a Hill-Emax readout. Plasma concentration (CMT = 2) has proportional error; the PD effect (CMT = 3) has additive error.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"emax_pkpd"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_show.html">ferx_model_show</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"emax_pkpd"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_show.html">ferx_model_show</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># model: emax_pkpd.ferx 
 # Simultaneous PK/PD: oral 1-cpt PK + effect-compartment Emax PD, fit
@@ -585,7 +589,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section><section id="fitting" class="level2" data-number="12.4"><h2 data-number="12.4" class="anchored" data-anchor-id="fitting">
 <span class="header-section-number">12.4</span> Fitting</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_pkpd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_pkpd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit_pkpd</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The printed fit shows both sigmas on separate lines (one labelled <code>[proportional]</code>, one <code>[additive]</code>), and the SIGMA block lists them in the order they appear in <code>[parameters]</code>.</p>

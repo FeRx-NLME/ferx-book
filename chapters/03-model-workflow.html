@@ -291,6 +291,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link" href="https://ferx-nlme.github.io"> 
 <span class="menu-text">ferx site</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/reference/"> 
+<span class="menu-text">Reference</span></a>
+  </li>  
 </ul>
 <ul class="navbar-nav navbar-nav-scroll ms-auto">
 <li class="nav-item compact">
@@ -488,15 +492,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header><section id="sec-model-workflow" class="level2" data-number="4.1"><h2 data-number="4.1" class="anchored" data-anchor-id="sec-model-workflow">
 <span class="header-section-number">4.1</span> Overview</h2>
-<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit()</a></code> is the punch line, but a productive modeling session spends most of its time <em>before</em> and <em>between</em> fits — scaffolding a model file, sanity-checking initial estimates, editing one section, refitting. This chapter shows the helpers that make that loop fast.</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit()</a></code> is the punch line, but a productive modeling session spends most of its time <em>before</em> and <em>between</em> fits — scaffolding a model file, sanity-checking initial estimates, editing one section, refitting. This chapter shows the helpers that make that loop fast.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">ferx</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="scaffolding-a-new-model-file" class="level2" data-number="4.2"><h2 data-number="4.2" class="anchored" data-anchor-id="scaffolding-a-new-model-file">
 <span class="header-section-number">4.2</span> Scaffolding a new model file</h2>
-<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_model_new.html">ferx_model_new()</a></code> writes a complete, valid <code>.ferx</code> file from a template. Five templates ship today: <code>1cpt_oral</code>, <code>1cpt_iv</code>, <code>2cpt_oral</code>, <code>2cpt_iv</code>, and <code>ode</code> (a generic ODE skeleton).</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_model_new.html">ferx_model_new()</a></code> writes a complete, valid <code>.ferx</code> file from a template. Five templates ship today: <code>1cpt_oral</code>, <code>1cpt_iv</code>, <code>2cpt_oral</code>, <code>2cpt_iv</code>, and <code>ode</code> (a generic ODE skeleton).</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_new.html">ferx_model_new</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_new.html">ferx_model_new</a></span><span class="op">(</span></span>
 <span>  path      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".ferx"</span><span class="op">)</span>,</span>
 <span>  template  <span class="op">=</span> <span class="st">"1cpt_oral"</span>,</span>
 <span>  edit      <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -537,10 +541,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><code>print = TRUE</code> echoes the generated file. With <code>edit = TRUE</code> (the default), the file is opened in your editor; <code>overwrite = FALSE</code> (the default) refuses to clobber an existing file.</p>
 </section><section id="inspecting-a-model-before-fitting" class="level2" data-number="4.3"><h2 data-number="4.3" class="anchored" data-anchor-id="inspecting-a-model-before-fitting">
 <span class="header-section-number">4.3</span> Inspecting a model before fitting</h2>
-<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_model_inspect.html">ferx_model_inspect()</a></code> parses the file and reports its structural shape — model type, ETA list, IOV, residual error — without compiling or fitting:</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_model_inspect.html">ferx_model_inspect()</a></code> parses the file and reports its structural shape — model type, ETA list, IOV, residual error — without compiling or fitting:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_inspect.html">ferx_model_inspect</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_inspect.html">ferx_model_inspect</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Model structure (warfarin.ferx)
   Structural:  1-cpt oral  (TVCL, TVV, TVKA)
@@ -550,9 +554,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>This is the cheapest way to confirm that the file you just edited still declares the structure you think it does.</p>
-<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_model_validate.html">ferx_model_validate()</a></code> is the syntax check: it returns <code>TRUE</code> if every required section is present and parseable, and prints a per-section status line:</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_model_validate.html">ferx_model_validate()</a></code> is the syntax check: it returns <code>TRUE</code> if every required section is present and parseable, and prints a per-section status line:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Validating: warfarin.ferx 
 
@@ -566,12 +570,12 @@ Sections present:
 Result: VALID</code></pre>
 </div>
 </div>
-<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_model_show.html">ferx_model_show()</a></code> prints the raw file contents — handy in a Quarto chunk when the reader wants to see what is being fit.</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_model_show.html">ferx_model_show()</a></code> prints the raw file contents — handy in a Quarto chunk when the reader wants to see what is being fit.</p>
 </section><section id="editing-sections-programmatically" class="level2" data-number="4.4"><h2 data-number="4.4" class="anchored" data-anchor-id="editing-sections-programmatically">
 <span class="header-section-number">4.4</span> Editing sections programmatically</h2>
-<p>For scripted workflows (e.g.&nbsp;covariate-search loops, simulation studies that sweep theta starts), <code><a href="https://rdrr.io/pkg/ferx/man/ferx_model_section.html">ferx_model_section()</a></code> and <code><a href="https://rdrr.io/pkg/ferx/man/ferx_model_set_section.html">ferx_model_set_section()</a></code> read and replace one block at a time:</p>
+<p>For scripted workflows (e.g.&nbsp;covariate-search loops, simulation studies that sweep theta starts), <code><a href="https://ferx-nlme.github.io/reference/ferx_model_section.html">ferx_model_section()</a></code> and <code><a href="https://ferx-nlme.github.io/reference/ferx_model_set_section.html">ferx_model_set_section()</a></code> read and replace one block at a time:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_section.html">ferx_model_section</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_section.html">ferx_model_section</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># [individual_parameters]
   CL = TVCL * exp(ETA_CL)
@@ -582,7 +586,7 @@ Result: VALID</code></pre>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># Copy the bundled model somewhere we can edit it</span></span>
 <span><span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".ferx"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_edit.html">ferx_model_edit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, dest <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html">dirname</a></span><span class="op">(</span><span class="va">tmp</span><span class="op">)</span>,</span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_edit.html">ferx_model_edit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, dest <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html">dirname</a></span><span class="op">(</span><span class="va">tmp</span><span class="op">)</span>,</span>
 <span>                save_as <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html">basename</a></span><span class="op">(</span><span class="va">tmp</span><span class="op">)</span>, .editor <span class="op">=</span> <span class="va">identity</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Replace one section</span></span>
@@ -591,17 +595,17 @@ Result: VALID</code></pre>
 <span>  <span class="st">"  V  = TVV  * (WT / 70)      * exp(ETA_V)"</span>,</span>
 <span>  <span class="st">"  KA = TVKA                  * exp(ETA_KA)"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_set_section.html">ferx_model_set_section</a></span><span class="op">(</span><span class="va">tmp</span>, <span class="st">"individual_parameters"</span>, <span class="va">new_ip</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_set_section.html">ferx_model_set_section</a></span><span class="op">(</span><span class="va">tmp</span>, <span class="st">"individual_parameters"</span>, <span class="va">new_ip</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_model_edit.html">ferx_model_edit()</a></code> copies a bundled (or any read-only) model to a writable location and opens it. Pass <code>.editor = identity</code> (or any no-op function) when running non-interactively, e.g.&nbsp;in a knitted chapter or a CI pipeline.</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_model_edit.html">ferx_model_edit()</a></code> copies a bundled (or any read-only) model to a writable location and opens it. Pass <code>.editor = identity</code> (or any no-op function) when running non-interactively, e.g.&nbsp;in a knitted chapter or a CI pipeline.</p>
 </section><section id="pre-fit-sanity-checks" class="level2" data-number="4.5"><h2 data-number="4.5" class="anchored" data-anchor-id="pre-fit-sanity-checks">
 <span class="header-section-number">4.5</span> Pre-fit sanity checks</h2>
 <section id="ferx_check_init" class="level3" data-number="4.5.1"><h3 data-number="4.5.1" class="anchored" data-anchor-id="ferx_check_init">
 <span class="header-section-number">4.5.1</span> <code>ferx_check_init()</code>
 </h3>
-<p>Before kicking off a 30-minute SAEM fit, verify that the model and the initial estimates produce a finite, sensible OFV. <code><a href="https://rdrr.io/pkg/ferx/man/ferx_check_init.html">ferx_check_init()</a></code> runs a handful of FOCEI iterations and returns a list with <code>$trace</code> (per-iteration OFV, gradient norm, step norm) and <code>$summary</code> (start/end OFV, OFV drop, convergence flag):</p>
+<p>Before kicking off a 30-minute SAEM fit, verify that the model and the initial estimates produce a finite, sensible OFV. <code><a href="https://ferx-nlme.github.io/reference/ferx_check_init.html">ferx_check_init()</a></code> runs a handful of FOCEI iterations and returns a list with <code>$trace</code> (per-iteration OFV, gradient norm, step norm) and <code>$summary</code> (start/end OFV, OFV drop, convergence flag):</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ci</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ci</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="va">ci</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">ci</span><span class="op">$</span><span class="va">trace</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -609,9 +613,9 @@ Result: VALID</code></pre>
 </section><section id="ferx_inits_from_nca" class="level3" data-number="4.5.2"><h3 data-number="4.5.2" class="anchored" data-anchor-id="ferx_inits_from_nca">
 <span class="header-section-number">4.5.2</span> <code>ferx_inits_from_nca()</code>
 </h3>
-<p>For a new drug — or when porting a model from another tool — non-compartmental analysis is a cheap source of starting values. <code><a href="https://rdrr.io/pkg/ferx/man/ferx_inits_from_nca.html">ferx_inits_from_nca()</a></code> runs an NCA on the dataset and returns <code>theta</code> and <code>omega</code> starting values:</p>
+<p>For a new drug — or when porting a model from another tool — non-compartmental analysis is a cheap source of starting values. <code><a href="https://ferx-nlme.github.io/reference/ferx_inits_from_nca.html">ferx_inits_from_nca()</a></code> runs an NCA on the dataset and returns <code>theta</code> and <code>omega</code> starting values:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_inits_from_nca.html">ferx_inits_from_nca</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_inits_from_nca.html">ferx_inits_from_nca</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca"</span><span class="op">)</span></span>
 <span><span class="va">inits</span><span class="op">$</span><span class="va">theta</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     TVCL       TVV      TVKA 
@@ -625,7 +629,7 @@ ETA_V  0.00000000  0.02    0.0
 ETA_KA 0.00000000  0.00    0.4</code></pre>
 </div>
 </div>
-<p>The same routine is invoked from <code><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit()</a></code> via the <code>inits_from_nca</code> argument:</p>
+<p>The same routine is invoked from <code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit()</a></code> via the <code>inits_from_nca</code> argument:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -662,25 +666,25 @@ ETA_KA 0.00000000  0.00    0.4</code></pre>
 <p><code>ferx_model(data, model)</code> bundles a data path and a model path into a single object so the whole workflow can be expressed as a native pipe chain. The data path flows in as the first argument, which makes <code>|&gt;</code> natural:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"focei"</span>, covariance <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"focei"</span>, covariance <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>To peek at a section mid-chain, use <code><a href="https://rdrr.io/pkg/ferx/man/ferx_get_section.html">ferx_get_section()</a></code> — it returns the requested block and passes the <code>ferx_model</code> through invisibly:</p>
+<p>To peek at a section mid-chain, use <code><a href="https://ferx-nlme.github.io/reference/ferx_get_section.html">ferx_get_section()</a></code> — it returns the requested block and passes the <code>ferx_model</code> through invisibly:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_get_section.html">ferx_get_section</a></span><span class="op">(</span><span class="st">"parameters"</span><span class="op">)</span> <span class="op">|&gt;</span>   <span class="co"># prints [parameters] block; chain continues</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_get_section.html">ferx_get_section</a></span><span class="op">(</span><span class="st">"parameters"</span><span class="op">)</span> <span class="op">|&gt;</span>   <span class="co"># prints [parameters] block; chain continues</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>You can also construct the object first, then reuse it:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, <span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, <span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">m</span>, method <span class="op">=</span> <span class="st">"foce"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">m</span>, method <span class="op">=</span> <span class="st">"foce"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit()</a></code> reads <code>$data</code> from the <code>ferx_model</code> object automatically; supply <code>data =</code> explicitly to override it.</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit()</a></code> reads <code>$data</code> from the <code>ferx_model</code> object automatically; supply <code>data =</code> explicitly to override it.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -691,7 +695,7 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Argument order</strong>: the first argument to <code><a href="https://rdrr.io/pkg/ferx/man/ferx_model.html">ferx_model()</a></code> is <strong>data</strong>, the second is <strong>model</strong> — this is the reverse of the old <code>ferx_model("pk.ferx")</code> positional style. Old-style calls are still detected and handled, but the data-first form is strongly preferred for new code.</p>
+<p><strong>Argument order</strong>: the first argument to <code><a href="https://ferx-nlme.github.io/reference/ferx_model.html">ferx_model()</a></code> is <strong>data</strong>, the second is <strong>model</strong> — this is the reverse of the old <code>ferx_model("pk.ferx")</code> positional style. Old-style calls are still detected and handled, but the data-first form is strongly preferred for new code.</p>
 </div>
 </div>
 </section><section id="putting-it-together" class="level2" data-number="4.7"><h2 data-number="4.7" class="anchored" data-anchor-id="putting-it-together">
@@ -700,20 +704,20 @@ Note
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># 1. Scaffold a model from a template</span></span>
 <span><span class="va">path</span> <span class="op">&lt;-</span> <span class="st">"my_model.ferx"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_new.html">ferx_model_new</a></span><span class="op">(</span><span class="va">path</span>, template <span class="op">=</span> <span class="st">"1cpt_oral"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_new.html">ferx_model_new</a></span><span class="op">(</span><span class="va">path</span>, template <span class="op">=</span> <span class="st">"1cpt_oral"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. Edit (manually or programmatically), then validate and inspect</span></span>
-<span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="st">"my_data.csv"</span>, <span class="va">path</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model_inspect.html">ferx_model_inspect</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="st">"my_data.csv"</span>, <span class="va">path</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_inspect.html">ferx_model_inspect</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Sanity-check inits before the real fit</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 4. Fit (optionally bootstrap inits from NCA) — pipe style</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="st">"my_data.csv"</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/ferx/man/ferx_fit.html">ferx_fit</a></span><span class="op">(</span>inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model.html">ferx_model</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span>inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="whats-next" class="level2" data-number="4.8"><h2 data-number="4.8" class="anchored" data-anchor-id="whats-next">
 <span class="header-section-number">4.8</span> What’s next</h2>
