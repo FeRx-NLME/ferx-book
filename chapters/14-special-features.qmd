@@ -197,15 +197,20 @@ is part of the model specification.
 ```
 [data_selection]
   ignore = DV < 1.0
-  ignore = TIME > 120
-  ignore_subjects = ID == 7 || ID == 8
+  ignore = EVID == 0 && TIME > 120   # multiple conditions: use && within a line
+  accept = BW >= 30                  # keep only rows where BW >= 30
+  ignore_subjects = [7, 8]           # exclude subjects 7 and 8 entirely
 ```
 
-Multiple `ignore` lines are OR-combined. `ignore_subjects` excludes the entire
-subject (all records) when the condition fires on any row.
+Multiple `ignore` lines are OR-combined (any fired line excludes the record).
+Use `&&` to combine conditions within a single `ignore` or `accept` line; `||`
+within a single line is **not** supported — use separate lines instead.
 
-An `accept` condition inverts the logic — only rows that pass the condition are
-kept.
+`ignore_subjects` takes a list of subject IDs (integers matching the `ID`
+column). A single ID can be written without brackets: `ignore_subjects = 7`.
+It excludes all records for those subjects regardless of any other condition.
+
+An `accept` condition keeps only rows where the expression is true.
 
 ### R-side preview with `ferx_selection()`
 
