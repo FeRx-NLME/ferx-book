@@ -15,6 +15,10 @@ Three sections are required; the rest have sensible defaults.
 | `[structural_model]` | Yes | Analytical PK shorthand or ODE declaration |
 | `[odes]` | If ODE model | Differential equations (one per state) |
 | `[error_model]` | Yes | Residual error distribution |
+| `[scaling]` | No | Unit conversion and per-CMT readout expressions |
+| `[derived]` | No | Post-fit computed columns appended to sdtab |
+| `[output]` | No | Echo individual parameters or covariates into sdtab |
+| `[data_selection]` | No | Exclude records at read time (NONMEM `$DATA IGNORE=` equivalent) |
 | `[initial_values]` | No | Override starting values without editing the bound lines |
 | `[fit_options]` | No | Estimation method, max iterations, covariance |
 
@@ -297,14 +301,68 @@ Values must be listed in the same order the parameters appear in `[parameters]`.
 
 Omit this section to use the defaults (`method = foce`, `maxiter = 300`, `covariance = false`).
 
+## `[derived]` and `[output]` {#sec-derived-dsl}
+
+The `[derived]` block adds computed columns to `fit$sdtab` after the fit
+without affecting estimation. Three kinds of expression are supported:
+
+| Kind | Syntax | Result |
+|---|---|---|
+| Per-row | `KE = CL / V` | One value per observation row |
+| Aggregate | `CMAX = max(IPRED)` | One value per subject, broadcast across rows |
+| Integral | `AUC_72 = integral(IPRED, from=0, to=72, step=0.2)` | Trapezoidal area over a time window |
+
+```
+[derived]
+  KE     = CL / V
+  T_HALF = 0.6931472 / KE
+  CMAX   = max(IPRED)
+  CTROUGH = min(IPRED, TAD < 1e-10)   # trough: TAD ≈ 0 at dose time
+  AUC_72 = integral(IPRED, from=0, to=72, step=0.2)
+  AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)
+```
+
+The `[output]` block echoes **individual parameters** and **covariates** into
+sdtab. Without it, `CL`, `V`, `AGE` etc. are used internally but do not appear
+in `fit$sdtab`:
+
+```
+[output]
+  CL V KA WT
+```
+
+Thetas cannot go in `[output]` — only individual parameters and covariate
+columns. See @sec-derived for the full reference.
+
+## `[data_selection]` {#sec-data-selection-dsl}
+
+The `[data_selection]` block excludes records at read time without touching
+the CSV — the ferx equivalent of NONMEM's `$DATA IGNORE=`:
+
+```
+[data_selection]
+  ignore = DV < 0.001             # drop observations below LLOQ
+  ignore = EVID == 0 && TIME > 168
+  ignore_subjects = [3, 17]       # exclude entire subjects
+```
+
+- `ignore` — exclude when expression is true (multiple lines are OR-combined)
+- `accept` — keep only when expression is true
+- `ignore_subjects` — exclude all records for listed IDs
+
+Use `ferx_selection()` in R to preview which records would be dropped before
+fitting. See @sec-data-selection for the full reference.
+
 ## Optional blocks
 
 A complete reference of advanced blocks is in @sec-special-features; the
 short form:
 
-| Block | Purpose | Chapter |
+| Block | Purpose | Section |
 |---|---|---|
 | `[scaling]` | Unit conversion (`obs_scale`) and per-CMT readouts (`y[CMT=N] = ...`) | @sec-special-features |
+| `[derived]` / `[output]` | Post-fit sdtab columns | @sec-derived |
+| `[data_selection]` | Record-level filtering | @sec-data-selection |
 | `[diffusion]` | Stochastic differential equations (process noise) | @sec-sde |
 | `[covariate_nn NAME]` | Neural-network covariate effect (Deep Compartment Models) | — (advanced) |
 | `[simulation]` | Embedded simulation trial design | @sec-simulation |
