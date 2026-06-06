@@ -482,8 +482,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#error_model" id="toc-error_model" class="nav-link" data-scroll-target="#error_model"><span class="header-section-number">5.5</span> <code>[error_model]</code></a></li>
   <li><a href="#initial_values" id="toc-initial_values" class="nav-link" data-scroll-target="#initial_values"><span class="header-section-number">5.6</span> <code>[initial_values]</code></a></li>
   <li><a href="#fit_options" id="toc-fit_options" class="nav-link" data-scroll-target="#fit_options"><span class="header-section-number">5.7</span> <code>[fit_options]</code></a></li>
-  <li><a href="#optional-blocks" id="toc-optional-blocks" class="nav-link" data-scroll-target="#optional-blocks"><span class="header-section-number">5.8</span> Optional blocks</a></li>
-  <li><a href="#validating-a-model" id="toc-validating-a-model" class="nav-link" data-scroll-target="#validating-a-model"><span class="header-section-number">5.9</span> Validating a model</a></li>
+  <li><a href="#sec-derived-dsl" id="toc-sec-derived-dsl" class="nav-link" data-scroll-target="#sec-derived-dsl"><span class="header-section-number">5.8</span> <code>[derived]</code> and <code>[output]</code></a></li>
+  <li><a href="#sec-data-selection-dsl" id="toc-sec-data-selection-dsl" class="nav-link" data-scroll-target="#sec-data-selection-dsl"><span class="header-section-number">5.9</span> <code>[data_selection]</code></a></li>
+  <li><a href="#optional-blocks" id="toc-optional-blocks" class="nav-link" data-scroll-target="#optional-blocks"><span class="header-section-number">5.10</span> Optional blocks</a></li>
+  <li><a href="#validating-a-model" id="toc-validating-a-model" class="nav-link" data-scroll-target="#validating-a-model"><span class="header-section-number">5.11</span> Validating a model</a></li>
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/03-model-dsl.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
@@ -543,6 +545,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>[error_model]</code></td>
 <td>Yes</td>
 <td>Residual error distribution</td>
+</tr>
+<tr class="even">
+<td><code>[scaling]</code></td>
+<td>No</td>
+<td>Unit conversion and per-CMT readout expressions</td>
+</tr>
+<tr class="odd">
+<td><code>[derived]</code></td>
+<td>No</td>
+<td>Post-fit computed columns appended to sdtab</td>
+</tr>
+<tr class="even">
+<td><code>[output]</code></td>
+<td>No</td>
+<td>Echo individual parameters or covariates into sdtab</td>
+</tr>
+<tr class="odd">
+<td><code>[data_selection]</code></td>
+<td>No</td>
+<td>Exclude records at read time (NONMEM <code>$DATA IGNORE=</code> equivalent)</td>
 </tr>
 <tr class="even">
 <td><code>[initial_values]</code></td>
@@ -813,8 +835,69 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
   maxiter    = 300
   covariance = true</code></pre>
 <p>Omit this section to use the defaults (<code>method = foce</code>, <code>maxiter = 300</code>, <code>covariance = false</code>).</p>
-</section><section id="optional-blocks" class="level2" data-number="5.8"><h2 data-number="5.8" class="anchored" data-anchor-id="optional-blocks">
-<span class="header-section-number">5.8</span> Optional blocks</h2>
+</section><section id="sec-derived-dsl" class="level2" data-number="5.8"><h2 data-number="5.8" class="anchored" data-anchor-id="sec-derived-dsl">
+<span class="header-section-number">5.8</span> <code>[derived]</code> and <code>[output]</code>
+</h2>
+<p>The <code>[derived]</code> block adds computed columns to <code>fit$sdtab</code> after the fit without affecting estimation. Three kinds of expression are supported:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead><tr class="header">
+<th>Kind</th>
+<th>Syntax</th>
+<th>Result</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Per-row</td>
+<td><code>KE = CL / V</code></td>
+<td>One value per observation row</td>
+</tr>
+<tr class="even">
+<td>Aggregate</td>
+<td><code>CMAX = max(IPRED)</code></td>
+<td>One value per subject, broadcast across rows</td>
+</tr>
+<tr class="odd">
+<td>Integral</td>
+<td><code>AUC_72 = integral(IPRED, from=0, to=72, step=0.2)</code></td>
+<td>Trapezoidal area over a time window</td>
+</tr>
+</tbody>
+</table>
+<pre><code>[derived]
+  KE     = CL / V
+  T_HALF = 0.6931472 / KE
+  CMAX   = max(IPRED)
+  CTROUGH = min(IPRED, TAD &lt; 1e-10)   # trough: TAD ≈ 0 at dose time
+  AUC_72 = integral(IPRED, from=0, to=72, step=0.2)
+  AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)</code></pre>
+<p>The <code>[output]</code> block echoes <strong>individual parameters</strong> and <strong>covariates</strong> into sdtab. Without it, <code>CL</code>, <code>V</code>, <code>AGE</code> etc. are used internally but do not appear in <code>fit$sdtab</code>:</p>
+<pre><code>[output]
+  CL V KA WT</code></pre>
+<p>Thetas cannot go in <code>[output]</code> — only individual parameters and covariate columns. See <a href="14-special-features.html#sec-derived" class="quarto-xref"><span>Section 15.3</span></a> for the full reference.</p>
+</section><section id="sec-data-selection-dsl" class="level2" data-number="5.9"><h2 data-number="5.9" class="anchored" data-anchor-id="sec-data-selection-dsl">
+<span class="header-section-number">5.9</span> <code>[data_selection]</code>
+</h2>
+<p>The <code>[data_selection]</code> block excludes records at read time without touching the CSV — the ferx equivalent of NONMEM’s <code>$DATA IGNORE=</code>:</p>
+<pre><code>[data_selection]
+  ignore = DV &lt; 0.001             # drop observations below LLOQ
+  ignore = EVID == 0 &amp;&amp; TIME &gt; 168
+  ignore_subjects = [3, 17]       # exclude entire subjects</code></pre>
+<ul>
+<li>
+<code>ignore</code> — exclude when expression is true (multiple lines are OR-combined)</li>
+<li>
+<code>accept</code> — keep only when expression is true</li>
+<li>
+<code>ignore_subjects</code> — exclude all records for listed IDs</li>
+</ul>
+<p>Use <code><a href="https://ferx-nlme.github.io/reference/ferx_selection.html">ferx_selection()</a></code> in R to preview which records would be dropped before fitting. See <a href="14-special-features.html#sec-data-selection" class="quarto-xref"><span>Section 15.4</span></a> for the full reference.</p>
+</section><section id="optional-blocks" class="level2" data-number="5.10"><h2 data-number="5.10" class="anchored" data-anchor-id="optional-blocks">
+<span class="header-section-number">5.10</span> Optional blocks</h2>
 <p>A complete reference of advanced blocks is in <a href="14-special-features.html#sec-special-features" class="quarto-xref"><span>Section 15.1</span></a>; the short form:</p>
 <table class="caption-top table">
 <colgroup>
@@ -825,13 +908,25 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
 <thead><tr class="header">
 <th>Block</th>
 <th>Purpose</th>
-<th>Chapter</th>
+<th>Section</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>[scaling]</code></td>
 <td>Unit conversion (<code>obs_scale</code>) and per-CMT readouts (<code>y[CMT=N] = ...</code>)</td>
 <td><a href="14-special-features.html#sec-special-features" class="quarto-xref"><span>Section 15.1</span></a></td>
+</tr>
+<tr class="even">
+<td>
+<code>[derived]</code> / <code>[output]</code>
+</td>
+<td>Post-fit sdtab columns</td>
+<td><a href="14-special-features.html#sec-derived" class="quarto-xref"><span>Section 15.3</span></a></td>
+</tr>
+<tr class="odd">
+<td><code>[data_selection]</code></td>
+<td>Record-level filtering</td>
+<td><a href="14-special-features.html#sec-data-selection" class="quarto-xref"><span>Section 15.4</span></a></td>
 </tr>
 <tr class="even">
 <td><code>[diffusion]</code></td>
@@ -849,11 +944,11 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
 <td><a href="06-simulation-vpc.html#sec-simulation" class="quarto-xref"><span>Section 8.1</span></a></td>
 </tr>
 </tbody>
-</table></section><section id="validating-a-model" class="level2" data-number="5.9"><h2 data-number="5.9" class="anchored" data-anchor-id="validating-a-model">
-<span class="header-section-number">5.9</span> Validating a model</h2>
+</table></section><section id="validating-a-model" class="level2" data-number="5.11"><h2 data-number="5.11" class="anchored" data-anchor-id="validating-a-model">
+<span class="header-section-number">5.11</span> Validating a model</h2>
 <p>Before running a long fit, check syntax:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Validating: warfarin.ferx 

@@ -800,10 +800,12 @@ Tip
 <span class="header-section-number">15.4.1</span> Syntax</h3>
 <pre><code>[data_selection]
   ignore = DV &lt; 1.0
-  ignore = TIME &gt; 120
-  ignore_subjects = ID == 7 || ID == 8</code></pre>
-<p>Multiple <code>ignore</code> lines are OR-combined. <code>ignore_subjects</code> excludes the entire subject (all records) when the condition fires on any row.</p>
-<p>An <code>accept</code> condition inverts the logic — only rows that pass the condition are kept.</p>
+  ignore = EVID == 0 &amp;&amp; TIME &gt; 120   # multiple conditions: use &amp;&amp; within a line
+  accept = BW &gt;= 30                  # keep only rows where BW &gt;= 30
+  ignore_subjects = [7, 8]           # exclude subjects 7 and 8 entirely</code></pre>
+<p>Multiple <code>ignore</code> lines are OR-combined (any fired line excludes the record). Use <code>&amp;&amp;</code> to combine conditions within a single <code>ignore</code> or <code>accept</code> line; <code>||</code> within a single line is <strong>not</strong> supported — use separate lines instead.</p>
+<p><code>ignore_subjects</code> takes a list of subject IDs (integers matching the <code>ID</code> column). A single ID can be written without brackets: <code>ignore_subjects = 7</code>. It excludes all records for those subjects regardless of any other condition.</p>
+<p>An <code>accept</code> condition keeps only rows where the expression is true.</p>
 </section><section id="r-side-preview-with-ferx_selection" class="level3" data-number="15.4.2"><h3 data-number="15.4.2" class="anchored" data-anchor-id="r-side-preview-with-ferx_selection">
 <span class="header-section-number">15.4.2</span> R-side preview with <code>ferx_selection()</code>
 </h3>

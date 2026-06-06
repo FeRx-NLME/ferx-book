@@ -298,7 +298,7 @@
     "href": "chapters/03-model-dsl.html#sec-model-dsl",
     "title": "\n5  The Model DSL\n",
     "section": "",
-    "text": "Section\nRequired\nPurpose\n\n\n\n[parameters]\nYes\nDeclare thetas, omegas, sigmas with bounds\n\n\n[individual_parameters]\nYes\nExpress individual PK params in terms of thetas + ETAs\n\n\n[structural_model]\nYes\nAnalytical PK shorthand or ODE declaration\n\n\n[odes]\nIf ODE model\nDifferential equations (one per state)\n\n\n[error_model]\nYes\nResidual error distribution\n\n\n[initial_values]\nNo\nOverride starting values without editing the bound lines\n\n\n[fit_options]\nNo\nEstimation method, max iterations, covariance",
+    "text": "Section\nRequired\nPurpose\n\n\n\n[parameters]\nYes\nDeclare thetas, omegas, sigmas with bounds\n\n\n[individual_parameters]\nYes\nExpress individual PK params in terms of thetas + ETAs\n\n\n[structural_model]\nYes\nAnalytical PK shorthand or ODE declaration\n\n\n[odes]\nIf ODE model\nDifferential equations (one per state)\n\n\n[error_model]\nYes\nResidual error distribution\n\n\n[scaling]\nNo\nUnit conversion and per-CMT readout expressions\n\n\n[derived]\nNo\nPost-fit computed columns appended to sdtab\n\n\n[output]\nNo\nEcho individual parameters or covariates into sdtab\n\n\n[data_selection]\nNo\nExclude records at read time (NONMEM $DATA IGNORE= equivalent)\n\n\n[initial_values]\nNo\nOverride starting values without editing the bound lines\n\n\n[fit_options]\nNo\nEstimation method, max iterations, covariance",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -371,11 +371,33 @@
     ]
   },
   {
+    "objectID": "chapters/03-model-dsl.html#sec-derived-dsl",
+    "href": "chapters/03-model-dsl.html#sec-derived-dsl",
+    "title": "\n5  The Model DSL\n",
+    "section": "\n5.8 [derived] and [output]\n",
+    "text": "5.8 [derived] and [output]\n\nThe [derived] block adds computed columns to fit$sdtab after the fit without affecting estimation. Three kinds of expression are supported:\n\n\n\n\n\n\n\nKind\nSyntax\nResult\n\n\n\nPer-row\nKE = CL / V\nOne value per observation row\n\n\nAggregate\nCMAX = max(IPRED)\nOne value per subject, broadcast across rows\n\n\nIntegral\nAUC_72 = integral(IPRED, from=0, to=72, step=0.2)\nTrapezoidal area over a time window\n\n\n\n[derived]\n  KE     = CL / V\n  T_HALF = 0.6931472 / KE\n  CMAX   = max(IPRED)\n  CTROUGH = min(IPRED, TAD &lt; 1e-10)   # trough: TAD ≈ 0 at dose time\n  AUC_72 = integral(IPRED, from=0, to=72, step=0.2)\n  AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)\nThe [output] block echoes individual parameters and covariates into sdtab. Without it, CL, V, AGE etc. are used internally but do not appear in fit$sdtab:\n[output]\n  CL V KA WT\nThetas cannot go in [output] — only individual parameters and covariate columns. See Section 15.3 for the full reference.",
+    "crumbs": [
+      "Core workflow",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/03-model-dsl.html#sec-data-selection-dsl",
+    "href": "chapters/03-model-dsl.html#sec-data-selection-dsl",
+    "title": "\n5  The Model DSL\n",
+    "section": "\n5.9 [data_selection]\n",
+    "text": "5.9 [data_selection]\n\nThe [data_selection] block excludes records at read time without touching the CSV — the ferx equivalent of NONMEM’s $DATA IGNORE=:\n[data_selection]\n  ignore = DV &lt; 0.001             # drop observations below LLOQ\n  ignore = EVID == 0 && TIME &gt; 168\n  ignore_subjects = [3, 17]       # exclude entire subjects\n\n\nignore — exclude when expression is true (multiple lines are OR-combined)\n\naccept — keep only when expression is true\n\nignore_subjects — exclude all records for listed IDs\n\nUse ferx_selection() in R to preview which records would be dropped before fitting. See Section 15.4 for the full reference.",
+    "crumbs": [
+      "Core workflow",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
+    ]
+  },
+  {
     "objectID": "chapters/03-model-dsl.html#optional-blocks",
     "href": "chapters/03-model-dsl.html#optional-blocks",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.8 Optional blocks",
-    "text": "5.8 Optional blocks\nA complete reference of advanced blocks is in Section 15.1; the short form:\n\n\n\n\n\n\n\nBlock\nPurpose\nChapter\n\n\n\n[scaling]\nUnit conversion (obs_scale) and per-CMT readouts (y[CMT=N] = ...)\nSection 15.1\n\n\n[diffusion]\nStochastic differential equations (process noise)\nSection 15.11\n\n\n[covariate_nn NAME]\nNeural-network covariate effect (Deep Compartment Models)\n— (advanced)\n\n\n[simulation]\nEmbedded simulation trial design\nSection 8.1",
+    "section": "\n5.10 Optional blocks",
+    "text": "5.10 Optional blocks\nA complete reference of advanced blocks is in Section 15.1; the short form:\n\n\n\n\n\n\n\nBlock\nPurpose\nSection\n\n\n\n[scaling]\nUnit conversion (obs_scale) and per-CMT readouts (y[CMT=N] = ...)\nSection 15.1\n\n\n\n[derived] / [output]\n\nPost-fit sdtab columns\nSection 15.3\n\n\n[data_selection]\nRecord-level filtering\nSection 15.4\n\n\n[diffusion]\nStochastic differential equations (process noise)\nSection 15.11\n\n\n[covariate_nn NAME]\nNeural-network covariate effect (Deep Compartment Models)\n— (advanced)\n\n\n[simulation]\nEmbedded simulation trial design\nSection 8.1",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -385,8 +407,8 @@
     "objectID": "chapters/03-model-dsl.html#validating-a-model",
     "href": "chapters/03-model-dsl.html#validating-a-model",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.9 Validating a model",
-    "text": "5.9 Validating a model\nBefore running a long fit, check syntax:\n\nlibrary(ferx)\nferx_model_validate(ferx_example(\"warfarin\")$model)\n\nValidating: warfarin.ferx \n\nSections present:\n  parameters                     [ok]\n  individual_parameters          [ok]\n  structural_model               [ok]\n  error_model                    [ok]\n  fit_options                    [ok] (optional)\n\nResult: VALID\n\n\nIf a section is missing or malformed, the validator reports which section failed and Result: INVALID. The return value is TRUE / FALSE, so the function can be used programmatically.",
+    "section": "\n5.11 Validating a model",
+    "text": "5.11 Validating a model\nBefore running a long fit, check syntax:\n\nlibrary(ferx)\nferx_model_validate(ferx_example(\"warfarin\")$model)\n\nValidating: warfarin.ferx \n\nSections present:\n  parameters                     [ok]\n  individual_parameters          [ok]\n  structural_model               [ok]\n  error_model                    [ok]\n  fit_options                    [ok] (optional)\n\nResult: VALID\n\n\nIf a section is missing or malformed, the validator reports which section failed and Result: INVALID. The return value is TRUE / FALSE, so the function can be used programmatically.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -1277,7 +1299,7 @@
     "href": "chapters/14-special-features.html#sec-data-selection",
     "title": "\n15  Special features\n",
     "section": "\n15.4 [data_selection] — excluding records without touching the CSV",
-    "text": "15.4 [data_selection] — excluding records without touching the CSV\nThe [data_selection] block filters out records at read time. It is the ferx equivalent of NONMEM’s $DATA IGNORE=. The CSV is never modified; the filter is part of the model specification.\n\n15.4.1 Syntax\n[data_selection]\n  ignore = DV &lt; 1.0\n  ignore = TIME &gt; 120\n  ignore_subjects = ID == 7 || ID == 8\nMultiple ignore lines are OR-combined. ignore_subjects excludes the entire subject (all records) when the condition fires on any row.\nAn accept condition inverts the logic — only rows that pass the condition are kept.\n\n15.4.2 R-side preview with ferx_selection()\n\nBefore fitting, preview which records would be dropped:\n\nex_sel &lt;- ferx_example(\"warfarin_data_selection\")\nsel &lt;- ferx_selection(ex_sel$data, ignore = \"DV &lt; 1.0\")\ncat(\"Excluded obs:\", sel$exclusions$n_obs_excluded, \"\\n\")\n\nExcluded obs: \n\nferx_selection_excluded(sel)[, c(\"ID\", \"TIME\", \"DV\")]\n\n   ID TIME     DV\n84  7  120 0.9761\n96  8  120 0.8700\n\n\nferx_selection() returns the filtered data frame (plus an $exclusions list); ferx_selection_excluded() returns only the dropped rows.\n\n15.4.3 What fit$exclusions reports\nAfter fitting, fit$exclusions carries:\n\nfit_sel &lt;- ferx_fit(ex_sel$model, ex_sel$data, verbose = FALSE)\nfit_sel$exclusions$n_records_total   # total rows read\nfit_sel$exclusions$n_obs_excluded    # excluded observations\nfit_sel$exclusions$fired_ignore      # which conditions fired\n\nThe print(fit) header also shows a DATA SELECTION line when any condition fired.\n\n15.4.4 NONMEM equivalents\n\n\nNONMEM\nferx\n\n\n\n\n$DATA IGNORE=@ (comment rows)\nhandled automatically\n\n\n$DATA IGNORE=(column.EQ.value)\nignore = column == value\n\n\n$DATA ACCEPT=(column.GE.value)\naccept = column &gt;= value\n\n\n\n\n\n\n\n\n\nTip\n\n\n\nFor the full reference see Model DSL: Data selection and the worked example.",
+    "text": "15.4 [data_selection] — excluding records without touching the CSV\nThe [data_selection] block filters out records at read time. It is the ferx equivalent of NONMEM’s $DATA IGNORE=. The CSV is never modified; the filter is part of the model specification.\n\n15.4.1 Syntax\n[data_selection]\n  ignore = DV &lt; 1.0\n  ignore = EVID == 0 && TIME &gt; 120   # multiple conditions: use && within a line\n  accept = BW &gt;= 30                  # keep only rows where BW &gt;= 30\n  ignore_subjects = [7, 8]           # exclude subjects 7 and 8 entirely\nMultiple ignore lines are OR-combined (any fired line excludes the record). Use && to combine conditions within a single ignore or accept line; || within a single line is not supported — use separate lines instead.\nignore_subjects takes a list of subject IDs (integers matching the ID column). A single ID can be written without brackets: ignore_subjects = 7. It excludes all records for those subjects regardless of any other condition.\nAn accept condition keeps only rows where the expression is true.\n\n15.4.2 R-side preview with ferx_selection()\n\nBefore fitting, preview which records would be dropped:\n\nex_sel &lt;- ferx_example(\"warfarin_data_selection\")\nsel &lt;- ferx_selection(ex_sel$data, ignore = \"DV &lt; 1.0\")\ncat(\"Excluded obs:\", sel$exclusions$n_obs_excluded, \"\\n\")\n\nExcluded obs: \n\nferx_selection_excluded(sel)[, c(\"ID\", \"TIME\", \"DV\")]\n\n   ID TIME     DV\n84  7  120 0.9761\n96  8  120 0.8700\n\n\nferx_selection() returns the filtered data frame (plus an $exclusions list); ferx_selection_excluded() returns only the dropped rows.\n\n15.4.3 What fit$exclusions reports\nAfter fitting, fit$exclusions carries:\n\nfit_sel &lt;- ferx_fit(ex_sel$model, ex_sel$data, verbose = FALSE)\nfit_sel$exclusions$n_records_total   # total rows read\nfit_sel$exclusions$n_obs_excluded    # excluded observations\nfit_sel$exclusions$fired_ignore      # which conditions fired\n\nThe print(fit) header also shows a DATA SELECTION line when any condition fired.\n\n15.4.4 NONMEM equivalents\n\n\nNONMEM\nferx\n\n\n\n\n$DATA IGNORE=@ (comment rows)\nhandled automatically\n\n\n$DATA IGNORE=(column.EQ.value)\nignore = column == value\n\n\n$DATA ACCEPT=(column.GE.value)\naccept = column &gt;= value\n\n\n\n\n\n\n\n\n\nTip\n\n\n\nFor the full reference see Model DSL: Data selection and the worked example.",
     "crumbs": [
       "Advanced topics",
       "<span class='chapter-number'>15</span>  <span class='chapter-title'>Special features</span>"
