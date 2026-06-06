@@ -6,9 +6,11 @@ title: "Special features"
 
 This chapter is a tour of optional `.ferx` blocks and `ferx_fit()` modes that
 each cover a narrow but important case: unit conversion (`[scaling]`),
-steady-state dosing (`SS` / `II` columns), absorption lag time, persisting
-fits to disk for later analysis, log-transform-both-sides residual error,
-and stochastic differential equations (`[diffusion]` / EKF process noise).
+post-fit derived columns (`[derived]` / `[output]`), data filtering
+(`[data_selection]`), steady-state and multiple additional doses (`SS` / `II` /
+`ADDL` columns), absorption lag time, persisting fits to disk for later
+analysis, log-transform-both-sides residual error, and stochastic differential
+equations (`[diffusion]` / EKF process noise).
 
 ```{r}
 #| label: setup
@@ -64,6 +66,194 @@ a Hill-Emax response off the effect-compartment amount:
 Form C and the per-CMT variants of Form B move the model onto the
 finite-difference gradient path (`gradient = fd`).
 
+## `[derived]` and `[output]` — post-fit sdtab columns {#sec-derived}
+
+After a fit, `fit$sdtab` contains prediction-level columns (IPRED, PRED, CWRES,
+…). The `[derived]` and `[output]` blocks add arbitrary extra columns to that
+table — computed from the fitted individual parameters, predicted concentrations,
+and time variables — without rerunning the likelihood.
+
+### Three computation kinds
+
+| Syntax | Kind | Evaluated |
+|---|---|---|
+| `COL = <expr>` | PerRow | At every observation row |
+| `COL = max(IPRED, TIME < 24)` | Aggregate | One value per subject (max/min/tmax with optional filter) |
+| `COL = integral(IPRED, from=0, to=72, step=0.2)` | Integral | Numerical trapezoid over a time window per subject |
+
+All three share the same expression namespace: thetas, individual parameters
+(`CL`, `V`, …), covariates (`AGE`, `WT`, …), `TIME` / `TAFD` / `TAD`, and
+`IPRED`.
+
+### Per-row: KE and half-life
+
+```
+[derived]
+  KE     = CL / V
+  T_HALF = 0.6931472 / KE
+```
+
+Columns defined earlier in the block can be reused in later expressions — `KE`
+is in scope when `T_HALF` is evaluated.
+
+### Aggregate: Cmax and Tmax
+
+```
+[derived]
+  CMAX = max(IPRED)
+  TMAX = tmax(IPRED)
+  CMAX_48 = max(IPRED, TIME < 48)
+```
+
+`max`, `min`, and `tmax` aggregate over all observation rows for the subject.
+An optional filter expression (second argument) restricts which rows are
+included.
+
+### Integral: AUC over a defined window
+
+```
+[derived]
+  AUC_72 = integral(IPRED, from=0, to=72, step=0.2)
+```
+
+The integrand is re-evaluated on a fine time grid (`step` in the same units as
+TIME) rather than just at the observation rows. Any per-row expression is valid
+as the integrand.
+
+### Time-above-threshold (TAT)
+
+The constant integrand `1.0` with a filter measures duration above a threshold:
+
+```
+[derived]
+  TAT_0_5 = integral(1.0, IPRED > 0.5, from=0, to=72, step=0.1)
+```
+
+This gives hours above 0.5 mg/L within the window. For per-interval TAT (using
+TAD) the anchor and window form should be used — see the
+[Derived columns reference](https://ferx-nlme.github.io/model-dsl/derived.html)
+for the full syntax.
+
+### Trough detection with `TAD < 1e-10`
+
+Because `TAD` (time after dose) resets at each dose event, the smallest
+positive `TAD` values are at dose times — but floating-point arithmetic can
+make them `1e-13` rather than `0`. Use a tolerance:
+
+```
+[derived]
+  CMIN_TAU = min(IPRED, TAD < 1e-10)
+```
+
+Do **not** use `TAD == 0`.
+
+### `[output]` — individual parameters and covariates in sdtab
+
+The `[output]` block echoes individual parameters and covariates into sdtab.
+Without it, `fit$sdtab` contains only `IPRED`, `PRED`, residuals, and any
+`[derived]` columns — not `CL`, `V`, `AGE`, etc.
+
+```
+[output]
+  CL V KA AGE WT
+```
+
+Only items that are **individual parameters** (defined in `[individual_parameters]`)
+or **covariates** (columns in the data) can appear in `[output]`. Thetas cannot.
+
+### Runnable example
+
+```{r}
+#| label: derived-show
+ex_d <- ferx_example("warfarin_derived")
+ferx_model_show(ex_d$model)
+```
+
+```{r}
+#| label: derived-fit
+#| cache: true
+#| eval: false
+fit_d <- ferx_fit(ex_d$model, ex_d$data, verbose = FALSE)
+names(fit_d$sdtab)
+head(unique(fit_d$sdtab[, c("ID", "KE", "T_HALF", "CMAX", "AUC_0_72")]))
+```
+
+::: {.callout-tip}
+For the full reference and more examples see
+[Model DSL: Derived columns](https://ferx-nlme.github.io/model-dsl/derived.html)
+on the ferx site.
+:::
+
+---
+
+## `[data_selection]` — excluding records without touching the CSV {#sec-data-selection}
+
+The `[data_selection]` block filters out records at read time. It is the ferx
+equivalent of NONMEM's `$DATA IGNORE=`. The CSV is never modified; the filter
+is part of the model specification.
+
+### Syntax
+
+```
+[data_selection]
+  ignore = DV < 1.0
+  ignore = TIME > 120
+  ignore_subjects = ID == 7 || ID == 8
+```
+
+Multiple `ignore` lines are OR-combined. `ignore_subjects` excludes the entire
+subject (all records) when the condition fires on any row.
+
+An `accept` condition inverts the logic — only rows that pass the condition are
+kept.
+
+### R-side preview with `ferx_selection()`
+
+Before fitting, preview which records would be dropped:
+
+```{r}
+#| label: sel-preview
+ex_sel <- ferx_example("warfarin_data_selection")
+sel <- ferx_selection(ex_sel$data, ignore = "DV < 1.0")
+cat("Excluded obs:", sel$exclusions$n_obs_excluded, "\n")
+ferx_selection_excluded(sel)[, c("ID", "TIME", "DV")]
+```
+
+`ferx_selection()` returns the filtered data frame (plus an `$exclusions` list);
+`ferx_selection_excluded()` returns only the dropped rows.
+
+### What `fit$exclusions` reports
+
+After fitting, `fit$exclusions` carries:
+
+```{r}
+#| eval: false
+fit_sel <- ferx_fit(ex_sel$model, ex_sel$data, verbose = FALSE)
+fit_sel$exclusions$n_records_total   # total rows read
+fit_sel$exclusions$n_obs_excluded    # excluded observations
+fit_sel$exclusions$fired_ignore      # which conditions fired
+```
+
+The `print(fit)` header also shows a `DATA SELECTION` line when any condition
+fired.
+
+### NONMEM equivalents
+
+| NONMEM | ferx |
+|---|---|
+| `$DATA IGNORE=@` (comment rows) | handled automatically |
+| `$DATA IGNORE=(column.EQ.value)` | `ignore = column == value` |
+| `$DATA ACCEPT=(column.GE.value)` | `accept = column >= value` |
+
+::: {.callout-tip}
+For the full reference see
+[Model DSL: Data selection](https://ferx-nlme.github.io/model-dsl/data-selection.html)
+and the
+[worked example](https://ferx-nlme.github.io/examples/warfarin-data-selection.html).
+:::
+
+---
+
 ## Steady-state dosing (`SS`, `II` columns)
 
 For studies recorded after the pre-study dosing has reached steady state, add
@@ -93,6 +283,44 @@ columns and the dose row's `SS`/`II` values differ. ferx resolves the
 steady-state initial condition from the dose, the interval, and the current
 individual parameters; the supported PK shortcuts use an analytical
 closed-form.
+
+## ADDL — multiple additional doses {#sec-addl}
+
+Recording repeated identical doses one row at a time inflates the dataset.
+The `ADDL` column (NONMEM-compatible) collapses a train of doses into a single
+row:
+
+```
+ID,TIME,DV,EVID,AMT,CMT,RATE,MDV,II,ADDL
+1,0,.,1,70,1,0,1,24,6     # day 1 dose + 6 more = 7 total, q24h
+1,24,3.8,0,.,1,0,0,.,.
+1,168,1.4,0,.,1,0,0,.,.
+```
+
+`ADDL=6` with `II=24` means: repeat the same dose 6 more times (so 7 doses
+total), each 24 h apart. `TAD` resets to zero at each expanded dose event.
+
+**No special DSL syntax is required.** The structural model is identical to a
+single-dose model — multi-dose bookkeeping lives entirely in the data columns.
+
+### Combining ADDL with `[derived]`
+
+Because `TAD` resets correctly after each expanded dose, trough detection and
+within-interval AUC work as expected:
+
+```
+[derived]
+  CMIN_TAU = min(IPRED, TAD < 1e-10)   # trough
+  AUC_TAU  = integral(IPRED, window=24, anchor=0, step=0.1)
+```
+
+::: {.callout-note}
+The `warfarin_addl` model file is bundled and demonstrates this design.
+However, the matching dataset is not yet bundled — supply your own ADDL-format
+CSV that matches the column schema above.
+:::
+
+---
 
 ## Absorption lag time {#sec-lagtime}
 
@@ -274,3 +502,16 @@ on the ferx website.
   from covariates to PK parameters. Feature-flagged (`cargo --features nn`);
   see the ferx-site
   [DCM example](https://ferx-nlme.github.io/examples/dcm.html).
+- **`[derived]` / `[output]` full reference** —
+  [Model DSL: Derived columns](https://ferx-nlme.github.io/model-dsl/derived.html)
+  covers all aggregate forms, anchor/window integrals, naming rules, and sequential
+  scoping rules.
+- **`[data_selection]` full reference** —
+  [Model DSL: Data selection](https://ferx-nlme.github.io/model-dsl/data-selection.html)
+  documents evaluation order, `ignore` vs `accept` vs `ignore_subjects`, and
+  supported column types.
+- **Worked examples** — additional examples on the ferx site:
+  [Derived columns](https://ferx-nlme.github.io/examples/warfarin-derived.html),
+  [Derived PK/PD](https://ferx-nlme.github.io/examples/warfarin-derived-pkpd.html),
+  [Data selection](https://ferx-nlme.github.io/examples/warfarin-data-selection.html),
+  [ODE with TIME/TAFD/TAD](https://ferx-nlme.github.io/examples/warfarin-ode-time.html).
