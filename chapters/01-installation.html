@@ -548,7 +548,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td>cmake</td>
 <td>Yes</td>
-<td>Used by the Rust build (Linux/macOS; bundled with Rtools44 on Windows)</td>
+<td>Used by the Rust build (Linux/macOS; bundled with Rtools45 on Windows)</td>
 </tr>
 <tr class="even">
 <td>Enzyme (LLVM)</td>
@@ -650,8 +650,8 @@ Tip
 <h3 data-number="2.2.2" class="anchored" data-anchor-id="sec-windows"><span class="header-section-number">2.2.2</span> Windows</h3>
 <p>Native Windows installs are supported with finite-difference gradients. The <code>ferx-r</code> build auto-detects the missing Enzyme toolchain and falls back automatically — no <code>FERX_NO_AUTODIFF=1</code> flag is needed on Windows. All estimation methods work; AD-only features are unavailable.</p>
 <p>Native Enzyme autodiff is <strong>not</strong> available on Windows because the custom Rust fork does not currently build there. For autodiff on Windows, use the Docker image (<a href="#sec-docker" class="quarto-xref"><span>Section 2.6</span></a>), WSL2 + Ubuntu, or a remote Linux host.</p>
-<p><strong>Step 1 — Install Rtools44</strong></p>
-<p><a href="https://cran.r-project.org/bin/windows/Rtools/rtools44/rtools.html">Rtools44</a> ships cmake and the MinGW gcc that R uses to link the package, so no separate cmake install is needed.</p>
+<p><strong>Step 1 — Install Rtools45</strong></p>
+<p><a href="https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html">Rtools45</a> ships cmake and the MinGW gcc that R uses to link the package, so no separate cmake install is needed.</p>
 <p><strong>Step 2 — Install rustup with the GNU-ABI toolchain</strong></p>
 <p>Download from <a href="https://www.rust-lang.org/tools/install" class="uri">https://www.rust-lang.org/tools/install</a>, then in PowerShell:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>rustup toolchain install stable-x86_64-pc-windows-gnu</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -686,6 +686,11 @@ Tip
 <h2 data-number="2.4" class="anchored" data-anchor-id="sec-no-autodiff"><span class="header-section-number">2.4</span> The FERX_NO_AUTODIFF flag</h2>
 <p>Setting <code>FERX_NO_AUTODIFF = "1"</code> skips the Enzyme autodiff toolchain probe and forces <strong>finite-difference gradients</strong>. FD is slightly slower but produces identical estimates. LLVM/Enzyme are not needed. All examples in this book run with <code>FERX_NO_AUTODIFF=1</code> on CI.</p>
 <p>The flag is only required when you want to skip the probe in scripts or CI; the build will automatically fall back to FD when no Enzyme toolchain is found.</p>
+<p>Two additional flags control the autodiff preflight self-test (see <a href="#sec-enzyme" class="quarto-xref"><span>Section 2.5</span></a>):</p>
+<ul>
+<li><code>FERX_AD_PREFLIGHT_SKIP=1</code> — skip the AD self-test (useful when reinstalling on a toolchain you have already verified; the result is also cached per toolchain fingerprint so the test is skipped automatically on matching reinstalls).</li>
+<li><code>FERX_AD_PREFLIGHT_TIMEOUT=&lt;seconds&gt;</code> — timeout budget for the preflight compile-and-run (default: 90 s).</li>
+</ul>
 </section>
 <section id="sec-enzyme" class="level2" data-number="2.5">
 <h2 data-number="2.5" class="anchored" data-anchor-id="sec-enzyme"><span class="header-section-number">2.5</span> Advanced: full Enzyme install</h2>
@@ -807,6 +812,19 @@ Warning
 <h4 data-number="2.5.0.5" class="anchored" data-anchor-id="step-5.-install-ferx-r-in-r-first-compile-is-cpu-dependent-15-min2-h-fast-thereafter"><span class="header-section-number">2.5.0.5</span> Step 5. Install ferx-r (in R; first compile is CPU-dependent, ~15 min–2 h; fast thereafter)</h4>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or: devtools::install_github("FeRx-NLME/ferx-r")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Before the long fat-LTO compile, the package automatically runs the same <code>#[autodiff_forward]</code> compile-and-run self-test from Step 3, under a timeout watchdog. A broken toolchain aborts in seconds with a clear message rather than wedging <code>rustc</code> deep into the build. Set <code>FERX_AD_PREFLIGHT_SKIP=1</code> to skip this on reinstalls of a toolchain you have already verified (the result is also cached per toolchain fingerprint — see <a href="#sec-no-autodiff" class="quarto-xref"><span>Section 2.4</span></a>).</p>
+</div>
+</div>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -879,6 +897,19 @@ Tip
 <section id="step-5.-install-ferx-r" class="level4" data-number="2.5.0.10">
 <h4 data-number="2.5.0.10" class="anchored" data-anchor-id="step-5.-install-ferx-r"><span class="header-section-number">2.5.0.10</span> Step 5. Install ferx-r</h4>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"FeRx-NLME/ferx-r"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Before the long fat-LTO compile, the package automatically runs the same <code>#[autodiff_forward]</code> compile-and-run self-test from Step 3, under a timeout watchdog. A broken toolchain aborts in seconds with a clear message rather than wedging <code>rustc</code> deep into the build. Set <code>FERX_AD_PREFLIGHT_SKIP=1</code> to skip this on reinstalls of a toolchain you have already verified (the result is also cached per toolchain fingerprint — see <a href="#sec-no-autodiff" class="quarto-xref"><span>Section 2.4</span></a>).</p>
+</div>
+</div>
 </section>
 </div>
 <div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
