@@ -298,7 +298,7 @@
     "href": "chapters/03-model-dsl.html#sec-model-dsl",
     "title": "\n5  The Model DSL\n",
     "section": "",
-    "text": "Section\nRequired\nPurpose\n\n\n\n[parameters]\nYes\nDeclare thetas, omegas, sigmas with bounds\n\n\n[individual_parameters]\nYes\nExpress individual PK params in terms of thetas + ETAs\n\n\n[structural_model]\nYes\nAnalytical PK shorthand or ODE declaration\n\n\n[odes]\nIf ODE model\nDifferential equations (one per state)\n\n\n[error_model]\nYes\nResidual error distribution\n\n\n[scaling]\nNo\nUnit conversion and per-CMT readout expressions\n\n\n[derived]\nNo\nPost-fit computed columns appended to sdtab\n\n\n[output]\nNo\nEcho individual parameters or covariates into sdtab\n\n\n[data_selection]\nNo\nExclude records at read time (NONMEM $DATA IGNORE= equivalent)\n\n\n[initial_values]\nNo\nOverride starting values without editing the bound lines\n\n\n[fit_options]\nNo\nEstimation method, max iterations, covariance",
+    "text": "Section\nRequired\nPurpose\n\n\n\n[parameters]\nYes\nDeclare thetas, omegas, sigmas with bounds\n\n\n[individual_parameters]\nYes\nExpress individual PK params in terms of thetas + ETAs\n\n\n[covariates]\nNo\nDeclare covariate columns and types; enables fit$covtab\n\n\n\n[structural_model]\nYes\nAnalytical PK shorthand or ODE declaration\n\n\n[odes]\nIf ODE model\nDifferential equations (one per state)\n\n\n[error_model]\nYes\nResidual error distribution\n\n\n[scaling]\nNo\nUnit conversion and per-CMT readout expressions\n\n\n[derived]\nNo\nPost-fit computed columns appended to sdtab\n\n\n[output]\nNo\nEcho individual parameters or covariates into sdtab\n\n\n[data_selection]\nNo\nExclude records at read time (NONMEM $DATA IGNORE= equivalent)\n\n\n[initial_values]\nNo\nOverride starting values without editing the bound lines\n\n\n[fit_options]\nNo\nEstimation method, max iterations, covariance",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -327,11 +327,22 @@
     ]
   },
   {
+    "objectID": "chapters/03-model-dsl.html#sec-covariates-dsl",
+    "href": "chapters/03-model-dsl.html#sec-covariates-dsl",
+    "title": "\n5  The Model DSL\n",
+    "section": "\n5.4 [covariates]\n",
+    "text": "5.4 [covariates]\n\nThe optional [covariates] block declares which dataset columns are covariates and whether each is continuous or categorical. Without it, all non-standard CSV columns are auto-detected — the block makes the declaration explicit, enforces types, and activates the covariate table.\n[covariates]\n  WT   continuous\n  CRCL continuous\n  SEX  categorical\nOr the compact form:\n[covariates]\n  continuous: WT, CRCL\n  categorical: SEX\nColumn names must match the CSV header exactly (case-sensitive). A declared column that is absent from the dataset is a hard error (E_MISSING_COVARIATE); a covariate used in [individual_parameters] but not declared emits a warning but still works.\nCategorical covariates must be integer-coded in the data (0/1, not \"M\"/\"F\").\n\n5.4.1 Covariate table (fit$covtab)\nWhen [covariates] is declared the fit result carries an extra table:\nfit$covtab          # ID, TIME, EVID, plus one column per declared covariate\nfit$covariate_types # named vector: \"continuous\" or \"categorical\"\nUnlike fit$sdtab (observation rows only), fit$covtab has one row per input dataset record including dose rows. This is the basis for covariate-search summaries.\n\n5.4.2 Inspecting dataset columns\nBefore writing the block, check what columns your CSV has:\nferx_columns(ferx_example(\"two_cpt_oral_cov\"))\nferx_columns() reads the header and returns column names — use them verbatim in [covariates].\nSee the Covariates reference for the full spec and worked example.",
+    "crumbs": [
+      "Core workflow",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
+    ]
+  },
+  {
     "objectID": "chapters/03-model-dsl.html#structural_model",
     "href": "chapters/03-model-dsl.html#structural_model",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.4 [structural_model]\n",
-    "text": "5.4 [structural_model]\n\n\n5.4.1 Analytical PK shortcuts\nferx provides built-in analytical solutions for common compartment models:\n\n\n\n\n\n\n\n\nKeyword\nCmts\nRoute\nParameters\n\n\n\none_cpt_oral(cl, v, ka)\n1\nOral\n\ncl, v, ka\n\n\n\none_cpt_iv_bolus(cl, v)\n1\nIV bolus\n\ncl, v\n\n\n\none_cpt_infusion(cl, v)\n1\nIV infusion\n\ncl, v\n\n\n\ntwo_cpt_oral(cl, v1, q, v2, ka)\n2\nOral\n\ncl, v1, q, v2, ka\n\n\n\ntwo_cpt_iv_bolus(cl, v1, q, v2)\n2\nIV bolus\n\ncl, v1, q, v2\n\n\n\ntwo_cpt_infusion(cl, v1, q, v2)\n2\nIV infusion\n\ncl, v1, q, v2\n\n\n\nthree_cpt_oral(cl, v1, q2, v2, q3, v3, ka)\n3\nOral\n\ncl, v1, q2, v2, q3, v3, ka\n\n\n\nthree_cpt_iv_bolus(cl, v1, q2, v2, q3, v3)\n3\nIV bolus\n\ncl, v1, q2, v2, q3, v3\n\n\n\nthree_cpt_infusion(cl, v1, q2, v2, q3, v3)\n3\nIV infusion\n\ncl, v1, q2, v2, q3, v3\n\n\n\n\nAll analytical models accept an optional lagtime= (or alag=) argument; oral models additionally accept an optional f= bioavailability argument. See Section 15.7 and Section 15.9.\nThese are invoked with named arguments:\n[structural_model]\n  pk one_cpt_oral(cl=CL, v=V, ka=KA)\nThe pk keyword tells the parser to use the analytical solution engine. See the ferx-core PK models reference for derivations.\n\n5.4.2 ODE models\nWhen no analytical solution exists, declare ode(...) and write ODEs in [odes]:\n[structural_model]\n  ode(obs_cmt=central, states=[depot, central])\n\n[odes]\n  d/dt(depot)   = -KA * depot\n  d/dt(central) = KA * depot / V - VMAX * central / (KM + central)\nobs_cmt names the compartment whose amount is used for the DV prediction. See Section 11.1 for a full ODE example.",
+    "section": "\n5.5 [structural_model]\n",
+    "text": "5.5 [structural_model]\n\n\n5.5.1 Analytical PK shortcuts\nferx provides built-in analytical solutions for common compartment models:\n\n\n\n\n\n\n\n\nKeyword\nCmts\nRoute\nParameters\n\n\n\none_cpt_oral(cl, v, ka)\n1\nOral\n\ncl, v, ka\n\n\n\none_cpt_iv_bolus(cl, v)\n1\nIV bolus\n\ncl, v\n\n\n\none_cpt_infusion(cl, v)\n1\nIV infusion\n\ncl, v\n\n\n\ntwo_cpt_oral(cl, v1, q, v2, ka)\n2\nOral\n\ncl, v1, q, v2, ka\n\n\n\ntwo_cpt_iv_bolus(cl, v1, q, v2)\n2\nIV bolus\n\ncl, v1, q, v2\n\n\n\ntwo_cpt_infusion(cl, v1, q, v2)\n2\nIV infusion\n\ncl, v1, q, v2\n\n\n\nthree_cpt_oral(cl, v1, q2, v2, q3, v3, ka)\n3\nOral\n\ncl, v1, q2, v2, q3, v3, ka\n\n\n\nthree_cpt_iv_bolus(cl, v1, q2, v2, q3, v3)\n3\nIV bolus\n\ncl, v1, q2, v2, q3, v3\n\n\n\nthree_cpt_infusion(cl, v1, q2, v2, q3, v3)\n3\nIV infusion\n\ncl, v1, q2, v2, q3, v3\n\n\n\n\nAll analytical models accept an optional lagtime= (or alag=) argument; oral models additionally accept an optional f= bioavailability argument. See Section 15.7 and Section 15.9.\nThese are invoked with named arguments:\n[structural_model]\n  pk one_cpt_oral(cl=CL, v=V, ka=KA)\nThe pk keyword tells the parser to use the analytical solution engine. See the ferx-core PK models reference for derivations.\n\n5.5.2 ODE models\nWhen no analytical solution exists, declare ode(...) and write ODEs in [odes]:\n[structural_model]\n  ode(obs_cmt=central, states=[depot, central])\n\n[odes]\n  d/dt(depot)   = -KA * depot\n  d/dt(central) = KA * depot / V - VMAX * central / (KM + central)\nobs_cmt names the compartment whose amount is used for the DV prediction. See Section 11.1 for a full ODE example.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -341,8 +352,8 @@
     "objectID": "chapters/03-model-dsl.html#error_model",
     "href": "chapters/03-model-dsl.html#error_model",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.5 [error_model]\n",
-    "text": "5.5 [error_model]\n\n[error_model]\n  DV ~ proportional(PROP_ERR)\nSupported error distributions:\n\n\n\n\n\n\n\nSyntax\nModel\nWhen to use\n\n\n\nproportional(sigma)\nDV = IPRED * (1 + eps)\nConcentration data, relative variability\n\n\nadditive(sigma)\nDV = IPRED + eps\nLog-scale or count data\n\n\ncombined(sigma_prop, sigma_add)\nBoth\nTransitional concentration ranges\n\n\nlog_additive(sigma)\nAdditive on log scale; DV already log-transformed\nImporting pre-logged data\n\n\n\neps is drawn from N(0, sigma) for each observation. All sigma parameters are on the standard-deviation scale.\nFor log-transform-both-sides (LTBS) with DV on the natural scale, use the alternative declaration log(DV) ~ additive(sigma) — the engine log-transforms the DV column at load time. Use DV ~ log_additive(sigma) when the dataset already contains log-transformed values. See Section 15.10 for full details.\nFor multi-endpoint models (simultaneous PK/PD), prefix each line with CMT=N: to assign a distinct error model per compartment:\n[error_model]\n  CMT=2: DV ~ proportional(PROP_ERR_PK)\n  CMT=3: DV ~ additive(ADD_ERR_PD)\nSee Section 15.10 for LTBS details and Section 12.1 for per-CMT error models.",
+    "section": "\n5.6 [error_model]\n",
+    "text": "5.6 [error_model]\n\n[error_model]\n  DV ~ proportional(PROP_ERR)\nSupported error distributions:\n\n\n\n\n\n\n\nSyntax\nModel\nWhen to use\n\n\n\nproportional(sigma)\nDV = IPRED * (1 + eps)\nConcentration data, relative variability\n\n\nadditive(sigma)\nDV = IPRED + eps\nLog-scale or count data\n\n\ncombined(sigma_prop, sigma_add)\nBoth\nTransitional concentration ranges\n\n\nlog_additive(sigma)\nAdditive on log scale; DV already log-transformed\nImporting pre-logged data\n\n\n\neps is drawn from N(0, sigma) for each observation. All sigma parameters are on the standard-deviation scale.\nFor log-transform-both-sides (LTBS) with DV on the natural scale, use the alternative declaration log(DV) ~ additive(sigma) — the engine log-transforms the DV column at load time. Use DV ~ log_additive(sigma) when the dataset already contains log-transformed values. See Section 15.10 for full details.\nFor multi-endpoint models (simultaneous PK/PD), prefix each line with CMT=N: to assign a distinct error model per compartment:\n[error_model]\n  CMT=2: DV ~ proportional(PROP_ERR_PK)\n  CMT=3: DV ~ additive(ADD_ERR_PD)\nSee Section 15.10 for LTBS details and Section 12.1 for per-CMT error models.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -352,8 +363,8 @@
     "objectID": "chapters/03-model-dsl.html#initial_values",
     "href": "chapters/03-model-dsl.html#initial_values",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.6 [initial_values]\n",
-    "text": "5.6 [initial_values]\n\nThe [initial_values] section lets you override starting estimates without touching the bound lines. This is convenient for re-running after a first fit:\n[initial_values]\n  theta = [0.133, 7.89, 1.49]\n  omega = [0.0425, 0.0162, 0.328]\n  sigma = [0.0162]\nValues must be listed in the same order the parameters appear in [parameters].",
+    "section": "\n5.7 [initial_values]\n",
+    "text": "5.7 [initial_values]\n\nThe [initial_values] section lets you override starting estimates without touching the bound lines. This is convenient for re-running after a first fit:\n[initial_values]\n  theta = [0.133, 7.89, 1.49]\n  omega = [0.0425, 0.0162, 0.328]\n  sigma = [0.0162]\nValues must be listed in the same order the parameters appear in [parameters].",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -363,8 +374,8 @@
     "objectID": "chapters/03-model-dsl.html#fit_options",
     "href": "chapters/03-model-dsl.html#fit_options",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.7 [fit_options]\n",
-    "text": "5.7 [fit_options]\n\n[fit_options]\n  method     = focei    # foce | focei | saem | gn | gn_hybrid\n  maxiter    = 300\n  covariance = true\nOmit this section to use the defaults (method = foce, maxiter = 300, covariance = false).",
+    "section": "\n5.8 [fit_options]\n",
+    "text": "5.8 [fit_options]\n\n[fit_options]\n  method     = focei    # foce | focei | saem | gn | gn_hybrid\n  maxiter    = 300\n  covariance = true\nOmit this section to use the defaults (method = foce, maxiter = 300, covariance = false).",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -374,8 +385,8 @@
     "objectID": "chapters/03-model-dsl.html#sec-derived-dsl",
     "href": "chapters/03-model-dsl.html#sec-derived-dsl",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.8 [derived] and [output]\n",
-    "text": "5.8 [derived] and [output]\n\nThe [derived] block adds computed columns to fit$sdtab after the fit without affecting estimation. Three kinds of expression are supported:\n\n\n\n\n\n\n\nKind\nSyntax\nResult\n\n\n\nPer-row\nKE = CL / V\nOne value per observation row\n\n\nAggregate\nCMAX = max(IPRED)\nOne value per subject, broadcast across rows\n\n\nIntegral\nAUC_72 = integral(IPRED, from=0, to=72, step=0.2)\nTrapezoidal area over a time window\n\n\n\n[derived]\n  KE     = CL / V\n  T_HALF = 0.6931472 / KE\n  CMAX   = max(IPRED)\n  CTROUGH = min(IPRED, TAD &lt; 1e-10)   # trough: TAD ≈ 0 at dose time\n  AUC_72 = integral(IPRED, from=0, to=72, step=0.2)\n  AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)\nThe [output] block echoes individual parameters and covariates into sdtab. Without it, CL, V, AGE etc. are used internally but do not appear in fit$sdtab:\n[output]\n  CL V KA WT\nThetas cannot go in [output] — only individual parameters and covariate columns. See Section 15.3 for the full reference.",
+    "section": "\n5.9 [derived] and [output]\n",
+    "text": "5.9 [derived] and [output]\n\nThe [derived] block adds computed columns to fit$sdtab after the fit without affecting estimation. Three kinds of expression are supported:\n\n\n\n\n\n\n\nKind\nSyntax\nResult\n\n\n\nPer-row\nKE = CL / V\nOne value per observation row\n\n\nAggregate\nCMAX = max(IPRED)\nOne value per subject, broadcast across rows\n\n\nIntegral\nAUC_72 = integral(IPRED, from=0, to=72, step=0.2)\nTrapezoidal area over a time window\n\n\n\n[derived]\n  KE     = CL / V\n  T_HALF = 0.6931472 / KE\n  CMAX   = max(IPRED)\n  CTROUGH = min(IPRED, TAD &lt; 1e-10)   # trough: TAD ≈ 0 at dose time\n  AUC_72 = integral(IPRED, from=0, to=72, step=0.2)\n  AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)\nThe [output] block echoes individual parameters and covariates into sdtab. Without it, CL, V, AGE etc. are used internally but do not appear in fit$sdtab:\n[output]\n  CL V KA WT\nThetas cannot go in [output] — only individual parameters and covariate columns. See Section 15.3 for the full reference.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -385,8 +396,8 @@
     "objectID": "chapters/03-model-dsl.html#sec-data-selection-dsl",
     "href": "chapters/03-model-dsl.html#sec-data-selection-dsl",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.9 [data_selection]\n",
-    "text": "5.9 [data_selection]\n\nThe [data_selection] block excludes records at read time without touching the CSV — the ferx equivalent of NONMEM’s $DATA IGNORE=:\n[data_selection]\n  ignore = DV &lt; 0.001             # drop observations below LLOQ\n  ignore = EVID == 0 && TIME &gt; 168\n  ignore_subjects = [3, 17]       # exclude entire subjects\n\n\nignore — exclude when expression is true (multiple lines are OR-combined)\n\naccept — keep only when expression is true\n\nignore_subjects — exclude all records for listed IDs\n\nUse ferx_selection() in R to preview which records would be dropped before fitting. See Section 15.4 for the full reference.",
+    "section": "\n5.10 [data_selection]\n",
+    "text": "5.10 [data_selection]\n\nThe [data_selection] block excludes records at read time without touching the CSV — the ferx equivalent of NONMEM’s $DATA IGNORE=:\n[data_selection]\n  ignore = DV &lt; 0.001             # drop observations below LLOQ\n  ignore = EVID == 0 && TIME &gt; 168\n  ignore_subjects = [3, 17]       # exclude entire subjects\n\n\nignore — exclude when expression is true (multiple lines are OR-combined)\n\naccept — keep only when expression is true\n\nignore_subjects — exclude all records for listed IDs\n\nUse ferx_selection() in R to preview which records would be dropped before fitting. See Section 15.4 for the full reference.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -396,8 +407,8 @@
     "objectID": "chapters/03-model-dsl.html#optional-blocks",
     "href": "chapters/03-model-dsl.html#optional-blocks",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.10 Optional blocks",
-    "text": "5.10 Optional blocks\nA complete reference of advanced blocks is in Section 15.1; the short form:\n\n\n\n\n\n\n\nBlock\nPurpose\nSection\n\n\n\n[scaling]\nUnit conversion (obs_scale) and per-CMT readouts (y[CMT=N] = ...)\nSection 15.1\n\n\n\n[derived] / [output]\n\nPost-fit sdtab columns\nSection 15.3\n\n\n[data_selection]\nRecord-level filtering\nSection 15.4\n\n\n[diffusion]\nStochastic differential equations (process noise)\nSection 15.11\n\n\n[covariate_nn NAME]\nNeural-network covariate effect (Deep Compartment Models)\n— (advanced)\n\n\n[simulation]\nEmbedded simulation trial design\nSection 8.1",
+    "section": "\n5.11 Optional blocks",
+    "text": "5.11 Optional blocks\nA complete reference of advanced blocks is in Section 15.1; the short form:\n\n\n\n\n\n\n\nBlock\nPurpose\nSection\n\n\n\n[covariates]\nDeclare covariate types; activates fit$covtab\n\nSection 5.4\n\n\n[scaling]\nUnit conversion (obs_scale) and per-CMT readouts (y[CMT=N] = ...)\nSection 15.1\n\n\n\n[derived] / [output]\n\nPost-fit sdtab columns\nSection 15.3\n\n\n[data_selection]\nRecord-level filtering\nSection 15.4\n\n\n[diffusion]\nStochastic differential equations (process noise)\nSection 15.11\n\n\n[covariate_nn NAME]\nNeural-network covariate effect (Deep Compartment Models)\n— (advanced)\n\n\n[simulation]\nEmbedded simulation trial design\nSection 8.8",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -407,8 +418,8 @@
     "objectID": "chapters/03-model-dsl.html#validating-a-model",
     "href": "chapters/03-model-dsl.html#validating-a-model",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.11 Validating a model",
-    "text": "5.11 Validating a model\nBefore running a long fit, check syntax:\n\nlibrary(ferx)\nferx_model_validate(ferx_example(\"warfarin\")$model)\n\nValidating: warfarin.ferx \n\nSections present:\n  parameters                     [ok]\n  individual_parameters          [ok]\n  structural_model               [ok]\n  error_model                    [ok]\n  fit_options                    [ok] (optional)\n\nResult: VALID\n\n\nIf a section is missing or malformed, the validator reports which section failed and Result: INVALID. The return value is TRUE / FALSE, so the function can be used programmatically.",
+    "section": "\n5.12 Validating a model",
+    "text": "5.12 Validating a model\nBefore running a long fit, check syntax:\n\nlibrary(ferx)\nferx_model_validate(ferx_example(\"warfarin\")$model)\n\nValidating: warfarin.ferx \n\nSections present:\n  parameters                     [ok]\n  individual_parameters          [ok]\n  structural_model               [ok]\n  error_model                    [ok]\n  fit_options                    [ok] (optional)\n\nResult: VALID\n\n\nIf a section is missing or malformed, the validator reports which section failed and Result: INVALID. The return value is TRUE / FALSE, so the function can be used programmatically.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -716,7 +727,7 @@
     "href": "chapters/06-simulation-vpc.html",
     "title": "\n8  Simulation & VPC\n",
     "section": "",
-    "text": "8.1 Overview\nferx_simulate() generates replicated datasets from the fitted model. The primary use case is the Visual Predictive Check (VPC): overlay observed data on simulation-based prediction intervals to assess model adequacy visually.\nlibrary(ferx)\nlibrary(ggplot2)\nlibrary(dplyr)\n\nex  &lt;- ferx_example(\"warfarin\")\nobs &lt;- read.csv(ex$data)\nfit &lt;- ferx_fit(ex$model, ex$data, method = \"foce\", covariance = TRUE,\n                verbose = FALSE)\n\nMu-referencing detected for: ETA_CL, ETA_KA, ETA_V\n\n\nNegative IWRES autocorrelation detected (Durbin-Watson = 2.61, lag-1 r = -0.37).\nPossible over-parameterisation or misspecified residual error model.",
+    "text": "8.1 Overview\nferx_simulate() generates replicated datasets from the fitted model. The primary use case is the Visual Predictive Check (VPC): overlay observed data on simulation-based prediction intervals to assess model adequacy visually.\nlibrary(ferx)\nlibrary(ggplot2)\nlibrary(dplyr)\n\nex  &lt;- ferx_example(\"warfarin\")\nobs &lt;- read.csv(ex$data)\nfit &lt;- ferx_fit(ex$model, ex$data, method = \"foce\", covariance = TRUE,\n                verbose = FALSE)\n\nMu-referencing detected for: ETA_CL, ETA_KA, ETA_V",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>8</span>  <span class='chapter-title'>Simulation & VPC</span>"
@@ -727,7 +738,7 @@
     "href": "chapters/06-simulation-vpc.html#simulating-from-the-fitted-model",
     "title": "\n8  Simulation & VPC\n",
     "section": "\n8.2 Simulating from the fitted model",
-    "text": "8.2 Simulating from the fitted model\nThe typical VPC workflow passes fit to ferx_simulate() so that simulation uses the fitted theta, omega, and sigma rather than the model file’s initial values:\n\nsim &lt;- ferx_simulate(\n  model  = ex$model,\n  data   = ex$data,\n  n_sim  = 500,\n  seed   = 42,\n  fit    = fit\n)\nhead(sim)\n\n  DRAW SIM ID TIME     IPRED    DV_SIM\n1    1   1  1  0.5  4.556979  4.546056\n2    1   1  1  1.0  7.448447  7.395811\n3    1   1  1  2.0 10.401651 10.377815\n4    1   1  1  4.0 11.828430 11.852834\n5    1   1  1  8.0 11.386807 11.565665\n6    1   1  1 12.0 10.638690 10.490415\n\n\nn_sim = 500 replicates is sufficient for a standard VPC. Set seed for reproducibility.",
+    "text": "8.2 Simulating from the fitted model\nThe typical VPC workflow passes fit to ferx_simulate() so that simulation uses the fitted theta, omega, and sigma rather than the model file’s initial values:\n\nsim &lt;- ferx_simulate(\n  model  = ex$model,\n  data   = ex$data,\n  n_sim  = 500,\n  seed   = 42,\n  fit    = fit\n)\nhead(sim)\n\n  DRAW SIM ID TIME     IPRED    DV_SIM\n1    1   1  1  0.5  4.552863  4.541949\n2    1   1  1  1.0  7.443675  7.391067\n3    1   1  1  2.0 10.399073 10.375240\n4    1   1  1  4.0 11.830103 11.854513\n5    1   1  1  8.0 11.389839 11.568765\n6    1   1  1 12.0 10.641195 10.492868\n\n\nn_sim = 500 replicates is sufficient for a standard VPC. Set seed for reproducibility.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>8</span>  <span class='chapter-title'>Simulation & VPC</span>"
@@ -771,7 +782,7 @@
     "href": "chapters/06-simulation-vpc.html#population-predictions",
     "title": "\n8  Simulation & VPC\n",
     "section": "\n8.6 Population predictions",
-    "text": "8.6 Population predictions\nferx_predict() computes population predictions (ETA = 0) without residual noise. Useful for overlaying the typical profile on observed data:\n\npreds &lt;- ferx_predict(ex$model, ex$data, fit = fit)\nhead(preds)\n\n  ID TIME      PRED\n1  1  0.5  4.078319\n2  1  1.0  6.835837\n3  1  2.0  9.923938\n4  1  4.0 11.768919\n5  1  8.0 11.552957\n6  1 12.0 10.810171\n\n\nferx_predict() returns a data frame with ID, TIME, and PRED (population prediction at ETA = 0). For uncertainty-propagated predictions, see ferx_simulate_with_uncertainty() in Section 9.1.",
+    "text": "8.6 Population predictions\nferx_predict() computes population predictions (ETA = 0) without residual noise. Useful for overlaying the typical profile on observed data:\n\npreds &lt;- ferx_predict(ex$model, ex$data, fit = fit)\nhead(preds)\n\n  ID TIME      PRED\n1  1  0.5  4.074475\n2  1  1.0  6.830974\n3  1  2.0  9.920484\n4  1  4.0 11.769634\n5  1  8.0 11.555816\n6  1 12.0 10.812645\n\n\nferx_predict() returns a data frame with ID, TIME, and PRED (population prediction at ETA = 0). For uncertainty-propagated predictions, see ferx_simulate_with_uncertainty() in Section 9.1.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>8</span>  <span class='chapter-title'>Simulation & VPC</span>"
@@ -783,6 +794,17 @@
     "title": "\n8  Simulation & VPC\n",
     "section": "\n8.7 Interpreting the VPC",
     "text": "8.7 Interpreting the VPC\nA good VPC shows:\n\nObserved data scattered within the shaded band\nRoughly 10% of points outside the 5th–95th percentile band\nThe observed median tracking the simulated median line\nNo systematic trends over time or concentration ranges\n\nIf the observed percentiles consistently fall outside the simulated band, the model is mis-specifying the distribution (consider a different error model or structural model).",
+    "crumbs": [
+      "Core workflow",
+      "<span class='chapter-number'>8</span>  <span class='chapter-title'>Simulation & VPC</span>"
+    ]
+  },
+  {
+    "objectID": "chapters/06-simulation-vpc.html#sec-simulation-dsl",
+    "href": "chapters/06-simulation-vpc.html#sec-simulation-dsl",
+    "title": "\n8  Simulation & VPC\n",
+    "section": "\n8.8 [simulation] block — embedded trial design",
+    "text": "8.8 [simulation] block — embedded trial design\nThe [simulation] block defines a virtual clinical trial design directly in the .ferx model file. It is consumed by the ferx-core CLI’s --simulate workflow rather than by ferx_simulate() (which takes an external dataset).\nUse it when you want a self-contained model file that can be run without providing a separate data CSV — for example, during model development or as part of a simulation-estimation study.\n\n8.8.1 Syntax\n[simulation]\n  subjects = 100\n  dose     = 100\n  cmt      = 1\n  seed     = 12345\n  times    = [0.5, 1, 2, 4, 8, 12, 24]\n\n\nKey\nDescription\n\n\n\nsubjects\nNumber of virtual subjects\n\n\ndose\nDose amount (same units as AMT in the data format)\n\n\ncmt\nDosing compartment (1-indexed, matching the state order)\n\n\nseed\nRandom seed for reproducibility\n\n\ntimes\nObservation time points\n\n\n\nAll keys are required. The block generates one dose row plus one observation row per time point per subject.\n\n8.8.2 Running from the CLI\nferx model.ferx --simulate\nThe engine samples \\(\\eta_i \\sim N(0, \\Omega)\\) per subject, computes individual parameters, generates predictions, and adds residual error. Output is written to {model}-sdtab.csv.\n\n8.8.3 Relationship to ferx_simulate()\n\n\n\n\n\n\n\n\n\n\n[simulation] block\nferx_simulate()\n\n\n\nTrial design\nEmbedded in .ferx file\nExternal dataset\n\n\nCovariates\nDefault values (not randomized)\nCopied from dataset\n\n\nEntry point\n\nferx model.ferx --simulate (CLI)\nR function\n\n\nFit parameters\nModel file’s initial values\nFitted estimates (via fit =)\n\n\nUse case\nStandalone simulation, sim-est studies\nVPC, predictive checks\n\n\n\nFor production VPCs and uncertainty propagation, use ferx_simulate() with a fitted model (see the sections above). The [simulation] block is for self-contained model files and CLI-driven workflows.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>8</span>  <span class='chapter-title'>Simulation & VPC</span>"
