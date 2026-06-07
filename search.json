@@ -404,11 +404,22 @@
     ]
   },
   {
+    "objectID": "chapters/03-model-dsl.html#sec-simulation-dsl",
+    "href": "chapters/03-model-dsl.html#sec-simulation-dsl",
+    "title": "\n5  The Model DSL\n",
+    "section": "\n5.11 [simulation] block — embedded trial design",
+    "text": "5.11 [simulation] block — embedded trial design\nThe [simulation] block defines a virtual clinical trial design directly in the .ferx model file. It is consumed by the ferx-core CLI’s --simulate workflow rather than by ferx_simulate() (which takes an external dataset).\nUse it when you want a self-contained model file that can be run without providing a separate data CSV — for example, during model development or as part of a simulation-estimation study.\n\n5.11.1 Syntax\n[simulation]\n  subjects = 100\n  dose     = 100\n  cmt      = 1\n  seed     = 12345\n  times    = [0.5, 1, 2, 4, 8, 12, 24]\n\n\nKey\nDescription\n\n\n\nsubjects\nNumber of virtual subjects\n\n\ndose\nDose amount (same units as AMT in the data format)\n\n\ncmt\nDosing compartment (1-indexed, matching the state order)\n\n\nseed\nRandom seed for reproducibility\n\n\ntimes\nObservation time points\n\n\n\nAll keys are required. The block generates one dose row plus one observation row per time point per subject.\n\n5.11.2 Running from the CLI\nferx model.ferx --simulate\nThe engine samples \\(\\eta_i \\sim N(0, \\Omega)\\) per subject, computes individual parameters, generates predictions, and adds residual error. Output is written to {model}-sdtab.csv.\n\n5.11.3 Relationship to ferx_simulate()\n\n\n\n\n\n\n\n\n\n\n[simulation] block\nferx_simulate()\n\n\n\nTrial design\nEmbedded in .ferx file\nExternal dataset\n\n\nCovariates\nDefault values (not randomized)\nCopied from dataset\n\n\nEntry point\n\nferx model.ferx --simulate (CLI)\nR function\n\n\nFit parameters\nModel file’s initial values\nFitted estimates (via fit =)\n\n\nUse case\nStandalone simulation, sim-est studies\nVPC, predictive checks\n\n\n\nFor production VPCs and uncertainty propagation, use ferx_simulate() with a fitted model — see Section 8.1. The [simulation] block is for self-contained model files and CLI-driven workflows.",
+    "crumbs": [
+      "Core workflow",
+      "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
+    ]
+  },
+  {
     "objectID": "chapters/03-model-dsl.html#optional-blocks",
     "href": "chapters/03-model-dsl.html#optional-blocks",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.11 Optional blocks",
-    "text": "5.11 Optional blocks\nA complete reference of advanced blocks is in Section 15.1; the short form:\n\n\n\n\n\n\n\nBlock\nPurpose\nSection\n\n\n\n[covariates]\nDeclare covariate types; activates fit$covtab\n\nSection 5.4\n\n\n[scaling]\nUnit conversion (obs_scale) and per-CMT readouts (y[CMT=N] = ...)\nSection 15.1\n\n\n\n[derived] / [output]\n\nPost-fit sdtab columns\nSection 15.3\n\n\n[data_selection]\nRecord-level filtering\nSection 15.4\n\n\n[diffusion]\nStochastic differential equations (process noise)\nSection 15.11\n\n\n[covariate_nn NAME]\nNeural-network covariate effect (Deep Compartment Models)\n— (advanced)\n\n\n[simulation]\nEmbedded simulation trial design\nSection 8.8",
+    "section": "\n5.12 Optional blocks",
+    "text": "5.12 Optional blocks\nA complete reference of advanced blocks is in Section 15.1; the short form:\n\n\n\n\n\n\n\nBlock\nPurpose\nSection\n\n\n\n[covariates]\nDeclare covariate types; activates fit$covtab\n\nSection 5.4\n\n\n[scaling]\nUnit conversion (obs_scale) and per-CMT readouts (y[CMT=N] = ...)\nSection 15.1\n\n\n\n[derived] / [output]\n\nPost-fit sdtab columns\nSection 15.3\n\n\n[data_selection]\nRecord-level filtering\nSection 15.4\n\n\n[simulation]\nEmbedded simulation trial design\nSection 5.11\n\n\n[diffusion]\nStochastic differential equations (process noise)\nSection 15.11\n\n\n[covariate_nn NAME]\nNeural-network covariate effect (Deep Compartment Models)\n— (advanced)",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -418,8 +429,8 @@
     "objectID": "chapters/03-model-dsl.html#validating-a-model",
     "href": "chapters/03-model-dsl.html#validating-a-model",
     "title": "\n5  The Model DSL\n",
-    "section": "\n5.12 Validating a model",
-    "text": "5.12 Validating a model\nBefore running a long fit, check syntax:\n\nlibrary(ferx)\nferx_model_validate(ferx_example(\"warfarin\")$model)\n\nValidating: warfarin.ferx \n\nSections present:\n  parameters                     [ok]\n  individual_parameters          [ok]\n  structural_model               [ok]\n  error_model                    [ok]\n  fit_options                    [ok] (optional)\n\nResult: VALID\n\n\nIf a section is missing or malformed, the validator reports which section failed and Result: INVALID. The return value is TRUE / FALSE, so the function can be used programmatically.",
+    "section": "\n5.13 Validating a model",
+    "text": "5.13 Validating a model\nBefore running a long fit, check syntax:\n\nlibrary(ferx)\nferx_model_validate(ferx_example(\"warfarin\")$model)\n\nValidating: warfarin.ferx \n\nSections present:\n  parameters                     [ok]\n  individual_parameters          [ok]\n  structural_model               [ok]\n  error_model                    [ok]\n  fit_options                    [ok] (optional)\n\nResult: VALID\n\n\nIf a section is missing or malformed, the validator reports which section failed and Result: INVALID. The return value is TRUE / FALSE, so the function can be used programmatically.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>5</span>  <span class='chapter-title'>The Model DSL</span>"
@@ -800,11 +811,11 @@
     ]
   },
   {
-    "objectID": "chapters/06-simulation-vpc.html#sec-simulation-dsl",
-    "href": "chapters/06-simulation-vpc.html#sec-simulation-dsl",
+    "objectID": "chapters/06-simulation-vpc.html#simulation-block",
+    "href": "chapters/06-simulation-vpc.html#simulation-block",
     "title": "\n8  Simulation & VPC\n",
-    "section": "\n8.8 [simulation] block — embedded trial design",
-    "text": "8.8 [simulation] block — embedded trial design\nThe [simulation] block defines a virtual clinical trial design directly in the .ferx model file. It is consumed by the ferx-core CLI’s --simulate workflow rather than by ferx_simulate() (which takes an external dataset).\nUse it when you want a self-contained model file that can be run without providing a separate data CSV — for example, during model development or as part of a simulation-estimation study.\n\n8.8.1 Syntax\n[simulation]\n  subjects = 100\n  dose     = 100\n  cmt      = 1\n  seed     = 12345\n  times    = [0.5, 1, 2, 4, 8, 12, 24]\n\n\nKey\nDescription\n\n\n\nsubjects\nNumber of virtual subjects\n\n\ndose\nDose amount (same units as AMT in the data format)\n\n\ncmt\nDosing compartment (1-indexed, matching the state order)\n\n\nseed\nRandom seed for reproducibility\n\n\ntimes\nObservation time points\n\n\n\nAll keys are required. The block generates one dose row plus one observation row per time point per subject.\n\n8.8.2 Running from the CLI\nferx model.ferx --simulate\nThe engine samples \\(\\eta_i \\sim N(0, \\Omega)\\) per subject, computes individual parameters, generates predictions, and adds residual error. Output is written to {model}-sdtab.csv.\n\n8.8.3 Relationship to ferx_simulate()\n\n\n\n\n\n\n\n\n\n\n[simulation] block\nferx_simulate()\n\n\n\nTrial design\nEmbedded in .ferx file\nExternal dataset\n\n\nCovariates\nDefault values (not randomized)\nCopied from dataset\n\n\nEntry point\n\nferx model.ferx --simulate (CLI)\nR function\n\n\nFit parameters\nModel file’s initial values\nFitted estimates (via fit =)\n\n\nUse case\nStandalone simulation, sim-est studies\nVPC, predictive checks\n\n\n\nFor production VPCs and uncertainty propagation, use ferx_simulate() with a fitted model (see the sections above). The [simulation] block is for self-contained model files and CLI-driven workflows.",
+    "section": "\n8.8 [simulation] block",
+    "text": "8.8 [simulation] block\nFor CLI-driven simulation without an external dataset, the .ferx model file can embed a trial design via the [simulation] block. This is a DSL feature rather than an R workflow — see Section 5.11 in the Model DSL chapter for syntax and usage.",
     "crumbs": [
       "Core workflow",
       "<span class='chapter-number'>8</span>  <span class='chapter-title'>Simulation & VPC</span>"
