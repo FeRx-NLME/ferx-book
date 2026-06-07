@@ -12,6 +12,7 @@ Three sections are required; the rest have sensible defaults.
 |---|---|---|
 | `[parameters]` | Yes | Declare thetas, omegas, sigmas with bounds |
 | `[individual_parameters]` | Yes | Express individual PK params in terms of thetas + ETAs |
+| `[covariates]` | No | Declare covariate columns and types; enables `fit$covtab` |
 | `[structural_model]` | Yes | Analytical PK shorthand or ODE declaration |
 | `[odes]` | If ODE model | Differential equations (one per state) |
 | `[error_model]` | Yes | Residual error distribution |
@@ -195,6 +196,63 @@ Unconditional assignments in the same block are unaffected.
 The bundled `warfarin_if` example demonstrates a two-branch allometric CL
 model; see `ferx_example("warfarin_if")`.
 
+## `[covariates]` {#sec-covariates-dsl}
+
+The optional `[covariates]` block declares which dataset columns are covariates
+and whether each is **continuous** or **categorical**. Without it, all
+non-standard CSV columns are auto-detected — the block makes the declaration
+explicit, enforces types, and activates the covariate table.
+
+```
+[covariates]
+  WT   continuous
+  CRCL continuous
+  SEX  categorical
+```
+
+Or the compact form:
+
+```
+[covariates]
+  continuous: WT, CRCL
+  categorical: SEX
+```
+
+Column names must match the CSV header exactly (case-sensitive). A declared
+column that is absent from the dataset is a hard error (`E_MISSING_COVARIATE`);
+a covariate used in `[individual_parameters]` but not declared emits a warning
+but still works.
+
+Categorical covariates must be integer-coded in the data (`0`/`1`, not
+`"M"`/`"F"`).
+
+### Covariate table (`fit$covtab`)
+
+When `[covariates]` is declared the fit result carries an extra table:
+
+```r
+fit$covtab          # ID, TIME, EVID, plus one column per declared covariate
+fit$covariate_types # named vector: "continuous" or "categorical"
+```
+
+Unlike `fit$sdtab` (observation rows only), `fit$covtab` has one row per input
+dataset record including dose rows. This is the basis for covariate-search
+summaries.
+
+### Inspecting dataset columns
+
+Before writing the block, check what columns your CSV has:
+
+```r
+ferx_columns(ferx_example("two_cpt_oral_cov"))
+```
+
+`ferx_columns()` reads the header and returns column names — use them verbatim
+in `[covariates]`.
+
+See the [Covariates reference](https://ferx-nlme.github.io/model-dsl/covariates.html)
+for the full spec and worked example.
+
 ## `[structural_model]`
 
 ### Analytical PK shortcuts
@@ -360,12 +418,13 @@ short form:
 
 | Block | Purpose | Section |
 |---|---|---|
+| `[covariates]` | Declare covariate types; activates `fit$covtab` | @sec-covariates-dsl |
 | `[scaling]` | Unit conversion (`obs_scale`) and per-CMT readouts (`y[CMT=N] = ...`) | @sec-special-features |
 | `[derived]` / `[output]` | Post-fit sdtab columns | @sec-derived |
 | `[data_selection]` | Record-level filtering | @sec-data-selection |
 | `[diffusion]` | Stochastic differential equations (process noise) | @sec-sde |
 | `[covariate_nn NAME]` | Neural-network covariate effect (Deep Compartment Models) | — (advanced) |
-| `[simulation]` | Embedded simulation trial design | @sec-simulation |
+| `[simulation]` | Embedded simulation trial design | @sec-simulation-dsl |
 
 ## Validating a model
 

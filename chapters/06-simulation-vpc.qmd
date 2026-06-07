@@ -159,3 +159,59 @@ A good VPC shows:
 - No systematic trends over time or concentration ranges
 
 If the observed percentiles consistently fall outside the simulated band, the model is mis-specifying the distribution (consider a different error model or structural model).
+
+## `[simulation]` block — embedded trial design {#sec-simulation-dsl}
+
+The `[simulation]` block defines a virtual clinical trial design directly in
+the `.ferx` model file. It is consumed by the ferx-core CLI's `--simulate`
+workflow rather than by `ferx_simulate()` (which takes an external dataset).
+
+Use it when you want a self-contained model file that can be run without
+providing a separate data CSV — for example, during model development or as
+part of a simulation-estimation study.
+
+### Syntax
+
+```
+[simulation]
+  subjects = 100
+  dose     = 100
+  cmt      = 1
+  seed     = 12345
+  times    = [0.5, 1, 2, 4, 8, 12, 24]
+```
+
+| Key | Description |
+|---|---|
+| `subjects` | Number of virtual subjects |
+| `dose` | Dose amount (same units as `AMT` in the data format) |
+| `cmt` | Dosing compartment (1-indexed, matching the state order) |
+| `seed` | Random seed for reproducibility |
+| `times` | Observation time points |
+
+All keys are required. The block generates one dose row plus one observation
+row per time point per subject.
+
+### Running from the CLI
+
+```bash
+ferx model.ferx --simulate
+```
+
+The engine samples $\eta_i \sim N(0, \Omega)$ per subject, computes individual
+parameters, generates predictions, and adds residual error. Output is written
+to `{model}-sdtab.csv`.
+
+### Relationship to `ferx_simulate()`
+
+| | `[simulation]` block | `ferx_simulate()` |
+|---|---|---|
+| Trial design | Embedded in `.ferx` file | External dataset |
+| Covariates | Default values (not randomized) | Copied from dataset |
+| Entry point | `ferx model.ferx --simulate` (CLI) | R function |
+| Fit parameters | Model file's initial values | Fitted estimates (via `fit =`) |
+| Use case | Standalone simulation, sim-est studies | VPC, predictive checks |
+
+For production VPCs and uncertainty propagation, use `ferx_simulate()` with a
+fitted model (see the sections above). The `[simulation]` block is for
+self-contained model files and CLI-driven workflows.
