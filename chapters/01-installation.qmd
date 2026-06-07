@@ -12,7 +12,7 @@ faster gradients, but is not needed to get started.
 |---|---|---|
 | R ≥ 4.2 | Yes | Package interface |
 | Rust / Cargo | Yes | Compile the ferx-core backend; stable toolchain is sufficient |
-| cmake | Yes | Used by the Rust build (Linux/macOS; bundled with Rtools44 on Windows) |
+| cmake | Yes | Used by the Rust build (Linux/macOS; bundled with Rtools45 on Windows) |
 | Enzyme (LLVM) | No | Faster gradients via autodiff; documented in @sec-enzyme |
 
 Two installation paths are described below:
@@ -118,9 +118,9 @@ Native Enzyme autodiff is **not** available on Windows because the custom
 Rust fork does not currently build there. For autodiff on Windows, use the
 Docker image (@sec-docker), WSL2 + Ubuntu, or a remote Linux host.
 
-**Step 1 — Install Rtools44**
+**Step 1 — Install Rtools45**
 
-[Rtools44](https://cran.r-project.org/bin/windows/Rtools/rtools44/rtools.html)
+[Rtools45](https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html)
 ships cmake and the MinGW gcc that R uses to link the package, so no
 separate cmake install is needed.
 
@@ -192,6 +192,15 @@ this book run with `FERX_NO_AUTODIFF=1` on CI.
 The flag is only required when you want to skip the probe in scripts or
 CI; the build will automatically fall back to FD when no Enzyme toolchain
 is found.
+
+Two additional flags control the autodiff preflight self-test (see @sec-enzyme):
+
+- `FERX_AD_PREFLIGHT_SKIP=1` — skip the AD self-test (useful when reinstalling
+  on a toolchain you have already verified; the result is also cached per
+  toolchain fingerprint so the test is skipped automatically on matching
+  reinstalls).
+- `FERX_AD_PREFLIGHT_TIMEOUT=<seconds>` — timeout budget for the preflight
+  compile-and-run (default: 90 s).
 
 ## Advanced: full Enzyme install {#sec-enzyme}
 
@@ -332,6 +341,15 @@ pak::pak("FeRx-NLME/ferx-r")
 # or: devtools::install_github("FeRx-NLME/ferx-r")
 ```
 
+::: {.callout-note}
+Before the long fat-LTO compile, the package automatically runs the same
+`#[autodiff_forward]` compile-and-run self-test from Step 3, under a timeout
+watchdog. A broken toolchain aborts in seconds with a clear message rather than
+wedging `rustc` deep into the build. Set `FERX_AD_PREFLIGHT_SKIP=1` to skip
+this on reinstalls of a toolchain you have already verified (the result is also
+cached per toolchain fingerprint — see @sec-no-autodiff).
+:::
+
 ::: {.callout-tip}
 As long as `/tmp/rust-src` is gone but `~/.local/share/enzyme-toolchain`
 survives, you only ever need to repeat **Step 5** to reinstall or update
@@ -413,6 +431,15 @@ in the ferx-r repository.
 ```r
 pak::pak("FeRx-NLME/ferx-r")
 ```
+
+::: {.callout-note}
+Before the long fat-LTO compile, the package automatically runs the same
+`#[autodiff_forward]` compile-and-run self-test from Step 3, under a timeout
+watchdog. A broken toolchain aborts in seconds with a clear message rather than
+wedging `rustc` deep into the build. Set `FERX_AD_PREFLIGHT_SKIP=1` to skip
+this on reinstalls of a toolchain you have already verified (the result is also
+cached per toolchain fingerprint — see @sec-no-autodiff).
+:::
 
 ### Windows
 
