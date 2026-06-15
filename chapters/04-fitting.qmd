@@ -38,7 +38,7 @@ Pass `method` to choose the algorithm:
 | `"saem"` | Stochastic Approximation EM | Models with many ETAs or strong nonlinearity; supports IOV |
 | `"gn"` | Gauss-Newton / BHHH | Quick exploration; runs its own loop, no covariance |
 | `"gn_hybrid"` | Gauss-Newton then FOCEI polish | Fast warm start, rigorous finish |
-| `"imp"` | Importance-sampling marginal log-likelihood | Terminal diagnostic stage only; see @sec-uncertainty |
+| `"imp"` | Importance-sampling marginal log-likelihood | Standalone scoring of initial parameters, or as the terminal stage of a chain; see @sec-uncertainty |
 
 ```{r}
 #| label: fit-foce
@@ -71,6 +71,17 @@ sampling around the FOCEI mode and reports the marginal log-likelihood and
 effective sample size, which give an honest read on the Laplace
 approximation. See @sec-uncertainty for the `imp` diagnostics.
 
+`imp` can also run **standalone** (`method = "imp"`) with no preceding
+estimator, in which case it scores the model file's *initial* parameters
+rather than a converged mode — useful as a cheap likelihood probe of a
+candidate parameterisation before committing to a full fit:
+
+```{r}
+#| label: fit-imp-standalone
+#| eval: false
+fit_imp <- ferx_fit(ex$model, ex$data, method = "imp")
+```
+
 ### FOCE vs FOCEI
 
 Both methods integrate over the ETA distribution using a second-order Laplace approximation.
@@ -100,6 +111,22 @@ problems before you commit to a long run.
 #| label: check-init
 #| eval: false
 ferx_check_init(ex$model, ex$data)
+```
+
+### Inspecting the data columns
+
+`ferx_columns()` reads only the header row of a NONMEM-format CSV and prints
+the column names grouped into required NONMEM columns (`ID`, `TIME`, `DV`,
+`EVID`, `AMT`, `CMT`), optional NONMEM columns (`RATE`, `MDV`, `II`, `SS`,
+`CENS`, `OCC`), and covariates / user-defined columns. It is a fast way to
+confirm the dataset has the columns the model expects before fitting. It
+accepts a path, a `ferx_fit` object, or the list returned by `ferx_example()`:
+
+```{r}
+#| label: columns
+#| eval: false
+ferx_columns(ex)        # pass the ferx_example() list directly
+ferx_columns(ex$data)   # or pass the path
 ```
 
 ### NCA-based initial estimates {#sec-nca-inits}
@@ -135,11 +162,62 @@ fit <- ferx_fit(ex$model, ex$data, method = "foce", covariance = TRUE,
 After convergence inspect `fit$covariance_status`:
 
 - `"computed"` — Hessian is positive-definite; SEs and 95% CIs are available in `ferx_estimates(fit)`.
+- `"sir_fallback"` — the finite-difference Hessian was not positive-definite, but `covariance_fallback = "sir"` ran SIR with an absolute-eigenvalue-rectified proposal and reported SIR-based intervals instead of failing (see below).
 - `"failed"` — covariance matrix could not be inverted or was non-positive-definite. `fit$cov_matrix` and the `se`/CI columns are `NA`. Likely causes are over-parameterisation, a boundary estimate, or a parameter that is structurally non-identifiable.
+- `"not_requested"` — the fit ran with `covariance = FALSE`, so no covariance step was attempted.
 
-When the covariance step fails, try (a) removing one ETA at a time to find the
-unidentified component, (b) checking for parameters at their bounds, or
-(c) switching to SAEM, which does not depend on the Hessian for convergence.
+When the covariance step fails, ferx does not just say "failed": the warning
+on `fit$warnings` carries **failure-mode-specific guidance**, and the exact
+advice depends on *why* the Hessian was unusable. The cases it distinguishes are:
+
+- **Omega near-singular** ("omega matrix is not positive definite") — suggests a diagonal omega, fixing a small variance to a small positive constant, or dropping the corresponding ETA.
+- **Non-PD Hessian with an eigenvalue list** — points you at the printed eigenvalues: a near-zero minimum flags a near-unidentifiable parameter, a clearly negative minimum flags structural non-identifiability.
+- **Ill-conditioned entries** (flat or non-finite Hessian diagonal for named parameters) — suggests fixing the parameter, tightening its bounds, or raising `fd_hessian_step` (see below).
+- **Non-finite base OFV** — model evaluation overflowed/underflowed at convergence; check for extreme parameter values and that DV is positive under proportional error.
+- **Regularisation applied** — graded by severity (minor / moderate / severe); severe means SEs are likely unreliable and you should cross-check with `ferx_sir()`.
+
+Switching to SAEM, which does not depend on the Hessian for convergence, is a
+robust last resort when the structural model itself is the problem.
+
+### Covariance-robustness controls
+
+Three `ferx_fit()` arguments tune the covariance step itself when the
+default inverse-Hessian computation is fragile:
+
+- **`fd_hessian_step`** (default `0.01`) — relative step size for the
+  finite-difference Hessian; the actual perturbation for parameter *i* is
+  `fd_hessian_step * (1 + |x_hat[i]|)`. Raise it (e.g. `0.05`) when the fit
+  warns about ill-conditioned Hessian entries; lower it (e.g. `1e-3`) on smooth
+  surfaces where finite-difference noise dominates. No effect when
+  `covariance = FALSE`.
+- **`covariance_method`** — the estimator, mirroring NONMEM `$COV MATRIX=`:
+  `"r"` (inverse Hessian, the default), `"s"` (score cross-product), or
+  `"rsr"` (the Huber-White sandwich, robust to model misspecification). `"s"`
+  and `"rsr"` are rejected under non-interaction FOCE — use FOCEI for those.
+  Passed via `settings`.
+- **`covariance_fallback`** — `"none"` (default) or `"sir"`. When the
+  finite-difference Hessian is not positive-definite, `"sir"` runs SIR with an
+  absolute-eigenvalue-rectified proposal instead of leaving the step failed;
+  `covariance_status` then becomes `"sir_fallback"` and SIR-based credible
+  intervals are reported. Passed via `settings`.
+
+`fd_hessian_step` is a dedicated top-level argument; `covariance_method` and
+`covariance_fallback` are passed through `settings`:
+
+```{r}
+#| label: fit-cov-robust
+#| eval: false
+fit <- ferx_fit(
+  ex$model, ex$data,
+  method          = "focei",
+  covariance      = TRUE,
+  fd_hessian_step = 0.05,                       # rescue ill-conditioned FD Hessian
+  settings        = list(
+    covariance_method   = "rsr",               # Huber-White sandwich SEs (FOCEI only)
+    covariance_fallback = "sir"                # fall back to SIR on a non-PD Hessian
+  )
+)
+```
 
 ## Parallelism
 
@@ -493,6 +571,20 @@ head(tr)
 `ferx_trace()` requires the fit to have been produced with
 `optimizer_trace = TRUE` (as in the fit at the top of this section); otherwise
 it errors with a clear message.
+
+### Run log and iteration history
+
+`ferx_runlog()` prints a formatted run report that now includes a
+per-iteration history section (truncated for long runs). When you need the
+**full, untruncated** iteration table, `ferx_runlog_iters()` returns every
+iteration row without omission. Both require `optimizer_trace = TRUE`:
+
+```{r}
+#| label: runlog
+#| eval: false
+ferx_runlog(fit)        # formatted report; iteration history truncated for long runs
+ferx_runlog_iters(fit)  # the complete, untruncated iteration table
+```
 
 ## Saving and reloading a fit
 

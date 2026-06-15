@@ -29,6 +29,38 @@ fit <- ferx_fit(ex$model, ex$data, method = "foce", covariance = TRUE,
                 verbose = FALSE)
 ```
 
+## Strengthening the asymptotic covariance step
+
+Before reaching for SIR, it is usually worth trying to fix or strengthen the
+asymptotic covariance step itself. ferx exposes three controls for this, and
+they are the first line of defense when `fit$covariance_status` is not
+`"computed"`:
+
+| Control | Where | What it does |
+|---|---|---|
+| `fd_hessian_step` | dedicated `ferx_fit()` argument (default `0.01`) | Relative step for the finite-difference Hessian. Increase (e.g. `0.1`) when the fit warns about an ill-conditioned Hessian; decrease (e.g. `1e-3`) on smooth surfaces where FD noise dominates. |
+| `covariance_method` | `settings = list(...)` key | Covariance estimator: `"r"` (inverse Hessian, default), `"s"` (score cross-product), or `"rsr"` (Huber-White sandwich SEs, robust to model misspecification). `"s"` and `"rsr"` are rejected under non-interaction FOCE. |
+| `covariance_fallback` | `settings = list(...)` key | `"none"` (default) or `"sir"`. With `"sir"`, a non-positive-definite finite-difference Hessian triggers an automatic SIR run instead of a failed covariance step, and `fit$covariance_status` becomes `"sir_fallback"`. |
+
+```{r}
+#| label: cov-robust
+#| eval: false
+fit_cov <- ferx_fit(
+  ex$model, ex$data,
+  method          = "focei",
+  covariance      = TRUE,
+  fd_hessian_step = 0.1,                 # rescue an ill-conditioned FD Hessian
+  settings = list(
+    covariance_method   = "rsr",         # Huber-White sandwich SEs
+    covariance_fallback = "sir"          # auto-SIR if the Hessian is non-PD
+  )
+)
+```
+
+If the covariance step still cannot be trusted after these adjustments — or if
+`covariance_status` reports `"sir_fallback"` — move on to an explicit SIR run
+below for a fully non-asymptotic picture.
+
 ## Sampling Importance Resampling
 
 `ferx_sir()` takes a converged fit and returns an updated `ferx_fit` object
@@ -150,6 +182,22 @@ the FOCE-conditional proposal does not cover the integrand well — try
 more samples, fewer degrees of freedom (heavier tails), or check whether the
 Laplace approximation is breaking down (highly nonlinear models, sparse data).
 
+`"imp"` can also run **standalone** — `method = "imp"` with no preceding
+estimator. In that case it does not optimise anything; it evaluates the
+importance-sampling marginal log-likelihood at the model's *initial*
+parameters and reports the same `$importance_sampling` diagnostics. This is
+useful for scoring a fixed parameter set (e.g. values carried over from a
+reference fit) without re-estimating:
+
+```{r}
+#| eval: false
+fit_imp0 <- ferx_fit(
+  ex$model, ex$data,
+  method   = "imp",          # standalone: score the initial parameters
+  settings = list(is_samples = 1000, is_proposal_df = 5)
+)
+```
+
 ## When to reach for which tool
 
 | Situation | Reach for |
@@ -158,3 +206,5 @@ Laplace approximation is breaking down (highly nonlinear models, sparse data).
 | Boundary estimates, weak identifiability, small N | `ferx_sir()` |
 | Forward predictions with full uncertainty (dosing, exposure-response) | `ferx_simulate_with_uncertainty()` |
 | Honest marginal log-likelihood for model selection | `method = c("focei", "imp")` |
+| Marginal log-likelihood at a fixed/initial parameter set (no re-fit) | `method = "imp"` (standalone) |
+| Asymptotic covariance failed or is ill-conditioned | `fd_hessian_step`, `covariance_method`, `covariance_fallback` (before SIR) |

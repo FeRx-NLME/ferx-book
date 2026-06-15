@@ -49,12 +49,15 @@ Set `seed` for reproducibility.
 
 | Column | Meaning |
 |---|---|
-| `DRAW` | Population-parameter draw index. With `ferx_simulate()` this is always 1 (the point estimate); `ferx_simulate_with_uncertainty()` increments it across uncertainty draws — see @sec-uncertainty. |
-| `SIM` | Replicate index within a draw (1 to `n_sim`) |
+| `SIM` | Replicate index (1 to `n_sim`) |
 | `ID` | Subject ID (same population structure as observed data) |
 | `TIME` | Time (matched to observation schedule in `data`) |
 | `IPRED` | Individual prediction for this replicate (no residual error) |
 | `DV_SIM` | Simulated observation (`IPRED` + residual noise) |
+
+To propagate parameter uncertainty across draws, use
+`ferx_simulate_with_uncertainty()`, which adds a `DRAW` column indexing the
+population-parameter draw — see @sec-uncertainty.
 
 ## Simulating at initial values (without a fit)
 
@@ -65,6 +68,41 @@ Useful for a prior predictive check:
 #| eval: false
 sim_prior <- ferx_simulate(ex$model, ex$data, n_sim = 200, seed = 1)
 ```
+
+## Propensity-score-matched simulation (RWD / pmVPC)
+
+VPCs built from **real-world data (RWD)** can be biased by *treatment
+adaptation*: a subject's observed dosing and sampling design is often a
+response to that subject's own disposition. For example, high-clearance
+patients may be given longer dosing intervals. A naïve simulation draws etas
+independently of the design, so the simulated and observed populations no
+longer share the design–disposition coupling, and the VPC misleads.
+
+The `match = TRUE` argument to `ferx_simulate()` addresses this. For each
+replicate, the drawn etas are reassigned to subjects by **optimal Mahalanobis
+matching** (under the model omega) against the subjects' fitted (posthoc) etas.
+Each subject's observed dosing/sampling design is thereby paired with a similar
+drawn eta, restoring the design–disposition coupling and producing a
+propensity-matched VPC (pmVPC). This requires `data` to be real observed data —
+every subject must have observations so its posthoc eta can be computed. When a
+`fit` is supplied, the posthoc etas are computed at the fitted parameters;
+otherwise at the model file's initial values.
+
+```{r}
+#| label: simulate-matched
+#| eval: false
+sim_pm <- ferx_simulate(
+  model = ex$model,
+  data  = ex$data,
+  n_sim = 500,
+  seed  = 42,
+  fit   = fit,
+  match = TRUE
+)
+```
+
+The returned columns are identical to the unmatched call (`SIM`, `ID`, `TIME`,
+`IPRED`, `DV_SIM`); feed `sim_pm` into the same VPC construction below.
 
 ## Building a VPC
 

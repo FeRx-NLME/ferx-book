@@ -152,6 +152,28 @@ ferx_eta_cov(fit_cov, read.csv(ex_cov$data))
 
 `ferx_eta_cov()` flags candidates for a covariate search at |r| ≥ 0.3.
 
+### Informal covariate screen
+
+`ferx_cov_screen(fit)` is a broader, informal screen built on the fit's
+covariate table (`fit$covtab`, populated when the model declares a
+`[covariates]` block). For every declared covariate it reports the association
+with each parameter that has IIV, measured two ways: against the subject's
+individual parameter estimate (`ebe`) and against the parameter's ETA (`eta`).
+Covariates are first aggregated to one value per subject -- the median for
+continuous covariates, the most-frequent level for categorical ones. The
+association is a signed Pearson correlation for continuous covariates and a
+correlation ratio for categorical covariates; pairs are kept only when an
+association clears `threshold` (default `|r| ≥ 0.2`).
+
+This is a screening aid to decide what is worth a *formal* covariate search --
+it is not itself a covariate test or hypothesis test.
+
+```{r}
+#| label: cov-screen
+#| eval: false
+ferx_cov_screen(fit_cov, threshold = 0.2)
+```
+
 ## Parameter correlation matrix
 
 After a covariance step, inspect correlations between estimated parameters.

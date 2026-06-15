@@ -262,14 +262,15 @@ ferx provides built-in analytical solutions for common compartment models:
 | Keyword | Cmts | Route | Parameters |
 |---|---|---|---|
 | `one_cpt_oral(cl, v, ka)` | 1 | Oral | `cl`, `v`, `ka` |
-| `one_cpt_iv_bolus(cl, v)` | 1 | IV bolus | `cl`, `v` |
-| `one_cpt_infusion(cl, v)` | 1 | IV infusion | `cl`, `v` |
+| `one_cpt_iv(cl, v)` | 1 | IV (bolus and/or infusion) | `cl`, `v` |
 | `two_cpt_oral(cl, v1, q, v2, ka)` | 2 | Oral | `cl`, `v1`, `q`, `v2`, `ka` |
-| `two_cpt_iv_bolus(cl, v1, q, v2)` | 2 | IV bolus | `cl`, `v1`, `q`, `v2` |
-| `two_cpt_infusion(cl, v1, q, v2)` | 2 | IV infusion | `cl`, `v1`, `q`, `v2` |
+| `two_cpt_iv(cl, v1, q, v2)` | 2 | IV (bolus and/or infusion) | `cl`, `v1`, `q`, `v2` |
 | `three_cpt_oral(cl, v1, q2, v2, q3, v3, ka)` | 3 | Oral | `cl`, `v1`, `q2`, `v2`, `q3`, `v3`, `ka` |
-| `three_cpt_iv_bolus(cl, v1, q2, v2, q3, v3)` | 3 | IV bolus | `cl`, `v1`, `q2`, `v2`, `q3`, `v3` |
-| `three_cpt_infusion(cl, v1, q2, v2, q3, v3)` | 3 | IV infusion | `cl`, `v1`, `q2`, `v2`, `q3`, `v3` |
+| `three_cpt_iv(cl, v1, q2, v2, q3, v3)` | 3 | IV (bolus and/or infusion) | `cl`, `v1`, `q2`, `v2`, `q3`, `v3` |
+
+There is no separate bolus or infusion variant: each IV model selects the closed form per dose from the `RATE` column (`RATE=0` ⇒ bolus, `RATE>0` ⇒ infusion), so a single subject may mix both. Each IV keyword also has a `*_compartment_iv` long-form alias (e.g. `three_compartment_iv`); the short and long names are interchangeable.
+
+The older `*_iv_bolus` and `*_infusion` model names were retired in ferx-core #176 and are now rejected by the parser — migrate them to the corresponding unified `*_iv` keyword.
 
 All analytical models accept an optional `lagtime=` (or `alag=`) argument; oral models additionally accept an optional `f=` bioavailability argument. See @sec-lagtime and @sec-bioavailability.
 
@@ -481,6 +482,9 @@ short form:
 | `[simulation]` | Embedded simulation trial design | @sec-simulation-dsl |
 | `[diffusion]` | Stochastic differential equations (process noise) | @sec-sde |
 | `[covariate_nn NAME]` | Neural-network covariate effect (Deep Compartment Models) | — (advanced) |
+| `[event_model]` *(beta)* | Time-to-event / survival endpoint: routes a `cmt` to a parametric hazard (`family` = `exponential`/`weibull`/`gompertz`, with `scale`/`rate`, `shape`, `alpha`/`gamma`) instead of the Gaussian error model | @sec-special-features |
+
+The `[event_model]` block is experimental (beta). It registers a CMT column as a survival endpoint; fuller coverage lives in @sec-special-features.
 
 ## Validating a model
 
