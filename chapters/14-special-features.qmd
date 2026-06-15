@@ -120,6 +120,26 @@ The integrand is re-evaluated on a fine time grid (`step` in the same units as
 TIME) rather than just at the observation rows. Any per-row expression is valid
 as the integrand.
 
+### Referencing compartment states
+
+Beyond `IPRED`, derived expressions and `integral(...)` integrands can reference
+the full compartment state vector via the `compartments[i]` subscript (or, for
+ODE models, the named ODE state variables). This lets a derived column or AUC
+target a compartment other than the observed one — for example the effect-site
+or a peripheral compartment.
+
+```
+[derived]
+  AUC_Ce = integral(compartments[1], from=0, to=24, step=0.5)
+```
+
+When an `integral(...)` integrand references `compartments[i]` or a named ODE
+state, ferx re-runs the solver (or analytical formula) at the grid points rather
+than interpolating from the stored per-observation states — an exact result at
+the cost of a second solver pass per subject. Named-state access in integrals
+requires an `[odes]` block; analytical models must use the `compartments[i]`
+subscript form.
+
 ### Time-above-threshold (TAT)
 
 The constant integrand `1.0` with a filter measures duration above a threshold:
@@ -336,10 +356,13 @@ model you use.
 
 ```
 [structural_model]
-  pk one_cpt_oral(cl=CL, v=V, ka=KA, tlag=TLAG)
+  pk one_cpt_oral(cl=CL, v=V, ka=KA, lagtime=LAGTIME)
 ```
 
-The named keyword `tlag` is accepted by the oral analytical solvers.
+The named keyword `lagtime=` (preferred) is accepted by the oral analytical
+solvers; `alag=` is an accepted alias. Both route to the same internal PK slot
+(`lagtime` is ferx-core's name for what NONMEM calls `ALAG`). There is no `tlag`
+keyword.
 
 ### As an `LAGTIME` keyword in `[individual_parameters]` (ODE models)
 
@@ -362,6 +385,61 @@ expression is valid — including the additive form shown in
 In both forms the individual lag value flows through `[individual_parameters]`
 like any other PK parameter — meaning it can be ETA-driven and recovered
 per subject from `fit$individual_estimates`.
+
+## Time-to-event endpoints — `[event_model]` {#sec-event-model}
+
+::: {.callout-warning}
+**Beta / experimental.** The `[event_model]` block is a beta feature
+(ferx-core #191/#192). Syntax and behaviour may change in a future release.
+:::
+
+The `[event_model]` block registers a CMT column as a time-to-event (TTE)
+endpoint. Observations on that compartment are routed to a parametric survival
+likelihood instead of the Gaussian residual-error model. Three hazard families
+are supported: `exponential`, `weibull`, and `gompertz`.
+
+```
+[event_model]
+  cmt    = <integer>    # CMT value identifying TTE rows in the data
+  family = exponential  # exponential | weibull | gompertz
+  scale  = <expression> # rate λ — Exponential and Weibull (rate= is an Exponential alias)
+  shape  = <expression> # Weibull only (required)
+  alpha  = <expression> # Gompertz only: baseline hazard at t=0
+  gamma  = <expression> # Gompertz only: hazard growth rate
+  loghr  = <expression> # optional, all families: multiplies the hazard by exp(loghr)
+```
+
+::: {.callout-important}
+Expressions are evaluated in the **theta / eta / covariate** namespace only.
+Names defined in `[individual_parameters]` are **not** in scope — write the full
+theta/eta expression directly (e.g. `TVSCALE * exp(ETA_SCALE)`, not `SCALE`).
+:::
+
+A standalone Weibull TTE model needs no `[structural_model]`, `[error_model]`,
+or `[individual_parameters]` block when `[event_model]` is the sole endpoint:
+
+```
+[parameters]
+  theta TVSCALE(20.0, 0.1, 500.0)
+  theta TVSHAPE(1.5,  0.1, 10.0)
+
+  omega ETA_SCALE ~ 0.04
+
+[event_model]
+  cmt    = 2
+  family = weibull
+  scale  = TVSCALE * exp(ETA_SCALE)
+  shape  = TVSHAPE
+
+[fit_options]
+  method  = focei
+  maxiter = 300
+```
+
+DV is coded `0` (right-censored), `1` (exact event), or `2` (interval-censored
+right bound, paired with a preceding `DV=0` row on the same CMT). Named blocks
+(`[event_model DROPOUT]`, `[event_model DEATH]`) allow multiple TTE endpoints in
+one model.
 
 ## Saving and reloading fits
 
