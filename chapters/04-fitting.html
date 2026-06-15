@@ -78,9 +78,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-f381374abff134079ce64cf499b0d527.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-f1960d54aebfe45d38f1d4552bdeff16.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-f9e8bf82db05b7a1cd22ee6628e346f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-f1960d54aebfe45d38f1d4552bdeff16.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-ca703393156abfbf62dc58eed8b6576a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-43da068a540758984f67b666ff9fcfdc.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-ca703393156abfbf62dc58eed8b6576a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -468,10 +468,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <a href="#pre-fit-sanity-checks" id="toc-pre-fit-sanity-checks" class="nav-link" data-scroll-target="#pre-fit-sanity-checks"><span class="header-section-number">6.3</span> Pre-fit sanity checks</a>
   <ul class="collapse">
 <li><a href="#initial-value-check" id="toc-initial-value-check" class="nav-link" data-scroll-target="#initial-value-check"><span class="header-section-number">6.3.1</span> Initial-value check</a></li>
-  <li><a href="#sec-nca-inits" id="toc-sec-nca-inits" class="nav-link" data-scroll-target="#sec-nca-inits"><span class="header-section-number">6.3.2</span> NCA-based initial estimates</a></li>
+  <li><a href="#inspecting-the-data-columns" id="toc-inspecting-the-data-columns" class="nav-link" data-scroll-target="#inspecting-the-data-columns"><span class="header-section-number">6.3.2</span> Inspecting the data columns</a></li>
+  <li><a href="#sec-nca-inits" id="toc-sec-nca-inits" class="nav-link" data-scroll-target="#sec-nca-inits"><span class="header-section-number">6.3.3</span> NCA-based initial estimates</a></li>
   </ul>
 </li>
-  <li><a href="#the-covariance-step" id="toc-the-covariance-step" class="nav-link" data-scroll-target="#the-covariance-step"><span class="header-section-number">6.4</span> The covariance step</a></li>
+  <li>
+<a href="#the-covariance-step" id="toc-the-covariance-step" class="nav-link" data-scroll-target="#the-covariance-step"><span class="header-section-number">6.4</span> The covariance step</a>
+  <ul class="collapse">
+<li><a href="#covariance-robustness-controls" id="toc-covariance-robustness-controls" class="nav-link" data-scroll-target="#covariance-robustness-controls"><span class="header-section-number">6.4.1</span> Covariance-robustness controls</a></li>
+  </ul>
+</li>
   <li>
 <a href="#parallelism" id="toc-parallelism" class="nav-link" data-scroll-target="#parallelism"><span class="header-section-number">6.5</span> Parallelism</a>
   <ul class="collapse">
@@ -498,7 +504,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><a href="#accessing-individual-fields" id="toc-accessing-individual-fields" class="nav-link" data-scroll-target="#accessing-individual-fields"><span class="header-section-number">6.7.1</span> Accessing individual fields</a></li>
   </ul>
 </li>
-  <li><a href="#convergence-diagnostics" id="toc-convergence-diagnostics" class="nav-link" data-scroll-target="#convergence-diagnostics"><span class="header-section-number">6.8</span> Convergence diagnostics</a></li>
+  <li>
+<a href="#convergence-diagnostics" id="toc-convergence-diagnostics" class="nav-link" data-scroll-target="#convergence-diagnostics"><span class="header-section-number">6.8</span> Convergence diagnostics</a>
+  <ul class="collapse">
+<li><a href="#run-log-and-iteration-history" id="toc-run-log-and-iteration-history" class="nav-link" data-scroll-target="#run-log-and-iteration-history"><span class="header-section-number">6.8.1</span> Run log and iteration history</a></li>
+  </ul>
+</li>
   <li><a href="#saving-and-reloading-a-fit" id="toc-saving-and-reloading-a-fit" class="nav-link" data-scroll-target="#saving-and-reloading-a-fit"><span class="header-section-number">6.9</span> Saving and reloading a fit</a></li>
   <li><a href="#sec-async" id="toc-sec-async" class="nav-link" data-scroll-target="#sec-async"><span class="header-section-number">6.10</span> Async fitting (<code>ferx_fit_async</code> / <code>ferx_collect</code>)</a></li>
   <li><a href="#gradient-method-and-gradient_used" id="toc-gradient-method-and-gradient_used" class="nav-link" data-scroll-target="#gradient-method-and-gradient_used"><span class="header-section-number">6.11</span> Gradient method and <code>$gradient_used</code></a></li>
@@ -580,7 +591,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="even">
 <td><code>"imp"</code></td>
 <td>Importance-sampling marginal log-likelihood</td>
-<td>Terminal diagnostic stage only; see <a href="08-uncertainty.html#sec-uncertainty" class="quarto-xref"><span>Section 9.1</span></a>
+<td>Standalone scoring of initial parameters, or as the terminal stage of a chain; see <a href="08-uncertainty.html#sec-uncertainty" class="quarto-xref"><span>Section 9.1</span></a>
 </td>
 </tr>
 </tbody>
@@ -608,6 +619,10 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_chain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"saem"</span>, <span class="st">"focei"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>A common production pattern is <code>c("saem", "focei")</code> — SAEM finds the basin of attraction robustly, FOCEI polishes and produces the covariance step. A second useful chain is <code>c("focei", "imp")</code>: the final <code>imp</code> stage runs importance sampling around the FOCEI mode and reports the marginal log-likelihood and effective sample size, which give an honest read on the Laplace approximation. See <a href="08-uncertainty.html#sec-uncertainty" class="quarto-xref"><span>Section 9.1</span></a> for the <code>imp</code> diagnostics.</p>
+<p><code>imp</code> can also run <strong>standalone</strong> (<code>method = "imp"</code>) with no preceding estimator, in which case it scores the model file’s <em>initial</em> parameters rather than a converged mode — useful as a cheap likelihood probe of a candidate parameterisation before committing to a full fit:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"imp"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 </section><section id="foce-vs-focei" class="level3" data-number="6.2.2"><h3 data-number="6.2.2" class="anchored" data-anchor-id="foce-vs-focei">
 <span class="header-section-number">6.2.2</span> FOCE vs FOCEI</h3>
 <p>Both methods integrate over the ETA distribution using a second-order Laplace approximation. The difference is in how the residual error is treated:</p>
@@ -625,13 +640,20 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 <span class="header-section-number">6.3.1</span> Initial-value check</h3>
 <p><code><a href="https://ferx-nlme.github.io/reference/ferx_check_init.html">ferx_check_init()</a></code> runs a handful of optimiser iterations from the model file’s initial estimates and returns a list with a <code>$trace</code> data frame (per- iteration OFV, gradient norm, step norm) and a <code>$summary</code> row (start OFV, end OFV, OFV drop, convergence flag). A finite start OFV and a non-degenerate gradient mean the model is set up correctly enough to attempt the full fit; a non-finite OFV or an explosive gradient norm flags scale or specification problems before you commit to a long run.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</section><section id="sec-nca-inits" class="level3" data-number="6.3.2"><h3 data-number="6.3.2" class="anchored" data-anchor-id="sec-nca-inits">
-<span class="header-section-number">6.3.2</span> NCA-based initial estimates</h3>
+</section><section id="inspecting-the-data-columns" class="level3" data-number="6.3.2"><h3 data-number="6.3.2" class="anchored" data-anchor-id="inspecting-the-data-columns">
+<span class="header-section-number">6.3.2</span> Inspecting the data columns</h3>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_columns.html">ferx_columns()</a></code> reads only the header row of a NONMEM-format CSV and prints the column names grouped into required NONMEM columns (<code>ID</code>, <code>TIME</code>, <code>DV</code>, <code>EVID</code>, <code>AMT</code>, <code>CMT</code>), optional NONMEM columns (<code>RATE</code>, <code>MDV</code>, <code>II</code>, <code>SS</code>, <code>CENS</code>, <code>OCC</code>), and covariates / user-defined columns. It is a fast way to confirm the dataset has the columns the model expects before fitting. It accepts a path, a <code>ferx_fit</code> object, or the list returned by <code><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example()</a></code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_columns.html">ferx_columns</a></span><span class="op">(</span><span class="va">ex</span><span class="op">)</span>        <span class="co"># pass the ferx_example() list directly</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_columns.html">ferx_columns</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span>   <span class="co"># or pass the path</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="sec-nca-inits" class="level3" data-number="6.3.3"><h3 data-number="6.3.3" class="anchored" data-anchor-id="sec-nca-inits">
+<span class="header-section-number">6.3.3</span> NCA-based initial estimates</h3>
 <p>If you do not have good initial estimates, <code><a href="https://ferx-nlme.github.io/reference/ferx_inits_from_nca.html">ferx_inits_from_nca()</a></code> derives them from a per-subject non-compartmental analysis and returns starting <code>theta</code> and <code>omega</code> values:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_inits_from_nca.html">ferx_inits_from_nca</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_inits_from_nca.html">ferx_inits_from_nca</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca"</span><span class="op">)</span></span>
 <span><span class="va">inits</span><span class="op">$</span><span class="va">theta</span></span>
 <span><span class="va">inits</span><span class="op">$</span><span class="va">omega</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -640,7 +662,7 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 <span class="header-section-number">6.4</span> The covariance step</h2>
 <p><code>covariance = TRUE</code> triggers the Hessian-based covariance matrix after convergence. This provides standard errors, 95% confidence intervals, and the condition number.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"foce"</span>, covariance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"foce"</span>, covariance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                optimizer_trace <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_V</code></pre>
@@ -651,10 +673,51 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 <li>
 <code>"computed"</code> — Hessian is positive-definite; SEs and 95% CIs are available in <code>ferx_estimates(fit)</code>.</li>
 <li>
+<code>"sir_fallback"</code> — the finite-difference Hessian was not positive-definite, but <code>covariance_fallback = "sir"</code> ran SIR with an absolute-eigenvalue-rectified proposal and reported SIR-based intervals instead of failing (see below).</li>
+<li>
 <code>"failed"</code> — covariance matrix could not be inverted or was non-positive-definite. <code>fit$cov_matrix</code> and the <code>se</code>/CI columns are <code>NA</code>. Likely causes are over-parameterisation, a boundary estimate, or a parameter that is structurally non-identifiable.</li>
+<li>
+<code>"not_requested"</code> — the fit ran with <code>covariance = FALSE</code>, so no covariance step was attempted.</li>
 </ul>
-<p>When the covariance step fails, try (a) removing one ETA at a time to find the unidentified component, (b) checking for parameters at their bounds, or (c) switching to SAEM, which does not depend on the Hessian for convergence.</p>
-</section><section id="parallelism" class="level2" data-number="6.5"><h2 data-number="6.5" class="anchored" data-anchor-id="parallelism">
+<p>When the covariance step fails, ferx does not just say “failed”: the warning on <code>fit$warnings</code> carries <strong>failure-mode-specific guidance</strong>, and the exact advice depends on <em>why</em> the Hessian was unusable. The cases it distinguishes are:</p>
+<ul>
+<li>
+<strong>Omega near-singular</strong> (“omega matrix is not positive definite”) — suggests a diagonal omega, fixing a small variance to a small positive constant, or dropping the corresponding ETA.</li>
+<li>
+<strong>Non-PD Hessian with an eigenvalue list</strong> — points you at the printed eigenvalues: a near-zero minimum flags a near-unidentifiable parameter, a clearly negative minimum flags structural non-identifiability.</li>
+<li>
+<strong>Ill-conditioned entries</strong> (flat or non-finite Hessian diagonal for named parameters) — suggests fixing the parameter, tightening its bounds, or raising <code>fd_hessian_step</code> (see below).</li>
+<li>
+<strong>Non-finite base OFV</strong> — model evaluation overflowed/underflowed at convergence; check for extreme parameter values and that DV is positive under proportional error.</li>
+<li>
+<strong>Regularisation applied</strong> — graded by severity (minor / moderate / severe); severe means SEs are likely unreliable and you should cross-check with <code><a href="https://ferx-nlme.github.io/reference/ferx_sir.html">ferx_sir()</a></code>.</li>
+</ul>
+<p>Switching to SAEM, which does not depend on the Hessian for convergence, is a robust last resort when the structural model itself is the problem.</p>
+<section id="covariance-robustness-controls" class="level3" data-number="6.4.1"><h3 data-number="6.4.1" class="anchored" data-anchor-id="covariance-robustness-controls">
+<span class="header-section-number">6.4.1</span> Covariance-robustness controls</h3>
+<p>Three <code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit()</a></code> arguments tune the covariance step itself when the default inverse-Hessian computation is fragile:</p>
+<ul>
+<li>
+<strong><code>fd_hessian_step</code></strong> (default <code>0.01</code>) — relative step size for the finite-difference Hessian; the actual perturbation for parameter <em>i</em> is <code>fd_hessian_step * (1 + |x_hat[i]|)</code>. Raise it (e.g.&nbsp;<code>0.05</code>) when the fit warns about ill-conditioned Hessian entries; lower it (e.g.&nbsp;<code>1e-3</code>) on smooth surfaces where finite-difference noise dominates. No effect when <code>covariance = FALSE</code>.</li>
+<li>
+<strong><code>covariance_method</code></strong> — the estimator, mirroring NONMEM <code>$COV MATRIX=</code>: <code>"r"</code> (inverse Hessian, the default), <code>"s"</code> (score cross-product), or <code>"rsr"</code> (the Huber-White sandwich, robust to model misspecification). <code>"s"</code> and <code>"rsr"</code> are rejected under non-interaction FOCE — use FOCEI for those. Passed via <code>settings</code>.</li>
+<li>
+<strong><code>covariance_fallback</code></strong> — <code>"none"</code> (default) or <code>"sir"</code>. When the finite-difference Hessian is not positive-definite, <code>"sir"</code> runs SIR with an absolute-eigenvalue-rectified proposal instead of leaving the step failed; <code>covariance_status</code> then becomes <code>"sir_fallback"</code> and SIR-based credible intervals are reported. Passed via <code>settings</code>.</li>
+</ul>
+<p><code>fd_hessian_step</code> is a dedicated top-level argument; <code>covariance_method</code> and <code>covariance_fallback</code> are passed through <code>settings</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
+<span>  method          <span class="op">=</span> <span class="st">"focei"</span>,</span>
+<span>  covariance      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  fd_hessian_step <span class="op">=</span> <span class="fl">0.05</span>,                       <span class="co"># rescue ill-conditioned FD Hessian</span></span>
+<span>  settings        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
+<span>    covariance_method   <span class="op">=</span> <span class="st">"rsr"</span>,               <span class="co"># Huber-White sandwich SEs (FOCEI only)</span></span>
+<span>    covariance_fallback <span class="op">=</span> <span class="st">"sir"</span>                <span class="co"># fall back to SIR on a non-PD Hessian</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section></section><section id="parallelism" class="level2" data-number="6.5"><h2 data-number="6.5" class="anchored" data-anchor-id="parallelism">
 <span class="header-section-number">6.5</span> Parallelism</h2>
 <p>ferx uses parallelism at two independent levels. Understanding both helps you get the most out of a multi-core machine.</p>
 <section id="per-subject-parallelism-threads" class="level3" data-number="6.5.1"><h3 data-number="6.5.1" class="anchored" data-anchor-id="per-subject-parallelism-threads">
@@ -681,11 +744,11 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 </tbody>
 </table>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, threads <span class="op">=</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html">detectCores</a></span><span class="op">(</span>logical <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, threads <span class="op">=</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html">detectCores</a></span><span class="op">(</span>logical <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Passing <code>NULL</code> (the default) uses one worker per logical CPU. On HPC shared nodes, cap the thread count to avoid contention:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, threads <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, threads <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This speeds up a <strong>single fit</strong> by distributing subjects across cores. It does not help when the model is stuck in a local minimum.</p>
 <p><code>threads</code> controls the inner-loop pool only. The <code>n_starts</code> outer parallelism (see below) always uses the global rayon pool regardless of <code>threads</code>.</p>
@@ -699,7 +762,7 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 </ul>
 <p><code>n_starts</code> runs independent fits from perturbed starting values <strong>in parallel</strong> and returns the result with the lowest OFV:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>n_starts <span class="op">=</span> <span class="fl">8L</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -707,7 +770,7 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 <p>The default is <code>n_starts = 1</code>, which runs a single fit with no perturbation — multi-start is opt-in. With <code>n_starts = 8</code>, the first run (internally labelled start 0) uses the exact initial values from the model file; starts 1–7 apply a log-space perturbation of size <code>start_sigma</code> (default 0.3, roughly ±30% CV) to each theta. Setting <code>n_starts = 0</code> is rejected at parse time with an error. On an 8-core machine, 8 starts cost approximately the same wall time as a single run.</p>
 <p>For ridge-shaped surfaces — where the optimiser needs to explore a wider neighbourhood — increase <code>start_sigma</code>:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
 <span>    n_starts    <span class="op">=</span> <span class="fl">8L</span>,</span>
@@ -717,7 +780,7 @@ overrides it with `focei`. The call-time value will be used.</code></pre>
 </div>
 <p>Pin <code>multi_start_seed</code> to reproduce a specific set of perturbations:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
 <span>    n_starts         <span class="op">=</span> <span class="fl">8L</span>,</span>
@@ -768,7 +831,7 @@ Warning
 <span class="header-section-number">6.5.3</span> Combining both levels</h3>
 <p><code>threads</code> and <code>n_starts</code> are orthogonal and compose naturally. With <code>n_starts = 4</code> and <code>threads = 2</code>, ferx runs four fits in parallel, each using two worker threads for its inner loops — fully utilizing an 8-core machine:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  threads  <span class="op">=</span> <span class="fl">2L</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>n_starts <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span>
@@ -940,7 +1003,7 @@ Tip
 </tbody>
 </table>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="st">"slsqp"</span><span class="op">)</span>   <span class="co"># gradient-based; bobyqa is the default</span></span>
 <span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -977,7 +1040,7 @@ Tip
 </h3>
 <p>By default ferx short-circuits the NLopt outer loop once the OFV plateau is numerically flat (no improvement above <code>1e-3</code> over a rolling window), so SLSQP / L-BFGS terminate quickly instead of grinding through the full <code>maxiter</code> budget at full inner-loop cost. Set <code>stagnation_guard = FALSE</code> to disable the guard and let the optimizer run to its own xtol / ftol or to <code>maxiter</code> — useful when real OFV improvements are genuinely smaller than the guard’s threshold (some γ-bearing FOCEI problems), or when debugging.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
 <span>    optimizer                    <span class="op">=</span> <span class="st">"slsqp"</span>,</span>
@@ -990,7 +1053,7 @@ Tip
 <span class="header-section-number">6.6.5</span> Global pre-search</h3>
 <p><code>global_search = TRUE</code> runs NLopt’s CRS2-LM derivative-free search to find a good basin <em>before</em> the local optimizer takes over — useful when initial estimates are weak (e.g.&nbsp;translated from a different drug) and you would rather not spend a full SAEM stage. It requires lower/upper bounds on every theta and hands off to the <code>optimizer</code> once <code>global_maxeval</code> is exhausted.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>global_search <span class="op">=</span> <span class="cn">TRUE</span>, global_maxeval <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1054,7 +1117,7 @@ Tip
 </tbody>
 </table>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_saem</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_saem</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span></span>
 <span>  <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>  method   <span class="op">=</span> <span class="st">"saem"</span>,</span>
 <span>  settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>n_exploration <span class="op">=</span> <span class="fl">300</span>, n_convergence <span class="op">=</span> <span class="fl">400</span>, omega_burnin <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
@@ -1125,7 +1188,7 @@ Tip
 </section></section><section id="reading-the-output" class="level2" data-number="6.7"><h2 data-number="6.7" class="anchored" data-anchor-id="reading-the-output">
 <span class="header-section-number">6.7</span> Reading the output</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>--------------------------------------------------
 ferx NLME Fit Summary
@@ -1135,7 +1198,7 @@ Dataset:   warfarin
 Converged: YES
 Method:    FOCE
 Gradient:  auto (requested) -&gt; fd (used)
-ferx v0.1.5 (core v0.1.5)
+ferx v0.1.5 (core v0.1.6)
 
 Settings (model file / call-time override):
   method                       foce  [model only]
@@ -1151,7 +1214,7 @@ Shrinkage: ETA1=-0.1%  ETA2=0.0%  ETA3=0.1%
 EPS shrinkage: 15.3%
 DW: 2.61 [negative autocorrelation]
 lag-1 r: -0.365
-Covariance: computed  Cond: 12.1  |  Wall time: 0.0s
+Covariance: computed  Cond: 2.5  |  Wall time: 0.0s
 
 Warnings:
   * mu-ref: ETA_CL, ETA_KA, ETA_V 
@@ -1163,152 +1226,152 @@ Warnings:
 <section id="accessing-individual-fields" class="level3" data-number="6.7.1"><h3 data-number="6.7.1" class="anchored" data-anchor-id="accessing-individual-fields">
 <span class="header-section-number">6.7.1</span> Accessing individual fields</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">theta</span>         <span class="co"># named numeric vector of theta estimates</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">theta</span>         <span class="co"># named numeric vector of theta estimates</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     TVCL       TVV      TVKA 
-0.1327786 7.6927312 0.7563175 </code></pre>
+0.1327786 7.6927313 0.7563176 </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">omega</span>         <span class="co"># omega matrix</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">omega</span>         <span class="co"># omega matrix</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>           ETA_CL       ETA_V    ETA_KA
-ETA_CL 0.02849344 0.000000000 0.0000000
-ETA_V  0.00000000 0.009597946 0.0000000
-ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
+ETA_CL 0.02849346 0.000000000 0.0000000
+ETA_V  0.00000000 0.009597951 0.0000000
+ETA_KA 0.00000000 0.000000000 0.3406941</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sigma</span>         <span class="co"># sigma vector</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sigma</span>         <span class="co"># sigma vector</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.0106401</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">se_theta</span>      <span class="co"># SEs for theta</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">se_theta</span>      <span class="co"># SEs for theta</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>      TVCL        TVV       TVKA 
-0.01433498 0.28993386 0.03490566 </code></pre>
+<pre><code>       TVCL         TVV        TVKA 
+0.006560653 0.233704732 0.122150234 </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">ofv</span>           <span class="co"># scalar OFV</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">ofv</span>           <span class="co"># scalar OFV</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] -280.1834</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">aic</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">aic</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] -266.1834</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">bic</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">bic</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] -247.28</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>         <span class="co"># individual-level diagnostics (ID, TIME, DV, PRED, IPRED, CWRES, ...)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>         <span class="co"># individual-level diagnostics (ID, TIME, DV, PRED, IPRED, CWRES, ...)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    ID  TIME      DV      PRED      IPRED        CWRES         IWRES   EBE_OFV
-1    1   0.5  5.3653  4.074475  5.3518168  0.579178767  0.2367813432 -26.89659
-2    1   1.0  8.2578  6.830974  8.2835029  0.488201839 -0.2916238595 -26.89659
-3    1   2.0 10.7063  9.920484 10.7085479  0.213820715 -0.0197288206 -26.89659
-4    1   4.0 11.4142 11.769634 11.3833670 -0.542558195  0.2545651176 -26.89659
-5    1   8.0 10.9232 11.555816 10.7578572 -0.629866039  1.4444874896 -26.89659
-6    1  12.0  9.9442 10.812645 10.0693680 -0.943097702 -1.1682757239 -26.89659
-7    1  24.0  8.0634  8.791047  8.2548453 -0.942616367 -2.1796666963 -26.89659
-8    1  48.0  5.6575  5.809459  5.5478101 -0.186356569  1.8582301868 -26.89659
-9    1  72.0  3.7373  3.839112  3.7285007 -0.129564699  0.2218034163 -26.89659
-10   1  96.0  2.5019  2.537031  2.5058027 -0.049003809 -0.1463771289 -26.89659
-11   1 120.0  1.6785  1.676567  1.6840676  0.004087137 -0.3107150498 -26.89659
-12   2   0.5  3.2230  4.074475  3.2274138 -0.467856381 -0.1285312712 -33.15088
-13   2   1.0  5.6205  6.830974  5.6653896 -0.463768010 -0.7446805109 -33.15088
-14   2   2.0  8.9389  9.920484  8.8734985 -0.373463017  0.6927033244 -33.15088
-15   2   4.0 11.6945 11.769634 11.5829602 -0.159173622  0.9050329909 -33.15088
-16   2   8.0 12.1458 11.555816 12.1059406  0.454364153  0.3094468110 -33.15088
-17   2  12.0 11.4394 10.812645 11.3958474  0.641165236  0.3591876047 -33.15088
-18   2  24.0  8.9787  8.791047  9.1335580  0.245171127 -1.5934849991 -33.15088
-19   2  48.0  5.8306  5.809459  5.8438148  0.027134352 -0.2125298347 -33.15088
-20   2  72.0  3.7432  3.839112  3.7389630 -0.117169166  0.1065017554 -33.15088
-21   2  96.0  2.4121  2.537031  2.3922463 -0.172106490  0.7799899496 -33.15088
-22   2 120.0  1.5248  1.676567  1.5305962 -0.252016723 -0.3559060336 -33.15088
-23   3   0.5  4.3905  4.074475  4.4259352  0.150098625 -0.7524621024 -31.47987
-24   3   1.0  7.1595  6.830974  7.1525901  0.107819662  0.0907945272 -31.47987
-25   3   2.0  9.9835  9.920484  9.8261598 -0.017349204  1.5049086787 -31.47987
-26   3   4.0 11.0602 11.769634 11.0165014 -0.660356887  0.3728016042 -31.47987
-27   3   8.0 10.5157 11.555816 10.6138971 -1.053045682 -0.8695172244 -31.47987
-28   3  12.0 10.0334 10.812645  9.9887587 -0.857635914  0.4200296481 -31.47987
-29   3  24.0  8.3092  8.791047  8.3114000 -0.657697316 -0.0248768944 -31.47987
-30   3  48.0  5.6709  5.809459  5.7542268 -0.226483633 -1.3609808596 -31.47987
-31   3  72.0  3.9685  3.839112  3.9838206  0.141710474 -0.3614340026 -31.47987
-32   3  96.0  2.7817  2.537031  2.7581162  0.329483549  0.8036285125 -31.47987
-33   3 120.0  1.9121  1.676567  1.9095250  0.373842932  0.1267367296 -31.47987
-34   4   0.5  2.8040  4.074475  2.8204908 -0.741149102 -0.5495035647 -30.60027
-35   4   1.0  5.0987  6.830974  5.1115443 -0.693550555 -0.2361634230 -30.60027
-36   4   2.0  8.5069  9.920484  8.4655818 -0.573603233  0.4587104921 -30.60027
-37   4   4.0 12.1373 11.769634 11.9986282 -0.230041763  1.0862027391 -30.60027
-38   4   8.0 13.4967 11.555816 13.5622075  0.936263854 -0.4539572415 -30.60027
-39   4  12.0 13.0143 10.812645 13.0142754  1.995767487  0.0001775009 -30.60027
-40   4  24.0 10.3014  8.791047 10.2783908  1.692746043  0.2103925584 -30.60027
-41   4  48.0  6.2732  5.809459  6.2634478  0.479393510  0.1463328044 -30.60027
-42   4  72.0  3.7865  3.839112  3.8162905 -0.083165255 -0.7336534691 -30.60027
-43   4  96.0  2.3290  2.537031  2.3252486 -0.294299742  0.1516292972 -30.60027
-44   4 120.0  1.4205  1.676567  1.4167634 -0.432851212  0.2478733259 -30.60027
-45   5   0.5  6.9670  4.074475  6.9964734  1.184216335 -0.3959182970 -24.70399
-46   5   1.0 10.6865  6.830974 10.5739390  1.322749859  1.0004729543 -24.70399
-47   5   2.0 13.1310  9.920484 13.2606602  1.449987296 -0.9189585773 -24.70399
-48   5   4.0 13.8818 11.769634 13.8212831  1.445110955  0.4115121248 -24.70399
-49   5   8.0 13.1620 11.555816 13.0700507  1.449627017  0.6611891071 -24.70399
-50   5  12.0 12.2496 10.812645 12.2912519  1.458368846 -0.3184876081 -24.70399
-51   5  24.0 10.1919  8.791047 10.2214418  1.691129541 -0.2716310348 -24.70399
-52   5  48.0  7.0234  5.809459  7.0687740  1.493235522 -0.6032773801 -24.70399
-53   5  72.0  4.9146  3.839112  4.8885046  1.309305995  0.5016975459 -24.70399
-54   5  96.0  3.4118  2.537031  3.3807104  1.151040475  0.8642952055 -24.70399
-55   5 120.0  2.3219  1.676567  2.3379752  0.987888486 -0.6462052976 -24.70399
-56   6   0.5  9.0826  4.074475  9.0674549  1.856638213  0.1569783863 -27.30097
-57   6   1.0 11.1962  6.830974 11.2102787  1.103359163 -0.1180323776 -27.30097
-58   6   2.0 11.6818  9.920484 11.7024558 -0.569440181 -0.1658897933 -27.30097
-59   6   4.0 11.5303 11.769634 11.3785905 -0.687864992  1.2530797696 -27.30097
-60   6   8.0 10.5567 11.555816 10.6790721 -0.940999053 -1.0769688471 -27.30097
-61   6  12.0 10.0149 10.812645 10.0224226 -0.785156396 -0.0705427522 -27.30097
-62   6  24.0  8.3510  8.791047  8.2849578 -0.486163645  0.7491793846 -27.30097
-63   6  48.0  5.6307  5.809459  5.6614212 -0.188025552 -0.5099967594 -27.30097
-64   6  72.0  3.8447  3.839112  3.8686607  0.035404685 -0.5820936150 -27.30097
-65   6  96.0  2.6274  2.537031  2.6436004  0.149143435 -0.5759495566 -27.30097
-66   6 120.0  1.8242  1.676567  1.8064709  0.261722556  0.9223779580 -27.30097
-67   7   0.5  2.2639  4.074475  2.2717322 -1.139440198 -0.3240255239 -32.79718
-68   7   1.0  4.1060  6.830974  4.0919364 -1.139106778  0.3230141417 -32.79718
-69   7   2.0  6.7205  9.920484  6.7023914 -1.171702244  0.2539266056 -32.79718
-70   7   4.0  9.2610 11.769634  9.3326455 -1.304116029 -0.7215031387 -32.79718
-71   7   8.0 10.4566 11.555816 10.3242120 -1.325771611  1.2051638035 -32.79718
-72   7  12.0  9.7727 10.812645  9.8036181 -1.282684733 -0.2964013906 -32.79718
-73   7  24.0  7.6251  8.791047  7.6331931 -1.398898829 -0.0996470517 -32.79718
-74   7  48.0  4.5665  5.809459  4.5480141 -1.477927718  0.3820075702 -32.79718
-75   7  72.0  2.6819  3.839112  2.7095939 -1.460998845 -0.9605807958 -32.79718
-76   7  96.0  1.5919  2.537031  1.6143087 -1.400503102 -1.3046228320 -32.79718
-77   7 120.0  0.9761  1.676567  0.9617650 -1.288362451  1.4008178137 -32.79718
-78   8   0.5  4.1618  4.074475  4.2215108  0.043131496 -1.3293503146 -26.59545
-79   8   1.0  7.1196  6.830974  7.0335337  0.102941417  1.1500423804 -26.59545
-80   8   2.0 10.1932  9.920484 10.1027578  0.100440673  0.8413667999 -26.59545
-81   8   4.0 11.7577 11.769634 11.7790552 -0.030613279 -0.1703910612 -26.59545
-82   8   8.0 11.1099 11.555816 11.2709730 -0.511495966 -1.3431228540 -26.59545
-83   8  12.0 10.5284 10.812645 10.3077014 -0.407351288  2.0122970354 -26.59545
-84   8  24.0  7.7364  8.791047  7.8320608 -1.442569099 -1.1479212954 -26.59545
-85   8  48.0  4.5075  5.809459  4.5206876 -1.609822224 -0.2741680674 -26.59545
-86   8  72.0  2.6025  3.839112  2.6093537 -1.595144646 -0.2468563022 -26.59545
-87   8  96.0  1.5117  2.537031  1.5061263 -1.553667194  0.3478055466 -26.59545
-88   8 120.0  0.8700  1.676567  0.8693404 -1.543514372  0.0713143919 -26.59545
-89   9   0.5  4.2570  4.074475  4.2359635  0.086747345  0.4667415191 -17.01553
-90   9   1.0  6.8848  6.830974  6.9181010  0.008175339 -0.4524025676 -17.01553
-91   9   2.0  9.6938  9.920484  9.6617263 -0.130340204  0.3119956995 -17.01553
-92   9   4.0 10.8291 11.769634 11.0444802 -0.811852372 -1.8327989692 -17.01553
-93   9   8.0 11.0184 11.555816 10.8326368 -0.577516956  1.6116839999 -17.01553
-94   9  12.0 10.1868 10.812645 10.3316020 -0.762069717 -1.3172284515 -17.01553
-95   9  24.0  9.0680  8.791047  8.9412297  0.143149487  1.3325224312 -17.01553
-96   9  48.0  6.7533  5.809459  6.6962971  1.051845782  0.8000486950 -17.01553
-97   9  72.0  4.9146  3.839112  5.0150143  1.280561016 -1.8818186838 -17.01553
-98   9  96.0  3.8000  2.537031  3.7558621  1.661117097  1.1044758711 -17.01553
-99   9 120.0  2.8068  1.676567  2.8128534  1.676975166 -0.2022591658 -17.01553
-100 10   0.5  2.7113  4.074475  2.6979143 -0.799935479  0.4663011890 -29.64267
-101 10   1.0  4.7969  6.830974  4.7876324 -0.811627949  0.1819280355 -29.64267
-102 10   2.0  7.5839  9.920484  7.6438373 -0.851576456 -0.7369533888 -29.64267
-103 10   4.0 10.2283 11.769634 10.2727112 -0.869277152 -0.4063141193 -29.64267
-104 10   8.0 11.0856 11.555816 11.0938495 -0.611867326 -0.0698874358 -29.64267
-105 10  12.0 10.8385 10.812645 10.6262951 -0.023397219  1.8768425886 -29.64267
-106 10  24.0  8.7349  8.791047  8.8448306 -0.076223472 -1.1681095628 -29.64267
-107 10  48.0  6.0869  5.809459  6.0872677  0.351404976 -0.0056772452 -29.64267
-108 10  72.0  4.1361  3.839112  4.1893869  0.378386801 -1.1954297286 -29.64267
-109 10  96.0  2.9208  2.537031  2.8832250  0.533612523  1.2248275643 -29.64267
-110 10 120.0  1.9807  1.676567  1.9842966  0.492125620 -0.1703511902 -29.64267
+1    1   0.5  5.3653  4.074475  5.3518168  0.579178768  0.2367813469 -26.89659
+2    1   1.0  8.2578  6.830974  8.2835029  0.488201840 -0.2916238695 -26.89659
+3    1   2.0 10.7063  9.920484 10.7085479  0.213820734 -0.0197288127 -26.89659
+4    1   4.0 11.4142 11.769634 11.3833670 -0.542557920  0.2545651414 -26.89659
+5    1   8.0 10.9232 11.555816 10.7578572 -0.629865703  1.4444875586 -26.89659
+6    1  12.0  9.9442 10.812645 10.0693680 -0.943097291 -1.1682757536 -26.89659
+7    1  24.0  8.0634  8.791047  8.2548453 -0.942615940 -2.1796667661 -26.89659
+8    1  48.0  5.6575  5.809459  5.5478101 -0.186356453  1.8582302637 -26.89659
+9    1  72.0  3.7373  3.839112  3.7285007 -0.129564652  0.2218034275 -26.89659
+10   1  96.0  2.5019  2.537031  2.5058027 -0.049003817 -0.1463771359 -26.89659
+11   1 120.0  1.6785  1.676567  1.6840676  0.004087094 -0.3107150673 -26.89659
+12   2   0.5  3.2230  4.074475  3.2274138 -0.467856508 -0.1285312781 -33.15088
+13   2   1.0  5.6205  6.830974  5.6653896 -0.463768129 -0.7446805410 -33.15088
+14   2   2.0  8.9389  9.920484  8.8734985 -0.373463106  0.6927033476 -33.15088
+15   2   4.0 11.6945 11.769634 11.5829602 -0.159173627  0.9050330215 -33.15088
+16   2   8.0 12.1458 11.555816 12.1059406  0.454364213  0.3094468192 -33.15088
+17   2  12.0 11.4394 10.812645 11.3958474  0.641165277  0.3591876148 -33.15088
+18   2  24.0  8.9787  8.791047  9.1335580  0.245171203 -1.5934850612 -33.15088
+19   2  48.0  5.8306  5.809459  5.8438148  0.027134384 -0.2125298442 -33.15088
+20   2  72.0  3.7432  3.839112  3.7389630 -0.117169128  0.1065017590 -33.15088
+21   2  96.0  2.4121  2.537031  2.3922463 -0.172106455  0.7799899794 -33.15088
+22   2 120.0  1.5248  1.676567  1.5305962 -0.252016672 -0.3559060451 -33.15088
+23   3   0.5  4.3905  4.074475  4.4259352  0.150098576 -0.7524621365 -31.47987
+24   3   1.0  7.1595  6.830974  7.1525901  0.107819618  0.0907945304 -31.47987
+25   3   2.0  9.9835  9.920484  9.8261598 -0.017349220  1.5049087434 -31.47987
+26   3   4.0 11.0602 11.769634 11.0165014 -0.660356663  0.3728016344 -31.47987
+27   3   8.0 10.5157 11.555816 10.6138971 -1.053045253 -0.8695172389 -31.47987
+28   3  12.0 10.0334 10.812645  9.9887587 -0.857635525  0.4200296811 -31.47987
+29   3  24.0  8.3092  8.791047  8.3114000 -0.657696973 -0.0248768813 -31.47987
+30   3  48.0  5.6709  5.809459  5.7542268 -0.226483491 -1.3609809028 -31.47987
+31   3  72.0  3.9685  3.839112  3.9838206  0.141710426 -0.3614340147 -31.47987
+32   3  96.0  2.7817  2.537031  2.7581162  0.329483403  0.8036285376 -31.47987
+33   3 120.0  1.9121  1.676567  1.9095250  0.373842757  0.1267367232 -31.47987
+34   4   0.5  2.8040  4.074475  2.8204908 -0.741149264 -0.5495035814 -30.60027
+35   4   1.0  5.0987  6.830974  5.1115443 -0.693550706 -0.2361634317 -30.60027
+36   4   2.0  8.5069  9.920484  8.4655818 -0.573603356  0.4587105027 -30.60027
+37   4   4.0 12.1373 11.769634 11.9986282 -0.230041815  1.0862027627 -30.60027
+38   4   8.0 13.4967 11.555816 13.5622075  0.936263842 -0.4539572863 -30.60027
+39   4  12.0 13.0143 10.812645 13.0142754  1.995767173  0.0001774697 -30.60027
+40   4  24.0 10.3014  8.791047 10.2783908  1.692745721  0.2103925377 -30.60027
+41   4  48.0  6.2732  5.809459  6.2634478  0.479393374  0.1463327917 -30.60027
+42   4  72.0  3.7865  3.839112  3.8162905 -0.083165233 -0.7336535042 -30.60027
+43   4  96.0  2.3290  2.537031  2.3252486 -0.294299665  0.1516293055 -30.60027
+44   4 120.0  1.4205  1.676567  1.4167634 -0.432851099  0.2478733482 -30.60027
+45   5   0.5  6.9670  4.074475  6.9964734  1.184216405 -0.3959183085 -24.70399
+46   5   1.0 10.6865  6.830974 10.5739390  1.322749941  1.0004729886 -24.70399
+47   5   2.0 13.1310  9.920484 13.2606602  1.449987314 -0.9189586226 -24.70399
+48   5   4.0 13.8818 11.769634 13.8212831  1.445110812  0.4115121239 -24.70399
+49   5   8.0 13.1620 11.555816 13.0700507  1.449626881  0.6611891149 -24.70399
+50   5  12.0 12.2496 10.812645 12.2912519  1.458368687 -0.3184876366 -24.70399
+51   5  24.0 10.1919  8.791047 10.2214418  1.691129191 -0.2716310610 -24.70399
+52   5  48.0  7.0234  5.809459  7.0687740  1.493235018 -0.6032774174 -24.70399
+53   5  72.0  4.9146  3.839112  4.8885046  1.309305497  0.5016975509 -24.70399
+54   5  96.0  3.4118  2.537031  3.3807104  1.151040016  0.8642952251 -24.70399
+55   5 120.0  2.3219  1.676567  2.3379752  0.987888079 -0.6462053330 -24.70399
+56   6   0.5  9.0826  4.074475  9.0674549  1.856638341  0.1569783995 -27.30097
+57   6   1.0 11.1962  6.830974 11.2102787  1.103359173 -0.1180323733 -27.30097
+58   6   2.0 11.6818  9.920484 11.7024558 -0.569439880 -0.1658897901 -27.30097
+59   6   4.0 11.5303 11.769634 11.3785905 -0.687864648  1.2530798258 -27.30097
+60   6   8.0 10.5567 11.555816 10.6790721 -0.940998651 -1.0769688786 -27.30097
+61   6  12.0 10.0149 10.812645 10.0224226 -0.785156025 -0.0705427466 -27.30097
+62   6  24.0  8.3510  8.791047  8.2849578 -0.486163359  0.7491794193 -27.30097
+63   6  48.0  5.6307  5.809459  5.6614212 -0.188025435 -0.5099967748 -27.30097
+64   6  72.0  3.8447  3.839112  3.8686607  0.035404669 -0.5820936362 -27.30097
+65   6  96.0  2.6274  2.537031  2.6436004  0.149143352 -0.5759495807 -27.30097
+66   6 120.0  1.8242  1.676567  1.8064709  0.261722417  0.9223779867 -27.30097
+67   7   0.5  2.2639  4.074475  2.2717322 -1.139440407 -0.3240255461 -32.79718
+68   7   1.0  4.1060  6.830974  4.0919364 -1.139106980  0.3230141483 -32.79718
+69   7   2.0  6.7205  9.920484  6.7023914 -1.171702431  0.2539266178 -32.79718
+70   7   4.0  9.2610 11.769634  9.3326455 -1.304116156 -0.7215031506 -32.79718
+71   7   8.0 10.4566 11.555816 10.3242120 -1.325771337  1.2051638772 -32.79718
+72   7  12.0  9.7727 10.812645  9.8036181 -1.282684239 -0.2964013694 -32.79718
+73   7  24.0  7.6251  8.791047  7.6331931 -1.398898293 -0.0996470248 -32.79718
+74   7  48.0  4.5665  5.809459  4.5480141 -1.477927149  0.3820076076 -32.79718
+75   7  72.0  2.6819  3.839112  2.7095939 -1.460998317 -0.9605808164 -32.79718
+76   7  96.0  1.5919  2.537031  1.6143087 -1.400502622 -1.3046228731 -32.79718
+77   7 120.0  0.9761  1.676567  0.9617650 -1.288362028  1.4008178661 -32.79718
+78   8   0.5  4.1618  4.074475  4.2215108  0.043131432 -1.3293503676 -26.59545
+79   8   1.0  7.1196  6.830974  7.0335337  0.102941369  1.1500424231 -26.59545
+80   8   2.0 10.1932  9.920484 10.1027578  0.100440649  0.8413668361 -26.59545
+81   8   4.0 11.7577 11.769634 11.7790552 -0.030613201 -0.1703910571 -26.59545
+82   8   8.0 11.1099 11.555816 11.2709730 -0.511495658 -1.3431228912 -26.59545
+83   8  12.0 10.5284 10.812645 10.3077014 -0.407351004  2.0122971240 -26.59545
+84   8  24.0  7.7364  8.791047  7.8320608 -1.442568511 -1.1479213258 -26.59545
+85   8  48.0  4.5075  5.809459  4.5206876 -1.609821604 -0.2741680665 -26.59545
+86   8  72.0  2.6025  3.839112  2.6093537 -1.595144074 -0.2468563016 -26.59545
+87   8  96.0  1.5117  2.537031  1.5061263 -1.553666664  0.3478055681 -26.59545
+88   8 120.0  0.8700  1.676567  0.8693404 -1.543513862  0.0713144016 -26.59545
+89   9   0.5  4.2570  4.074475  4.2359635  0.086747287  0.4667415331 -17.01553
+90   9   1.0  6.8848  6.830974  6.9181010  0.008175284 -0.4524025830 -17.01553
+91   9   2.0  9.6938  9.920484  9.6617263 -0.130340232  0.3119957200 -17.01553
+92   9   4.0 10.8291 11.769634 11.0444802 -0.811852156 -1.8327990223 -17.01553
+93   9   8.0 11.0184 11.555816 10.8326368 -0.577516637  1.6116840772 -17.01553
+94   9  12.0 10.1868 10.812645 10.3316020 -0.762069352 -1.3172284858 -17.01553
+95   9  24.0  9.0680  8.791047  8.9412297  0.143149619  1.3325224906 -17.01553
+96   9  48.0  6.7533  5.809459  6.6962971  1.051845503  0.8000487230 -17.01553
+97   9  72.0  4.9146  3.839112  5.0150143  1.280560561 -1.8818187670 -17.01553
+98   9  96.0  3.8000  2.537031  3.7558621  1.661116460  1.1044758876 -17.01553
+99   9 120.0  2.8068  1.676567  2.8128534  1.676974509 -0.2022592090 -17.01553
+100 10   0.5  2.7113  4.074475  2.6979143 -0.799935646  0.4663011993 -29.64267
+101 10   1.0  4.7969  6.830974  4.7876324 -0.811628109  0.1819280380 -29.64267
+102 10   2.0  7.5839  9.920484  7.6438373 -0.851576599 -0.7369534160 -29.64267
+103 10   4.0 10.2283 11.769634 10.2727112 -0.869277211 -0.4063141276 -29.64267
+104 10   8.0 11.0856 11.555816 11.0938495 -0.611867077 -0.0698874259 -29.64267
+105 10  12.0 10.8385 10.812645 10.6262951 -0.023397024  1.8768426722 -29.64267
+106 10  24.0  8.7349  8.791047  8.8448306 -0.076223287 -1.1681095957 -29.64267
+107 10  48.0  6.0869  5.809459  6.0872677  0.351404915 -0.0056772405 -29.64267
+108 10  72.0  4.1361  3.839112  4.1893869  0.378386669 -1.1954297742 -29.64267
+109 10  96.0  2.9208  2.537031  2.8832250  0.533612305  1.2248276029 -29.64267
+110 10 120.0  1.9807  1.676567  1.9842966  0.492125404 -0.1703512095 -29.64267
     N_OBS  TAFD   TAD
 1      11   0.5   0.5
 2      11   1.0   1.0
@@ -1425,7 +1488,7 @@ ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
 </section></section><section id="convergence-diagnostics" class="level2" data-number="6.8"><h2 data-number="6.8" class="anchored" data-anchor-id="convergence-diagnostics">
 <span class="header-section-number">6.8</span> Convergence diagnostics</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_plot_trace.html">ferx_plot_trace</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_plot_trace.html">ferx_plot_trace</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure"><p><img src="04-fitting_files/figure-html/trace-1.png" class="img-fluid figure-img" width="672"></p>
@@ -1436,16 +1499,16 @@ ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
 <p><code><a href="https://ferx-nlme.github.io/reference/ferx_plot_trace.html">ferx_plot_trace()</a></code> draws the OFV and each theta/omega/sigma parameter over iterations. A well-converged fit shows smooth descent with a stable plateau.</p>
 <p>If you want the raw trace data:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_trace.html">ferx_trace</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_trace.html">ferx_trace</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">tr</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  iter method phase        ofv wall_ms grad_norm step_norm inner_iter_count
-1    1   foce    NA -269.92406       0        NA        NA               NA
+1    1   foce    NA -269.92406       1        NA        NA               NA
 2    2   foce    NA   97.17279       1        NA  0.500000               NA
-3    3   foce    NA  -27.59852       1        NA  0.707107               NA
-4    4   foce    NA -254.37535       2        NA  0.707107               NA
+3    3   foce    NA  -27.59852       2        NA  0.707107               NA
+4    4   foce    NA -254.37535       3        NA  0.707107               NA
 5    5   foce    NA -262.51825       3        NA  0.707107               NA
-6    6   foce    NA -263.61975       3        NA  0.707107               NA
+6    6   foce    NA -263.61975       4        NA  0.707107               NA
   optimizer lm_lambda ofv_delta step_accepted cond_nll gamma mh_accept_rate
 1    bobyqa        NA        NA            NA       NA    NA             NA
 2    bobyqa        NA        NA            NA       NA    NA             NA
@@ -1463,11 +1526,18 @@ ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
 </div>
 </div>
 <p><code><a href="https://ferx-nlme.github.io/reference/ferx_trace.html">ferx_trace()</a></code> requires the fit to have been produced with <code>optimizer_trace = TRUE</code> (as in the fit at the top of this section); otherwise it errors with a clear message.</p>
-</section><section id="saving-and-reloading-a-fit" class="level2" data-number="6.9"><h2 data-number="6.9" class="anchored" data-anchor-id="saving-and-reloading-a-fit">
+<section id="run-log-and-iteration-history" class="level3" data-number="6.8.1"><h3 data-number="6.8.1" class="anchored" data-anchor-id="run-log-and-iteration-history">
+<span class="header-section-number">6.8.1</span> Run log and iteration history</h3>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_runlog.html">ferx_runlog()</a></code> prints a formatted run report that now includes a per-iteration history section (truncated for long runs). When you need the <strong>full, untruncated</strong> iteration table, <code><a href="https://ferx-nlme.github.io/reference/ferx_runlog_iters.html">ferx_runlog_iters()</a></code> returns every iteration row without omission. Both require <code>optimizer_trace = TRUE</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb46"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_runlog.html">ferx_runlog</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>        <span class="co"># formatted report; iteration history truncated for long runs</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_runlog_iters.html">ferx_runlog_iters</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>  <span class="co"># the complete, untruncated iteration table</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section></section><section id="saving-and-reloading-a-fit" class="level2" data-number="6.9"><h2 data-number="6.9" class="anchored" data-anchor-id="saving-and-reloading-a-fit">
 <span class="header-section-number">6.9</span> Saving and reloading a fit</h2>
 <p>For long-running fits, persist the result to disk and reload later without re-fitting. The fit object embeds SHA-256 hashes of the model file and dataset so <code><a href="https://ferx-nlme.github.io/reference/ferx_load_fit.html">ferx_load_fit()</a></code> warns you if either has changed since the fit was saved.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_save_fit.html">ferx_save_fit</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"warfarin.fitrx"</span><span class="op">)</span>           <span class="co"># data not embedded by default</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_save_fit.html">ferx_save_fit</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"warfarin.fitrx"</span><span class="op">)</span>           <span class="co"># data not embedded by default</span></span>
 <span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_save_fit.html">ferx_save_fit</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"warfarin.fitrx"</span>, include_data <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit_reloaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_load_fit.html">ferx_load_fit</a></span><span class="op">(</span><span class="st">"warfarin.fitrx"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1477,7 +1547,7 @@ ETA_KA 0.00000000 0.000000000 0.3406942</code></pre>
 <span class="header-section-number">6.10</span> Async fitting (<code>ferx_fit_async</code> / <code>ferx_collect</code>)</h2>
 <p>For long fits you can keep the R session free while the optimizer runs in the background:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">handle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit_async.html">ferx_fit_async</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"saem"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">handle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit_async.html">ferx_fit_async</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"saem"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co"># ... do other work ...</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_collect.html">ferx_collect</a></span><span class="op">(</span><span class="va">handle</span><span class="op">)</span>   <span class="co"># block until done; shows live trace if verbose = TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1493,7 +1563,7 @@ Note
 </div>
 <div class="callout-body-container callout-body">
 <p><code><a href="https://ferx-nlme.github.io/reference/ferx_fit_async.html">ferx_fit_async()</a></code> returns a job <strong>handle</strong>, not a fit object. Pass the handle to <code><a href="https://ferx-nlme.github.io/reference/ferx_collect.html">ferx_collect()</a></code> to retrieve the completed fit:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_collect.html">ferx_collect</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit_async.html">ferx_fit_async</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_collect.html">ferx_collect</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit_async.html">ferx_fit_async</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 </section><section id="gradient-method-and-gradient_used" class="level2" data-number="6.11"><h2 data-number="6.11" class="anchored" data-anchor-id="gradient-method-and-gradient_used">
@@ -1504,7 +1574,7 @@ Note
 <pre><code> Gradient (requested): auto   (used: fd)</code></pre>
 <p>For a quick programmatic check:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">gradient_used</span>          <span class="co"># "ad" | "fd" | "N/A"</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">gradient_used</span>          <span class="co"># "ad" | "fd" | "N/A"</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">gradient_method_inner</span>  <span class="co"># raw engine label</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">gradient_method_outer</span>  <span class="co"># raw engine label for the outer loop</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1548,11 +1618,11 @@ Note
 <span class="header-section-number">6.13</span> Comparing models</h2>
 <p>Use OFV differences for nested models (the likelihood ratio test) or AIC/BIC for non-nested:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb52"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_V</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># A model with fixed ETA_KA (simpler)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb54"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># A model with fixed ETA_KA (simpler)</span></span>
 <span><span class="va">ex_no_ka_bsv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span>   <span class="co"># would use a modified model</span></span>
 <span><span class="co"># delta_ofv &lt;- fit_base$ofv - fit_simpler$ofv</span></span>
 <span><span class="co"># p_value   &lt;- pchisq(delta_ofv, df = 1, lower.tail = FALSE)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

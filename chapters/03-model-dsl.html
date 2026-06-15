@@ -78,9 +78,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-f381374abff134079ce64cf499b0d527.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-f1960d54aebfe45d38f1d4552bdeff16.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-f9e8bf82db05b7a1cd22ee6628e346f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-f1960d54aebfe45d38f1d4552bdeff16.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-ca703393156abfbf62dc58eed8b6576a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-43da068a540758984f67b666ff9fcfdc.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-ca703393156abfbf62dc58eed8b6576a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -763,22 +763,14 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
 </td>
 </tr>
 <tr class="even">
-<td><code>one_cpt_iv_bolus(cl, v)</code></td>
+<td><code>one_cpt_iv(cl, v)</code></td>
 <td>1</td>
-<td>IV bolus</td>
+<td>IV (bolus and/or infusion)</td>
 <td>
 <code>cl</code>, <code>v</code>
 </td>
 </tr>
 <tr class="odd">
-<td><code>one_cpt_infusion(cl, v)</code></td>
-<td>1</td>
-<td>IV infusion</td>
-<td>
-<code>cl</code>, <code>v</code>
-</td>
-</tr>
-<tr class="even">
 <td><code>two_cpt_oral(cl, v1, q, v2, ka)</code></td>
 <td>2</td>
 <td>Oral</td>
@@ -786,18 +778,10 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
 <code>cl</code>, <code>v1</code>, <code>q</code>, <code>v2</code>, <code>ka</code>
 </td>
 </tr>
-<tr class="odd">
-<td><code>two_cpt_iv_bolus(cl, v1, q, v2)</code></td>
-<td>2</td>
-<td>IV bolus</td>
-<td>
-<code>cl</code>, <code>v1</code>, <code>q</code>, <code>v2</code>
-</td>
-</tr>
 <tr class="even">
-<td><code>two_cpt_infusion(cl, v1, q, v2)</code></td>
+<td><code>two_cpt_iv(cl, v1, q, v2)</code></td>
 <td>2</td>
-<td>IV infusion</td>
+<td>IV (bolus and/or infusion)</td>
 <td>
 <code>cl</code>, <code>v1</code>, <code>q</code>, <code>v2</code>
 </td>
@@ -811,24 +795,18 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
 </td>
 </tr>
 <tr class="even">
-<td><code>three_cpt_iv_bolus(cl, v1, q2, v2, q3, v3)</code></td>
+<td><code>three_cpt_iv(cl, v1, q2, v2, q3, v3)</code></td>
 <td>3</td>
-<td>IV bolus</td>
-<td>
-<code>cl</code>, <code>v1</code>, <code>q2</code>, <code>v2</code>, <code>q3</code>, <code>v3</code>
-</td>
-</tr>
-<tr class="odd">
-<td><code>three_cpt_infusion(cl, v1, q2, v2, q3, v3)</code></td>
-<td>3</td>
-<td>IV infusion</td>
+<td>IV (bolus and/or infusion)</td>
 <td>
 <code>cl</code>, <code>v1</code>, <code>q2</code>, <code>v2</code>, <code>q3</code>, <code>v3</code>
 </td>
 </tr>
 </tbody>
 </table>
-<p>All analytical models accept an optional <code>lagtime=</code> (or <code>alag=</code>) argument; oral models additionally accept an optional <code>f=</code> bioavailability argument. See <a href="14-special-features.html#sec-lagtime" class="quarto-xref"><span>Section 15.7</span></a> and <a href="14-special-features.html#sec-bioavailability" class="quarto-xref"><span>Section 15.9</span></a>.</p>
+<p>There is no separate bolus or infusion variant: each IV model selects the closed form per dose from the <code>RATE</code> column (<code>RATE=0</code> ⇒ bolus, <code>RATE&gt;0</code> ⇒ infusion), so a single subject may mix both. Each IV keyword also has a <code>*_compartment_iv</code> long-form alias (e.g.&nbsp;<code>three_compartment_iv</code>); the short and long names are interchangeable.</p>
+<p>The older <code>*_iv_bolus</code> and <code>*_infusion</code> model names were retired in ferx-core #176 and are now rejected by the parser — migrate them to the corresponding unified <code>*_iv</code> keyword.</p>
+<p>All analytical models accept an optional <code>lagtime=</code> (or <code>alag=</code>) argument; oral models additionally accept an optional <code>f=</code> bioavailability argument. See <a href="14-special-features.html#sec-lagtime" class="quarto-xref"><span>Section 15.7</span></a> and <a href="14-special-features.html#sec-bioavailability" class="quarto-xref"><span>Section 15.10</span></a>.</p>
 <p>These are invoked with named arguments:</p>
 <pre><code>[structural_model]
   pk one_cpt_oral(cl=CL, v=V, ka=KA)</code></pre>
@@ -884,12 +862,12 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
 </tbody>
 </table>
 <p><code>eps</code> is drawn from <code>N(0, sigma)</code> for each observation. All sigma parameters are on the standard-deviation scale.</p>
-<p>For log-transform-both-sides (LTBS) with DV on the <strong>natural scale</strong>, use the alternative declaration <code>log(DV) ~ additive(sigma)</code> — the engine log-transforms the DV column at load time. Use <code>DV ~ log_additive(sigma)</code> when the dataset already contains log-transformed values. See <a href="14-special-features.html#sec-ltbs" class="quarto-xref"><span>Section 15.10</span></a> for full details.</p>
+<p>For log-transform-both-sides (LTBS) with DV on the <strong>natural scale</strong>, use the alternative declaration <code>log(DV) ~ additive(sigma)</code> — the engine log-transforms the DV column at load time. Use <code>DV ~ log_additive(sigma)</code> when the dataset already contains log-transformed values. See <a href="14-special-features.html#sec-ltbs" class="quarto-xref"><span>Section 15.11</span></a> for full details.</p>
 <p>For multi-endpoint models (simultaneous PK/PD), prefix each line with <code>CMT=N:</code> to assign a distinct error model per compartment:</p>
 <pre><code>[error_model]
   CMT=2: DV ~ proportional(PROP_ERR_PK)
   CMT=3: DV ~ additive(ADD_ERR_PD)</code></pre>
-<p>See <a href="14-special-features.html#sec-ltbs" class="quarto-xref"><span>Section 15.10</span></a> for LTBS details and <a href="12-multi-endpoint-pkpd.html#sec-multi-endpoint" class="quarto-xref"><span>Section 12.1</span></a> for per-CMT error models.</p>
+<p>See <a href="14-special-features.html#sec-ltbs" class="quarto-xref"><span>Section 15.11</span></a> for LTBS details and <a href="12-multi-endpoint-pkpd.html#sec-multi-endpoint" class="quarto-xref"><span>Section 12.1</span></a> for per-CMT error models.</p>
 </section><section id="initial_values" class="level2" data-number="5.7"><h2 data-number="5.7" class="anchored" data-anchor-id="initial_values">
 <span class="header-section-number">5.7</span> <code>[initial_values]</code>
 </h2>
@@ -1104,15 +1082,24 @@ theta CL(0.134, 0.001)         # lower-bound only; no upper bound</code></pre>
 <tr class="even">
 <td><code>[diffusion]</code></td>
 <td>Stochastic differential equations (process noise)</td>
-<td><a href="14-special-features.html#sec-sde" class="quarto-xref"><span>Section 15.11</span></a></td>
+<td><a href="14-special-features.html#sec-sde" class="quarto-xref"><span>Section 15.12</span></a></td>
 </tr>
 <tr class="odd">
 <td><code>[covariate_nn NAME]</code></td>
 <td>Neural-network covariate effect (Deep Compartment Models)</td>
 <td>— (advanced)</td>
 </tr>
+<tr class="even">
+<td>
+<code>[event_model]</code> <em>(beta)</em>
+</td>
+<td>Time-to-event / survival endpoint: routes a <code>cmt</code> to a parametric hazard (<code>family</code> = <code>exponential</code>/<code>weibull</code>/<code>gompertz</code>, with <code>scale</code>/<code>rate</code>, <code>shape</code>, <code>alpha</code>/<code>gamma</code>) instead of the Gaussian error model</td>
+<td><a href="14-special-features.html#sec-special-features" class="quarto-xref"><span>Section 15.1</span></a></td>
+</tr>
 </tbody>
-</table></section><section id="validating-a-model" class="level2" data-number="5.13"><h2 data-number="5.13" class="anchored" data-anchor-id="validating-a-model">
+</table>
+<p>The <code>[event_model]</code> block is experimental (beta). It registers a CMT column as a survival endpoint; fuller coverage lives in <a href="14-special-features.html#sec-special-features" class="quarto-xref"><span>Section 15.1</span></a>.</p>
+</section><section id="validating-a-model" class="level2" data-number="5.13"><h2 data-number="5.13" class="anchored" data-anchor-id="validating-a-model">
 <span class="header-section-number">5.13</span> Validating a model</h2>
 <p>Before running a long fit, check syntax:</p>
 <div class="cell">
