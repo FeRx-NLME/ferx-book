@@ -124,53 +124,6 @@ vpc(
 (The `vpc` package is an optional dependency; install with
 `install.packages("vpc")`.)
 
-### Manual ggplot2 VPC
-
-For full control over appearance, compute the prediction intervals yourself:
-
-```{r}
-#| label: vpc-manual
-#| cache: true
-#| fig-cap: "VPC: observed data (points) with 5th–95th percentile prediction interval (shaded) and median (line)."
-
-# Summarise simulation by time bin
-time_breaks <- c(0, 1, 2, 4, 6, 8, 12, 24, 36, 48, 72, 96, 120)
-
-sim_binned <- sim |>
-  mutate(time_bin = cut(TIME, breaks = time_breaks, labels = FALSE, right = FALSE)) |>
-  filter(!is.na(time_bin)) |>
-  group_by(time_bin, SIM) |>
-  summarise(
-    p05 = quantile(DV_SIM, 0.05, na.rm = TRUE),
-    p50 = quantile(DV_SIM, 0.50, na.rm = TRUE),
-    p95 = quantile(DV_SIM, 0.95, na.rm = TRUE),
-    TIME = mean(TIME),
-    .groups = "drop"
-  ) |>
-  group_by(time_bin) |>
-  summarise(
-    lo  = median(p05),
-    mid = median(p50),
-    hi  = median(p95),
-    TIME = mean(TIME),
-    .groups = "drop"
-  )
-
-obs_dv <- obs |> filter(EVID == 0, !is.na(DV)) |> mutate(DV = as.numeric(DV))
-
-ggplot() +
-  geom_ribbon(data = sim_binned, aes(x = TIME, ymin = lo, ymax = hi),
-              fill = "#1F6B7A", alpha = 0.25) +
-  geom_line(data = sim_binned, aes(x = TIME, y = mid),
-            colour = "#1F6B7A", linewidth = 1) +
-  geom_point(data = obs_dv, aes(x = TIME, y = DV),
-             alpha = 0.5, size = 1.5) +
-  scale_x_continuous(breaks = c(0, 24, 48, 72, 96, 120)) +
-  labs(x = "Time (h)", y = "Concentration (mg/L)",
-       title = "VPC — warfarin 1-cpt oral") +
-  theme_minimal()
-```
-
 ## Population predictions
 
 `ferx_predict()` computes population predictions (ETA = 0) without residual noise.
@@ -187,20 +140,9 @@ head(preds)
 prediction at ETA = 0). For uncertainty-propagated predictions, see
 `ferx_simulate_with_uncertainty()` in @sec-uncertainty.
 
-## Interpreting the VPC
-
-A good VPC shows:
-
-- Observed data scattered within the shaded band
-- Roughly 10% of points outside the 5th–95th percentile band
-- The observed median tracking the simulated median line
-- No systematic trends over time or concentration ranges
-
-If the observed percentiles consistently fall outside the simulated band, the model is mis-specifying the distribution (consider a different error model or structural model).
-
 ## `[simulation]` block
 
 For CLI-driven simulation without an external dataset, the `.ferx` model file
 can embed a trial design via the `[simulation]` block. This is a DSL feature
-rather than an R workflow — see @sec-simulation-dsl in the Model DSL chapter
-for syntax and usage.
+rather than an R workflow — see the [Model file reference](https://ferx-nlme.github.io/ferx-core/model-file/index.html)
+in the ferx-core book for syntax and usage.
