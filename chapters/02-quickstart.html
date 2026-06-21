@@ -462,48 +462,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header><p>This chapter fits a one-compartment oral PK model to the bundled warfarin dataset. It covers the complete loop: data → model → fit → inspect → plot.</p>
 <section id="load-ferx" class="level2"><h2 class="anchored" data-anchor-id="load-ferx">Load ferx</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>ferx: built WITHOUT autodiff (finite-difference gradients only).
-All estimation methods (FOCE/FOCEI/SAEM/IMP) work.
-Limitations vs. the full Enzyme build:
-  - gradient = ad in model files falls back to fd (slower, may be less accurate)
-  - SAEM HMC proposals (n_leapfrog &gt; 0) are unavailable; MH is used instead
-  - saem_n_subjects_hmc is always NA
-To enable autodiff: install the Enzyme Rust toolchain and reinstall ferx.
-See: https://ferx-nlme.github.io/ferx-core/installation.html</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="the-example-dataset" class="level2"><h2 class="anchored" data-anchor-id="the-example-dataset">The example dataset</h2>
 <p><code><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example()</a></code> returns paths to a bundled model file and a NONMEM-format CSV. Calling it with no argument lists all bundled examples:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code> [1] "bioavailability_ode"           "bioavailability"              
- [3] "emax_pkpd"                     "mm_multistart"                
- [5] "mm_oral"                       "one_cpt_iv_ode"               
- [7] "one_cpt_iv"                    "three_cpt_iv_ode"             
- [9] "three_cpt_iv"                  "three_cpt_oral_ode"           
-[11] "three_cpt_oral"                "transit_2cpt"                 
-[13] "two_cpt_iv_ode"                "two_cpt_iv"                   
-[15] "two_cpt_oral_cov_ode_template" "two_cpt_oral_cov_ode"         
-[17] "two_cpt_oral_cov"              "two_cpt_oral_derived"         
-[19] "warfarin_additive_eta"         "warfarin_addl"                
-[21] "warfarin_block_omega"          "warfarin_bloq"                
-[23] "warfarin_data_selection"       "warfarin_dcm"                 
-[25] "warfarin_derived_pkpd"         "warfarin_derived"             
-[27] "warfarin_if"                   "warfarin_iov_saem"            
-[29] "warfarin_iov"                  "warfarin_logit_f"             
-[31] "warfarin_ltbs"                 "warfarin_ode_lagtime"         
-[33] "warfarin_ode_time"             "warfarin_ode"                 
-[35] "warfarin_saem"                 "warfarin_scaled"              
-[37] "warfarin_sde"                  "warfarin_ss"                  
-[39] "warfarin"                     </code></pre>
+ [3] "emax_pkpd"                     "igd_inverse_gaussian"         
+ [5] "mm_multistart"                 "mm_oral"                      
+ [7] "one_cpt_iv_ode"                "one_cpt_iv"                   
+ [9] "three_cpt_iv_ode"              "three_cpt_iv"                 
+[11] "three_cpt_oral_ode"            "three_cpt_oral"               
+[13] "transit_2cpt"                  "two_cpt_iv_ode"               
+[15] "two_cpt_iv"                    "two_cpt_oral_cov_ode_template"
+[17] "two_cpt_oral_cov_ode"          "two_cpt_oral_cov"             
+[19] "two_cpt_oral_derived"          "warfarin_additive_eta"        
+[21] "warfarin_addl"                 "warfarin_block_omega"         
+[23] "warfarin_bloq"                 "warfarin_data_selection"      
+[25] "warfarin_dcm"                  "warfarin_derived_pkpd"        
+[27] "warfarin_derived"              "warfarin_if"                  
+[29] "warfarin_iov_saem"             "warfarin_iov"                 
+[31] "warfarin_logit_f"              "warfarin_ltbs"                
+[33] "warfarin_ode_lagtime"          "warfarin_ode_time"            
+[35] "warfarin_ode"                  "warfarin_saem"                
+[37] "warfarin_scaled"               "warfarin_sde"                 
+[39] "warfarin_ss"                   "warfarin"                     </code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
 <span><span class="va">ex</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$model
@@ -515,7 +505,7 @@ $data
 </div>
 <p>Peek at the data:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">obs</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  ID TIME      DV EVID AMT CMT RATE MDV
@@ -542,7 +532,7 @@ $data
 <p>The warfarin dataset bundled with ferx has 10 subjects and 110 observations after dose rows are excluded.</p>
 </section><section id="the-model-file" class="level2"><h2 class="anchored" data-anchor-id="the-model-file">The model file</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_show.html">ferx_model_show</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_model_show.html">ferx_model_show</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># model: warfarin.ferx 
 # One-compartment oral PK model (warfarin)
@@ -578,7 +568,7 @@ $data
 <p>The model DSL is described in detail in the <a href="https://ferx-nlme.github.io/ferx-core/model-file/index.html">Model file reference</a> in the ferx-core book.</p>
 </section><section id="fit-the-model" class="level2"><h2 class="anchored" data-anchor-id="fit-the-model">Fit the model</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Mu-referencing detected for: ETA_CL, ETA_KA, ETA_V</code></pre>
 </div>
@@ -586,7 +576,7 @@ $data
 <p><code>verbose = FALSE</code> silences per-iteration progress; omit it to watch the optimiser. Convergence is reached when the optimiser’s stopping criterion is met (gradient norm or function tolerance, depending on the optimiser).</p>
 </section><section id="inspect-results" class="level2"><h2 class="anchored" data-anchor-id="inspect-results">Inspect results</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>--------------------------------------------------
 ferx NLME Fit Summary
@@ -595,8 +585,8 @@ Model:     warfarin
 Dataset:   warfarin
 Converged: YES
 Method:    FOCEI
-Gradient:  auto (requested) -&gt; fd (used)
-ferx v0.1.5 (core v0.1.6)
+Gradient:  auto (requested) -&gt; analytic (Dual2) (used)
+ferx v0.1.6 (core v0.1.6)
 
 Settings (model file / call-time override):
   method                       foce  [model only]
@@ -605,10 +595,10 @@ Settings (model file / call-time override):
 
 Structure: 1-cpt oral  (TVCL, TVV, TVKA)  |  IIV: ETA_CL, ETA_V, ETA_KA  |  IOV: none  |  Residual: proportional
 
-OFV: -285.9812  AIC: -271.9812  BIC: -253.0778
-Subjects: 10  Obs: 110  Params: 7  Iter: 59
-Shrinkage: ETA1=-1.8%  ETA2=0.8%  ETA3=2.5% 
-EPS shrinkage: 14.8%
+OFV: -285.9971  AIC: -271.9971  BIC: -253.0938
+Subjects: 10  Obs: 110  Params: 7  Iter: 66
+Shrinkage: ETA1=-0.4%  ETA2=-0.1%  ETA3=1.1% 
+EPS shrinkage: 14.9%
 DW: 2.61 [negative autocorrelation]
 lag-1 r: -0.365
 Covariance: computed  Cond: 1.0  |  Wall time: 0.3s
@@ -616,23 +606,23 @@ Covariance: computed  Cond: 1.0  |  Wall time: 0.3s
 Warnings:
   * mu-ref: ETA_CL, ETA_KA, ETA_V 
   * Negative IWRES autocorrelation detected (Durbin-Watson = 2.61). Possible over-parameterization or misspecified error model. 
-  * 31 EBE fallback(s) 
+  * 24 EBE fallback(s) 
 --------------------------------------------------</code></pre>
 </div>
 </div>
 <p><code>summary(fit)</code> prints a compact run report: convergence, method, OFV/AIC/BIC, the auto-derived model structure (compartments, IIV, residual type), shrinkage, the Durbin-Watson autocorrelation statistic and lag-1 r, the gradient method requested and actually used, covariance status and condition number, wall time, and any active warnings. It also lists the <code>[fit_options]</code> actually in effect (model file vs.&nbsp;call-time overrides).</p>
 <p>For the full parameter table including standard errors, use <code>print(fit)</code>. The <code>print(fit)</code> layout leads with a prominent <code>STATUS: CONVERGED</code> line, followed by OFV/AIC/BIC, then bold-headed sections for THETA, OMEGA, SIGMA, SHRINKAGE, DIAGNOSTICS, and RUN INFO, and a warning-count footer that points you to <code>ferx_warnings(fit)</code> for remediation guidance:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>============================================================
  NONLINEAR MIXED EFFECTS MODEL ESTIMATION
 ============================================================
  Model: warfarin                 Dataset: warfarin
- Method: FOCEI | Gradient: FD | Subjects: 10 | Obs: 110
+ Method: FOCEI | Gradient: ANALYTIC (DUAL2) | Subjects: 10 | Obs: 110
 
- STATUS: CONVERGED   59 iterations   0.3s
- OFV: -285.9812    AIC: -271.9812    BIC: -253.0778
+ STATUS: CONVERGED   66 iterations   0.3s
+ OFV: -285.9971    AIC: -271.9971    BIC: -253.0938
 
 MODEL STRUCTURE (auto-derived)
 ------------------------------------------------------------
@@ -645,23 +635,23 @@ THETA
 ------------------------------------------------------------
 Parameter            Estimate           SE       %RSE
 ----------------------------------------------------
-TVCL                 0.132930     0.006980        5.3
-TVV                  7.728734     0.241436        3.1
-TVKA                 0.808949     0.151603       18.7
+TVCL                 0.132914     0.007081        5.3
+TVV                  7.727826     0.239060        3.1
+TVKA                 0.805940     0.149312       18.5
 
 OMEGA  (between-subject variability)
 ------------------------------------------------------------
-  ETA_CL                   [log-normal]  = 0.027550  CV% = 16.7  SE = 0.012101
-  ETA_V                    [log-normal]  = 0.009723  CV% = 9.9  SE = 0.004390
-  ETA_KA                   [log-normal]  = 0.352872  CV% = 65.0  SE = 0.161632
+  ETA_CL                   [log-normal]  = 0.028365  CV% = 17.0  SE = 0.012636
+  ETA_V                    [log-normal]  = 0.009533  CV% = 9.8  SE = 0.004263
+  ETA_KA                   [log-normal]  = 0.342926  CV% = 64.0  SE = 0.155138
 
 SIGMA  (residual error)
 ------------------------------------------------------------
-  PROP_ERR         [proportional] = 0.010585  (var = 0.000112, CV% = 1.1)  SE = 0.000838  [initial specified as SD]
+  PROP_ERR         [proportional] = 0.010588  (var = 0.000112, CV% = 1.1)  SE = 0.000839  [initial specified as SD]
 
 SHRINKAGE
 ------------------------------------------------------------
- ETA_CL: -1.8%   ETA_V: 0.8%   ETA_KA: 2.5%   EPS: 14.8%
+ ETA_CL: -0.4%   ETA_V: -0.1%   ETA_KA: 1.1%   EPS: 14.9%
 
 DIAGNOSTICS
 ------------------------------------------------------------
@@ -669,8 +659,8 @@ DIAGNOSTICS
 
 RUN INFO
 ------------------------------------------------------------
- Gradient (requested): auto   (used: fd)
- ferx v0.1.5 (core v0.1.6)
+ Gradient (requested): auto   (used: analytic (Dual2))
+ ferx v0.1.6 (core v0.1.6)
 
 SETTINGS  (model file / call-time override)
 ------------------------------------------------------------
@@ -685,24 +675,24 @@ SETTINGS  (model file / call-time override)
 </div>
 <p>For programmatic access, <code><a href="https://ferx-nlme.github.io/reference/ferx_estimates.html">ferx_estimates()</a></code> returns a tidy data frame:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_estimates.html">ferx_estimates</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_estimates.html">ferx_estimates</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>     param    transform    estimate           se   rse_pct    lower_95
-1     TVCL     identity 0.132930444 0.0069800719  5.250921 0.119249503
-2      TVV     identity 7.728733652 0.2414356394  3.123871 7.255519798
-3     TVKA     identity 0.808948598 0.1516034325 18.740799 0.511805870
-4   ETA_CL     variance 0.027550385 0.0121006148 43.921764 0.003833180
-5    ETA_V     variance 0.009722792 0.0043896361 45.147896 0.001119105
-6   ETA_KA     variance 0.352872307 0.1616315109 45.804533 0.036074545
-7 PROP_ERR proportional 0.010584521 0.0008380488  7.917683 0.008941945
+<pre><code>     param    transform    estimate          se   rse_pct    lower_95
+1     TVCL     identity 0.132914050 0.007081331  5.327752 0.119034641
+2      TVV     identity 7.727825893 0.239059541  3.093490 7.259269194
+3     TVKA     identity 0.805939683 0.149311939 18.526441 0.513288282
+4   ETA_CL     variance 0.028364800 0.012635963 44.548040 0.003598314
+5    ETA_V     variance 0.009533318 0.004263384 44.720885 0.001177085
+6   ETA_KA     variance 0.342926014 0.155138147 45.239539 0.038855246
+7 PROP_ERR proportional 0.010587956 0.000838587  7.920196 0.008944326
     upper_95 estimate_natural lower_95_natural upper_95_natural init_as_sd
-1 0.14661138               NA               NA               NA      FALSE
-2 8.20194750               NA               NA               NA      FALSE
-3 1.10609133               NA               NA               NA      FALSE
-4 0.05126759               NA               NA               NA      FALSE
-5 0.01832648               NA               NA               NA      FALSE
-6 0.66967007               NA               NA               NA      FALSE
-7 0.01222710               NA               NA               NA       TRUE</code></pre>
+1 0.14679346               NA               NA               NA      FALSE
+2 8.19638259               NA               NA               NA      FALSE
+3 1.09859108               NA               NA               NA      FALSE
+4 0.05313129               NA               NA               NA      FALSE
+5 0.01788955               NA               NA               NA      FALSE
+6 0.64699678               NA               NA               NA      FALSE
+7 0.01223159               NA               NA               NA       TRUE</code></pre>
 </div>
 </div>
 <p>Notable columns:</p>
@@ -720,15 +710,15 @@ SETTINGS  (model file / call-time override)
 </ul></section><section id="individual-diagnostics" class="level2"><h2 class="anchored" data-anchor-id="individual-diagnostics">Individual diagnostics</h2>
 <p>Per-observation diagnostics live in <code>fit$sdtab</code>; per-subject EBEs in <code>fit$ebe_etas</code>.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  ID TIME      DV      PRED     IPRED      CWRES       IWRES   EBE_OFV N_OBS
-1  1  0.5  5.3653  4.284665  5.351990  0.4693224  0.23495874 -25.92068    11
-2  1  1.0  8.2578  7.107251  8.283624  0.3863590 -0.29453021 -25.92068    11
-3  1  2.0 10.7063 10.151099 10.708452  0.1431516 -0.01898879 -25.92068    11
-4  1  4.0 11.4142 11.820967 11.383069 -0.5149033  0.25837822 -25.92068    11
-5  1  8.0 10.9232 11.499958 10.757551 -0.5694693  1.45480197 -25.92068    11
-6  1 12.0  9.9442 10.753670 10.069096 -0.8828134 -1.17189349 -25.92068    11
+1  1  0.5  5.3653  4.272231  5.351960  0.4819160  0.23541634 -25.91287    11
+2  1  1.0  8.2578  7.090919  8.283605  0.3974650 -0.29422145 -25.91287    11
+3  1  2.0 10.7063 10.137289 10.708476  0.1496055 -0.01919035 -25.91287    11
+4  1  4.0 11.4142 11.817021 11.383132 -0.5198810  0.25777812 -25.91287    11
+5  1  8.0 10.9232 11.501752 10.757614 -0.5762295  1.45376895 -25.91287    11
+6  1 12.0  9.9442 10.755788 10.069152 -0.8906758 -1.17202870 -25.91287    11
   TAFD  TAD
 1  0.5  0.5
 2  1.0  1.0
@@ -737,21 +727,21 @@ SETTINGS  (model file / call-time override)
 5  8.0  8.0
 6 12.0 12.0</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  ID      ETA_CL       ETA_V     ETA_KA
-1  1  0.02824199  0.06626431  0.3723840
-2  2  0.01565733 -0.06300286 -0.4103390
-3  3 -0.02441657  0.09129478  0.1546684
-4  4 -0.02858359 -0.21111598 -0.7278512
-5  5 -0.23395231 -0.12126083  0.4834838
-6  6 -0.01008042  0.07069744  1.2488004</code></pre>
+<pre><code>  ID       ETA_CL       ETA_V     ETA_KA
+1  1  0.028364174  0.06637554  0.3760943
+2  2  0.015782650 -0.06287963 -0.4066030
+3  3 -0.024295069  0.09140468  0.1583802
+4  4 -0.028453158 -0.21097859 -0.7240953
+5  5 -0.233831947 -0.12114034  0.4872084
+6  6 -0.009959542  0.07080392  1.2524438</code></pre>
 </div>
 </div>
 </section><section id="goodness-of-fit-plots" class="level2"><h2 class="anchored" data-anchor-id="goodness-of-fit-plots">Goodness-of-fit plots</h2>
 <p>The two most informative GOF plots are IPRED vs DV and CWRES vs PRED.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sdtab</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sdtab</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">IPRED</span>, y <span class="op">=</span> <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>

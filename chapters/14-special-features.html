@@ -595,7 +595,7 @@ window.Quarto = {
   gradient   = ad</code></pre>
 </div>
 </div>
-<p>The scalar form is gradient-safe: it does not interfere with the AD path, so the model can keep <code>gradient = ad</code>.</p>
+<p>The scalar form is gradient-safe, so the model can keep its default gradient setting.</p>
 </section><section id="form-b-per-cmt-obs_scalecmtn" class="level3"><h3 class="anchored" data-anchor-id="form-b-per-cmt-obs_scalecmtn">Form B — per-CMT <code>obs_scale[CMT=N]</code>
 </h3>
 <p>Different scale per observation compartment:</p>
@@ -1110,9 +1110,7 @@ Important
 # integrated covariance: V_total = P[central] + sigma^2(PRED).
 # DIFF_CENTRAL is estimated on the variance scale (not SD).
 #
-# Note: SDE is incompatible with Enzyme autodiff — gradient_method = fd is
-# required and set below.  The Enzyme toolchain is recommended for speed;
-# without it each ODE+EKF evaluation uses finite differences, which is
+# Note: SDE models use finite differences for the ODE+EKF evaluation, which is
 # significantly slower than an equivalent analytical PK model.
 
 [parameters]
@@ -1176,7 +1174,7 @@ Important
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Gradient method</strong>: SDE models require <code>gradient_method = fd</code>; Enzyme autodiff is not compatible with the EKF covariance propagation step. <code>gradient_method = fd</code> is set automatically in the model file — no manual override is needed. Finite-difference gradients make each function evaluation significantly slower than an equivalent analytical PK model; this slowdown is inherent to SDE fitting and cannot be mitigated by the Enzyme autodiff build.</p>
+<p><strong>Gradient method</strong>: SDE models require <code>gradient_method = fd</code>. <code>gradient_method = fd</code> is set automatically in the model file — no manual override is needed. Finite-difference gradients make each function evaluation significantly slower than an equivalent analytical PK model; this slowdown is inherent to SDE fitting.</p>
 </div>
 </div>
 <table class="caption-top table">
@@ -1195,8 +1193,7 @@ Important
 <td>Gradient method</td>
 <td>
 <code>fd</code> (required)</td>
-<td>
-<code>ad</code> (preferred)</td>
+<td><code>fd</code></td>
 </tr>
 <tr class="odd">
 <td>Additional theta</td>
