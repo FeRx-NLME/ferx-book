@@ -39,8 +39,8 @@ uses this:
 ferx_model_show(ferx_example("warfarin_scaled")$model)
 ```
 
-The scalar form is gradient-safe: it does not interfere with the AD path, so
-the model can keep `gradient = ad`.
+The scalar form is gradient-safe, so the model can keep its default gradient
+setting.
 
 ### Form B — per-CMT `obs_scale[CMT=N]`
 
@@ -555,18 +555,17 @@ ferx_estimates(fit_sde)        # DIFF_CENTRAL appears in the theta block
 ### SDE-specific notes
 
 ::: {.callout-important}
-**Gradient method**: SDE models require `gradient_method = fd`; Enzyme autodiff
-is not compatible with the EKF covariance propagation step.
+**Gradient method**: SDE models require `gradient_method = fd`.
 `gradient_method = fd` is set automatically in the model file — no manual
 override is needed. Finite-difference gradients make each function evaluation
 significantly slower than an equivalent analytical PK model; this slowdown is
-inherent to SDE fitting and cannot be mitigated by the Enzyme autodiff build.
+inherent to SDE fitting.
 :::
 
 | Property | SDE model | Standard ODE |
 |---|---|---|
 | `fit$uses_sde` | `TRUE` | `FALSE` |
-| Gradient method | `fd` (required) | `ad` (preferred) |
+| Gradient method | `fd` (required) | `fd` |
 | Additional theta | `DIFF_CENTRAL` (variance) | — |
 | CWRES / IWRES | Available | Available |
 | EKF covariance propagation | Yes | No |

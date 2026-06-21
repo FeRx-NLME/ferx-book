@@ -54,7 +54,7 @@ Update this table when new chapters are added.
 
 All chapters use knitr R chunks. Before rendering:
 
-1. Rebuild ferx-r (compiles ferx-core Rust via Enzyme): `cd ../ferx-r && FERX_NO_AUTODIFF=1 R CMD INSTALL .`
+1. Rebuild ferx-r: `cd ../ferx-r && R CMD INSTALL .`
 2. Render a single chapter: `quarto render chapters/<chapter>.qmd`
 3. Render the full book: `quarto render`
 
