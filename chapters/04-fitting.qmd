@@ -480,7 +480,7 @@ sampler internals:
 | `adapt_interval` | 50 | How often (iterations) the MH proposal covariance is adapted. |
 | `omega_burnin` | 20 | Iterations holding Ω fixed while the sampler warms up. Guards against Ω collapse on sparse data; set `0` to disable. |
 | `seed` / `saem_seed` | 12345 | RNG seed for the MH sampler. |
-| `n_leapfrog` / `saem_n_leapfrog` | 0 | `0` = Metropolis-Hastings; a positive value swaps in one **HMC** proposal per subject per iteration. Requires an autodiff build. |
+| `n_leapfrog` / `saem_n_leapfrog` | 0 | `0` = Metropolis-Hastings; a positive value swaps in one **HMC** proposal per subject per iteration. |
 
 ```{r}
 #| eval: false
@@ -620,15 +620,13 @@ fit <- ferx_collect(ferx_fit_async(...))
 
 ## Gradient method and `$gradient_used`
 
-`ferx_fit()` accepts a `gradient` argument (`"auto"`, `"ad"`, or `"fd"`).
-With `"auto"` (the default) the engine probes for the Enzyme autodiff build
-and falls back to finite differences when it is absent. ODE models
-additionally fall back silently from AD to FD even when AD was requested.
+`ferx_fit()` accepts a `gradient` argument. The default uses the engine's
+standard finite-difference gradient path.
 
 The field `fit$gradient_used` tells you which gradient method the engine
-**actually used** — `"ad"`, `"fd"`, or `"N/A"` for methods that have no
-inner gradient (pure SAEM). Both `print(fit)` and `summary(fit)` display the
-requested and used methods side by side:
+**actually used**: `"fd"` or `"N/A"` for methods that have no inner gradient
+(pure SAEM). Both `print(fit)` and `summary(fit)` display the requested and
+used methods side by side:
 
 ```
  Gradient (requested): auto   (used: fd)
@@ -638,7 +636,7 @@ For a quick programmatic check:
 
 ```{r}
 #| eval: false
-fit$gradient_used          # "ad" | "fd" | "N/A"
+fit$gradient_used          # "fd" | "N/A"
 fit$gradient_method_inner  # raw engine label
 fit$gradient_method_outer  # raw engine label for the outer loop
 ```
