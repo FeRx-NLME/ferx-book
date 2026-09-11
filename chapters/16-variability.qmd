@@ -282,7 +282,8 @@ ruv_model <- file.path(variability_dir, "warfarin_iiv_on_ruv.ferx")
 writeLines(set_error_model(c("  omega ETA_RUV ~ 0.05", "  sigma PROP_ERR ~ 0.1 (sd)"),
                            c("  DV ~ proportional(PROP_ERR)", "  iiv_on_ruv = ETA_RUV")), ruv_model)
 invisible(ferx_model_get_section(ruv_model, "error_model"))
-try(ferx_fit(ruv_model, w$data, verbose = FALSE))
+# the model file uses FOCE, without interaction
+sub("\\)\\..*", ")", tryCatch(ferx_fit(ruv_model, w$data, verbose = FALSE), error = conditionMessage))  # first sentence
 fit_ruv <- ferx_fit(ruv_model, w$data, method = "focei", verbose = FALSE)
 fit_ruv$estimates[c("ETA_RUV", "PROP_ERR"), c("estimate", "rse_pct")]
 ferx_get_warnings(fit_ruv, as_df = TRUE)[, c("severity", "category")]
