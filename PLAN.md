@@ -457,7 +457,7 @@ Per-chapter loop:
 
 ### Step 4: Part III, by category, one PR per chapter
 
-- [ ] 4.1 A: 14 structural (WIP 11), 15 absorption (WIP 10), 16 variability (WIP 09 + 13)
+- [x] 4.1 A: 14 structural (WIP 11), 15 absorption (WIP 10), 16 variability (WIP 09 + 13) — local branches v2/ch14…ch16 (88ba40e), not pushed
   - Done: ch14 (95bd795 + e2e9011: `[scaling]` section `#sec-scaling`, `[derived]`
     states `#sec-derived-states`, ch12 pointer) and ch15 (a31fa16). The owner notes
     below are resolved in e2e9011.
