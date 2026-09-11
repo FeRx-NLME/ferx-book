@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Step 0 done (Gate 0 passed locally); next: Step 1 skeleton** (started 2026-09-11). Revision 2, after scrutiny
+Status: **Steps 0–1 done locally (Gates 0–1 pending CI); next: Step 2 pilot** (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -337,19 +337,34 @@ Pushing and opening that PR needs owner OK.
 
 ### Step 1: Skeleton and conventions
 
-- [ ] 1.1 `_quarto.yml` Parts I–IV tree; navbar unchanged.
-- [ ] 1.2 `chapters/_common.R`:
-  - libraries, theme, knitr options
-  - `cache.extra = ferx_r_sha`
-  - `set.seed`, thread cap
-  - `tempdir()` for tool output
-- [ ] 1.3 Includes: stage banner (+ light/dark SCSS), maturity / reference /
-  not-from-R callouts, pinned-build box.
-- [ ] 1.4 Assign `home` for every inventory row. Stub every chapter with template
-  headings and its home list.
+- [x] 1.1 `_quarto.yml` tree. Parts: Getting started / The analysis workflow /
+  one Part per scenario category (general PK, covariates, dosing and data,
+  endpoints beyond PK, adaptive dosing, experimental) / Reference. Navbar
+  unchanged. Old `main` chapters removed (their prose is still available on the
+  WIP snapshot branch and in `main` history).
+- [x] 1.2 `chapters/_common.R`: libraries, `theme_minimal`, knitr options
+  (`comment="#>"`, `collapse`), `cache.extra = ferx_r_sha`, `book_tempdir()`.
+  - Dropped from the plan: global `set.seed`. Seeds go into the ferx calls
+    themselves (`seed =`).
+  - Dropped from the plan: a global thread cap. No ferx option for it exists;
+    pass `threads =` where it matters.
+  - Helpers are named `book_*()` so the audit never confuses them with exports.
+- [x] 1.3 Stage banner via `book_stage_banner()` (chunk `output: asis`), with
+  light and dark SCSS; pinned version via `{{< var ferx_r_sha_short >}}`
+  (`_variables.yml`). Callout conventions (maturity / reference / not-from-R) are
+  plain Quarto callouts, defined by the pilot chapters in Step 2 rather than
+  includes.
+- [x] 1.4 `tools/homes.csv` assigns all 638 rows. All 25 chapters + preface are
+  stubbed with template headings.
+  - The feature lists stay out of the chapter source, so stubs can't fake
+    coverage (the audit also ignores HTML comments).
+  - Per-chapter to-do list: `Rscript tools/audit.R --chapter=NN-slug`.
 
 **Gate 1:** CI renders the skeleton; audit coverage shows every row assigned (0
 covered).
+
+**Gate 1 status (2026-09-11):** local render green (81 s); `tools/audit.R` OK
+(638/638 assigned, 0 covered). CI run pending: needs push + PR (owner OK).
 
 ### Step 2: Pilot (index, 01, 02, 23)
 

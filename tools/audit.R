@@ -14,7 +14,7 @@
 #   every row of tools/features.csv has a home chapter in tools/homes.csv and
 #   its name occurs in that chapter's source.
 #
-# Usage: Rscript tools/audit.R [--strict] [--quiet]
+# Usage: Rscript tools/audit.R [--strict] [--quiet] [--chapter=NN-slug]
 
 args <- commandArgs(trailingOnly = TRUE)
 strict <- "--strict" %in% args
@@ -83,15 +83,17 @@ covered <- function(kind, name, parent, detail, home) {
   if (!nzchar(home)) return(NA)
   hf <- if (home == "index") "index.qmd" else file.path("chapters", paste0(home, ".qmd"))
   if (!hf %in% names(src)) return(FALSE)
-  txt <- paste(src[[hf]], collapse = "\n")
+  # HTML comments never count as coverage (no hidden checklists).
+  txt <- gsub("<!--.*?-->", "", paste(src[[hf]], collapse = "\n"), perl = TRUE)
   has <- function(p) grepl(p, txt, perl = TRUE)
   switch(kind,
     export      = has(paste0("\\b", esc(name), "\\(")),
-    argument    = has(paste0("\\b", esc(parent), "\\b")) && has(paste0("\\b", esc(name), "\\b")),
+    # arguments and settings must be named explicitly: `name` or name = value
+    argument    = has(paste0("\\b", esc(parent), "\\b")) && has(paste0("(`", esc(name), "`|\\b", esc(name), "\\s*=)")),
     s3method    = has(paste0("\\b", esc(parent), "\\b")) && has(paste0("\\b", esc(detail), "\\b")),
     example     = has(paste0('ferx_example\\("', esc(name), '"\\)')),
     searchfile  = has(paste0('ferx_example\\("', esc(name), '"\\)')) && has("\\$search\\b"),
-    setting     = has(paste0("\\b", esc(name), "\\b")),
+    setting     = has(paste0("(`", esc(name), "`|\\b", esc(name), "\\s*=)")),
     dsl_block   = has(paste0("\\[", esc(name), "( [A-Za-z_]+)?\\]")),
     data_column = has(paste0("\\b", esc(name), "\\b")),
     has(paste0("\\b", esc(name), "\\b"))
@@ -107,6 +109,12 @@ if (!quiet) {
   print(summary_tab, row.names = FALSE)
 }
 missing <- cov[!(cov$covered %in% TRUE), ]
+chapter_arg <- sub("^--chapter=", "", grep("^--chapter=", args, value = TRUE))
+if (length(chapter_arg)) {
+  todo <- missing[missing$home == chapter_arg, c("kind", "name", "parent")]
+  cat(sprintf("\n%s: %d uncovered feature rows\n", chapter_arg, nrow(todo)))
+  if (nrow(todo)) print(todo[order(todo$kind, todo$parent, todo$name), ], row.names = FALSE)
+}
 if (nrow(missing) && !quiet) {
   dir.create("tools/out", showWarnings = FALSE)
   write.csv(missing[c("kind", "name", "parent", "home")], "tools/out/uncovered.csv", row.names = FALSE)

@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
 
+> **Rebuild in progress (branch `book/v2-workflow`).** `PLAN.md` is the source of
+> truth for structure, ground rules and progress. Where this file disagrees with
+> it, follow `PLAN.md`. This file is rewritten in PLAN Step 6. In particular, the
+> chapter table below is obsolete; chapter homes live in `tools/homes.csv`.
+> `ferx_estimates()` / `ferx_cor_matrix()` no longer exist (use `fit$estimates` /
+> `fit$cor_matrix`). The book is ferx-only: no comparisons to other NLME software.
+> Checks: `Rscript tools/audit.R [--chapter=NN-slug]`.
+
 ## What this is
 
 ferx-book is the Quarto book for the ferx R package — a guided narrative from installation through advanced modeling. It is the companion to [ferx-site](../ferx-site), which hosts the reference docs and standalone examples.
