@@ -399,9 +399,10 @@ covered).
 **Gate 2:** CI + audit green for these files. **Owner review of voice, depth and
 format before scaling out.**
 
-**Gate 2 status (2026-09-11):** local clean render + audit green. Waiting on
-(a) owner review of the pilot, (b) OK to push `book/v2-workflow` and open the
-first PR (Steps 0–2) so CI runs, (c) D4.
+**Gate 2 status (2026-09-11):** local clean render + audit green.
+- Owner **approved the pilot** style.
+- Owner OK'd the push + first PR (Steps 0–2) into `book/v2-workflow`.
+- D4 decided (§8). CI result is recorded when the run finishes.
 
 ### Step 3: Part II, one PR per chapter, in order 03 → 13
 
@@ -460,6 +461,11 @@ Per-chapter loop:
 
 ### Step 7: Upstream issues (separate, already queued as tasks)
 
+- ferx-r (owner: **to resolve in ferx-r**, D4): bundle ferx-core examples for
+  features that fit from R but aren't bundled:
+  - `[covariate_model]`: `two_cpt_oral_covmodel`
+  - repeated TTE: `rtte_exponential`, `rtte_weibull_reset`
+  - fixed-rate infusion: `dose_rate`, `one_cpt_infusion`
 - ferx-r:
   - docs claim nn is off by default
   - `ferx_model_validate` rejects compact TTE models
@@ -504,5 +510,5 @@ Per-chapter loop:
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |
 | D7 | Other NLME software | **Decided:** ferx only; no comparison chapter or text |
-| D4 | Mirror ferx-core examples into ferx-r for features that fit from R but have no bundled example: `[covariate_model]` (two_cpt_oral_covmodel), repeated TTE (rtte_exponential, rtte_weibull_reset), fixed-rate infusion (dose_rate, one_cpt_infusion) | **Open (re-raised after 0.6).** Without it, these get mention + link only. With it: a ferx-r PR, then a re-pin (rerun Step 0.2/0.5/0.7) |
+| D4 | Mirror ferx-core examples into ferx-r for features that fit from R but have no bundled example: `[covariate_model]` (two_cpt_oral_covmodel), repeated TTE (rtte_exponential, rtte_weibull_reset), fixed-rate infusion (dose_rate, one_cpt_infusion) | **Decided (2026-09-11):** the book gives **mention + link only** for now. Bundling these examples is an **open ferx-r follow-up** (Step 7). Once a ferx-r release bundles them: re-pin (rerun Step 0.2/0.5/0.7), then run them in their home chapters (17 covariates, 22 TTE, 18 dosing) |
 | D6 | Part II thread = two_cpt_oral_base → two_cpt_oral_cov | **Confirmed on timing (0.5):** base fit 0.9 s, cov fit 0.5 s, covsearch 78 s, bootstrap 50 in 13 s. The covsearch selection outcome is reported as the run gives it in ch 09 |
