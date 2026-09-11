@@ -496,6 +496,19 @@ Per-chapter loop:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- ferx-r (found in 3.10–3.13), to check:
+  - `ferx_load_fit()` returns a fit without ~30 R-side fields
+    (`individual_estimates`, `condition_number`, `eigenvalues`, `exclusions`,
+    `warnings_structured`, …).
+  - Warning categories come back as `general` after a `.fitrx` round-trip
+    (e.g. `dw_autocorrelation` → `general`).
+  - ferx-r's `ferx_simulate()` ignores the `[simulation]` block. Without `data` it
+    errors "No data supplied" (the block is CLI simulation-estimation only). The
+    book says so.
+  - SIR ESS is highly seed-dependent on `two_cpt_oral_cov` (17.9 vs 68 vs 139 at
+    1000/250).
+  - Bayes on `two_cpt_oral_cov` does not converge (max R-hat 2.7 default, 4.8 with
+    2000/2000).
 - ferx-r (found in 3.7), to check: `?ferx_search_results` says the candidate table
   is "written by every tool". But `ferx_covsearch()` and `ferx_modelsearch()` runs
   (bundled configs, `directory` set) wrote no `candidates.csv`, so the default
