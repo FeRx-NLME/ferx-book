@@ -27,8 +27,8 @@ sdtab <- fit$sdtab
 ::: callout-note
 We use `method = "foce"` here (matching the model file) because on this small
 dataset the FOCEI Hessian is not positive-definite and the covariance step
-fails. With FOCE the covariance step is computed and `ferx_cor_matrix()`
-returns a valid matrix.
+fails. With FOCE the covariance step is computed and `fit$cor_matrix`
+is a valid matrix.
 :::
 
 ## The `sdtab` columns
@@ -138,8 +138,9 @@ ggplot(etas_long, aes(x = value)) +
 
 ## ETA-covariate correlations
 
-`ferx_eta_cov()` computes Pearson correlations between ETAs and subject-level covariates.
-The dataset must include numeric covariate columns (the warfarin example
+`fit$eta_cov` holds Pearson correlations between ETAs and subject-level
+covariates, computed at the end of the fit from the dataset the model was fit
+to. The dataset must include numeric covariate columns (the warfarin example
 has none, so we switch to `two_cpt_oral_cov`, which carries `WT` and `CRCL`):
 
 ```{r}
@@ -147,10 +148,12 @@ has none, so we switch to `two_cpt_oral_cov`, which carries `WT` and `CRCL`):
 #| cache: true
 ex_cov  <- ferx_example("two_cpt_oral_cov")
 fit_cov <- ferx_fit(ex_cov$model, ex_cov$data, verbose = FALSE)
-ferx_eta_cov(fit_cov, read.csv(ex_cov$data))
+fit_cov$eta_cov
 ```
 
-`ferx_eta_cov()` flags candidates for a covariate search at |r| ≥ 0.3.
+`fit$eta_cov` flags candidates for a covariate search at |r| ≥ 0.3. It is
+`NULL` when the model declares no etas or the dataset carries no usable
+numeric covariates.
 
 ### Informal covariate screen
 
@@ -182,7 +185,7 @@ Off-diagonal values near ±1 indicate structural identifiability problems.
 ```{r}
 #| label: cor-matrix
 if (identical(fit$covariance_status, "computed")) {
-  ferx_cor_matrix(fit)
+  fit$cor_matrix
 } else {
   message("Covariance step did not produce a usable matrix (status: ",
           fit$covariance_status, ").")
@@ -191,11 +194,11 @@ if (identical(fit$covariance_status, "computed")) {
 
 ## Parameter estimates table
 
-`ferx_estimates()` returns a tidy data frame for programmatic use or table export:
+`fit$estimates` is a tidy data frame for programmatic use or table export:
 
 ```{r}
 #| label: estimates
-ferx_estimates(fit)
+fit$estimates
 ```
 
 ## Epsilon shrinkage
@@ -261,17 +264,17 @@ if (!is.null(diag$autocorrelation)) {
 }
 ```
 
-## Fit warnings (`ferx_warnings`)
+## Fit warnings (`ferx_get_warnings`)
 
 `print(fit)` ends with a colour-coded warning-count footer (e.g.
-`1 warning   2 info  --  call ferx_warnings(fit) for details`).
-Call `ferx_warnings(fit)` to see the full grouped output with
+`1 warning   2 info  --  call ferx_get_warnings(fit) for details`).
+Call `ferx_get_warnings(fit)` to see the full grouped output with
 per-category remediation guidance:
 
 ```{r}
 #| label: warnings
 #| eval: false
-ferx_warnings(fit)
+ferx_get_warnings(fit)
 ```
 
 Warnings are grouped by severity:
@@ -282,14 +285,14 @@ Warnings are grouped by severity:
 | `warning` | Something worth investigating (e.g. autocorrelation, high %RSE) |
 | `info` | Informational (e.g. mu-referencing detected, thread-pool sizing) |
 
-For programmatic use, `ferx_warnings(fit, as_df = TRUE)` returns the
+For programmatic use, `ferx_get_warnings(fit, as_df = TRUE)` returns the
 underlying data frame with columns `severity`, `category`, `message`, and
 `source_method`:
 
 ```{r}
 #| label: warnings-df
 #| eval: false
-ferx_warnings(fit, as_df = TRUE)
+ferx_get_warnings(fit, as_df = TRUE)
 ```
 
 ## Run log — `ferx_runlog()` {#sec-runlog}
@@ -359,5 +362,5 @@ fit$condition_number
 fit$eigenvalues      # full sorted vector; the ratio of first to last is condition_number
 ```
 
-`ferx_cor_matrix(fit)` shows the off-diagonal parameter correlations that
+`fit$cor_matrix` shows the off-diagonal parameter correlations that
 drive a high condition number — pairs near ±1 are the culprits.

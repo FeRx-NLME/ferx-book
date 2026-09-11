@@ -104,7 +104,7 @@ ferx_check_init(ex$model, ex$data)
 
 ### Inspecting the data columns
 
-`ferx_columns()` reads only the header row of a NONMEM-format CSV and prints
+`ferx_get_columns()` reads only the header row of a NONMEM-format CSV and prints
 the column names grouped into required NONMEM columns (`ID`, `TIME`, `DV`,
 `EVID`, `AMT`, `CMT`), optional NONMEM columns (`RATE`, `MDV`, `II`, `SS`,
 `CENS`, `OCC`), and covariates / user-defined columns. It is a fast way to
@@ -114,8 +114,8 @@ accepts a path, a `ferx_fit` object, or the list returned by `ferx_example()`:
 ```{r}
 #| label: columns
 #| eval: false
-ferx_columns(ex)        # pass the ferx_example() list directly
-ferx_columns(ex$data)   # or pass the path
+ferx_get_columns(ex)        # pass the ferx_example() list directly
+ferx_get_columns(ex$data)   # or pass the path
 ```
 
 ### NCA-based initial estimates {#sec-nca-inits}
@@ -150,7 +150,7 @@ fit <- ferx_fit(ex$model, ex$data, method = "foce", covariance = TRUE,
 
 After convergence inspect `fit$covariance_status`:
 
-- `"computed"` — Hessian is positive-definite; SEs and 95% CIs are available in `ferx_estimates(fit)`.
+- `"computed"` — Hessian is positive-definite; SEs and 95% CIs are available in `fit$estimates`.
 - `"sir_fallback"` — the finite-difference Hessian was not positive-definite, but `covariance_fallback = "sir"` ran SIR with an absolute-eigenvalue-rectified proposal and reported SIR-based intervals instead of failing (see below).
 - `"failed"` — covariance matrix could not be inverted or was non-positive-definite. `fit$cov_matrix` and the `se`/CI columns are `NA`. Likely causes are over-parameterisation, a boundary estimate, or a parameter that is structurally non-identifiable.
 - `"not_requested"` — the fit ran with `covariance = FALSE`, so no covariance step was attempted.
@@ -522,7 +522,7 @@ summary(fit)
 auto-derived model structure, shrinkage, DW statistic, gradient method
 requested vs used, covariance status and condition number, wall time, and
 warnings. The parameter table itself (THETA / OMEGA / SIGMA point estimates +
-SE) is shown by `print(fit)` or as a tidy data frame by `ferx_estimates(fit)`.
+SE) is shown by `print(fit)` or as a tidy data frame in `fit$estimates`.
 
 ### Accessing individual fields
 
@@ -543,11 +543,14 @@ fit$sdtab         # individual-level diagnostics (ID, TIME, DV, PRED, IPRED, CWR
 ```{r}
 #| label: trace
 #| cache: true
-ferx_plot_trace(fit)
+plot(fit)
 ```
 
-`ferx_plot_trace()` draws the OFV and each theta/omega/sigma parameter over iterations.
-A well-converged fit shows smooth descent with a stable plateau.
+`plot(fit)` draws the OFV and each theta/omega/sigma parameter over iterations.
+A well-converged fit shows smooth descent with a stable plateau. FOCE/FOCEI
+traces show the running-minimum OFV by default, since the raw per-evaluation
+trace includes rejected line-search trial steps that can transiently increase
+OFV; pass `monotonic = FALSE` for the raw trace.
 
 If you want the raw trace data:
 

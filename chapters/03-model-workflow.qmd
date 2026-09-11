@@ -17,24 +17,29 @@ library(ferx)
 
 ## Scaffolding a new model file
 
-`ferx_model_new()` writes a complete, valid `.ferx` file from a template.
-Five templates ship today: `1cpt_oral`, `1cpt_iv`, `2cpt_oral`, `2cpt_iv`, and
+Scaffolding is a mode of the `ferx_model()` constructor, selected by passing
+`template =`. It writes a complete, valid `.ferx` file and returns a
+`ferx_model` object, so the result pipes straight into `ferx_fit()`. Five
+templates ship today: `1cpt_oral`, `1cpt_iv`, `2cpt_oral`, `2cpt_iv`, and
 `ode` (a generic ODE skeleton).
 
 ```{r}
 #| label: scaffold-print
-ferx_model_new(
-  path      = tempfile(fileext = ".ferx"),
-  template  = "1cpt_oral",
-  edit      = FALSE,
-  print     = TRUE,
-  overwrite = TRUE
-)
+ferx_model(template = "1cpt_oral", print = TRUE)
 ```
 
-`print = TRUE` echoes the generated file. With `edit = TRUE` (the default), the
-file is opened in your editor; `overwrite = FALSE` (the default) refuses to
-clobber an existing file.
+`print = TRUE` echoes the skeleton without writing anything — no `path =` is
+needed. When writing a file, `path =` is required; with `edit = TRUE` (the
+default) the file is opened in your editor, and `overwrite = FALSE` (the
+default) refuses to clobber an existing file:
+
+```{r}
+#| label: scaffold-write
+#| eval: false
+m <- ferx_model(template = "1cpt_oral",
+                path     = tempfile(fileext = ".ferx"),
+                edit     = FALSE)
+```
 
 ## Inspecting a model before fitting
 
@@ -65,12 +70,12 @@ when the reader wants to see what is being fit.
 ## Editing sections programmatically
 
 For scripted workflows (e.g. covariate-search loops, simulation studies that
-sweep theta starts), `ferx_model_section()` and `ferx_model_set_section()`
+sweep theta starts), `ferx_model_get_section()` and `ferx_model_set_section()`
 read and replace one block at a time:
 
 ```{r}
 #| label: read-section
-ferx_model_section(ex$model, "individual_parameters")
+ferx_model_get_section(ex$model, "individual_parameters")
 ```
 
 ```{r}
@@ -155,14 +160,16 @@ ex$data |>
   summary()
 ```
 
-To peek at a section mid-chain, use `ferx_get_section()` — it returns the
-requested block and passes the `ferx_model` through invisibly:
+There is no mid-chain peek: `ferx_model_get_section()` always returns the
+section's lines rather than passing the `ferx_model` through. Call it on its
+own line before the pipe:
 
 ```{r}
 #| eval: false
+ferx_model_get_section(ex$model, "parameters")
+
 ex$data |>
   ferx_model(ex$model) |>
-  ferx_get_section("parameters") |>   # prints [parameters] block; chain continues
   ferx_fit()
 ```
 
@@ -194,7 +201,7 @@ A typical first-pass workflow on a new dataset:
 #| eval: false
 # 1. Scaffold a model from a template
 path <- "my_model.ferx"
-ferx_model_new(path, template = "1cpt_oral")
+ferx_model(template = "1cpt_oral", path = path)
 
 # 2. Edit (manually or programmatically), then validate and inspect
 m <- ferx_model("my_data.csv", path)
