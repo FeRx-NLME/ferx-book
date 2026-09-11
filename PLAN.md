@@ -426,7 +426,7 @@ format before scaling out.**
 - D4 decided (§8).
 - **CI green on PR #16** (runs 34615680841 @79d59ef and 34615913286 @82608fe, 13m39s: pinned install, audit, full render). Gates 0–2 passed.
 
-### Step 3: Part II, one PR per chapter, in order 03 → 13
+### Step 3: Part II, in order 03 → 13 (owner decision 2026-09-11: chapters 03–09 go up as one PR, stacked on #16; owner merges PRs)
 
 Per-chapter loop:
 1. Read the Rd (pinned) + linked ferx-core pages.
