@@ -14,26 +14,205 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 book_stage_banner("MODEL")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+The dataset from @sec-data is checked. The next step is a model file: a plain-text `.ferx` file that describes the parameters, the structural model, the residual error and the default fit settings. Keeping the model in a file separates it from R code, makes it easy to version, and lets the same file run from R or from the ferx command line.
+
+This chapter shows how to read, create, check and edit model files from R. It uses the base model of the workflow thread, `two_cpt_oral_base`: a two-compartment oral model without covariates, for the same dataset.
 
 ## The data
 
-## Minimal runnable call
+The base model ships with the same dataset as @sec-data:
 
-## Reading the result
+```{r}
+#| label: example
+base <- ferx_example("two_cpt_oral_base")
+basename(unlist(base))
+```
+
+## Reading a model file
+
+`ferx_model_show()` prints the file:
+
+```{r}
+#| label: show
+ferx_model_show(base$model)
+```
+
+A model file is a sequence of `[blocks]`. These five appear in almost every model:
+
+| Block | What it declares | ferx-core reference |
+|---|---|---|
+| `[parameters]` | Fixed effects `theta NAME(initial, lower, upper)`, between-subject variances `omega NAME ~ value`, residual error `sigma` (`(sd)` marks an initial value given as a standard deviation) | [parameters](https://ferx-nlme.github.io/ferx-core/model-file/parameters.html) |
+| `[individual_parameters]` | Each subject's parameters as expressions of thetas, etas and covariates | [individual parameters](https://ferx-nlme.github.io/ferx-core/model-file/individual-parameters.html) |
+| `[structural_model]` | A built-in PK model (`pk two_cpt_oral(...)`), an ODE system, or a compartment-free model | [structural model](https://ferx-nlme.github.io/ferx-core/model-file/structural-model.html) |
+| `[error_model]` | The residual error model for `DV` | [error model](https://ferx-nlme.github.io/ferx-core/model-file/error-model.html) |
+| `[fit_options]` | Default estimation settings; arguments to `ferx_fit()` override them | [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) |
+
+This model also has a `[covariates]` block, which declares `WT` and `CRCL`. The other blocks are introduced in the chapters where they are used:
+
+| Block | Chapter |
+|---|---|
+| `[data]`, `[data_selection]` | @sec-data |
+| `[odes]`, `[initial_conditions]`, `[scaling]` | @sec-structural-models |
+| `[covariates]`, `[covariate_model]` | @sec-covariates |
+| `[mixture]` | @sec-variability |
+| `[derived]`, `[output]` | @sec-tables-figures |
+| `[simulation]` | @sec-simulation |
+| `[binary_model]` | @sec-binary |
+| `[event_model]` | @sec-time-to-event |
+| `[adaptive_dosing]` | @sec-adaptive-dosing |
+| `[diffusion]`, `[covariate_nn]` | @sec-experimental |
+| `[markov_model]` | not available in ferx-r (@sec-reference) |
+
+## Checking a model before fitting
+
+`ferx_model_inspect()` parses the file without fitting and reports how ferx interprets it:
+
+```{r}
+#| label: inspect
+structure_info <- ferx_model_inspect(base$model)
+structure_info$theta_names
+```
+
+`ferx_model_validate()` runs the engine's parser and structural checks. With `data`, it also runs the checks that need the dataset, such as whether declared covariates are present:
+
+```{r}
+#| label: validate
+check <- ferx_model_validate(base$model, data = base$data)
+check$ok
+```
+
+The report is printed, and the invisible return value holds `ok`, the `model` and `data` names, and a `diagnostics` data frame. To see a failing check, misspell a block name in a copy of the model:
+
+```{r}
+#| label: validate-typo
+model_dir <- book_tempdir("model-files")
+typo <- file.path(model_dir, "typo.ferx")
+writeLines(sub("^\\[fit_options\\]", "[fit_option]", readLines(base$model)), typo)
+
+typo_check <- ferx_model_validate(typo)
+typo_check$ok
+typo_check$diagnostics[, c("severity", "code", "block", "line", "suggestion")]
+```
+
+Diagnostic codes are stable identifiers: `E_*` for errors, `W_*` for warnings. The full list is on the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page.
+
+## Starting a new model from a template
+
+`ferx_model()` can scaffold a new model file from a built-in template. The templates are `"1cpt_oral"`, `"1cpt_iv"`, `"2cpt_oral"`, `"2cpt_iv"` and `"ode"`. With `print = TRUE` it only prints the skeleton:
+
+```{r}
+#| label: template-print
+ferx_model(template = "2cpt_oral", print = TRUE)
+```
+
+With a `path` it writes the file and returns a `ferx_model` object. Use `edit = FALSE` to skip opening an editor, and `overwrite = TRUE` to replace an existing file:
+
+```{r}
+#| label: template-write
+scaffold <- ferx_model(template = "2cpt_oral", path = file.path(model_dir, "run1.ferx"),
+                       edit = FALSE, overwrite = TRUE)
+scaffold
+ferx_model_validate(scaffold$model, data = base$data)$ok
+```
+
+A template is a starting point. Adapt its initial estimates, bounds and blocks to your drug and data before you rely on it.
+
+## The `ferx_model` object
+
+`ferx_model(data, model)` bundles a model file with a dataset. `print()` on a `ferx_model` shows both paths and the parsed structure:
+
+```{r}
+#| label: model-object
+m <- ferx_model(base$data, base$model)
+m
+```
+
+`data` comes first so that a dataset can be piped in. `ferx_fit()` accepts the object directly and takes the data from it:
+
+```{r}
+#| label: model-object-fit
+fit <- base$data |> ferx_model(base$model) |> ferx_fit(verbose = FALSE)
+fit$converged
+```
+
+Fitting itself is the topic of @sec-first-fit.
+
+## Editing model files from R
+
+### Reading and replacing a block
+
+`ferx_model_get_section()` returns the lines of one block. It prints them and returns them invisibly; `strip = TRUE` trims leading whitespace:
+
+```{r}
+#| label: get-section
+param_lines <- ferx_model_get_section(m, "parameters", strip = TRUE)
+head(param_lines, 5)
+```
+
+`ferx_model_set_section()` replaces the body of a block with new `lines`. Given a `ferx_model` that points to a bundled example, it first copies the file to a temporary directory and edits the copy. The installed example stays unchanged:
+
+```{r}
+#| label: set-section
+m_focei <- ferx_model_set_section(m, "fit_options", c(
+  "  method     = focei",
+  "  maxiter    = 300",
+  "  covariance = true"
+))
+m_focei$model == m$model
+ferx_model_get_section(m_focei, "fit_options")
+```
+
+### Opening a model in an editor
+
+`ferx_model_edit()` opens a model file in your editor. A bundled example is copied to `dest` first (default: the working directory), and `overwrite` controls whether an existing copy may be replaced. `save_as` copies the file after editing, which is a simple way to keep numbered versions of a model (`run1.ferx`, `run2.ferx`, …). The `.editor` argument replaces the editor function. The book passes a function that does nothing, so the example can run while the book is built:
+
+```{r}
+#| label: edit
+no_editor <- function(...) invisible(NULL)
+my_copy <- ferx_model_edit(base$model, dest = model_dir, overwrite = TRUE, .editor = no_editor)
+run2 <- ferx_model_edit(my_copy, save_as = file.path(model_dir, "run2.ferx"), .editor = no_editor)
+basename(c(my_copy, run2))
+```
+
+In an interactive session, call `ferx_model_edit(path)` without `.editor`.
 
 ## Options that matter
 
-## Variants
+| Function | Argument | Meaning |
+|---|---|---|
+| `ferx_model_show()` | `path` | Model file to print |
+| `ferx_model_inspect()` | `path` | Model file, or a fit (reads its stored structure) |
+| `ferx_model_validate()` | `path` | Model file (must exist and end in `.ferx`) |
+| | `data` | Optional dataset for data-dependent checks |
+| `ferx_model()` | `data` | Dataset path; if missing, the model's `[data]` block is used at fit time |
+| | `model` | Existing model file to wrap |
+| | `template` | Scaffold from `"1cpt_oral"`, `"1cpt_iv"`, `"2cpt_oral"`, `"2cpt_iv"` or `"ode"` |
+| | `path` | Where to write the scaffold |
+| | `overwrite` | Replace an existing file at `path` |
+| | `edit` | Open the new file in an editor (default `TRUE`) |
+| | `print` | Print the skeleton only |
+| `ferx_model_get_section()` | `x`, `section`, `strip` | Model object or path, block name without brackets, trim whitespace |
+| `ferx_model_set_section()` | `x`, `section`, `lines` | Model object or path, block name, replacement body lines |
+| `ferx_model_edit()` | `path`, `dest`, `overwrite`, `save_as`, `.editor` | File, copy destination, replace existing copy, save a copy after editing, editor function |
 
 ## Pitfalls
 
+- **`ferx_model_set_section()` on a plain path edits that file in place.** Copy-on-write only applies to a `ferx_model` object pointing into the installed package. Never pass `ferx_example(...)$model` itself as a path. Wrap it with `ferx_model()` or copy it first.
+- **`ferx_model_set_section()` replaces an existing block. It cannot add a new one.** To add a block such as `[data]`, append the lines to a copy of the file (@sec-data does this).
+- **Argument order of `ferx_model()`.** `data` is the first argument. An old-style call `ferx_model("model.ferx")` still works but warns about the changed order. Name `model =` to be explicit.
+
 ## Summary
 
-## Reference
+- Read a model with `ferx_model_show()`. Check how it is parsed with `ferx_model_inspect()`, and validate it (optionally against the data) with `ferx_model_validate()`.
+- Start new models from `ferx_model(template = ...)`. Keep versions with `ferx_model_edit(save_as = ...)`.
+- Edit blocks programmatically with `ferx_model_get_section()` and `ferx_model_set_section()`, on a `ferx_model` object or a copy.
 
+Next: @sec-first-fit fits this base model.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_model`, `?ferx_model_show`, `?ferx_model_inspect`, `?ferx_model_validate`, `?ferx_model_get_section`, `?ferx_model_set_section`, `?ferx_model_edit`
+- ferx-core: [model file reference](https://ferx-nlme.github.io/ferx-core/model-file/index.html), [check report codes](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html)
+:::

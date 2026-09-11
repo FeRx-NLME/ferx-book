@@ -496,6 +496,14 @@ Per-chapter loop:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- ferx-r (found in 3.2): `print.ferx_model` and `print.ferx_conddist` are exported S3
+  methods with no help page (`help()` finds nothing). `ferx_model_validate()`
+  reporting compact TTE models INVALID is confirmed on the pin (`tte_weibull`:
+  "Missing required section" ×3, although it fits); ch 22 must say so.
+- ferx-core docs vs behaviour (found in 3.1), to check: `model-file/data.qmd` says an
+  explicit data path that differs from `[data]` records a warning. From R
+  (`ferx_fit(model, data = other)`) the explicit path is used but no warning
+  appears in `fit$warnings`.
 - ferx-core docs vs behaviour (found in 2.3), to check:
   - `adaptive-dosing.qmd` says `start_dose` is "the dose issued at the first
     decision". But in `adaptive_tdm` the first rule already fires at t=0 (trough
