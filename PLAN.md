@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Step 3 in progress** (Gate 2 approved; PR #16 = Steps 0–2; ch03, ch04 committed on stacked local branches) (started 2026-09-11). Revision 2, after scrutiny
+Status: **Step 3 in progress** (Gates 0–2 passed, CI green on PR #16; ch03–ch06 committed on stacked local branches, not yet pushed) (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -423,7 +423,8 @@ format before scaling out.**
 **Gate 2 status (2026-09-11):** local clean render + audit green.
 - Owner **approved the pilot** style.
 - Owner OK'd the push + first PR (Steps 0–2) into `book/v2-workflow`.
-- D4 decided (§8). CI result is recorded when the run finishes.
+- D4 decided (§8).
+- **CI green on PR #16** (runs 34615680841 @79d59ef and 34615913286 @82608fe, 13m39s: pinned install, audit, full render). Gates 0–2 passed.
 
 ### Step 3: Part II, one PR per chapter, in order 03 → 13
 
