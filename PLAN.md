@@ -554,6 +554,10 @@ Per-chapter loop:
   - bundled model comments (`ss_absorption`, `infusion_absorption`).
 
   The book shows only the first sentence of those errors (ch16, ch18) and does not print those model comments. `ferx_get_columns()` output is left as is (ch03).
+- ferx-core/ferx-r (found in 4.4, ch20), to check:
+  - **`NaN` for zero time above MEC:** `integral(1.0, IPRED > MEC, window=24, …)` returns `NaN`, not 0, for windows where the condition never holds (`warfarin_derived_pkpd` with MEC 8, days 3–5).
+  - **Bundled examples are weak demos:** `warfarin_derived_pkpd` uses MEC 0.5, below every warfarin concentration, so time above MEC is always 24 h. `emax_pkpd` has only 3 subjects, so the PD parameters are unidentifiable (RSE up to 5e4%).
+  - **What ch20 does:** it shows both, plus a 30-subject simulation–estimation run.
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.

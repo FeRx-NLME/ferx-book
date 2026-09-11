@@ -1,4 +1,4 @@
-# PK/PD models {#sec-pkpd}
+# PK/PD and multiple endpoints {#sec-pkpd}
 
 ```{r}
 #| label: setup
@@ -7,26 +7,197 @@
 source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+So far every model had one endpoint, a drug concentration. Pharmacodynamic (PD) models describe a response. They can be linked to the pharmacokinetics and fitted together with the concentrations, used to compute a predicted effect from a PK fit, or stand on their own as an equation of time or dose. This chapter covers all three with the bundled examples.
+
+::: {.callout-warning}
+## Maturity: stable, beta and experimental parts
+The error models are **stable** in ferx-core. ODE models, `[scaling]` and `[derived]` are **beta**. Compartment-free models are documented in the ferx-core [structural model](https://ferx-nlme.github.io/ferx-core/model-file/structural-model.html#compartment-free-models-the-pred-equivalent) page. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
 
 ## The data
 
-## Minimal runnable call
+`emax_pkpd` has 3 subjects with an oral dose, plasma concentrations and effect measurements in one dataset. The `CMT` column tells the endpoints apart: 2 for the concentration, 3 for the effect:
+
+```{r}
+#| label: data
+pkpd <- ferx_example("emax_pkpd")
+pkpd_dir <- book_tempdir("pkpd")
+pkpd_data <- read.csv(pkpd$data, na.strings = ".")
+filter(pkpd_data, ID == 1) |> arrange(CMT, TIME)
+count(filter(pkpd_data, EVID == 0), CMT)
+```
+
+## Minimal runnable call: a joint PK/PD fit
+
+The model has three ODE states: the depot, the central compartment and an effect compartment that follows the plasma concentration with rate `KE0`. `[scaling]` gives one readout per observed `CMT` (@sec-scaling), and `[error_model]` one residual error model per `CMT`:
+
+```{r}
+#| label: pkpd-model
+invisible(ferx_model_get_section(pkpd$model, "odes"))
+invisible(ferx_model_get_section(pkpd$model, "scaling"))
+invisible(ferx_model_get_section(pkpd$model, "error_model"))
+fit_pkpd <- ferx_fit(pkpd$model, pkpd$data, verbose = FALSE)
+```
+
+Both endpoints enter one likelihood, so the PK and PD parameters are estimated together.
 
 ## Reading the result
 
+`sdtab` keeps the `CMT` column, so each endpoint can be plotted separately:
+
+```{r}
+#| label: fig-pkpd-fit
+#| fig-cap: "Joint PK/PD fit: observations (points) and individual predictions (lines) by endpoint."
+fit_pkpd$sdtab |>
+  mutate(endpoint = ifelse(CMT == 2, "Concentration (CMT 2)", "Effect (CMT 3)")) |>
+  ggplot(aes(TIME, colour = factor(ID))) +
+  geom_point(aes(y = DV)) +
+  geom_line(aes(y = IPRED)) +
+  facet_wrap(~ endpoint, scales = "free_y") +
+  labs(x = "Time (h)", y = NULL, colour = "ID")
+```
+
+The predictions follow the data, but three subjects cannot determine eight structural parameters and two residual errors:
+
+```{r}
+#| label: pkpd-estimates
+fit_pkpd$estimates[, c("estimate", "rse_pct")]
+ferx_get_warnings(fit_pkpd, as_df = TRUE)[, c("severity", "category")]
+```
+
+The PD parameters have relative standard errors in the thousands of percent, and the parameters are almost perfectly correlated. The model structure is fine; the data are too few (see the simulation–estimation variant below).
+
 ## Options that matter
+
+| Where | Syntax | Meaning |
+|---|---|---|
+| Data | `CMT` on observation rows | Which endpoint the row is |
+| `[structural_model]` | `ode(states=[depot, central, effect])` | No single `obs_cmt`; `[scaling]` defines each readout |
+| `[scaling]` | `y[CMT=2] = central / V`, `y[CMT=3] = <expr>` | One readout per observed `CMT` |
+| `[error_model]` | `CMT=2: DV ~ proportional(...)`, `CMT=3: DV ~ additive(...)` | One residual error model per `CMT` (ODE models only) |
+| `[structural_model]` | `y = <expr>` with no `pk` or `ode` line | A compartment-free model |
+| `[derived]` | `EFF = EMAX * IPRED / (EC50 + IPRED)` | An effect computed from a PK fit |
+
+Every observed `CMT` needs a readout and an error model. The two forms cannot be mixed in one block ([error model](https://ferx-nlme.github.io/ferx-core/model-file/error-model.html#multiple-endpoints-per-cmt-error-models)).
 
 ## Variants
 
+### Simulation and estimation with more subjects
+
+To see whether the joint model can be estimated with a realistic design, simulate a study from the model's initial values and fit it again. The design has 30 subjects, six concentration samples and six effect samples each. `ferx_simulate()` without `fit` uses the model file's parameters (@sec-simulation):
+
+```{r}
+#| label: pkpd-sim-design
+ids <- 1:30
+design <- bind_rows(
+  data.frame(ID = ids, TIME = 0, DV = NA, EVID = 1, AMT = 100, CMT = 1, RATE = 0, MDV = 1),
+  expand.grid(ID = ids, TIME = c(0.5, 1, 2, 4, 8, 12)) |>
+    mutate(DV = NA, EVID = 0, AMT = NA, CMT = 2, RATE = 0, MDV = 0),
+  expand.grid(ID = ids, TIME = c(1, 2, 4, 8, 12, 24)) |>
+    mutate(DV = NA, EVID = 0, AMT = NA, CMT = 3, RATE = 0, MDV = 0)
+) |> arrange(ID, TIME, desc(EVID), CMT)
+design_file <- file.path(pkpd_dir, "pkpd_design.csv")
+write.csv(design, design_file, row.names = FALSE, na = ".")
+simulated <- ferx_simulate(pkpd$model, design_file, n_sim = 1, seed = 42)
+```
+
+The warning is expected for a design. The simulated values replace the empty `DV` column, matched by subject, time and `CMT`:
+
+```{r}
+#| label: pkpd-sim-fit
+observations <- design$EVID == 0
+design$DV[observations] <- simulated$DV_SIM[match(paste(design$ID, design$TIME, design$CMT)[observations],
+                                                  paste(simulated$ID, simulated$TIME, simulated$CMT))]
+simulated_file <- file.path(pkpd_dir, "pkpd_simulated.csv")
+write.csv(design, simulated_file, row.names = FALSE, na = ".")
+fit_simulated <- ferx_fit(pkpd$model, simulated_file, verbose = FALSE)
+data.frame(parameter = c(names(fit_simulated$theta), fit_simulated$eta_names, fit_simulated$sigma_names),
+           simulated_with = c(fit_simulated$theta_init, fit_simulated$omega_init[c(1, 4)], fit_simulated$sigma_init),
+           estimate = c(fit_simulated$theta, diag(fit_simulated$omega), fit_simulated$sigma),
+           rse_pct = fit_simulated$estimates$rse_pct)
+```
+
+With 30 subjects all parameters are recovered with moderate standard errors. The `simulated_with` column is the model file's initial values, which the simulation used and the fit started from.
+
+### Effects computed from a PK fit
+
+When the PD parameters are known, an effect can be computed from the PK predictions without PD data. `warfarin_derived_pkpd` fixes `EMAX`, `EC50` and a minimum effective concentration `MEC` as thetas and uses them in `[derived]`:
+
+```{r}
+#| label: derived-pkpd
+derived_pkpd <- ferx_example("warfarin_derived_pkpd")
+invisible(ferx_model_get_section(derived_pkpd$model, "derived"))
+fit_derived <- ferx_fit(derived_pkpd$model, derived_pkpd$data, verbose = FALSE)
+filter(fit_derived$sdtab, ID == 1) |> select(TIME, IPRED, EFF, CMAX_INTERVAL, TAM_D1)
+```
+
+The fixed thetas are used only in `[derived]`, so the fit warns that they do not affect the predictions. That is intended here. With `MEC = 0.5` every concentration in these data is above the MEC, so the time above it is the whole day. A copy with `MEC = 8` shows a threshold within the concentration range, per 24-hour window:
+
+```{r}
+#| label: time-above-mec
+mec8_model <- file.path(pkpd_dir, "warfarin_derived_pkpd_mec8.ferx")
+writeLines(sub("theta MEC(0.5)", "theta MEC(8.0)", readLines(derived_pkpd$model), fixed = TRUE), mec8_model)
+fit_mec8 <- ferx_fit(mec8_model, derived_pkpd$data, verbose = FALSE)
+filter(fit_mec8$sdtab, ID == 1) |> select(TIME, IPRED, TAM_TAU, TAM_D1)
+```
+
+Subject 1 is above 8 for most of the first day and about half of the second. From day 3 on its concentration stays below 8, and the time above the MEC in those windows is reported as `NaN`, not 0. Treat `NaN` as "never above" when you summarise it.
+
+### Models without compartments
+
+A response that is a plain equation of time, dose or other data needs no compartments. `emax_timecourse` writes the prediction directly in `[structural_model]`: `EFF` is an intermediate and `y` is the prediction. The dataset has no doses:
+
+```{r}
+#| label: timecourse
+timecourse <- ferx_example("emax_timecourse")
+invisible(ferx_model_get_section(timecourse$model, "structural_model"))
+head(read.csv(timecourse$data, na.strings = "."), 3)
+fit_timecourse <- ferx_fit(timecourse$model, timecourse$data, verbose = FALSE)
+fit_timecourse$estimates[, c("estimate", "rse_pct")]
+```
+
+Such a model works with prediction, simulation and the diagnostics like any other. `TAD` and `TAFD` are `NaN` in `sdtab`, since there are no doses:
+
+```{r}
+#| label: fig-timecourse
+#| fig-cap: "Compartment-free Emax time-course: observations (points) and the typical prediction (line)."
+head(fit_timecourse$sdtab, 3)
+ggplot(fit_timecourse$sdtab, aes(TIME)) +
+  geom_line(aes(y = DV, group = ID), alpha = 0.2) +
+  geom_line(data = ferx_predict(timecourse$model, timecourse$data, fit = fit_timecourse) |> distinct(TIME, PRED),
+            aes(y = PRED), linewidth = 1) +
+  labs(x = "Time", y = "Response")
+```
+
+A compartment-free model cannot have `[odes]`, `[scaling]` or references to `central` and `depot`. `y[CMT=N]` gives it several endpoints ([structural model](https://ferx-nlme.github.io/ferx-core/model-file/structural-model.html#compartment-free-models-the-pred-equivalent)).
+
 ## Pitfalls
+
+- **Joint PK/PD models need data for every parameter.** Check relative standard errors and correlations before interpreting PD parameters; a simulation–estimation run tells whether a design can support the model.
+- **Per-CMT error models need an ODE model.** An analytical `pk` model with `CMT=N:` lines is rejected. Use `ode_template` to write the PK part as ODEs.
+- **Every observed `CMT` needs a readout and an error model.** A missing entry stops the fit and names the compartment.
+- **Thresholds that are never crossed give `NaN`** in `[derived]` filters and conditional integrals.
+
+### Warnings you may see here
+
+- `general` (warning): parameters declared but not used by the predictions, such as the fixed PD thetas of `warfarin_derived_pkpd` that only `[derived]` reads.
+
+Other warnings above (`inflated_rse`, `high_correlation`, `condition_number`, `covariance_regularized`) are covered in @sec-uncertainty.
 
 ## Summary
 
-## Reference
+- Put all endpoints in one dataset and tell them apart with `CMT`.
+- Write the PK and PD states as ODEs, one `[scaling]` readout and one error model per `CMT`, and fit them jointly.
+- Check with simulation and estimation whether a design can support the PD parameters.
+- Compute effects from a PK fit with `[derived]` when the PD parameters are known.
+- Write responses that are plain equations as compartment-free models.
 
+Next: @sec-binary covers binary endpoints.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit`, `?ferx_simulate`, `?ferx_predict`
+- ferx-core: [error model (multiple endpoints)](https://ferx-nlme.github.io/ferx-core/model-file/error-model.html#multiple-endpoints-per-cmt-error-models), [scaling](https://ferx-nlme.github.io/ferx-core/model-file/scaling.html), [structural model](https://ferx-nlme.github.io/ferx-core/model-file/structural-model.html), [`[derived]`](https://ferx-nlme.github.io/ferx-core/model-file/derived.html)
+:::
