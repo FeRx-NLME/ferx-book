@@ -537,10 +537,25 @@ Per-chapter loop:
   to focei (ferx-r).
 - **ferx-r bug (found in 4.2, ch17):** `ferx_model_to_frem()` ignores `output_dir`
   (never passed to Rust). Without `output_model`/`output_data` it writes next to the
-  model, i.e. into the installed package for `ferx_example()` models. A task was
-  spawned (ferx-r cwd). ch17 has a callout and passes both paths; remove after the
-  pin bump. Also: `print()` of the generated FREM `ferx_model` says "IIV: none"
-  although the model has a 7×7 block.
+  model, i.e. into the installed package for `ferx_example()` models. Fixed in
+  [ferx-r #360](https://github.com/FeRx-NLME/ferx-r/pull/360) (open, not yet merged).
+  - **Merge order (dependency).** The chapter change is staged on the ferx-book
+    branch `v2/ch17-frem-output-dir`: callout dropped, both calls use `output_dir`,
+    CLAUDE.md note updated. Land it strictly in this order:
+    1. The ferx-r fix PR merges into ferx-r `main`.
+    2. Bump the book pin (`_variables.yml` `ferx_r_sha`, `FERX_R_SHA` in
+       `render.yml`) to a ferx-r commit that contains the fix, with the full
+       "Bumping the pin" procedure.
+    3. Only then render and merge `v2/ch17-frem-output-dir`.
+  - Until step 2, keep the callout and the explicit `output_model`/`output_data`
+    paths. Rendering the staged branch against `846aa4b` writes the FREM files into
+    the installed package library.
+- **ferx-r bug (found in 4.2, ch17):** `print()` of the generated FREM `ferx_model`
+  says "IIV: none" although the model has a 7×7 block. The pre-fit structure parser
+  (`.ferx_parse_structure()`) only matches `omega NAME` lines, so every `block_omega`
+  eta is dropped (`warfarin_block_omega` prints `IIV: ETA_KA`). Filed as
+  [ferx-r #358](https://github.com/FeRx-NLME/ferx-r/issues/358). ch17 still prints the
+  object; add an "at this build" note or re-read the output after the fix.
 - ferx-r/ferx-core (found in 4.2, ch17), to check: `ferx_allometry()` on a model
   with inline `(WT/70)^THETA_WT` (`two_cpt_oral_cov`) adds WT scaling again with no
   note. Only `[covariate_model]` relations are detected. The Rd says "a parameter

@@ -75,7 +75,7 @@ Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eva
 - Render a chapter from an **empty cache**: `rm -rf chapters/<ch>_cache chapters/<ch>_files && quarto render chapters/<ch>.qmd`. Knitr does not replay side effects, so a partially cached chapter can fail (e.g. a temp dir created in a cached chunk).
 - Local renders need a UTF-8 locale (`_environment.local` sets `LANG`); `_common.R` also forces one.
 - `cache.extra` is the pinned SHA, so a pin bump invalidates all caches. CI renders without a cache.
-- Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy to `book_tempdir()` first. (`ferx_model_to_frem()` needs explicit `output_model`/`output_data` at the pinned build for the same reason.)
+- Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy to `book_tempdir()` first. For the same reason, give `ferx_model_to_frem()` an `output_dir` under `book_tempdir()`.
 - A single-chapter render warns about cross-references to other chapters; a full `quarto render` resolves them.
 
 ## Bumping the pin
