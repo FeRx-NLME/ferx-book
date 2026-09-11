@@ -458,6 +458,9 @@ Per-chapter loop:
 ### Step 4: Part III, by category, one PR per chapter
 
 - [ ] 4.1 A: 14 structural (WIP 11), 15 absorption (WIP 10), 16 variability (WIP 09 + 13)
+  - Done: ch14 (95bd795 + e2e9011: `[scaling]` section `#sec-scaling`, `[derived]`
+    states `#sec-derived-states`, ch12 pointer) and ch15 (a31fa16). The owner notes
+    below are resolved in e2e9011.
   - Owner notes (2026-09-11), to do after ch15, before ch16:
     - **Scaling**: check whether `[scaling]` needs its own section (now a ch14
       subsection). Cover every form the ferx-core scaling page lists, each with a run.
@@ -522,6 +525,11 @@ Per-chapter loop:
   - Also affects `ferx_xpose` patab and `ferx_cov_screen` on ODE models.
   - ch15 shows the bug in a callout and uses `[output]` as the workaround. Remove
     that callout after the pin bump.
+- ferx-core docs (found in 4.1, ch14), minor: derived.qmd says named state access
+  in `integral()` is not available for analytical models (use `compartments[i]`).
+  At the pin, `integral(central, from=0, to=24, step=0.5)` on analytical `warfarin`
+  works and equals the `compartments[1]` result (232.4958). The book uses
+  `compartments[i]` as documented.
 - ferx-core docs wording (found in 4.1, ch15), minor: the `flip_flop` heads-up
   (`W_TRANSIT_FLIP_FLOP` / `W_IG_FLIP_FLOP`, `api/validation.rs`) is a fit-start check
   on the **starting** typical values, by design; its message says "check the …
