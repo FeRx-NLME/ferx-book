@@ -85,6 +85,11 @@ walk(rd)
 features <- read.csv("tools/features.csv", stringsAsFactors = FALSE)
 keys <- features$name[features$kind == "setting"]
 out <- do.call(rbind, lapply(keys, function(k) {
+  if (!is.null(rows[[k]]) && nzchar(rows[[k]]$description)) return(rows[[k]])
+  if (!is.null(rows[[k]]) && !is.null(rd_items[[k]])) {
+    r <- rows[[k]]; r$description <- clean_desc(rd_items[[k]]); r$source <- "ferx-core fit-options + ?ferx_fit"
+    return(r)
+  }
   if (!is.null(rows[[k]])) return(rows[[k]])
   if (!is.null(rd_items[[k]])) {
     return(data.frame(key = k, values = "", default = "", description = clean_desc(rd_items[[k]]),

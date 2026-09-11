@@ -14,26 +14,231 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 book_stage_banner("EVALUATE")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+@sec-model-selection selected the covariate model `two_cpt_oral_cov`. Before reporting its estimates or simulating from it, quantify how precisely they are known. ferx offers four routes:
+
+- the **covariance step**: asymptotic standard errors from the curvature of the objective function;
+- **SIR**: sampling importance resampling around that asymptotic distribution;
+- the **bootstrap**: refitting the model to resampled datasets;
+- **Bayesian estimation**: posterior intervals.
+
+This chapter applies each to the covariate model and compares the intervals.
 
 ## The data
 
-## Minimal runnable call
+```{r}
+#| label: fit
+cov <- ferx_example("two_cpt_oral_cov")
+fit <- ferx_fit(cov$model, cov$data, verbose = FALSE)
+```
 
-## Reading the result
+## Minimal runnable call: the covariance step
 
-## Options that matter
+The covariance step runs by default (`covariance = TRUE` in this model file). Its results are the `se`, `rse_pct` and 95% interval columns of `fit$estimates`:
 
-## Variants
+```{r}
+#| label: asymptotic
+fit$covariance_status
+fit$estimates[, c("estimate", "se", "rse_pct", "lower_95", "upper_95")]
+```
+
+The full variance-covariance matrix of the estimates is `fit$cov_matrix`, and its correlation form is `fit$cor_matrix` (@sec-diagnostics).
+
+### Choosing the covariance estimator
+
+```{r}
+#| label: tbl-settings-covariance
+book_settings_table(c("covariance_method", "covariance_fallback", "analytic_cov_hessian",
+                      "cov_inner_tol", "fd_hessian_step"))
+```
+
+`fd_hessian_step` is also a dedicated `ferx_fit()` argument. `ferx_covariance()` runs the covariance step on an existing fit: to add standard errors to a fit made without them, or to try another estimator without re-estimating. It takes the fitted model as `fit`, re-reads the model and data files, and stops if they changed since the fit:
+
+```{r}
+#| label: covariance-methods
+fit_nocov <- ferx_fit(cov$model, cov$data, covariance = FALSE, verbose = FALSE)
+se_by_method <- sapply(c(r = "r", s = "s", rsr = "rsr"), function(m) {
+  ferx_covariance(fit_nocov, covariance_method = m)$se_theta
+})
+round(se_by_method, 4)
+```
+
+`"r"` (inverse Hessian, the default) reproduces the inline standard errors, `"s"` is the inverse cross-product and `"rsr"` the sandwich estimator. `ferx_covariance()` also takes `mu_referencing` (match the original fit) and `verbose`.
+
+## SIR
+
+SIR draws parameter vectors from the asymptotic distribution, weights them by how well they fit the data, and resamples according to the weights. The resampled vectors give intervals that need not be symmetric. Run it inline with `ferx_fit(sir = TRUE)`, or afterwards with `ferx_sir()`, which takes the fitted model as `fit`:
+
+```{r}
+#| label: sir
+fit_sir <- ferx_sir(fit, sir_samples = 1000, sir_resamples = 250)
+fit_sir$sir_ess
+fit_sir$sir_ci_theta
+```
+
+`sir_ci_omega` and `sir_ci_sigma` hold the intervals for the variances and residual error. `sir_ess` is the effective sample size of the resampled set; the closer it is to `sir_resamples`, the better the proposal matches the data. `sir_keep_samples = TRUE` keeps the resampled vectors on the fit, which `ferx_simulate_with_uncertainty()` needs (@sec-simulation). `verbose = TRUE` prints progress.
+
+```{r}
+#| label: tbl-settings-sir
+book_settings_table(c("sir_samples", "sir_resamples", "sir_seed", "sir_keep_samples", "sir_df"))
+```
+
+The effective sample size depends strongly on the random seed:
+
+```{r}
+#| label: sir-seeds
+sapply(c(seed_1 = 1, seed_2 = 2), function(s) {
+  ferx_sir(fit, sir_samples = 1000, sir_resamples = 250, sir_seed = s)$sir_ess
+})
+```
+
+Check `sir_ess` on every run. When it is low, increase `sir_samples` and confirm that the intervals are stable across seeds before using them.
+
+## Bootstrap
+
+`ferx_bootstrap()` resamples whole subjects with replacement, refits the model to each replicate and summarises the spread of the estimates. It needs the model and data rather than a fit, because every replicate is a new fit. With a `directory` it writes its tables to disk, so a run can be re-summarised or resumed later:
+
+```{r}
+#| label: bootstrap
+boot_dir <- book_tempdir("bootstrap")
+boot <- ferx_bootstrap(cov$model, cov$data, samples = 100, seed = 1, directory = boot_dir)
+boot
+```
+
+`print()` on the `ferx_bootstrap` result shows the run summary and the `boot$parameters` table: original estimate, bootstrap mean, bias, standard error, median, and the percentile and normal-approximation intervals. `boot$raw` has one row per fitted replicate, and `boot$diagnostics` records the counts and exclusions:
+
+```{r}
+#| label: bootstrap-diagnostics
+boot$diagnostics
+```
+
+By default, replicates whose minimization terminated or whose estimate lies on a boundary are fitted but excluded from the statistics. `plot()` on a `ferx_bootstrap` object draws one histogram per parameter, with the original estimate and the interval:
+
+```{r}
+#| label: fig-bootstrap
+#| fig-cap: "Bootstrap distributions of the covariate exponents."
+#| fig-width: 8
+#| fig-height: 3.5
+plot(boot, parameters = c("THETA_WT", "THETA_CRCL"))
+```
+
+`ferx_bootstrap_summarize()` recomputes the statistics from the run directory under different exclusion criteria or a different `ci` level, without refitting:
+
+```{r}
+#| label: bootstrap-summarize
+relaxed <- ferx_bootstrap_summarize(boot_dir, skip_estimate_near_boundary = FALSE, ci = 90)
+relaxed$n_included
+head(relaxed$parameters[, c("parameter", "ci_lower", "ci_upper")], 7)
+```
+
+`ferx_bootstrap()` arguments:
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `model`, `data` | — | Model and dataset (`data = NULL` uses `[data]`) |
+| `samples` | 200 | Number of bootstrap datasets |
+| `seed` | 1 | Master seed; results do not depend on `threads` |
+| `threads` | `NULL` | Replicates fitted concurrently |
+| `stratify_on` | `NULL` | Column defining resampling strata |
+| `sample_size` | `NULL` | Subjects per replicate (a named vector gives counts per stratum) |
+| `update_inits` | `TRUE` | Start each replicate from the original fit's estimates |
+| `run_base_model` | `TRUE` | Fit the original dataset first (needed for bias and `update_inits`) |
+| `keep_covariance` | `FALSE` | Run the covariance step per replicate |
+| `dofv` | `FALSE` | Evaluate each replicate's estimates on the original data (about doubles the run time) |
+| `skip_minimization_terminated` | `TRUE` | Exclude replicates whose minimization terminated |
+| `skip_estimate_near_boundary` | `TRUE` | Exclude replicates with an estimate on a boundary |
+| `skip_covariance_step_terminated`, `skip_with_covstep_warnings` | `FALSE` | Exclude on the per-replicate covariance step (needs `keep_covariance = TRUE`) |
+| `ci` | 95 | Confidence level in percent |
+| `directory` | `NULL` | Where to write the run; `NULL` keeps it in memory |
+| `resume`, `retry_failed` | `FALSE` | Continue an interrupted run in `directory`, optionally refitting failed replicates |
+| `progress`, `verbose` | — | Progress bar (interactive sessions) and a run header |
+
+`ferx_bootstrap_summarize()` takes the run `directory` plus the four `skip_*` filters and `ci`.
+
+## Bayesian estimation
+
+`method = "bayes"` returns posterior summaries instead of a covariance step (@sec-estimation-methods). Posterior intervals are only meaningful when the chains have converged:
+
+```{r}
+#| label: bayes
+fit_bayes <- ferx_fit(cov$model, cov$data, method = "bayes", verbose = FALSE)
+c(converged = fit_bayes$converged, max_rhat = fit_bayes$bayes$max_rhat)
+```
+
+On this model the default run has not converged (R-hat far above 1.01), so its intervals are not used below.
+
+## Comparing the intervals
+
+```{r}
+#| label: fig-intervals
+#| fig-cap: "95% intervals for the fixed effects from the covariance step, SIR and the bootstrap (percentile)."
+#| fig-height: 5
+thetas <- names(fit$theta)
+intervals <- bind_rows(
+  data.frame(method = "covariance step", parameter = thetas,
+             lower = fit$estimates[thetas, "lower_95"], upper = fit$estimates[thetas, "upper_95"]),
+  data.frame(method = "SIR", parameter = thetas,
+             lower = fit_sir$sir_ci_theta[thetas, "lower"], upper = fit_sir$sir_ci_theta[thetas, "upper"]),
+  data.frame(method = "bootstrap", parameter = thetas,
+             lower = boot$parameters$ci_lower[match(thetas, boot$parameters$parameter)],
+             upper = boot$parameters$ci_upper[match(thetas, boot$parameters$parameter)])
+) |>
+  left_join(data.frame(parameter = thetas, estimate = fit$theta), by = "parameter") |>
+  mutate(lower_rel = lower / estimate, upper_rel = upper / estimate)
+
+ggplot(intervals, aes(y = method, xmin = lower_rel, xmax = upper_rel, colour = method)) +
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  geom_errorbarh(height = 0.3) +
+  facet_wrap(~parameter, ncol = 1, strip.position = "left") +
+  labs(x = "Interval relative to the estimate", y = NULL) +
+  labs(colour = NULL) +
+  theme(legend.position = "bottom", strip.text.y.left = element_text(angle = 0),
+        axis.text.y = element_blank())
+```
+
+The structural parameters are precisely estimated by every route. The covariate exponents `THETA_WT` and `THETA_CRCL` have wide intervals, and the three routes differ in how wide. For a small dataset like this one, report the method you used and, where it matters, check that the conclusions hold under a second method.
 
 ## Pitfalls
 
+**An unreliable covariance step.** A fit can report standard errors that should not be trusted. The fit from NCA-based starting values in @sec-first-fit is an example: its covariance matrix had to be regularised.
+
+```{r}
+#| label: regularized
+base <- ferx_example("two_cpt_oral_base")
+fit_bad <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, verbose = FALSE)
+w_bad <- ferx_get_warnings(fit_bad, as_df = TRUE)
+w_bad[w_bad$category %in% c("covariance_regularized", "condition_number"), c("severity", "category")]
+```
+
+In such a case, fix the model before quantifying uncertainty. `covariance_fallback = "sir"` runs SIR automatically when the covariance step fails.
+
+**Other points**:
+
+- `ferx_sir()` and `ferx_covariance()` check that the model and data files are unchanged since the fit, and stop otherwise.
+- A bootstrap is `samples` complete fits. Set `directory` for long runs, so an interrupted run can be resumed and re-summarised.
+- Bayesian intervals require converged chains. Check `fit$bayes$rhat` and the effective sample sizes.
+
+### Warnings you may see here
+
+See [convergence and covariance warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-convergence) and [resampling warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-methods).
+
+- `covariance_step` (info): a note on the covariance step, for example its cost.
+- `covariance_failed` (critical): the covariance step failed and there are no standard errors. Use `covariance_fallback = "sir"` or refit with different starting values.
+- `covariance_regularized` (warning): the step succeeded but was regularised, so the standard errors may be optimistic. Inspect the eigenvalues or use SIR or bootstrap intervals.
+- `sir` (warning): SIR failed or was requested without a covariance matrix, or its proposal did not cover some directions (named in the message).
+
 ## Summary
 
-## Reference
+- The covariance step gives asymptotic standard errors in `fit$estimates`. `ferx_covariance()` reruns it with another estimator.
+- `ferx_sir()` (or `sir = TRUE`) gives resampling intervals. Check `sir_ess`.
+- `ferx_bootstrap()` refits resampled datasets. `ferx_bootstrap_summarize()` and `plot()` work on its results.
+- Compare routes for poorly determined parameters such as covariate effects.
 
+Next: @sec-simulation simulates scenarios with the final model, including parameter uncertainty.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_covariance`, `?ferx_sir`, `?ferx_bootstrap`, `?ferx_bootstrap_summarize`, `?plot.ferx_bootstrap`
+- ferx-core: [covariance and standard errors](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html#covariance-and-standard-errors), [SIR](https://ferx-nlme.github.io/ferx-core/estimation/sir.html), [bootstrap](https://ferx-nlme.github.io/ferx-core/tools/bootstrap.html)
+:::
