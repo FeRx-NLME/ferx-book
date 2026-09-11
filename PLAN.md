@@ -1,7 +1,7 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **proposed, not started**. Revision 2, 2026-09-11, after scrutiny round 1
-(§1b). Supersedes `PLAN-v1-archive.md`.
+Status: **in progress: Step 0** (started 2026-09-11). Revision 2, after scrutiny
+round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
 runnable book on **using ferx-r in an R modeling analysis**. Technical detail (DSL
@@ -55,9 +55,14 @@ maturity callouts). What went wrong:
    for plots and tables is fine. Nothing ferx-side is invented.
 3. **Every chunk runs.**
    - `eval: false` needs `#| eval-reason:`.
-   - It is allowed only for `ferx_model_edit()` (opens an editor), `ferx_xpose()`
-     (xpose not a dependency, D2), or an example that fails the smoke test (reason =
-     the recorded error).
+   - It is allowed only for:
+     - `ferx_model_edit()` (opens an editor);
+     - `ferx_xpose()` (xpose not a dependency, D2);
+     - interactive-only job handling: `ferx_collect()`, `ferx_stop()`,
+       `print`/`plot`/`$` on `ferx_job`. In knitr, `ferx_fit_async()` falls back to
+       a synchronous fit (verified 0.6), so no job handle exists. Show the fallback
+       executed; the job calls get the eval-reason;
+     - an example that fails the smoke test (reason = the recorded error).
 4. **No hand-written output.** Prose numbers use inline R. Tables of options,
    columns and slots are generated from live objects where possible (`names(fit)`,
    `names(sim)`, `formals()`).
@@ -117,15 +122,25 @@ track engine main, ahead of the pin.
 
 | Available (pinned ferx-r) | Not available from R: mention + pointer |
 |---|---|
-| methods foce, focei, laplace (+`n_agq`), saem, gn, gn_hybrid, imp, impmap, bayes; chains | `vi` (verify, 0.4) |
+| methods foce, focei, laplace (+`n_agq`), saem, gn, gn_hybrid, imp, impmap, bayes; chains | `vi`: **verified not available**. R's `ferx_fit()` method whitelist rejects it, even though `vi_*` settings keys parse |
 | covsearch, modelsearch, ruvsearch, search config/space/coverage/results | iivsearch, iovsearch, amd, globalsearch (ferx-core CLI) |
-| covariance step, SIR, bootstrap, bayes posterior, `ferx_simulate_with_uncertainty` | — |
+| covariance step, SIR, bootstrap (**verified seed-deterministic**; only `seconds`/timing and the printed directory differ), bayes posterior, `ferx_simulate_with_uncertainty` | — |
 | `ferx_simulate_adaptive` + `[adaptive_dosing]` | MAP-Bayesian dose individualisation (doesn't exist) |
-| TTE (exp/Weibull/Gompertz/competing risks), joint PK-TTE, `ferx_predict_survival`, binary | repeated TTE (verify, 0.4); `[markov_model]`/CTMM (feature not built) |
+| TTE (exp/Weibull/Gompertz/competing risks), joint PK-TTE, `ferx_predict_survival`, binary | `[markov_model]`/CTMM (feature not built) |
 | built-in absorption inputs, per-route lag, analytic transit/IG | — |
-| SDE, `[covariate_nn]` (experimental) | `[dynamics_nn]` (design only) |
+| SDE, `[covariate_nn]` (**verified**: warfarin_dcm fits, 32 s) | `[dynamics_nn]` (design only) |
 | compartment-free models, weighted kappa | `mbma_naproxen` (ferx-core only) |
-| FREM (`ferx_model_to_frem`) | `[covariate_model]`, mixture (verify at pin, 0.4) |
+| FREM (`ferx_model_to_frem`) | — |
+| **Fits from R but no bundled ferx-r example** (verified 0.6 with ferx-core pin files): `[covariate_model]` (two_cpt_oral_covmodel, 0.7 s), repeated TTE (rtte_exponential, 0.5 s), fixed-rate infusions (dose_rate, one_cpt_infusion) | Can't be run in the book without bundling (rule 2) → **D4** |
+| — | `[mixture]`, `RATE = -1/-2` modelled rate/duration: no example anywhere (ferx-core docs only) → mention + link |
+
+**Other verified facts (0.6):**
+- CWRES at the pin uses the new definition (ferx-core CHANGELOG Unreleased #1182).
+- A warfarin `ferx_fit()` result has 108 slots (`tools/features.csv`, kind
+  `fit_slot`).
+- `ferx_fit(verbose = NULL)` is the default. Chapters pass `verbose = FALSE`
+  unless showing the optimizer log; check the Rd for what `NULL` resolves to
+  before describing it.
 
 ---
 
@@ -251,20 +266,20 @@ CI and on `tools/audit.R`. Don't start the next step before the gate passes.
 
 ### Step 0: Baseline, pin, guardrails (no chapter writing)
 
-- [ ] **0.1 Branch.**
+- [x] **0.1 Branch.** (snapshot d7c05bf; plan 36194c0)
   - Commit WIP on `restructure/workflow-tutorial` as a reference snapshot (exclude
     `.DS_Store`, `*.knit.md`).
   - Create `book/v2-workflow` from `main`; add PLAN files.
-- [ ] **0.2 Pin locally.**
+- [x] **0.2 Pin locally.** (built from git archive; cargo used ferx-core #86948249; 50 exports, 22 S3, 66 examples)
   - `git archive` ferx-r `846aa4b` → scratch → `R CMD INSTALL`.
   - Confirm the engine SHA = `8694824` from the build's Cargo.lock.
   - Confirm 50 exports / 66 examples.
   - Write `_variables.yml` (`ferx_r_sha`, `ferx_core_sha`, version).
-- [ ] **0.3 Pin CI.**
+- [x] **0.3 Pin CI.** (71dba43; audit step added before render)
   - `render.yml`: `FeRx-NLME/ferx-r@846aa4b`; add gt + survival; drop vpc,
     `FERX_NO_AUTODIFF`, the dead `_freeze` step.
   - Add a `pull_request` trigger for `book/v2-workflow`.
-- [ ] **0.4 Hygiene.**
+- [x] **0.4 Hygiene.**
   - Delete `chapters/*_cache`, `*_files`, `_freeze/`, `_book/`, `*.knit.md`,
     `.DS_Store`, empty `data/`.
   - `.gitignore` additions.
@@ -274,18 +289,23 @@ CI and on `tools/audit.R`. Don't start the next step before the gate passes.
   - Output: the render-time budget and the list of eval-reason candidates.
   - Also time the thread: base fit, covsearch, bootstrap (small `samples`),
     modelsearch, ruvsearch.
-- [ ] **0.6 Verify open items**, then update §3:
+- [x] **0.6 Verify open items** (results in §3; tools/verify-availability.R), then update §3:
   - `vi` from R; `[covariate_model]` and mixture at the pin; RTTE from R
   - RATE −1/−2; CWRES definition
   - determinism of bootstrap/search with fixed seed and threads
   - whether `ferx_stop` can be demoed reliably
-- [ ] **0.7 Inventory.** `tools/inventory.R` → `tools/features.csv`; check the row
+- [x] **0.7 Inventory.** (530 rows + 108 fit slots) `tools/inventory.R` → `tools/features.csv`; check the row
   counts are plausible.
-- [ ] **0.8 Audit.** `tools/audit.R` checks:
+- [x] **0.8 Audit.** `tools/audit.R` checks:
   - (a) exports exist; (b) example names exist; (c) coverage per §6;
   - (d) eval-reason present; (e) no `#>` outside executed chunks;
-  - (f) stale links; (g) banned other-software names; (h) no cross-chapter objects
-    (heuristic: objects used before defined per chapter).
+  - (f) stale links; (g) banned other-software names; plus pin consistency
+    (`_variables.yml` = `render.yml` = installed `RemoteSha`).
+  - (h) cross-chapter objects: **dropped**. Each chapter renders in its own R
+    session, so a foreign object already fails the render, and CI catches it.
+  - Home assignment: `tools/assign-homes.R` seeds `tools/homes.csv` (638 rows,
+    0 unassigned) from the §5 rules. Hand edits survive re-seeding.
+  - Verified: the audit fails on the old `main` chapters as expected.
 
 **Gate 0:** pinned install; CI pinned; smoke CSV; inventory; audit runs (all
 coverage "unassigned").
@@ -380,6 +400,11 @@ Per-chapter loop:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- ferx-r (found in 0.5): the `ss_absorption` / `infusion_absorption` model headers
+  and `ex_*.R` say "a fit works identically (raise the omega…)". As shipped,
+  `ferx_fit()` errors (`omega ETA_CL ~ 0.0` not FIX). They are prediction examples;
+  the book runs them with `ferx_predict()`. Their scripts also frame DV as
+  another engine's prediction; the book must not repeat that (rule 8).
 - Any example failing the smoke test → ferx-r issue.
 
 ### Maintenance: pin bump

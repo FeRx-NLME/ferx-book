@@ -21,11 +21,21 @@ if (!is.null(only)) names_all <- intersect(names_all, only)
 
 run_one <- function(name) {
   suppressMessages(library(ferx))
+  # Prediction-only examples: a single typical-value subject with omega = 0
+  # (not FIX); their bundled scripts (inst/examples/ex_<name>.R) use
+  # ferx_predict(), and ferx_fit() rejects the unfixed zero omega.
+  predict_only <- c("ss_absorption", "infusion_absorption")
   ex <- ferx_example(name)
   model_txt <- paste(readLines(ex$model, warn = FALSE), collapse = "\n")
   adaptive <- grepl("\\[adaptive_dosing\\]", model_txt)
   t0 <- Sys.time()
-  if (adaptive) {
+  if (name %in% predict_only) {
+    pred <- ferx_predict(ex$model, ex$data)
+    stopifnot(nrow(pred) > 0, "PRED" %in% names(pred))
+    list(kind = "predict", converged = NA, ofv = NA_real_, method = NA_character_,
+         n_warnings = NA_integer_,
+         seconds = as.numeric(difftime(Sys.time(), t0, units = "secs")))
+  } else if (adaptive) {
     res <- ferx_simulate_adaptive(ex$model, ex$data, n_sim = 2L, seed = 1L)
     list(kind = "adaptive", converged = NA, ofv = NA_real_, method = NA_character_,
          n_warnings = NA_integer_,

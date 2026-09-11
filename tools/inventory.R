@@ -89,6 +89,11 @@ for (r in gsub('"', "", regmatches(roles_txt, gregexpr('"[a-z0-9_]+"', roles_txt
   add("data_column", toupper(r))
 }
 
+# ---- fit object slots: names() of a real fit on the pinned build -------------------
+ex <- ferx_example("warfarin")
+fit <- suppressMessages(ferx_fit(ex$model, ex$data, verbose = FALSE))
+for (s in names(fit)) add("fit_slot", s, parent = "ferx_fit")
+
 features <- do.call(rbind, rows)
 features <- features[!duplicated(features[c("kind", "name", "parent")]), ]
 write.csv(features, "tools/features.csv", row.names = FALSE)
