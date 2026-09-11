@@ -485,8 +485,8 @@ Per-chapter loop:
 ### Step 6: Finalise
 
 - [ ] 6.1 Full CI render (record time) and local clean render.
-- [ ] 6.2 Link check (ferx-core URLs 200).
-- [ ] 6.3 Rewrite `CLAUDE.md`:
+- [x] 6.2 Link check: all 87 external URLs return 200 and every `#anchor` exists (GitHub README anchors use the `user-content-` prefix). curl-based; Python urllib fails locally on SSL.
+- [x] 6.3 Rewrite `CLAUDE.md` (also: CI runs `tools/audit.R --strict`):
   - chapter table and the pin procedure
   - inventory + smoke + audit procedure
   - the ferx-only rule
