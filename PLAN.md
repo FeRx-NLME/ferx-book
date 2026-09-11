@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Step 3 in progress** (Gates 0–2 passed, CI green on PR #16; ch03–ch06 committed on stacked local branches, not yet pushed) (started 2026-09-11). Revision 2, after scrutiny
+Status: **Step 3 done** (PR #16 Steps 0–2 CI green; PR #17 ch03–09 CI green; PR #18 ch10–13 open). **Next: Step 4 (Part III scenarios)**. Full clean local render 10m54s; coverage 415/672 (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -452,6 +452,8 @@ Per-chapter loop:
 | 13 reproducibility | WIP 20 | `.fitrx` paths |
 
 **Gate 3:** Part II coverage 100% for its home rows.
+
+**Gate 3 status (2026-09-11):** every Part II chapter 0 uncovered rows; full clean local render green (10m54s); PR #17 CI green; PR #18 CI pending.
 
 ### Step 4: Part III, by category, one PR per chapter
 
