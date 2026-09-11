@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Steps 0–5 done** (PRs #16–#20 open, stacked; #16–#19 CI green). Part II + Part III + reference chapter written; audit --strict 672/672 covered. **Next: Step 6 (finalise)** (started 2026-09-11). Revision 2, after scrutiny
+Status: **Steps 0–5 done, Step 6.2–6.3 done** (PRs #16–#21 open, stacked into book/v2-workflow; owner merges). Part II + Part III + reference chapter written; audit --strict 672/672 covered. **Next: Step 6 (finalise)** (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -484,7 +484,7 @@ Per-chapter loop:
 
 ### Step 6: Finalise
 
-- [ ] 6.1 Full CI render (record time) and local clean render.
+- [x] 6.1 Full CI render and local clean render (2026-09-11): CI on #21 (all 25 chapters, audit --strict) 28m44s; #20 23m50s; #19 20m. Local clean render from empty caches 36m (2159 s), exit 0, no Quarto warnings or unresolved cross-references.
 - [x] 6.2 Link check: all 87 external URLs return 200 and every `#anchor` exists (GitHub README anchors use the `user-content-` prefix). curl-based; Python urllib fails locally on SSL.
 - [x] 6.3 Rewrite `CLAUDE.md` (also: CI runs `tools/audit.R --strict`):
   - chapter table and the pin procedure
