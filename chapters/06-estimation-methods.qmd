@@ -14,26 +14,388 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 book_stage_banner("ESTIMATE")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+@sec-first-fit fitted the base model with the method from its model file (FOCEI). ferx offers several estimation methods, and every method and optimizer can be tuned. This chapter shows how to choose a method, chain methods, follow what the optimizer does, and control the fit through `settings`. It ends with multi-start and background fits.
 
 ## The data
 
+The base model of the workflow thread, plus the smaller warfarin example for the method comparison:
+
+```{r}
+#| label: examples
+base <- ferx_example("two_cpt_oral_base")
+warf <- ferx_example("warfarin")
+```
+
+## Estimation methods
+
+`method` selects the estimator:
+
+| `method` | Estimator | Notes |
+|---|---|---|
+| `"foce"` | First-order conditional estimation | |
+| `"focei"` | FOCE with interaction | The default when neither the call nor the model file sets a method |
+| `"laplace"` | Laplace approximation with the exact Hessian | Reports a different OFV than `"focei"`. With `n_agq > 1` it becomes adaptive Gauss-Hermite quadrature |
+| `"gn"`, `"gn_hybrid"` | Gauss-Newton; the hybrid finishes with a FOCEI polish step | |
+| `"saem"` | Stochastic approximation EM | Stochastic: set `seed` for reproducibility |
+| `"imp"` | Importance-sampling Monte Carlo EM | With `imp_eval_only = TRUE` it only evaluates −2 log L and must be the last chain stage |
+| `"impmap"` | Importance sampling assisted by the mode a posteriori | Requires mu-referencing; no IOV yet |
+| `"bayes"` | Full MCMC | Posterior summaries in `fit$bayes` instead of a covariance step |
+
+The ferx-core [estimation methods](https://ferx-nlme.github.io/ferx-core/estimation/index.html) pages describe each algorithm. The same warfarin model fitted with each method:
+
+```{r}
+#| label: tbl-methods
+#| tbl-cap: "Warfarin fitted with every estimation method."
+methods <- c("foce", "focei", "laplace", "gn", "gn_hybrid", "saem", "imp", "impmap", "bayes")
+method_fits <- lapply(methods, function(m) {
+  start <- Sys.time()
+  # suppress the R warnings that report overriding the model file's method
+  f <- suppressWarnings(ferx_fit(warf$model, warf$data, method = m, verbose = FALSE))
+  data.frame(method = m, converged = f$converged, ofv = round(f$ofv, 2),
+             TVCL = signif(f$theta[["TVCL"]], 4),
+             seconds = round(as.numeric(difftime(Sys.time(), start, units = "secs")), 1))
+})
+do.call(rbind, method_fits)
+```
+
+The estimates are close, but **OFVs are not comparable across methods**. Each method computes the objective function under its own approximation. Compare OFVs only between fits made with the same method, as in @sec-model-selection.
+
 ## Minimal runnable call
+
+Pass `method` to override the model file. A character vector runs a **chain**: each stage starts from the previous stage's estimates, and only the last stage produces the covariance step and diagnostics.
+
+```{r}
+#| label: chain
+fit_chain <- ferx_fit(base$model, base$data, method = c("saem", "focei"), verbose = FALSE)
+fit_chain$method_chain
+c(converged = fit_chain$converged, ofv = fit_chain$ofv)
+```
 
 ## Reading the result
 
+### Following the optimizer
+
+With `optimizer_trace = TRUE` ferx records one row per objective evaluation. `ferx_trace()` returns it as a data frame:
+
+```{r}
+#| label: trace
+fit <- ferx_fit(base$model, base$data, optimizer_trace = TRUE, verbose = FALSE)
+trace <- ferx_trace(fit)
+dim(trace)
+head(trace[, c("iter", "method", "ofv", "wall_ms", "grad_norm", "step_norm", "optimizer")])
+```
+
+`plot()` on a fit draws the trace. By default (`monotonic = TRUE`) the OFV panel shows the running minimum for FOCE/FOCEI, because their traces include rejected line-search trial points. `log_ofv = TRUE` shifts the OFV by its minimum; despite the name, it is not a log transform:
+
+```{r}
+#| label: fig-trace
+#| fig-cap: "Optimizer trace of the base model fit."
+plot(fit)
+```
+
+### Run logs
+
+`ferx_runlog()` writes a plain-text record of the run: model file, data summary, estimates with initial values, settings, OFV, covariance diagnostics, shrinkage and runtime. With `verbose = FALSE` it returns the text instead of printing it, which is convenient for saving next to the results:
+
+```{r}
+#| label: runlog
+log_text <- ferx_runlog(fit, verbose = FALSE)
+log_lines <- strsplit(log_text, "\n")[[1]]
+start_line <- grep("PARAMETER ESTIMATES", log_lines)
+cat(log_lines[(start_line - 1):(start_line + 14)], sep = "\n")
+```
+
+With a trace, `show_iterations = TRUE` (default) adds an iteration history, shortened to its first and last 10 rows for long runs. `gradient_tol` sets the relative-gradient threshold used in its convergence checks. `ferx_runlog_iters()` prints the full iteration history:
+
+```{r}
+#| label: runlog-iters
+iters <- ferx_runlog_iters(fit, verbose = FALSE)
+cat(head(strsplit(iters, "\n")[[1]], 10), sep = "\n")
+```
+
 ## Options that matter
 
-## Variants
+### Arguments of `ferx_fit()`
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `method` | `NULL` | Estimation method or chain (above) |
+| `threads` | `NULL` | Worker threads for the per-subject loops; `NULL` uses available cores minus one, at most 8 |
+| `gradient` | `NULL` | Inner-loop gradient: `"auto"` (analytic where available) or `"fd"` (finite differences); `NULL` uses the model file |
+| `optimizer_trace` | `FALSE` | Record the optimizer trace |
+| `settings` | `NULL` | Named list of engine settings (tables below); a key that duplicates a dedicated argument is an error |
+
+The base model's file requests finite differences (`gradient = fd`). With `"auto"` the analytic gradient is used and the fit takes fewer objective evaluations. Pinning `threads` changes speed, not results:
+
+```{r}
+#| label: gradient-threads
+fit_auto <- ferx_fit(base$model, base$data, gradient = "auto", verbose = FALSE)
+fit_1thread <- ferx_fit(base$model, base$data, threads = 1, verbose = FALSE)
+data.frame(
+  fit = c("model file (fd)", "gradient = auto", "threads = 1"),
+  gradient_used = c(fit$gradient_used, fit_auto$gradient_used, fit_1thread$gradient_used),
+  evaluations = c(fit$n_iterations, fit_auto$n_iterations, fit_1thread$n_iterations),
+  threads = c(fit$n_threads_used, fit_auto$n_threads_used, fit_1thread$n_threads_used),
+  ofv = c(fit$ofv, fit_auto$ofv, fit_1thread$ofv)
+)
+```
+
+### Helper functions
+
+| Function | Arguments |
+|---|---|
+| `ferx_trace()` | `fit` (a fit, or a path to a trace CSV) |
+| `ferx_runlog()` | `fit`, `gradient_tol` (default 0.1), `show_iterations` (default `TRUE`), `verbose` (`FALSE` returns the text) |
+| `ferx_runlog_iters()` | `fit`, `verbose` |
+| `ferx_conddist()` | `fit` (a SAEM fit with `conddist = TRUE`) |
+| `ferx_fit_async()` | `model`, `data`, further `ferx_fit()` arguments, `tail_n`, `poll_interval` |
+| `ferx_collect()` | `handle` (a `ferx_job`), `verbose` |
+| `ferx_stop()` | `handle` |
+
+### Settings
+
+Everything else is set through `settings = list(key = value)`, or with the same key in the model's `[fit_options]`. The tables below are generated from the ferx-core [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) documentation and `?ferx_fit` for the pinned build.
+
+**Run control**
+
+```{r}
+#| label: tbl-settings-run
+book_settings_table(c("maxiter", "optimizer_trace", "checkpoint", "checkpoint_interval_secs"))
+```
+
+**Outer optimizer**
+
+```{r}
+#| label: tbl-settings-outer
+book_settings_table(c("optimizer", "outer_xtol", "outer_ftol", "stagnation_guard",
+                      "reconverge_gradient_interval", "steihaug_max_iters",
+                      "global_search", "global_maxeval"))
+```
+
+**Inner loop (individual random effects)**
+
+```{r}
+#| label: tbl-settings-inner
+book_settings_table(c("inner_optimizer", "inner_maxiter", "inner_tol", "inner_restarts",
+                      "ebe_warm_start", "max_unconverged_frac", "min_obs_for_convergence_check"))
+```
+
+Choosing the outer `optimizer` on warfarin:
+
+```{r}
+#| label: tbl-optimizers
+optimizers <- c("bobyqa", "slsqp", "nlopt_lbfgs", "mma", "trust_region")
+do.call(rbind, lapply(optimizers, function(o) {
+  f <- ferx_fit(warf$model, warf$data, settings = list(optimizer = o), verbose = FALSE)
+  data.frame(optimizer = f$optimizer_label, converged = f$converged, ofv = round(f$ofv, 4),
+             evaluations = f$n_iterations)
+}))
+```
+
+The optimizers agree to within a small tolerance on this model. A clearly higher OFV for one optimizer would point to a convergence problem with it on your model. `global_search = TRUE` runs a global search before the local optimizer:
+
+```{r}
+#| label: global-search
+fit_global <- ferx_fit(warf$model, warf$data,
+                       settings = list(global_search = TRUE, global_maxeval = 500), verbose = FALSE)
+c(converged = fit_global$converged, ofv = fit_global$ofv)
+```
+
+### Multi-start
+
+`n_starts > 1` runs several fits from perturbed starting values and keeps the converged result with the lowest OFV. The bundled `mm_multistart` model (Michaelis-Menten elimination) sets `n_starts = 8` in its model file:
+
+```{r}
+#| label: tbl-settings-multistart
+book_settings_table(c("n_starts", "start_sigma", "multi_start_seed"))
+```
+
+```{r}
+#| label: multistart
+mm <- ferx_example("mm_multistart")
+ferx_model_get_section(mm$model, "fit_options")
+
+start <- Sys.time()
+fit_single <- ferx_fit(mm$model, mm$data, settings = list(n_starts = 1), verbose = FALSE)
+single_s <- as.numeric(difftime(Sys.time(), start, units = "secs"))
+start <- Sys.time()
+fit_multi <- ferx_fit(mm$model, mm$data, verbose = FALSE)
+multi_s <- as.numeric(difftime(Sys.time(), start, units = "secs"))
+
+data.frame(fit = c("single start", "8 starts"), ofv = c(fit_single$ofv, fit_multi$ofv),
+           seconds = round(c(single_s, multi_s), 1))
+ferx_get_warnings(fit_multi, as_df = TRUE)[, c("severity", "category", "message")]
+```
+
+On this build the single start already reaches the same OFV, so the extra starts only confirm it, and they cost time. The `multi_start` note reports which start won.
+
+### SAEM
+
+The bundled `warfarin_saem` model sets its SAEM options in the model file. With `conddist = TRUE`, SAEM also samples each subject's conditional distribution of the random effects after fitting. `ferx_conddist()` returns it:
+
+```{r}
+#| label: tbl-settings-saem
+book_settings_table(c("n_exploration", "n_convergence", "n_mh_steps", "n_leapfrog",
+                      "adapt_interval", "omega_burnin", "mstep_damping", "seed",
+                      "conddist", "conddist_nsamp", "conddist_burnin", "conddist_keep_samples"))
+```
+
+```{r}
+#| label: saem-conddist
+ws <- ferx_example("warfarin_saem")
+ferx_model_get_section(ws$model, "fit_options")
+fit_saem <- ferx_fit(ws$model, ws$data, settings = list(conddist = TRUE), verbose = FALSE)
+cond <- ferx_conddist(fit_saem)
+cond
+```
+
+`print()` on a `ferx_conddist` object shows the distribution-based shrinkage and the per-subject conditional mean, SD and mode. `fit$saem_n_subjects_hmc` reports how many subjects used HMC proposals (`n_leapfrog > 0`). It is `r if (is.null(fit_saem$saem_n_subjects_hmc) || is.na(fit_saem$saem_n_subjects_hmc)) "not set" else fit_saem$saem_n_subjects_hmc` here, because this model uses Metropolis-Hastings proposals.
+
+### Laplace and adaptive quadrature
+
+```{r}
+#| label: tbl-settings-agq
+book_settings_table(c("n_agq", "agq_eval_only"))
+```
+
+`n_agq` is the number of Gauss-Hermite nodes per random effect. The cost grows as `n_agq` to the power of the number of etas, so higher values suit models with few random effects. `agq_eval_only` uses quadrature only to evaluate the likelihood at a fitted point (see the ferx-core [AGQ page](https://ferx-nlme.github.io/ferx-core/estimation/agq.html)).
+
+```{r}
+#| label: laplace-agq
+fit_lap <- ferx_fit(warf$model, warf$data, method = "laplace", verbose = FALSE)
+fit_agq <- ferx_fit(warf$model, warf$data, method = "laplace", settings = list(n_agq = 3),
+                    verbose = FALSE)
+c(laplace = fit_lap$ofv, agq_3_nodes = fit_agq$ofv)
+```
+
+### Gauss-Newton
+
+```{r}
+#| label: tbl-settings-gn
+book_settings_table("gn_lambda")
+```
+
+### Importance sampling
+
+```{r}
+#| label: tbl-settings-imp
+book_settings_table(c("imp_samples", "imp_proposal_df", "imp_seed", "imp_low_ess_threshold",
+                      "imp_iterations", "imp_averaging", "imp_auto", "imp_defensive_alpha",
+                      "imp_eval_only"))
+```
+
+A common use of `imp` is to evaluate the marginal likelihood at a FOCEI solution: the final stage of a chain, with `imp_eval_only = TRUE`. The result is in `fit$importance_sampling`:
+
+```{r}
+#| label: imp-eval
+fit_imp <- ferx_fit(base$model, base$data, method = c("focei", "imp"),
+                    settings = list(imp_eval_only = TRUE, imp_seed = 1), verbose = FALSE)
+fit_imp$importance_sampling[c("minus2_log_likelihood", "mc_standard_error", "n_samples",
+                              "ess_min", "ess_median")]
+```
+
+`?ferx_fit` notes that plain `"imp"` re-centers its proposal from the previous iteration's samples and can be fragile on rich data. It recommends `"impmap"`, or a warm start such as `c("focei", "imp")`.
+
+```{r}
+#| label: tbl-settings-impmap
+book_settings_table(c("impmap_iterations", "impmap_samples", "impmap_proposal_df", "impmap_seed",
+                      "impmap_averaging", "impmap_low_ess_threshold", "impmap_trace",
+                      "impmap_mceta", "impmap_sobol", "impmap_auto", "iscale_min", "iscale_max"))
+```
+
+### Bayesian estimation
+
+```{r}
+#| label: tbl-settings-bayes
+book_settings_table(c("bayes_warmup", "bayes_iters", "bayes_chains", "bayes_thin", "bayes_seed"))
+```
+
+```{r}
+#| label: bayes
+fit_bayes <- ferx_fit(base$model, base$data, method = "bayes", verbose = FALSE)
+with(fit_bayes$bayes, data.frame(parameter = param_names, mean = mean, q025 = q025, q975 = q975,
+                                 rhat = rhat, ess_bulk = ess_bulk))
+fit_bayes$converged
+```
+
+`fit$bayes` holds the posterior mean, median and 2.5%/97.5% quantiles, split-R-hat, effective sample sizes and Monte Carlo standard errors per parameter. Here the largest R-hat is `r round(fit_bayes$bayes$max_rhat, 3)`, and the fit is marked unconverged with this warning:
+
+```{r}
+#| label: bayes-warning
+w_bayes <- ferx_get_warnings(fit_bayes, as_df = TRUE)
+strwrap(w_bayes$message[grepl("R-hat", w_bayes$message)], 80)
+```
+
+Posterior intervals as a measure of parameter uncertainty are discussed in @sec-uncertainty.
+
+## Running a fit in the background
+
+In an interactive session, `ferx_fit_async()` starts the fit in a background process and returns a `ferx_job` handle immediately. It accepts the same `model`, `data` and other arguments as `ferx_fit()`. When R is not interactive (scripts, knitr, and so this book), it runs a normal fit and returns the result:
+
+```{r}
+#| label: async-fallback
+fit_bg <- ferx_fit_async(base$model, base$data, verbose = FALSE)
+class(fit_bg)
+```
+
+The handle functions therefore only make sense interactively. They are shown here without being run:
+
+```{r}
+#| label: async-interactive
+#| eval: false
+#| eval-reason: interactive only; in a non-interactive render ferx_fit_async() returns a finished fit, not a job handle
+job <- ferx_fit_async(base$model, base$data, tail_n = 6, poll_interval = 0.5)
+job                          # print(): status of the background job
+plot(job)                    # trace so far
+job$trace_path               # path of the trace file, once written
+fit <- ferx_collect(job, verbose = TRUE)   # wait, showing progress, and return the fit
+ferx_stop(job)               # or: stop the job
+```
+
+`tail_n` is the number of recent trace rows shown per poll in `ferx_collect()`, and `poll_interval` is the time between polls in seconds.
 
 ## Pitfalls
 
+- **Unused options.** An option that does not apply to the chosen method is ignored and reported with a `general` warning, which lists the options the method does use. Here the model file's `maxiter` is not used by SAEM:
+
+  ```{r}
+  #| label: unused-option
+  fit_saem_base <- ferx_fit(base$model, base$data, method = "saem", verbose = FALSE)
+  w_saem <- ferx_get_warnings(fit_saem_base, as_df = TRUE)
+  strwrap(w_saem$message[grepl("not used by method", w_saem$message)], 80)
+  ```
+
+- **Convergence of stochastic methods.** SAEM, IMP, IMPMAP and Bayes depend on the random seed and on their iteration or sample counts. Check `fit$bayes$rhat` and the effective sample sizes, and the ESS in `fit$importance_sampling`, before using the results.
+- **Do not compare OFVs across methods.** Refit competing models with the same method.
+
+### Warnings you may see here
+
+See the ferx-core [warnings page](https://ferx-nlme.github.io/ferx-core/warnings.html) for the full descriptions.
+
+- `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.
+- `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
+- `mu_referencing` (warning or info): mu-referencing is missing or partial. Prefer forms like `CL = TVCL * exp(ETA_CL)` for SAEM and Bayes.
+- `optimizer_config` (warning or info): a note on, or failure of, the `global_search` configuration.
+- `multi_start` (info): which start of a multi-start fit won.
+- `cancelled` (info): the run was cancelled by the user.
+- `threads` (info): a note on thread-count efficiency.
+- `flat_parameter` (warning): a theta has no effect on the objective at its initial value and was frozen there. Map it into the model or remove it.
+- `init_outside_bounds` (warning): an initial estimate lay outside an internal limit and was clamped before the first evaluation.
+- `parameter_at_runaway_guard` (warning or critical): a parameter is pinned at a hidden optimizer guard. `collapse` (warning) means remove or simplify it; `runaway` (critical) means reject the fit.
+- `importance_sampling` (warning): the effective sample size dropped to zero, or the proposal collapsed. Increase the samples or improve the proposal.
+
 ## Summary
 
-## Reference
+- Choose the estimator with `method`, chain methods with a vector, and compare OFVs only within one method.
+- Follow the optimizer with `optimizer_trace = TRUE`, `ferx_trace()`, `plot(fit)` and `ferx_runlog()`.
+- Tune the fit through `settings`. The generated tables above list every setting that controls estimation, and `?ferx_fit` documents them all.
 
+Next: @sec-diagnostics evaluates the fit.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit`, `?ferx_trace`, `?plot.ferx_fit`, `?ferx_runlog`, `?ferx_runlog_iters`, `?ferx_conddist`, `?ferx_fit_async`, `?ferx_collect`, `?ferx_stop`
+- ferx-core: [estimation methods](https://ferx-nlme.github.io/ferx-core/estimation/index.html), [optimizers](https://ferx-nlme.github.io/ferx-core/estimation/optimizers.html), [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html), [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html)
+:::

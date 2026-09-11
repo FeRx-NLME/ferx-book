@@ -93,7 +93,8 @@ covered <- function(kind, name, parent, detail, home) {
     s3method    = has(paste0("\\b", esc(parent), "\\b")) && has(paste0("\\b", esc(detail), "\\b")),
     example     = has(paste0('ferx_example\\("', esc(name), '"\\)')),
     searchfile  = has(paste0('ferx_example\\("', esc(name), '"\\)')) && has("\\$search\\b"),
-    setting     = has(paste0("(`", esc(name), "`|\\b", esc(name), "\\s*=)")),
+    # settings: `key`, key = value, or "key" (book_settings_table(c("key", ...)))
+    setting     = has(paste0("(`", esc(name), "`|\\b", esc(name), "\\s*=|\"", esc(name), "\")")),
     dsl_block   = has(paste0("\\[", esc(name), "( [A-Za-z_]+)?\\]")),
     data_column = has(paste0("\\b", esc(name), "\\b")),
     warning_code = has(paste0("`", esc(name), "`")),

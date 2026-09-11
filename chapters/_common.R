@@ -51,6 +51,25 @@ book_tempdir <- function(name) {
   path
 }
 
+# Options table for `settings` keys. Values, defaults and descriptions come from
+# tools/settings-docs.csv, generated from the pinned ferx-core fit-options docs
+# and ?ferx_fit (tools/settings-docs.R) -- never typed by hand.
+book_settings_table <- function(keys, caption = NULL) {
+  path <- if (file.exists("tools/settings-docs.csv")) "tools/settings-docs.csv" else
+    file.path("..", "tools", "settings-docs.csv")
+  docs <- read.csv(path, stringsAsFactors = FALSE)
+  missing <- setdiff(keys, docs$key)
+  if (length(missing)) stop("not a settings key on the pinned build: ", paste(missing, collapse = ", "))
+  rows <- docs[match(keys, docs$key), ]
+  rows$description[!nzchar(rows$description)] <- "See `?ferx_fit` and the ferx-core fit options page."
+  tab <- data.frame(Setting = paste0("`", rows$key, "`"), Values = rows$values,
+                    Default = rows$default, Description = rows$description)
+  gt::gt(tab, caption = caption) |>
+    gt::fmt_markdown(columns = gt::everything()) |>
+    gt::cols_width(Setting ~ gt::pct(22), Values ~ gt::pct(18), Default ~ gt::pct(12)) |>
+    gt::tab_options(table.font.size = gt::px(13), table.width = gt::pct(100))
+}
+
 # Workflow banner for Part II chapters. Call from a chunk with
 # `#| echo: false` and `#| output: asis`.
 book_stage_banner <- function(active) {
