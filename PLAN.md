@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Steps 0–2 done locally; Gate 2 waiting on owner review + push OK** (started 2026-09-11). Revision 2, after scrutiny
+Status: **Step 3 in progress** (Gate 2 approved; PR #16 = Steps 0–2; ch03, ch04 committed on stacked local branches) (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -56,7 +56,6 @@ maturity callouts). What went wrong:
 3. **Every chunk runs.**
    - `eval: false` needs `#| eval-reason:`.
    - It is allowed only for:
-     - `ferx_model_edit()` (opens an editor);
      - `ferx_xpose()` (xpose not a dependency, D2);
      - interactive-only job handling: `ferx_collect()`, `ferx_stop()`,
        `print`/`plot`/`$` on `ferx_job`. In knitr, `ferx_fit_async()` falls back to
