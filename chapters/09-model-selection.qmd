@@ -14,26 +14,274 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 book_stage_banner("EVALUATE")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+The base model is fitted (@sec-first-fit) and evaluated (@sec-diagnostics, @sec-vpc). The diagnostics hinted at covariate relationships (`ETA_CL` correlated with `CRCL` and `WT`) and flagged autocorrelated residuals. Model development means fitting alternatives and choosing between them. You can do that by hand: write a candidate, fit it and compare. Or let ferx's search tools generate, fit, gate and rank candidates from a search space. This chapter shows both.
 
 ## The data
 
-## Minimal runnable call
+```{r}
+#| label: examples
+base <- ferx_example("two_cpt_oral_base")
+cov <- ferx_example("two_cpt_oral_cov")
+```
 
-## Reading the result
+## Comparing fitted models
+
+`two_cpt_oral_cov` is a prespecified covariate model for the same data. Body weight scales `CL` and `V1` through a shared exponent `THETA_WT`, and creatinine clearance scales `CL`:
+
+```{r}
+#| label: cov-model
+invisible(ferx_model_get_section(cov$model, "individual_parameters"))
+```
+
+```{r}
+#| label: fits
+fit_base <- ferx_fit(base$model, base$data, verbose = FALSE)
+fit_cov <- ferx_fit(cov$model, cov$data, verbose = FALSE)
+```
+
+### Likelihood ratio test and information criteria
+
+Both are FOCEI fits to the same data, and the base model is nested in the covariate model (fix both exponents at 0). The difference in OFV is therefore a likelihood ratio statistic, with degrees of freedom equal to the number of added parameters:
+
+```{r}
+#| label: lrt
+d_ofv <- fit_base$ofv - fit_cov$ofv
+df <- fit_cov$n_parameters - fit_base$n_parameters
+c(d_ofv = d_ofv, df = df, p_value = pchisq(d_ofv, df, lower.tail = FALSE))
+```
+
+For non-nested models, use information criteria. `fit$aic` and `fit$bic` are the classical AIC and BIC. `ferx_bic()` computes four BIC variants that differ in how parameters are penalised:
+
+| `type` | Penalty added to the OFV |
+|---|---|
+| `"mixed"` (default) | random-effect parameters × log(subjects) + fixed-effect parameters × log(observations) |
+| `"fixed"` | all parameters × log(observations); equals `fit$bic` |
+| `"iiv"` | variance parameters × log(subjects), for comparing variability structures |
+| `"random"` | all parameters × log(subjects) |
+
+```{r}
+#| label: tbl-criteria
+#| tbl-cap: "Base and covariate model compared on OFV and information criteria (lower is better)."
+criteria <- function(f) {
+  c(ofv = f$ofv, parameters = f$n_parameters, aic = f$aic, bic = f$bic,
+    bic_mixed = ferx_bic(f, "mixed"), bic_iiv = ferx_bic(f, type = "iiv"),
+    bic_random = ferx_bic(f, "random"))
+}
+round(rbind(base = criteria(fit_base), covariate = criteria(fit_cov)), 2)
+```
+
+Here the covariate model is better on every criterion.
+
+### Is the fit eligible at all?
+
+A converged fit can still be unfit for comparison: it may never have left its initial estimates, have a parameter at a bound, or have an ill-conditioned covariance matrix. `check_strictness()` applies such gates and returns the reasons for failure:
+
+```{r}
+#| label: strictness
+check_strictness(fit_cov, require_covariance = TRUE)
+```
+
+The fit from NCA-based starting values in @sec-first-fit converged to a much worse OFV. The gates reject it:
+
+```{r}
+#| label: strictness-fail
+fit_nca <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, verbose = FALSE)
+check_strictness(fit_nca)
+```
+
+The gates and their defaults: `require_converged = TRUE`, `require_covariance = FALSE`, `max_condition_number = 1000`, `max_correlation = 0.95`, `reject_on_boundary = TRUE` and `reject_init_stall = TRUE`. Set a threshold to `NULL`, or a flag to `FALSE`, to disable that gate. `reject_init_stall` assumes a cold start from the model file's initial values, so turn it off when candidates start from a previous model's estimates.
+
+## Search configurations
+
+::: {.callout-warning}
+## Maturity: alpha
+The ferx-core pages for the search tools carry the maturity label *alpha*. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+The search tools read a **`.ferxsearch`** configuration file (TOML) that names the base model and data and states the search. Four bundled examples carry one as `$search`:
+
+| Example | Search file for |
+|---|---|
+| `two_cpt_oral_base` | covariate search (`[covsearch]`), plus an `[allometry]` section (@sec-covariates) |
+| `two_cpt_oral_cov` | a configuration with a BIC ranking, used here to show loading |
+| `warfarin` | structural search (`[modelsearch]`) |
+| `one_cpt_transit` | residual error search (`[ruvsearch]`) |
+
+`ferx_search_config()` loads a file with the engine's own strict loader, so an invalid space or a misspelt section fails before anything is fitted:
+
+```{r}
+#| label: config
+cfg <- ferx_search_config(base$search)
+cfg
+```
+
+The file's sections, as shown in the printout: `base` and `data` (paths relative to the file); `[space]` with the search space as `mfl`; `[rank]` with the ranking criterion; `[strictness]` with the gates from above; `[run]` with `threads`, `retries` and `resume`; and a section per tool. The object returned holds the same information as a list:
+
+```{r}
+#| label: config-rank
+cfg_cov <- ferx_search_config(ferx_example("two_cpt_oral_cov")$search)
+cfg_cov$rank$type
+cfg$tools
+```
+
+### The search space
+
+The space is written in the Model Feature Language (MFL). `COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])` means: every parameter with a random effect, crossed with every continuous covariate, as a power or linear effect, each optional (`?`). `ferx_search_space()` parses MFL text and, given a model and data, expands the symbols into the concrete candidates:
+
+```{r}
+#| label: space
+ferx_search_space("COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])")
+space <- ferx_search_space(cfg$mfl, model = base$model, data = base$data)
+nrow(attr(space, "covariate_effects"))
+head(attr(space, "covariate_effects"))
+```
+
+`ferx_search_coverage()` reports, without fitting, whether the engine can build candidates for each feature of a space:
+
+```{r}
+#| label: coverage
+ferx_search_coverage(space)
+ferx_search_coverage("ABSORPTION(SEQ-ZO-FO)")
+```
+
+Sequential zero- then first-order absorption is not generated by the search. @sec-absorption shows the bundled model for it, which you can use as a base model instead.
+
+## Covariate search
+
+`ferx_covsearch()` runs a stepwise covariate search. In each forward step it fits every remaining candidate effect and adds the one with the largest significant OFV drop at `p_forward`. The backward phase then removes effects whose removal is not significant at the stricter `p_backward`. The bundled configuration uses `p_forward = 0.01` and `p_backward = 0.001`:
+
+```{r}
+#| label: covsearch
+cs_dir <- book_tempdir("covsearch")
+cs <- ferx_covsearch(config = base$search, directory = cs_dir, progress = FALSE)
+cs
+```
+
+The forward phase added `CL ~ CRCL` (linear) at p = `r signif(cs$steps$p_value[cs$steps$selected & cs$steps$phase == "forward"][1], 2)`, below `p_forward`. That p-value is above `p_backward`, so the backward phase removed the effect again. The search returns the base model. Candidates excluded by the strictness gate are kept in the step table with their reason:
+
+```{r}
+#| label: covsearch-excluded
+cs$steps[!cs$steps$passed, c("step", "parameter", "covariate", "form", "failures")]
+```
+
+`print()` shows the selected step of each phase. `summary()` on the result adds every candidate of every step; the same table is `cs$steps`. The run directory holds the per-step journals, `steps.csv` and `final.ferx`. `ferx_search_results()` reads the step table back from disk:
+
+```{r}
+#| label: covsearch-results
+list.files(cs_dir)
+steps <- ferx_search_results(cs_dir, type = "steps")
+attr(steps, "tool")
+```
+
+The search can also be stated inline. Here it is restricted to `CL`, with a less strict backward level:
+
+```{r}
+#| label: covsearch-inline
+cs_cl <- ferx_covsearch(model = base$model, data = base$data,
+                        search_space = "COVARIATE?(CL, [WT, CRCL], [pow, lin])",
+                        p_forward = 0.01, p_backward = 0.01,
+                        directory = book_tempdir("covsearch-cl"), progress = FALSE)
+cs_cl$included
+c(base_ofv = cs_cl$base_ofv, final_ofv = cs_cl$final_ofv)
+```
+
+The selected covariate model depends on the search space and the significance levels. A search result is evidence, not a decision. The rest of *The analysis workflow* continues with the prespecified `two_cpt_oral_cov` model, which the comparison above supports.
+
+## Structural search
+
+`ferx_modelsearch()` searches structural features: absorption, elimination, peripheral and transit compartments, and lag time. It ranks the candidates on a criterion, the mixed BIC by default. The warfarin configuration searches a peripheral compartment and a lag time:
+
+```{r}
+#| label: modelsearch
+ms_dir <- book_tempdir("modelsearch")
+warf <- ferx_example("warfarin")
+ms <- ferx_modelsearch(config = warf$search, directory = ms_dir, progress = FALSE)
+ms
+```
+
+The base structure ranks best on the mixed BIC. The lag-time model has a lower OFV, but not by enough to pay for its extra parameters. Every candidate's model text is kept, so the runner-up can be inspected or refitted:
+
+```{r}
+#| label: modelsearch-runner-up
+runner_up <- file.path(ms_dir, "runner_up.ferx")
+writeLines(ms$model_text[["run1"]], runner_up)
+invisible(ferx_model_get_section(runner_up, "structural_model"))
+```
+
+With `resume = TRUE` and the same `directory`, a search reuses the fits it already journalled:
+
+```{r}
+#| label: modelsearch-resume
+ms_again <- ferx_modelsearch(config = warf$search, directory = ms_dir, resume = TRUE, progress = FALSE)
+ms_again$models[, c("id", "structure", "reused")]
+nrow(ferx_search_results(ms_dir, type = "models"))
+```
+
+## Residual error search
+
+`ferx_ruvsearch()` tests four families of residual error extensions against the current error model, using the likelihood ratio test at `p_value`:
+
+- `IIV_on_RUV`: a random effect on the residual error magnitude. It needs an estimation method with interaction.
+- `power`: a proportional error raised to an estimated power.
+- `combined`: an additive component added to the proportional one.
+- `time_varying`: a residual error magnitude that differs below a time-after-dose cutoff, set at quantiles given by `groups`.
+
+Up to `max_iter` accepted features are stacked. The bundled configuration searches the analytic transit model `one_cpt_transit`:
+
+```{r}
+#| label: ruvsearch
+transit <- ferx_example("one_cpt_transit")
+rs <- ferx_ruvsearch(config = transit$search, directory = book_tempdir("ruvsearch"), progress = FALSE)
+rs
+rs$final_features
+```
+
+The search accepted a time-varying residual error in the first iteration, and nothing further in the second. The base model of this workflow, which carried a residual autocorrelation warning in @sec-diagnostics, can be searched the same way with the inline arguments (`model`, `data`, `p_value`, `max_iter`, …).
+
+## Tools not available from R
+
+ferx-core also has variability searches (IIV and IOV structures), an automatic model-development pipeline and a global search. They run from the ferx command line and have no R function in the pinned ferx-r build. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages.
 
 ## Options that matter
 
-## Variants
+| Function | Arguments |
+|---|---|
+| `ferx_bic()` | `fit`, `type` (`"mixed"`, `"fixed"`, `"iiv"`, `"random"`) |
+| `check_strictness()` | `fit`, `require_converged`, `require_covariance`, `max_condition_number`, `max_correlation`, `reject_on_boundary`, `reject_init_stall` |
+| `ferx_search_config()` | `path` |
+| `ferx_search_space()` | `mfl` (text, config or space), `model`, `data` |
+| `ferx_search_coverage()` | `space` (space, config or MFL text) |
+| `ferx_search_results()` | `directory`, `partial` (`NULL` prefers the complete table), `type` (`"candidates"`, `"models"`, `"steps"`) |
+
+The three search functions share the entry arguments `model`, `data` and `config`; the run arguments `threads`, `retries`, `directory`, `resume` and `progress`; and for model and covariate search `search_space`, `rank` and `cutoff`. A search is stated either by `config` or by the inline arguments, not both:
+
+| Function | Search arguments |
+|---|---|
+| `ferx_covsearch()` | `algorithm` (`"scm-forward-then-backward"` or `"scm-forward"`), `p_forward`, `p_backward`, `max_steps`, `adaptive_scope_reduction` |
+| `ferx_modelsearch()` | `algorithm` (`"reduced_stepwise"`, `"exhaustive_stepwise"`, `"exhaustive"`), `iiv_strategy` (`"absorption_delay"`, `"add_diagonal"`, `"no_add"`) |
+| `ferx_ruvsearch()` | `groups`, `p_value`, `skip` (families not to test), `max_iter` (1 to 3), `cwres_prescreen` (screen candidates on the parent's CWRES before refitting) |
+
+`print()` and `summary()` exist for the results of all three: `ferx_covsearch`, `ferx_modelsearch` and `ferx_ruvsearch` objects. `ferx_search_config` and `ferx_search_space` objects have `print()` methods.
 
 ## Pitfalls
 
+- **Keep search directories.** The book writes them to a temporary directory. In a project, write them next to the analysis: they hold every candidate model, the tables and `final.ferx`, and they make `resume` possible.
+- **`ferx_search_results()` needs the right `type`.** The covariate and residual error searches write `steps.csv`, the structural search `models.csv`. Neither wrote a `candidates.csv` here, so the default `type = "candidates"` finds no table for these runs.
+- **Compare like with like.** OFV differences and likelihood ratio tests need the same data, the same estimation method and nested models.
+- **Thresholds change the answer.** Record the space, the significance levels and the criterion together with the selected model. The `.ferxsearch` file is that record.
+
 ## Summary
 
-## Reference
+- Compare fitted models by likelihood ratio test (nested) or with `fit$aic`, `fit$bic` and `ferx_bic()`. Gate candidates with `check_strictness()`.
+- Describe searches in `.ferxsearch` files; check them with `ferx_search_config()`, `ferx_search_space()` and `ferx_search_coverage()`.
+- Run covariate, structural and residual error searches with `ferx_covsearch()`, `ferx_modelsearch()` and `ferx_ruvsearch()`, and read their tables with `ferx_search_results()`.
 
+Next: @sec-uncertainty quantifies the uncertainty of the selected covariate model.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_bic`, `?check_strictness`, `?ferx_search_config`, `?ferx_search_space`, `?ferx_search_coverage`, `?ferx_search_results`, `?ferx_covsearch`, `?ferx_modelsearch`, `?ferx_ruvsearch`
+- ferx-core: [search configuration](https://ferx-nlme.github.io/ferx-core/tools/search.html), [covsearch](https://ferx-nlme.github.io/ferx-core/tools/covsearch.html), [modelsearch](https://ferx-nlme.github.io/ferx-core/tools/modelsearch.html), [ruvsearch](https://ferx-nlme.github.io/ferx-core/tools/ruvsearch.html), [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html)
+:::

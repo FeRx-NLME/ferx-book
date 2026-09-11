@@ -496,6 +496,15 @@ Per-chapter loop:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- ferx-r (found in 3.7), to check: `?ferx_search_results` says the candidate table
+  is "written by every tool". But `ferx_covsearch()` and `ferx_modelsearch()` runs
+  (bundled configs, `directory` set) wrote no `candidates.csv`, so the default
+  `type = "candidates"` errors ("No candidate table"). The book passes `type`.
+- Book narrative note (3.7): the bundled covsearch (`two_cpt_oral_base.ferxsearch`,
+  p_forward 0.01 / p_backward 0.001) adds `CL~CRCL` (p = 0.0084) and removes it
+  again in the backward step. The final model is the base. The prespecified
+  `two_cpt_oral_cov` beats the base (ΔOFV 13.9, 2 df, p = 0.00095), and Part II
+  continues with it. Search tools are labelled *alpha* in the ferx-core docs.
 - ferx-core/ferx-r (found in 3.3), to check:
   - On `two_cpt_oral_base` (fd gradient → bobyqa) the fit runs 98 objective
     evaluations and converges identically for `maxiter` = 5, 20 and 500.

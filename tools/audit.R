@@ -43,7 +43,7 @@ if (requireNamespace("ferx", quietly = TRUE)) {
 }
 
 # ---- per-file checks ------------------------------------------------------------
-banned <- "\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|pyDarwin|Phoenix\\s*NLME|NLMIXED|WinBUGS|Stan)\\b"
+banned <- "\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|Pharmpy|pyDarwin|Phoenix\\s*NLME|NLMIXED|WinBUGS|Stan)\\b"
 strip_urls <- function(x) gsub("https?://[^ )>\"']+", "", x)
 
 for (f in files) {

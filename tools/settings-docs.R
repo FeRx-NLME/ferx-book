@@ -31,14 +31,14 @@ split_row <- function(line) {
   trimws(cells[-c(1, length(cells))])
 }
 
-banned <- "\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|pyDarwin|Phoenix)\\b"
+banned <- "\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|Pharmpy|pyDarwin|Phoenix)\\b"
 clean_desc <- function(x) {
   x <- gsub("\\[([^]]+)\\]\\([^)]*\\)", "\\1", x)          # markdown links -> text
   x <- gsub("\\s*\\(#[0-9]+\\)", "", x)                    # issue refs
   x <- gsub("<br\\s*/?>", " ", x)
   x <- gsub("\\s+", " ", x)
   # Remove parentheticals that name other software before splitting.
-  x <- gsub("\\s*\\([^()]*\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|pyDarwin|Phoenix)\\b[^()]*\\)", "", x, ignore.case = TRUE)
+  x <- gsub("\\s*\\([^()]*\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|Pharmpy|pyDarwin|Phoenix)\\b[^()]*\\)", "", x, ignore.case = TRUE)
   # Sentence split that does not break on "e.g." / "i.e." / "vs.".
   protected <- gsub("\\b(e\\.g|i\\.e|vs|approx|cf)\\.", "\\1<DOT>", x)
   sentences <- gsub("<DOT>", ".", unlist(strsplit(protected, "(?<=[.!?])\\s+(?=[A-Z`(*])", perl = TRUE)))
