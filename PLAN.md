@@ -548,6 +548,12 @@ Per-chapter loop:
   shows it as a pitfall. The bundled `two_cpt_oral_base.ferxsearch` `[allometry]`
   section cannot be used with `ferx_allometry(config=)`: its space has no
   `ALLOMETRY` statement, so it errors.
+- ferx-r/ferx-core wording (found in 4.3): some output of ferx names other software, which the ferx-only book then renders:
+  - `ferx_get_columns()` prints "Required NONMEM:" / "Optional NONMEM:" (ch03);
+  - the `iiv_on_ruv` FOCE error and the `omega ~ 0.0` not-FIX error end with sentences naming it;
+  - bundled model comments (`ss_absorption`, `infusion_absorption`).
+
+  The book shows only the first sentence of those errors (ch16, ch18) and does not print those model comments. `ferx_get_columns()` output is left as is (ch03).
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.
