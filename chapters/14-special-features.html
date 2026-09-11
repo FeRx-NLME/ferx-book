@@ -2,17 +2,20 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Special features – FeRx NLME - R package (ferx)</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -64,7 +67,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../chapters/10-iov.html" rel="prev">
+<link href="../chapters/15-model-search.html" rel="prev">
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -72,14 +75,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-f381374abff134079ce64cf499b0d527.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-29f8cd1fefaa5c6c5e5c22e76d53a9a7.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-f381374abff134079ce64cf499b0d527.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-51776f957f81c5a6b38322b65a6a6987.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-31632d092df9090a2ed68f79c078059d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-51776f957f81c5a6b38322b65a6a6987.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-3e6ad51b4fa5a3e1c5afcb1af1a6b441.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-8850e6b28af4ba47489561a9fe9c98ff.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-3e6ad51b4fa5a3e1c5afcb1af1a6b441.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-07d4f8e451bcded7b513e007f0ef6333.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-0d1ce758f1defce704ae57ed5ae90bc9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-07d4f8e451bcded7b513e007f0ef6333.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -105,7 +108,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-submit-button-title": "Submit",
     "search-label": "Search"
   }
-}</script><script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+}</script><script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script><script type="text/javascript">
 const typesetMath = (el) => {
   if (window.MathJax) {
     // MathJax Typeset
@@ -467,6 +470,11 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../chapters/15-model-search.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model Search and Automatic Model Development</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../chapters/14-special-features.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Special features</span></a>
   </div>
 </li>
@@ -507,7 +515,7 @@ window.Quarto = {
 <a href="#sec-data-selection" id="toc-sec-data-selection" class="nav-link" data-scroll-target="#sec-data-selection"><code>[data_selection]</code> — excluding records without touching the CSV</a>
   <ul class="collapse">
 <li><a href="#syntax" id="toc-syntax" class="nav-link" data-scroll-target="#syntax">Syntax</a></li>
-  <li><a href="#r-side-preview-with-ferx_selection" id="toc-r-side-preview-with-ferx_selection" class="nav-link" data-scroll-target="#r-side-preview-with-ferx_selection">R-side preview with <code>ferx_selection()</code></a></li>
+  <li><a href="#r-side-preview-with-ferx_apply_selection" id="toc-r-side-preview-with-ferx_apply_selection" class="nav-link" data-scroll-target="#r-side-preview-with-ferx_apply_selection">R-side preview with <code>ferx_apply_selection()</code></a></li>
   <li><a href="#what-fitexclusions-reports" id="toc-what-fitexclusions-reports" class="nav-link" data-scroll-target="#what-fitexclusions-reports">What <code>fit$exclusions</code> reports</a></li>
   <li><a href="#nonmem-equivalents" id="toc-nonmem-equivalents" class="nav-link" data-scroll-target="#nonmem-equivalents">NONMEM equivalents</a></li>
   </ul>
@@ -615,7 +623,7 @@ window.Quarto = {
   method     = foce
   maxiter    = 300
   covariance = true
-  gradient   = ad</code></pre>
+  gradient   = auto</code></pre>
 </div>
 </div>
 <p>The scalar form is gradient-safe, so the model can keep its default gradient setting.</p>
@@ -799,24 +807,35 @@ Tip
 <p>Multiple <code>ignore</code> lines are OR-combined (any fired line excludes the record). Use <code>&amp;&amp;</code> to combine conditions within a single <code>ignore</code> or <code>accept</code> line; <code>||</code> within a single line is <strong>not</strong> supported — use separate lines instead.</p>
 <p><code>ignore_subjects</code> takes a list of subject IDs (integers matching the <code>ID</code> column). A single ID can be written without brackets: <code>ignore_subjects = 7</code>. It excludes all records for those subjects regardless of any other condition.</p>
 <p>An <code>accept</code> condition keeps only rows where the expression is true.</p>
-</section><section id="r-side-preview-with-ferx_selection" class="level3"><h3 class="anchored" data-anchor-id="r-side-preview-with-ferx_selection">R-side preview with <code>ferx_selection()</code>
+</section><section id="r-side-preview-with-ferx_apply_selection" class="level3"><h3 class="anchored" data-anchor-id="r-side-preview-with-ferx_apply_selection">R-side preview with <code>ferx_apply_selection()</code>
 </h3>
 <p>Before fitting, preview which records would be dropped:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex_sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_data_selection"</span><span class="op">)</span></span>
-<span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_selection.html">ferx_selection</a></span><span class="op">(</span><span class="va">ex_sel</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 1.0"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"Excluded obs:"</span>, <span class="va">sel</span><span class="op">$</span><span class="va">exclusions</span><span class="op">$</span><span class="va">n_obs_excluded</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">ex_sel</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 1.0"</span><span class="op">)</span></span>
+<span><span class="va">sel</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Excluded obs: </code></pre>
+<pre><code>&lt;ferx_data&gt;  118 of 120 records retained  (2 obs, 0 doses, 0 other excluded)
+  Fired ignore: DV &lt; 1.0
+  Pass excluded = TRUE to ferx_apply_selection() to inspect excluded records.
+
+  ID TIME      DV EVID AMT CMT RATE MDV
+1  1  0.0       .    1 100   1    0   1
+2  1  0.5  5.3653    0   .   1    0   0
+3  1  1.0  8.2578    0   .   1    0   0
+4  1  2.0 10.7063    0   .   1    0   0
+5  1  4.0 11.4142    0   .   1    0   0
+6  1  8.0 10.9232    0   .   1    0   0
+  ... 112 more rows</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_selection_excluded.html">ferx_selection_excluded</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"TIME"</span>, <span class="st">"DV"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">sel</span>, excluded <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"TIME"</span>, <span class="st">"DV"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   ID TIME     DV
 84  7  120 0.9761
 96  8  120 0.8700</code></pre>
 </div>
 </div>
-<p><code><a href="https://ferx-nlme.github.io/reference/ferx_selection.html">ferx_selection()</a></code> returns the filtered data frame (plus an <code>$exclusions</code> list); <code><a href="https://ferx-nlme.github.io/reference/ferx_selection_excluded.html">ferx_selection_excluded()</a></code> returns only the dropped rows.</p>
+<p><code><a href="https://ferx-nlme.github.io/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code> returns a <code>ferx_data</code> object — the retained rows as a data frame, whose print method leads with the exclusion summary shown above. The summary is carried as an attribute rather than a column, so read it with <code>attr(sel, "exclusions")</code>: <code>n_records_total</code>, <code>n_obs_excluded</code>, <code>n_dose_excluded</code>, <code>n_other_excluded</code>, <code>excluded_subject_ids</code>, <code>fired_ignore</code> and <code>fired_accept</code>. Passing <code>excluded = TRUE</code> returns the dropped rows instead of the retained ones. It accepts a path, a data frame, an already-selected <code>ferx_data</code> object, or a <code>ferx_fit</code>, so <code>ferx_apply_selection(fit, excluded = TRUE)</code> recovers the rows a completed fit dropped.</p>
 </section><section id="what-fitexclusions-reports" class="level3"><h3 class="anchored" data-anchor-id="what-fitexclusions-reports">What <code>fit$exclusions</code> reports</h3>
 <p>After fitting, <code>fit$exclusions</code> carries:</p>
 <div class="cell">
@@ -946,7 +965,7 @@ Note
 #   1  depot   — oral dose lands here (amount, mg)
 #   2  central — drug in central compartment (amount, mg)
 #
-# Dataset: data/warfarin.csv (100 mg single oral dose, 32 subjects × 7 obs)
+# Dataset: data/warfarin_ode_lagtime.csv (100 mg single oral dose, 20 subjects × 7 obs)
 #
 # True simulation parameters match warfarin.ferx:
 #   TVCL=0.134, TVV=8.1, TVKA=1.0, TVLAG=0.5
@@ -1184,7 +1203,7 @@ Important
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sde</span><span class="op">$</span><span class="va">uses_sde</span>               <span class="co"># TRUE</span></span>
 <span><span class="va">fit_sde</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="st">"DIFF_CENTRAL"</span><span class="op">]</span>  <span class="co"># fitted diffusion variance</span></span>
-<span><span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_estimates.html">ferx_estimates</a></span><span class="op">(</span><span class="va">fit_sde</span><span class="op">)</span>        <span class="co"># DIFF_CENTRAL appears in the theta block</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">fit_sde</span><span class="op">$</span><span class="va">estimates</span>              <span class="co"># DIFF_CENTRAL appears in the theta block</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="sde-specific-notes" class="level3"><h3 class="anchored" data-anchor-id="sde-specific-notes">SDE-specific notes</h3>
 <div class="callout callout-style-default callout-important callout-titled">
@@ -1676,8 +1695,8 @@ Tip
     }
   });
   </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
-      <a href="../chapters/10-iov.html" class="pagination-link" aria-label="Inter-Occasion Variability">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Inter-Occasion Variability</span></span>
+      <a href="../chapters/15-model-search.html" class="pagination-link" aria-label="Model Search and Automatic Model Development">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Model Search and Automatic Model Development</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
