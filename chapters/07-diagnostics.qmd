@@ -14,26 +14,286 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 book_stage_banner("EVALUATE")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+A converged fit with a sensible OFV is only a candidate. Before trusting it, check whether the model describes the data: are predictions unbiased, are residuals structureless, are the random effects well behaved and informed by the data, and are the parameters identifiable? This chapter works through these checks for the base model. It uses the fit object's tables and plain ggplot2, plus the simulation-based NPDE.
 
 ## The data
 
+```{r}
+#| label: fit
+base <- ferx_example("two_cpt_oral_base")
+fit <- ferx_fit(base$model, base$data, verbose = FALSE)
+```
+
 ## Minimal runnable call
+
+Most diagnostics come straight from `fit$sdtab`, which has one row per observation:
+
+```{r}
+#| label: sdtab
+head(fit$sdtab)
+```
+
+`PRED` is the population prediction (all etas zero). `IPRED` is the individual prediction at the subject's estimated random effects. `CWRES` and `IWRES` are the conditional weighted and individual weighted residuals. `TAFD` and `TAD` are time after first dose and time after dose.
 
 ## Reading the result
 
+### Observations against predictions
+
+```{r}
+#| label: fig-dv-pred
+#| fig-cap: "Observations against population and individual predictions (log scales), with a smooth."
+#| fig-width: 8
+fit$sdtab |>
+  tidyr::pivot_longer(c(PRED, IPRED), names_to = "prediction", values_to = "value") |>
+  ggplot(aes(value, DV)) +
+  geom_abline(linetype = "dashed") +
+  geom_point(alpha = 0.4) +
+  geom_smooth(se = FALSE, method = "loess", formula = y ~ x) +
+  scale_x_log10() + scale_y_log10() +
+  facet_wrap(~prediction) +
+  labs(x = "Prediction", y = "Observation")
+```
+
+Points should scatter around the identity line, and the smooth should follow it. Scatter around `PRED` also includes between-subject variability, so it is wider than around `IPRED`.
+
+### Residuals
+
+```{r}
+#| label: fig-residuals
+#| fig-cap: "CWRES against time and against population prediction; IWRES against individual prediction."
+#| fig-width: 9
+#| fig-height: 3.5
+library(patchwork)
+res_plot <- function(x, y, xlab) {
+  ggplot(fit$sdtab, aes({{ x }}, {{ y }})) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    geom_point(alpha = 0.4) +
+    geom_smooth(se = FALSE, method = "loess", formula = y ~ x) +
+    labs(x = xlab)
+}
+res_plot(TIME, CWRES, "Time (h)") + res_plot(PRED, CWRES, "PRED") + res_plot(IPRED, IWRES, "IPRED")
+```
+
+Residuals should be centred on zero with no trend over time or predictions. Most should fall within ±2, and the spread should not change with the prediction. Under a correct model CWRES are roughly standard normal:
+
+```{r}
+#| label: fig-qq-cwres
+#| fig-cap: "Normal quantile plot of CWRES."
+#| fig-width: 4.5
+ggplot(fit$sdtab, aes(sample = CWRES)) +
+  stat_qq(alpha = 0.5) +
+  stat_qq_line() +
+  labs(x = "Theoretical quantile", y = "CWRES")
+```
+
+The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries:
+
+```{r}
+#| label: dw-warning
+ferx_get_warnings(fit)
+```
+
+ferx suggests over-parameterisation or a misspecified residual error model as possible causes. @sec-model-selection tests alternative residual error models systematically with `ferx_ruvsearch()`.
+
+### Individual fits
+
+```{r}
+#| label: fig-individual
+#| fig-cap: "Observations (points) with individual (solid) and population (dashed) predictions for the first nine subjects."
+#| fig-width: 8
+#| fig-height: 6
+fit$sdtab |>
+  filter(ID %in% unique(ID)[1:9]) |>
+  ggplot(aes(TIME)) +
+  geom_point(aes(y = DV)) +
+  geom_line(aes(y = IPRED)) +
+  geom_line(aes(y = PRED), linetype = "dashed") +
+  scale_y_log10() +
+  facet_wrap(~ID) +
+  labs(x = "Time (h)", y = "Concentration")
+```
+
+These lines connect predictions at the observation times only. For smooth curves between samples, predict on a dense time grid with `ferx_predict()` (@sec-simulation).
+
+### Random effects and shrinkage
+
+`fit$ebe_etas` holds each subject's estimated random effects:
+
+```{r}
+#| label: fig-etas
+#| fig-cap: "Distribution of the estimated random effects."
+#| fig-width: 8
+#| fig-height: 3.5
+fit$ebe_etas |>
+  tidyr::pivot_longer(-ID, names_to = "eta") |>
+  ggplot(aes(value)) +
+  geom_histogram(bins = 12) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  facet_wrap(~eta, nrow = 1)
+```
+
+Shrinkage measures how strongly the individual estimates are pulled towards zero. High eta shrinkage means the data carry little information about that random effect for individual subjects, which makes eta-based plots (including the covariate plots below) unreliable for that parameter:
+
+```{r}
+#| label: shrinkage
+data.frame(eta = fit$eta_names, shrinkage_pct = round(100 * fit$shrinkage_eta, 1))
+c(eps_shrinkage_pct = round(100 * fit$shrinkage_eps, 1))
+```
+
+`fit$eta_normality` holds a Shapiro-Wilk test per eta. A flag marks p < 0.05:
+
+```{r}
+#| label: eta-normality
+fit$eta_normality
+```
+
+### Random effects and covariates
+
+`fit$eta_cov` correlates each eta with each subject-level numeric covariate in the dataset. It is a quick first look for covariate relationships:
+
+```{r}
+#| label: eta-cov
+fit$eta_cov
+```
+
+```{r}
+#| label: fig-eta-cov
+#| fig-cap: "Clearance random effect against body weight and creatinine clearance."
+#| fig-width: 8
+#| fig-height: 3.5
+subjects <- read.csv(base$data, na.strings = ".") |> distinct(ID, WT, CRCL)
+fit$ebe_etas |>
+  mutate(ID = as.integer(ID)) |>
+  left_join(subjects, by = "ID") |>
+  tidyr::pivot_longer(c(WT, CRCL), names_to = "covariate", values_to = "value") |>
+  ggplot(aes(value, ETA_CL)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  facet_wrap(~covariate, scales = "free_x") +
+  labs(x = NULL)
+```
+
+`ETA_CL` has the strongest correlations here, with `CRCL` (r = `r fit$eta_cov$r[fit$eta_cov$eta == "ETA_CL" & fit$eta_cov$covariate == "CRCL"]`) and `WT` (r = `r fit$eta_cov$r[fit$eta_cov$eta == "ETA_CL" & fit$eta_cov$covariate == "WT"]`). That motivates the covariate search in @sec-model-selection. @sec-covariates covers covariate screening tools in more detail.
+
+### Parameter identifiability
+
+The covariance step yields the parameter correlation matrix. Correlations near ±1 point to parameters the data cannot separate:
+
+```{r}
+#| label: fig-cor
+#| fig-cap: "Correlation matrix of the parameter estimates."
+#| fig-width: 6
+#| fig-height: 5
+as.data.frame(as.table(fit$cor_matrix)) |>
+  ggplot(aes(Var1, Var2, fill = Freq)) +
+  geom_tile() +
+  scale_fill_gradient2(limits = c(-1, 1)) +
+  labs(x = NULL, y = NULL, fill = "r") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+#| label: identifiability
+c(max_abs_correlation = fit$max_abs_correlation, condition_number = fit$condition_number)
+```
+
+The condition number is the ratio of the largest to the smallest eigenvalue of this correlation matrix (`fit$eigenvalues`). ferx flags values above 1000.
+
+### NPDE
+
+Normalized prediction distribution errors (NPDE) compare each observation with its distribution simulated under the fitted model. Unlike CWRES, they do not rely on a linearisation, and under a correct model they follow a standard normal distribution. `ferx_calc_npde()` computes them after the fit and returns the fit with `NPDE` and `NPD` columns added to `sdtab`:
+
+```{r}
+#| label: npde
+fit <- ferx_calc_npde(fit, nsim = 1000, seed = 1)
+summary(fit$sdtab[, c("NPDE", "NPD")])
+```
+
+```{r}
+#| label: fig-npde
+#| fig-cap: "NPDE against time and their normal quantile plot."
+#| fig-width: 8
+#| fig-height: 3.5
+(ggplot(fit$sdtab, aes(TIME, NPDE)) +
+   geom_hline(yintercept = c(-1.96, 0, 1.96), linetype = c("dotted", "dashed", "dotted")) +
+   geom_point(alpha = 0.4) +
+   geom_smooth(se = FALSE, method = "loess", formula = y ~ x) +
+   labs(x = "Time (h)")) +
+  (ggplot(fit$sdtab, aes(sample = NPDE)) + stat_qq(alpha = 0.5) + stat_qq_line() +
+     labs(x = "Theoretical quantile", y = "NPDE"))
+```
+
+`nsim` must exceed each subject's number of observations; subjects that don't get `NA` NPDE. `seed` makes the result reproducible. `model` and `data` default to the paths stored in the fit. NPDE can also be computed during the fit with the `npde_nsim` and `npde_seed` settings:
+
+```{r}
+#| label: tbl-settings-npde
+book_settings_table(c("npde_nsim", "npde_seed"))
+```
+
 ## Options that matter
 
-## Variants
+| Function | Argument | Meaning |
+|---|---|---|
+| `ferx_calc_npde()` | `fit` | The fit to evaluate |
+| | `nsim` | Monte Carlo replicates per subject (default 1000) |
+| | `seed` | Random seed (default: the engine's) |
+| | `model`, `data` | Override the model and data paths stored in the fit |
+| `ferx_xpose()` | `fit` | Fit to convert |
+| | `backend` | `"xpose"` (default) or `"xpose4"` |
+| | `continuous`, `categorical` | Override which covariates are treated as continuous or categorical |
+| | `runno` | Run number stored on the object |
+| | `iterations` | Include the per-parameter optimizer trace (needs `optimizer_trace = TRUE`) |
+
+### Using xpose
+
+`ferx_xpose()` converts a fit into a data object for the xpose (or xpose4) diagnostics packages, which provide ready-made goodness-of-fit, parameter and covariate plots. It maps `sdtab`, the individual parameters, the random effects and the covariates to xpose's tables. xpose is not a dependency of this book, so the code is not run here:
+
+```{r}
+#| label: xpose
+#| eval: false
+#| eval-reason: xpose is not installed for this book (PLAN decision D2)
+fit_trace <- ferx_fit(base$model, base$data, optimizer_trace = TRUE, verbose = FALSE)
+xpdb <- ferx_xpose(fit_trace, backend = "xpose", runno = 1, iterations = TRUE)
+xpose::dv_vs_ipred(xpdb)
+xpose::prm_vs_iteration(xpdb)   # parameter values over the optimizer trace
+```
 
 ## Pitfalls
 
+- **Shrinkage limits eta-based diagnostics.** When eta shrinkage is high, eta histograms and eta-covariate plots mostly show the prior, not the data.
+- **Small negative shrinkage is possible.** `ETA_CL` shows `r round(100 * fit$shrinkage_eta[1], 1)`% here; this is not an error.
+- **The plotted lines are not the model curve.** `sdtab` has predictions only at observation times. Use `ferx_predict()` on a dense grid for smooth individual curves.
+- **`fit$eta_cov` is a screen, not a test of a covariate model.** Confirm relationships by fitting covariate models (@sec-model-selection).
+
+### Warnings you may see here
+
+See the ferx-core [warnings page](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-residuals) for details.
+
+- `dw_autocorrelation` (warning): the individual residuals are autocorrelated (Durbin-Watson out of range). Revisit the residual error or structural model.
+- `eta_normality` (warning): an eta departs from normality.
+- `eps_shrinkage` (warning): residual shrinkage is high or negative. Sparse data for the error model; consider simplifying it.
+- `eta_shrinkage` (warning): one or more eta shrinkages exceed about 30%. The data poorly inform that variability.
+- `boundary_estimate` (warning): a theta estimate sits at a bound. Relax the bound or simplify the model.
+- `inflated_rse` (warning): a theta has a relative standard error above about 50%.
+- `high_correlation` (warning): a pair of thetas has |correlation| ≥ 0.95.
+- `condition_number` (critical): the covariance matrix is ill-conditioned. The model is likely over-parameterised.
+
+@sec-first-fit shows a fit that carries several of these at once.
+
 ## Summary
 
-## Reference
+- Plot `fit$sdtab`: observations against predictions, residuals against time and predictions, and individual fits.
+- Check random effects with `fit$ebe_etas`, shrinkage and `fit$eta_normality`. Use `fit$eta_cov` for a first covariate screen.
+- Check identifiability with `fit$cor_matrix` and the condition number.
+- Add simulation-based NPDE with `ferx_calc_npde()`. Use `ferx_xpose()` if you work with xpose.
 
+Next: @sec-vpc evaluates the model by simulation.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_calc_npde`, `?ferx_xpose`, `?ferx_fit` (the `sdtab`, `eta_cov`, `eta_normality`, `cor_matrix` elements)
+- ferx-core: [output files and sdtab](https://ferx-nlme.github.io/ferx-core/output.html), [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html)
+:::
