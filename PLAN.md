@@ -121,7 +121,7 @@ track engine main, ahead of the pin.
 
 | Available (pinned ferx-r) | Not available from R: mention + pointer |
 |---|---|
-| methods foce, focei, laplace (+`n_agq`), saem, gn, gn_hybrid, imp, impmap, bayes; chains | `vi`: **verified not available**. R's `ferx_fit()` method whitelist rejects it, even though `vi_*` settings keys parse |
+| methods foce, focei, laplace (+`n_agq`), saem, gn, gn_hybrid, imp, impmap, bayes; chains | `vi`: the `method` argument rejects it, **but `method = vi` in `[fit_options]` runs from R** (corrected in Step 5: two_cpt_oral_base, 19 s, estimates ≈ FOCEI; `ofv` NaN unless `vi_final_ofv = laplace`). Covered in ch06; `vi_*` rows re-homed to ch06 |
 | covsearch, modelsearch, ruvsearch, search config/space/coverage/results | iivsearch, iovsearch, amd, globalsearch (ferx-core CLI) |
 | covariance step, SIR, bootstrap (**verified seed-deterministic**; only `seconds`/timing and the printed directory differ), bayes posterior, `ferx_simulate_with_uncertainty` | — |
 | `ferx_simulate_adaptive` + `[adaptive_dosing]` | MAP-Bayesian dose individualisation (doesn't exist) |
@@ -572,6 +572,7 @@ Per-chapter loop:
   - **Regularised DCM:** `settings = list(nn_l2 = 0.01)` did not finish within 10 min with bobyqa, or within about 25 min with lbfgs. The book documents `nn_l2`/`nn_smooth` without running them.
   - **`warfarin_sde`:** the diffusion variance collapses (RSE 113%), with OFV −279.27 vs −280.32 without `[diffusion]` (FOCE).
   - **Bundled model comments:** the `warfarin_dcm` comment names other software, so ch24 prints its blocks without comments.
+- ferx-r (found in Step 5): `ferx_fit(method = "vi")` is rejected by `match.arg`, although `method = vi` in the model file runs. The VI ELBO (`vi.neg_two_elbo`, `vi.elbo_trace`, `vi.n_fd_subjects`) is not on the R fit object. `[markov_model]` is rejected at parse time (`E_BLOCK_FEATURE_DISABLED`, since ferx-r does not build the `markov` feature).
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.

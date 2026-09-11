@@ -42,6 +42,7 @@ warf <- ferx_example("warfarin")
 | `"imp"` | Importance-sampling Monte Carlo EM | With `imp_eval_only = TRUE` it only evaluates −2 log L and must be the last chain stage |
 | `"impmap"` | Importance sampling assisted by the mode a posteriori | Requires mu-referencing; no IOV yet |
 | `"bayes"` | Full MCMC | Posterior summaries in `fit$bayes` instead of a covariance step |
+| `vi` (model file only) | Variational inference | Set in `[fit_options]`; not accepted by the `method` argument (see below) |
 
 The ferx-core [estimation methods](https://ferx-nlme.github.io/ferx-core/estimation/index.html) pages describe each algorithm. The same warfarin model fitted with each method:
 
@@ -330,6 +331,46 @@ strwrap(w_bayes$message[grepl("R-hat", w_bayes$message)], 80)
 
 Posterior intervals as a measure of parameter uncertainty are discussed in @sec-uncertainty.
 
+### Variational inference
+
+Variational inference fits an approximate posterior of each subject's random effects jointly with the population parameters, by maximizing a lower bound on the likelihood (the ELBO). `ferx_fit()`'s `method` argument does not accept it:
+
+```{r}
+#| label: vi-argument
+try(ferx_fit(base$model, base$data, method = "vi", verbose = FALSE))
+```
+
+It runs when the model file sets it. A copy of the base model with `method = vi` in `[fit_options]`:
+
+```{r}
+#| label: vi-fit
+vi_model <- file.path(book_tempdir("estimation"), "two_cpt_oral_base_vi.ferx")
+writeLines(sub("^  method     = focei", "  method     = vi", readLines(base$model)), vi_model)
+invisible(ferx_model_get_section(vi_model, "fit_options"))
+fit_vi <- ferx_fit(vi_model, base$data, verbose = FALSE)
+c(method = fit_vi$method, ofv = fit_vi$ofv)
+```
+
+The OFV is `NaN` by design: the ELBO is a lower bound, not −2 log-likelihood, and cannot be compared with other methods. The fit says so in a `general` warning. `vi_final_ofv = "laplace"` evaluates a Laplace OFV at the VI estimate. The `vi_*` settings can be passed with `settings` like any other:
+
+```{r}
+#| label: vi-laplace
+# suppress the R warning about the model file's maxiter, which VI does not use
+fit_vi_laplace <- suppressWarnings(ferx_fit(vi_model, base$data, settings = list(vi_final_ofv = "laplace"),
+                                            verbose = FALSE))
+rbind(vi = c(ofv = fit_vi_laplace$ofv, fit_vi_laplace$theta), focei = c(ofv = fit$ofv, fit$theta))
+```
+
+The estimates are close to FOCEI. The ELBO itself and VI's per-subject posterior summaries are not part of the R fit object at this build.
+
+```{r}
+#| label: tbl-settings-vi
+book_settings_table(c("vi_iters", "vi_mc_samples", "vi_lr", "vi_grad_clip", "vi_family", "vi_kl",
+                      "vi_omega_update", "vi_sigma_update", "vi_avg_last", "vi_eta_grad", "vi_final_ofv", "vi_seed"))
+```
+
+VI does not support non-Gaussian endpoints (time-to-event, binary). See the ferx-core [variational inference](https://ferx-nlme.github.io/ferx-core/estimation/vi.html) page.
+
 ## Running a fit in the background
 
 In an interactive session, `ferx_fit_async()` starts the fit in a background process and returns a `ferx_job` handle immediately. It accepts the same `model`, `data` and other arguments as `ferx_fit()`. When R is not interactive (scripts, knitr, and so this book), it runs a normal fit and returns the result:
@@ -385,6 +426,7 @@ See the ferx-core [warnings page](https://ferx-nlme.github.io/ferx-core/warnings
 - `init_outside_bounds` (warning): an initial estimate lay outside an internal limit and was clamped before the first evaluation.
 - `parameter_at_runaway_guard` (warning or critical): a parameter is pinned at a hidden optimizer guard. `collapse` (warning) means remove or simplify it; `runaway` (critical) means reject the fit.
 - `importance_sampling` (warning): the effective sample size dropped to zero, or the proposal collapsed. Increase the samples or improve the proposal.
+- `vi_bad_basin` (critical): the final bound-quality check of a VI fit failed, and the fit is marked unconverged. Try new starting values, or start from another method.
 
 ## Summary
 
