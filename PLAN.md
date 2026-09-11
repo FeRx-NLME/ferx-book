@@ -469,7 +469,7 @@ Per-chapter loop:
       named ODE states, unscaled amounts; `integral` over states) and how to turn them
       into analysis outputs. ch12 gets a pointer. ch15 uses `[derived]` exposure
       metrics across absorption models.
-- [ ] 4.2 B: 17 covariates (WIP 08)
+- [x] 4.2 B: 17 covariates (WIP 08) — local branch v2/ch17-covariates, not pushed
 - [ ] 4.3 C: 18 dosing (WIP 15 + 16), 19 censoring (WIP 14; rewrite drop semantics)
 - [ ] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature)
 - [ ] 4.5 F: 24 experimental (WIP 21)
@@ -535,6 +535,19 @@ Per-chapter loop:
   with proportional error. FOCE gives biased IOV estimates (TVCL 0.32) vs
   FOCEI/SAEM/chain (0.17); ch16 shows this. Consider changing the bundled examples
   to focei (ferx-r).
+- **ferx-r bug (found in 4.2, ch17):** `ferx_model_to_frem()` ignores `output_dir`
+  (never passed to Rust). Without `output_model`/`output_data` it writes next to the
+  model, i.e. into the installed package for `ferx_example()` models. A task was
+  spawned (ferx-r cwd). ch17 has a callout and passes both paths; remove after the
+  pin bump. Also: `print()` of the generated FREM `ferx_model` says "IIV: none"
+  although the model has a 7×7 block.
+- ferx-r/ferx-core (found in 4.2, ch17), to check: `ferx_allometry()` on a model
+  with inline `(WT/70)^THETA_WT` (`two_cpt_oral_cov`) adds WT scaling again with no
+  note. Only `[covariate_model]` relations are detected. The Rd says "a parameter
+  that already carries a relation on the size covariate is left alone". The book
+  shows it as a pitfall. The bundled `two_cpt_oral_base.ferxsearch` `[allometry]`
+  section cannot be used with `ferx_allometry(config=)`: its space has no
+  `ALLOMETRY` statement, so it errors.
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.
