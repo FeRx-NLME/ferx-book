@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Steps 0–1 done locally (Gates 0–1 pending CI); next: Step 2 pilot** (started 2026-09-11). Revision 2, after scrutiny
+Status: **Steps 0–2 done locally; Gate 2 waiting on owner review + push OK** (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -368,12 +368,40 @@ covered).
 
 ### Step 2: Pilot (index, 01, 02, 23)
 
-- [ ] 2.1 Preface and 01 installation.
-- [ ] 2.2 02 complete warfarin analysis.
-- [ ] 2.3 23 adaptive dosing (non-fit template stress test).
+- [x] 2.1 Preface and 01 installation. Install commands are plain (non-chunk)
+  code blocks; the pinned SHA comes in via `{{< var >}}` shortcodes, which do
+  resolve inside code blocks.
+- [x] 2.2 02 complete warfarin analysis: data → model → fit → GOF → VPC (ggplot)
+  → gt table → `.fitrx`.
+- [x] 2.3 23 adaptive dosing: 0 uncovered rows; two strategies compared on an
+  edited *copy* of the model; loading-dose variant.
+
+**Conventions fixed by the pilot** (apply to every later chapter):
+- Setup chunk has `#| cache: false`. knitr does not replay side effects
+  (`theme_set`, `library`, options) from a cached chunk.
+- `_common.R` forces a UTF-8 locale and `scipen`. A local
+  `_environment.local` (gitignored) sets `LANG`, because a C-locale render spews
+  gt encoding warnings.
+- Chapter title line: `# Title {#sec-<slug>}`. Cross-references use `@sec-<slug>`.
+- **Never pass a bundled example path to `ferx_model_set_section()`.** It edits
+  a plain path in place (Rd), and that path is the installed package. Copy into
+  `book_tempdir()` first.
+- Callouts:
+  - Maturity: `callout-warning` titled "Maturity: beta" or "Maturity:
+    experimental", linking ferx-core `maturity.html`.
+  - Closing `callout-tip` titled "Reference": R help + ferx-core pages.
+- Prose numbers via inline R. Every non-obvious behaviour is checked against
+  output before it is stated. Examples: the first adaptive dose ≠
+  `start_dose`; a bolus at the decision time appears in `trajectories` but not
+  in `SIGNAL`; `PCT_TIME_IN_WINDOW` is a fraction.
+- Full clean local render: 107 s (Parts I pilot + stubs).
 
 **Gate 2:** CI + audit green for these files. **Owner review of voice, depth and
 format before scaling out.**
+
+**Gate 2 status (2026-09-11):** local clean render + audit green. Waiting on
+(a) owner review of the pilot, (b) OK to push `book/v2-workflow` and open the
+first PR (Steps 0–2) so CI runs, (c) D4.
 
 ### Step 3: Part II, one PR per chapter, in order 03 → 13
 
@@ -440,6 +468,15 @@ Per-chapter loop:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- ferx-core docs vs behaviour (found in 2.3), to check:
+  - `adaptive-dosing.qmd` says `start_dose` is "the dose issued at the first
+    decision". But in `adaptive_tdm` the first rule already fires at t=0 (trough
+    0), so the first issued dose is 1250, not 1000. Either the doc wording or the
+    behaviour needs a look.
+  - Also: `trajectories$DV_SIM` equals `IPRED` exactly in `adaptive_tdm`,
+    although it runs `with_assay_error` with sigma 0.1. Whether trajectories are
+    meant to carry residual error is unverified; the book does not claim either
+    way.
 - ferx-r (found in 0.5): the `ss_absorption` / `infusion_absorption` model headers
   and `ex_*.R` say "a fit works identically (raise the omega…)". As shipped,
   `ferx_fit()` errors (`omega ETA_CL ~ 0.0` not FIX). They are prediction examples;
