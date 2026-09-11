@@ -558,6 +558,11 @@ Per-chapter loop:
   - **`NaN` for zero time above MEC:** `integral(1.0, IPRED > MEC, window=24, …)` returns `NaN`, not 0, for windows where the condition never holds (`warfarin_derived_pkpd` with MEC 8, days 3–5).
   - **Bundled examples are weak demos:** `warfarin_derived_pkpd` uses MEC 0.5, below every warfarin concentration, so time above MEC is always 24 h. `emax_pkpd` has only 3 subjects, so the PD parameters are unidentifiable (RSE up to 5e4%).
   - **What ch20 does:** it shows both, plus a 30-subject simulation–estimation run.
+- ferx-r/ferx-core (found in 4.4, ch21), to check:
+  - **`print()` of a binary fit:** says "Obs: 0", "Structural: 1-cpt IV" and "Residual: per-CMT ()" for `binary_logistic`.
+  - **Misclassified notice:** the finite-difference inner-gradient notice is categorised `data_quality` (warning).
+  - **FOCE runs without complaint:** the docs say FOCE is biased for binary endpoints, but `method = "foce"` on the random-intercept model runs silently with the same OFV as FOCEI.
+  - **SAEM default seed:** on that model the default seed ends at a degenerate point (RSE 2e6%), while seeds 1–3 agree.
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.
