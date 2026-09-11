@@ -7,26 +7,462 @@
 source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+The oral models in @sec-structural-models absorb the dose by a first-order process. Real absorption often looks different. It can start late, rise smoothly after a delay, run at a constant rate for a while, or follow two routes at once. The fraction of the dose that reaches the circulation can also vary between subjects. ferx has lag times, absorption input-rate functions for ODE models, analytical transit and inverse-Gaussian models, and bioavailability parameters for these cases. This chapter fits every bundled absorption example and compares several of them on the same data.
+
+::: {.callout-warning}
+## Maturity: stable and beta parts
+Lag time is **stable** in ferx-core. The built-in absorption models (transit, inverse Gaussian, Weibull, zero-order, parallel and mixed pathways) and ODE models are **beta**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
 
 ## The data
 
-## Minimal runnable call
+Nine of the examples share one dataset: 20 subjects with a single oral dose of 100 and 12 samples each over 24 hours. The transit examples ship it as `transit_oral.csv`, the others as `igd_oral.csv`. The two files hold the same doses, times and concentrations. Only the `CMT` of the observation rows differs, which the prediction does not use for these models:
 
-## Reading the result
+```{r}
+#| label: shared-data
+savic <- ferx_example("transit_savic")
+igd <- ferx_example("igd_inverse_gaussian")
+transit_oral <- read.csv(savic$data, na.strings = ".")
+igd_oral <- read.csv(igd$data, na.strings = ".")
+all.equal(transit_oral[, c("ID", "TIME", "AMT", "EVID", "DV")], igd_oral[, c("ID", "TIME", "AMT", "EVID", "DV")])
+all.equal(ferx_predict(igd$model, igd$data)$PRED, ferx_predict(igd$model, savic$data)$PRED)
+```
 
-## Options that matter
+According to the example model files, these data were simulated from a transit model with a first-order absorption step, the structure of `transit_savic`. The other models on this dataset are therefore approximations, which makes it a useful test of how the fits and their warnings respond.
+
+```{r}
+#| label: fig-shared-data
+#| fig-cap: "The shared absorption dataset: concentrations of 20 subjects after a single oral dose."
+obs <- filter(igd_oral, EVID == 0)
+ggplot(obs, aes(TIME, DV, group = ID)) +
+  geom_line(alpha = 0.4) + geom_point(size = 1) +
+  labs(x = "Time (h)", y = "Concentration")
+```
+
+## Minimal runnable call: transit absorption
+
+In `transit_savic`, the dose enters the depot through the built-in `transit()` input rate, a chain of transit compartments with a continuous number of compartments `n` and a mean transit time `mtt`. The depot then empties into the central compartment by first-order `KA`:
+
+```{r}
+#| label: transit-savic
+invisible(ferx_model_get_section(savic$model, "odes"))
+fit_savic <- ferx_fit(savic$model, savic$data, verbose = FALSE)
+fit_savic$estimates[, c("estimate", "rse_pct")]
+```
+
+Because `n` is continuous, the shape of the absorption delay is itself estimated. A dose into a compartment that carries an input-rate function is delivered through that function over time, not also as a bolus. Bioavailability scales the delivered amount as for any dose, so do not multiply `transit()` by `F` in the equation.
+
+## Reading the result: comparing absorption models
+
+The nine models fitted to the shared data differ in absorption only. The `[derived]` block (@sec-tables-figures) adds the exposure metrics of each fit: Cmax, Tmax and the AUC over 24 hours. It is appended to a copy of each model file, which leaves the estimation unchanged:
+
+```{r}
+#| label: tbl-absorption-comparison
+#| tbl-cap: "Absorption models fitted to the same data, with per-subject exposure (median over subjects) from `[derived]`."
+comparison_dir <- book_tempdir("absorption")
+shared <- list(
+  transit_savic = ferx_example("transit_savic"),
+  one_cpt_transit = ferx_example("one_cpt_transit"),
+  igd_inverse_gaussian = ferx_example("igd_inverse_gaussian"),
+  weibull_absorption = ferx_example("weibull_absorption"),
+  zero_order_absorption = ferx_example("zero_order_absorption"),
+  parallel_absorption = ferx_example("parallel_absorption"),
+  mixed_absorption = ferx_example("mixed_absorption"),
+  biphasic_igd_absorption = ferx_example("biphasic_igd_absorption"),
+  per_route_lag_absorption = ferx_example("per_route_lag_absorption")
+)
+exposure_block <- c("", "[derived]",
+                    "  CMAX = max(IPRED)",
+                    "  TMAX = tmax(IPRED)",
+                    "  AUC_0_24 = integral(IPRED, from=0, to=24, step=0.1)")
+fits <- lapply(names(shared), function(name) {
+  model <- file.path(comparison_dir, paste0(name, ".ferx"))
+  writeLines(c(readLines(shared[[name]]$model), exposure_block), model)
+  ferx_fit(model, shared[[name]]$data, verbose = FALSE)
+})
+names(fits) <- names(shared)
+
+comparison <- do.call(rbind, lapply(names(fits), function(name) {
+  f <- fits[[name]]
+  exposure <- distinct(f$sdtab, ID, CMAX, TMAX, AUC_0_24)
+  data.frame(model = name, parameters = f$n_parameters, ofv = f$ofv, aic = f$aic,
+             condition_number = f$condition_number,
+             cmax = median(exposure$CMAX), tmax = median(exposure$TMAX), auc_0_24 = median(exposure$AUC_0_24),
+             warnings = paste(ferx_get_warnings(f, as_df = TRUE)$category, collapse = ", "))
+}))
+comparison |>
+  arrange(ofv) |>
+  gt::gt() |>
+  gt::fmt_number(columns = c(ofv, aic), decimals = 1) |>
+  gt::fmt_number(columns = c(condition_number, cmax, auc_0_24), n_sigfig = 3) |>
+  gt::cols_label(condition_number = "condition number", auc_0_24 = "AUC 0–24")
+```
+
+`transit_savic` agrees with the simulation model and reaches the second-lowest OFV with no warnings. `one_cpt_transit`, which has no `KA` step, follows with no warnings, then the Weibull and inverse-Gaussian models. The biphasic inverse-Gaussian model reaches a slightly lower OFV with two more parameters. Its warnings show that the data cannot inform them: relative standard errors in the thousands of percent, correlations of ±1 and a condition number of about `r signif(fits$biphasic_igd_absorption$condition_number / 1e10, 2)` × 10^10^. `parallel_absorption` collapses to a single route (both absorption rate constants end at the same value), and `mixed_absorption` ends with parameters at their bounds:
+
+```{r}
+#| label: collapsed-fits
+fits$parallel_absorption$theta[c("TVFR1", "TVKA1", "TVKA2")]
+fits$mixed_absorption$theta[c("TVFZO", "TVKA", "TVDUR")]
+```
+
+So compare absorption models by OFV, but read the warnings before accepting a lower OFV (@sec-diagnostics, @sec-uncertainty).
+
+Note that `max()` and `tmax()` in `[derived]` use the observation times, so `TMAX` is always one of the sampling times. The typical profile on a fine time grid shows the shapes between the samples. `ferx_predict()` on a one-subject design (@sec-simulation) gives it for every model:
+
+```{r}
+#| label: fig-absorption-profiles
+#| fig-cap: "Typical concentration profiles of the fitted absorption models (lines) over the observed data (grey)."
+#| fig-height: 7
+design <- file.path(comparison_dir, "design.csv")
+write.csv(data.frame(ID = 1, TIME = c(0, seq(0.1, 24, by = 0.1)), DV = NA,
+                     AMT = c(100, rep(NA, 240)), EVID = c(1, rep(0, 240)), CMT = 1, MDV = c(1, rep(0, 240))),
+          design, row.names = FALSE, na = ".")
+profiles <- do.call(rbind, lapply(names(fits), function(name) {
+  p <- ferx_predict(shared[[name]]$model, design, fit = fits[[name]])
+  data.frame(model = name, TIME = p$TIME, PRED = p$PRED)
+}))
+ggplot(profiles, aes(TIME, PRED)) +
+  geom_point(data = obs, aes(TIME, DV), colour = "grey60", size = 0.6) +
+  geom_line(colour = "steelblue", linewidth = 0.8) +
+  facet_wrap(~ model, ncol = 3) +
+  labs(x = "Time (h)", y = "Concentration")
+```
+
+## Options that matter: the absorption building blocks
+
+| Absorption | How to write it | Bundled example |
+|---|---|---|
+| Lag time, analytical model | `lagtime=` (alias `alag=`) on the `pk` line | (variant below) |
+| Lag time, ODE model | `LAGTIME = ...` in `[individual_parameters]` | `warfarin_ode_lagtime` |
+| Transit chain, ODE | `transit(n=, mtt=)` in `[odes]` | `transit_savic` |
+| Transit chain, analytical | `pk one_cpt_transit(cl, v, n, mtt)`, `pk two_cpt_transit(cl, v1, q, v2, n, mtt)` | `one_cpt_transit`, `two_cpt_transit` |
+| Hand-written transit states | Explicit `d/dt()` equations | `transit_2cpt` |
+| Inverse Gaussian, ODE | `igd(mat=, cv2=)` in `[odes]` | `igd_inverse_gaussian` |
+| Inverse Gaussian, analytical | `pk one_cpt_ig(cl, v, mat, cv2)`, `pk two_cpt_ig(cl, v1, q, v2, mat, cv2)` | `one_cpt_ig`, `two_cpt_ig` |
+| Weibull | `weibull(td=, beta=)` in `[odes]` | `weibull_absorption` |
+| Zero-order over an estimated duration | `zero_order(dur=)` in `[odes]` | `zero_order_absorption` |
+| Zero-order, then first-order | `zero_order()` into a depot with `- KA*depot` | `sequential_absorption` |
+| Two routes | `FR1*fn(...) + FR2*fn(...)` with `first_order(ka=)`, `zero_order()`, `igd()` | `parallel_absorption`, `mixed_absorption`, `biphasic_igd_absorption` |
+| A lag on one route | `lag=` on any input-rate function | `per_route_lag_absorption` |
+| Bioavailability | `f=` on the `pk` line, or an `F` individual parameter in an ODE model | `bioavailability`, `bioavailability_ode`, `warfarin_logit_f` |
+
+Rules the parser enforces:
+
+- `transit()`, `igd()`, `weibull()` and `zero_order()` need an ODE disposition (variant below).
+- Each pathway fraction (`FR1`, `FR2`) must be a single declared individual parameter, not an expression, and the fractions of a compartment must sum to 1. Declare the complement explicitly (`FR2 = 1 - TVFR1`).
+- At most one `zero_order()` term may feed a compartment.
+- Arguments are named (`n=`, `mtt=`) and must be declared individual parameters, so they can carry random effects and covariates.
+
+The formulas, dose handling and domains are on the ferx-core [absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html) and [lag time](https://ferx-nlme.github.io/ferx-core/model-file/lagtime.html) pages.
 
 ## Variants
 
+### Lag time
+
+An ODE model gets a lag time from the reserved individual parameter name `LAGTIME`. Every dose of the subject is delayed by it, without changes to the equations:
+
+```{r}
+#| label: lagtime-ode
+lag_ode <- ferx_example("warfarin_ode_lagtime")
+invisible(ferx_model_get_section(lag_ode$model, "individual_parameters"))
+fit_lag_ode <- ferx_fit(lag_ode$model, lag_ode$data, verbose = FALSE)
+```
+
+An analytical model takes the lag time as `lagtime=` on the `pk` line. The same model written that way reaches the same estimates, much faster:
+
+```{r}
+#| label: lagtime-analytical
+lag_lines <- readLines(lag_ode$model)
+lag_lines <- lag_lines[!grepl("^\\[odes\\]|^\\[scaling\\]|^  d/dt|obs_scale", lag_lines)]
+lag_lines <- sub("ode\\(obs_cmt=central, states=\\[depot, central\\]\\)",
+                 "pk one_cpt_oral(cl=CL, v=V, ka=KA, lagtime=LAGTIME)", lag_lines)
+lag_analytical <- file.path(comparison_dir, "warfarin_lagtime_analytical.ferx")
+writeLines(lag_lines, lag_analytical)
+invisible(ferx_model_get_section(lag_analytical, "structural_model"))
+fit_lag_analytical <- ferx_fit(lag_analytical, lag_ode$data, verbose = FALSE)
+rbind(ode = c(ofv = fit_lag_ode$ofv, seconds = fit_lag_ode$wall_time_secs, fit_lag_ode$theta),
+      analytical = c(ofv = fit_lag_analytical$ofv, seconds = fit_lag_analytical$wall_time_secs,
+                     fit_lag_analytical$theta))
+```
+
+The small OFV difference comes from the ODE solver tolerance of the bundled model (@sec-structural-models). The individual lag times are in `fit$individual_estimates`:
+
+```{r}
+#| label: lagtime-individual
+head(fit_lag_analytical$individual_estimates, 3)
+```
+
+::: {.callout-important}
+## `individual_estimates` of ODE models at this build
+For ODE models, `fit$individual_estimates` of the pinned ferx-r build does not report all individual parameters correctly. For `warfarin_ode_lagtime`, `KA` and `LAGTIME` come out as 0:
+
+```{r}
+#| label: ode-individual-estimates
+head(fit_lag_ode$individual_estimates, 3)
+```
+
+Until this is fixed, list the individual parameters of an ODE model in `[output]` (@sec-tables-figures). They then appear in `fit$sdtab` with the right values, which agree with the analytical fit above to about four significant digits:
+
+```{r}
+#| label: ode-output-workaround
+lag_output <- file.path(comparison_dir, "warfarin_ode_lagtime_output.ferx")
+writeLines(c(readLines(lag_ode$model), "", "[output]", "  CL V KA LAGTIME"), lag_output)
+fit_lag_output <- ferx_fit(lag_output, lag_ode$data, verbose = FALSE)
+head(distinct(fit_lag_output$sdtab, ID, CL, V, KA, LAGTIME), 3)
+```
+:::
+
+A lag time delays all routes together. `lag=` on an input-rate function delays one route only. `per_route_lag_absorption` gives the second of two first-order routes its own onset, as for an immediate-release plus delayed-release formulation:
+
+```{r}
+#| label: per-route-lag
+invisible(ferx_model_get_section(shared$per_route_lag_absorption$model, "odes"))
+fits$per_route_lag_absorption$estimates[c("TVFR1", "TVKA1", "TVKA2", "TVLAG2"), c("estimate", "rse_pct")]
+```
+
+On the shared data, which have no second release, this model fits poorly (see the comparison table).
+
+### Analytical transit and inverse-Gaussian models
+
+`one_cpt_transit` puts the transit chain directly into a one-compartment model as a closed form, with no `KA` step and no ODE solver. The equivalent ODE model uses `transit()` straight into `central`. Both reach the same fit:
+
+```{r}
+#| label: analytical-transit-twin
+one_transit <- ferx_example("one_cpt_transit")
+invisible(ferx_model_get_section(one_transit$model, "structural_model"))
+transit_lines <- sub("pk one_cpt_transit\\(cl=CL, v=V, n=NTR, mtt=MTT\\)", "ode(states=[central])",
+                     readLines(one_transit$model))
+transit_lines <- append(transit_lines,
+                        c("[odes]", "  d/dt(central) = transit(n=NTR, mtt=MTT) - CL/V*central", "",
+                          "[scaling]", "  y = central / V", ""),
+                        after = grep("^\\[error_model\\]", transit_lines) - 1)
+transit_ode <- file.path(comparison_dir, "one_cpt_transit_ode.ferx")
+writeLines(transit_lines, transit_ode)
+fit_transit_ode <- ferx_fit(transit_ode, one_transit$data, verbose = FALSE)
+rbind(analytical = c(ofv = fits$one_cpt_transit$ofv, fits$one_cpt_transit$theta),
+      ode = c(ofv = fit_transit_ode$ofv, fit_transit_ode$theta))
+```
+
+`two_cpt_transit` does the same for a two-compartment disposition. Its dataset was simulated from the model at the initial values in its `[parameters]` block, so the fit should recover them:
+
+```{r}
+#| label: two-cpt-transit
+two_transit <- ferx_example("two_cpt_transit")
+invisible(ferx_model_get_section(two_transit$model, "structural_model"))
+fit_two_transit <- ferx_fit(two_transit$model, two_transit$data, verbose = FALSE)
+fit_two_transit$estimates[1:6, c("estimate", "rse_pct")]
+```
+
+The analytical inverse-Gaussian models `one_cpt_ig` and `two_cpt_ig` are the closed forms of `igd()`. The one-compartment version and the `igd()` ODE model give the same fit on the `one_cpt_ig` dataset, which was simulated from an inverse-Gaussian model:
+
+```{r}
+#| label: analytical-ig
+one_ig <- ferx_example("one_cpt_ig")
+invisible(ferx_model_get_section(one_ig$model, "structural_model"))
+fit_one_ig <- ferx_fit(one_ig$model, one_ig$data, verbose = FALSE)
+fit_igd_ode <- ferx_fit(igd$model, one_ig$data, verbose = FALSE)
+rbind(analytical = c(ofv = fit_one_ig$ofv, fit_one_ig$theta), ode = c(ofv = fit_igd_ode$ofv, fit_igd_ode$theta))
+ferx_get_warnings(fit_one_ig, as_df = TRUE)[, c("severity", "category")]
+
+two_ig <- ferx_example("two_cpt_ig")
+invisible(ferx_model_get_section(two_ig$model, "structural_model"))
+fit_two_ig <- ferx_fit(two_ig$model, two_ig$data, verbose = FALSE)
+fit_two_ig$estimates[1:6, c("estimate", "rse_pct")]
+ferx_get_warnings(fit_two_ig, as_df = TRUE)[, c("severity", "category")]
+```
+
+The mean absorption time and its relative dispersion (`TVMAT`, `TVCV2`) are strongly correlated in these fits (the `high_correlation` warnings), even on data simulated from the model. The analytical models are valid while elimination is slower than absorption. Outside that region ferx evaluates an equivalent ODE model instead (see the warnings below).
+
+### A hand-written transit chain
+
+Transit absorption can also be written as explicit states with a fixed number of compartments. `transit_2cpt` has three transit states feeding a two-compartment model with allometric weight scaling:
+
+```{r}
+#| label: transit-2cpt
+chain <- ferx_example("transit_2cpt")
+invisible(ferx_model_get_section(chain$model, "odes"))
+fit_chain <- ferx_fit(chain$model, chain$data, verbose = FALSE)
+fit_chain$estimates[, c("estimate", "rse_pct")]
+ferx_get_warnings(fit_chain, as_df = TRUE)[, c("severity", "category")]
+```
+
+Here the number of compartments is fixed at three. With `transit(n=, mtt=)` it is a parameter.
+
+### Generating the disposition with `ode_template`
+
+`transit()`, `igd()`, `weibull()` and `zero_order()` need an ODE model. Combining one with an analytical `pk` line is an error, and the message names the fix:
+
+```{r}
+#| label: pk-with-transit-error
+error_lines <- sub("ode\\(obs_cmt=central, states=\\[depot, central\\]\\)",
+                   "pk one_cpt_oral(cl=CL, v=V, ka=KA)", readLines(savic$model))
+pk_with_transit <- file.path(comparison_dir, "pk_with_transit.ferx")
+writeLines(error_lines, pk_with_transit)
+try(ferx_fit(pk_with_transit, savic$data, verbose = FALSE))
+```
+
+`ode_template` (@sec-structural-models) writes the disposition equations of a built-in model. A `d/dt()` line in `[odes]` replaces the generated equation for that state only, so the depot can get a transit input while the other equations stay generated:
+
+```{r}
+#| label: ode-template-transit
+template_lines <- sub("ode\\(obs_cmt=central, states=\\[depot, central\\]\\)",
+                      "ode_template one_cpt_oral(cl=CL, v=V, ka=KA)", readLines(savic$model))
+template_lines <- template_lines[!grepl("^  d/dt\\(central\\)|^  # (depot|central)", template_lines)]
+template_model <- file.path(comparison_dir, "transit_template.ferx")
+writeLines(template_lines, template_model)
+invisible(ferx_model_get_section(template_model, "structural_model"))
+invisible(ferx_model_get_section(template_model, "odes"))
+fit_template <- ferx_fit(template_model, savic$data, verbose = FALSE)
+c(template = fit_template$ofv, transit_savic = fit_savic$ofv)
+```
+
+The generated model tracks amounts and scales `central` by `V`, while `transit_savic` writes `central` as a concentration. The fits are the same.
+
+### Weibull and zero-order absorption
+
+`weibull(td=, beta=)` feeds a Weibull absorption-time density into `central`. A shape `beta` above 1 gives a delayed peak; `beta = 1` is first-order absorption with rate 1/`td`. `zero_order(dur=)` delivers the dose at a constant rate over an estimated duration. Both fits are in the comparison table:
+
+```{r}
+#| label: weibull-zero-order
+invisible(ferx_model_get_section(shared$weibull_absorption$model, "odes"))
+fits$weibull_absorption$theta
+invisible(ferx_model_get_section(shared$zero_order_absorption$model, "odes"))
+fits$zero_order_absorption$theta
+```
+
+`sequential_absorption` combines them in series: a zero-order input fills a depot, which empties by first-order absorption. According to its model file, the dataset was simulated with `TVCL` 5, `TVV` 50, `TVKA` 1 and `TVDUR` 3:
+
+```{r}
+#| label: sequential
+sequential <- ferx_example("sequential_absorption")
+invisible(ferx_model_get_section(sequential$model, "odes"))
+fit_sequential <- ferx_fit(sequential$model, sequential$data, verbose = FALSE)
+fit_sequential$estimates[, c("estimate", "rse_pct")]
+```
+
+### Two absorption routes
+
+Routes are added up with pathway fractions. `parallel_absorption` has two first-order routes, `mixed_absorption` a zero-order and a first-order route, and `biphasic_igd_absorption` two inverse-Gaussian routes:
+
+```{r}
+#| label: pathway-fractions
+for (name in c("parallel_absorption", "mixed_absorption", "biphasic_igd_absorption")) {
+  invisible(ferx_model_get_section(shared[[name]]$model, "odes"))
+}
+```
+
+`first_order(ka=)` exists for these combinations. A single first-order route is the analytical `pk ..._oral` model. On the shared data none of the two-route models is supported by the data (see the comparison table).
+
+### Bioavailability
+
+`bioavailability` estimates the fraction `F` on the logit scale, so it stays between 0 and 1, with a random effect on that scale. It is passed with `f=` to the `pk` line. `bioavailability_ode` is the ODE version: an individual parameter named `F` is applied to the dose by the engine and does not appear in the equations. Both give the same fit:
+
+```{r}
+#| label: bioavailability
+bio <- ferx_example("bioavailability")
+bio_ode <- ferx_example("bioavailability_ode")
+invisible(ferx_model_get_section(bio$model, "individual_parameters"))
+invisible(ferx_model_get_section(bio$model, "structural_model"))
+fit_bio <- ferx_fit(bio$model, bio$data, verbose = FALSE)
+fit_bio_ode <- ferx_fit(bio_ode$model, bio_ode$data, verbose = FALSE)
+c(analytical = fit_bio$ofv, ode = fit_bio_ode$ofv)
+fit_bio$estimates[, c("estimate", "rse_pct")]
+round(fit_bio$cor_matrix[c("TVCL", "TVV", "THETA_F"), c("TVCL", "TVV", "THETA_F")], 2)
+```
+
+The data contain oral doses only. With oral data, clearance, volume and `F` cannot be separated, which the correlations of 0.98 to 1 show. Fix `F` at the value used in the simulation (0.70, according to the model file) with `FIX`:
+
+```{r}
+#| label: bioavailability-fixed
+fixed_f <- file.path(comparison_dir, "bioavailability_fixed_f.ferx")
+writeLines(sub("theta THETA_F\\(0.70, 0.001, 0.999\\)", "theta THETA_F(0.70, 0.001, 0.999) FIX",
+               readLines(bio$model)), fixed_f)
+fit_fixed_f <- ferx_fit(fixed_f, bio$data, verbose = FALSE)
+rbind(estimated_f = c(ofv = fit_bio$ofv, fit_bio$theta),
+      fixed_f = c(ofv = fit_fixed_f$ofv, fit_fixed_f$theta))
+```
+
+The R warning refers to the fixed `THETA_F`, which has no standard error. The OFV changes by only `r round(fit_fixed_f$ofv - fit_bio$ofv, 2)`. The data carry almost no information on `F`, only on `CL/F` and `V/F`. `warfarin_logit_f` shows the same problem more strongly. Its estimates end at a bound, with relative standard errors near 3000%:
+
+```{r}
+#| label: warfarin-logit-f
+logit_f <- ferx_example("warfarin_logit_f")
+fit_logit_f <- ferx_fit(logit_f$model, logit_f$data, verbose = FALSE)
+fit_logit_f$estimates[, c("estimate", "rse_pct")]
+ferx_get_warnings(fit_logit_f, as_df = TRUE)[, c("severity", "category")]
+```
+
+Estimating absolute bioavailability needs data after doses by a route with known bioavailability, such as intravenous doses in the same subjects. Otherwise fix `F`, or leave it out and interpret `CL` and `V` as apparent values.
+
 ## Pitfalls
+
+- **Do not give the dose twice.** A dose into a compartment with an input-rate function is delivered by the function alone, and bioavailability is applied to the dose. Do not add `F` to the equations or a separate bolus.
+- **A lower OFV is not enough.** Extra absorption parameters often reach a lower OFV that the data do not support. Check `inflated_rse`, `high_correlation`, `boundary_estimate` and `condition_number` warnings, as in the comparison above.
+- **`TMAX` from `[derived]` is a sampling time.** Aggregates use the observation rows. Predict on a fine design for the shape between samples.
+- **Oral data alone do not identify `F`.** Fix it or add data that inform it.
+- **Keep absorption parameters in their domain.** `mtt` must be positive and `n` non-negative. Parameterise them log-normally (`MTT = TVMTT * exp(ETA_MTT)`). A typical value outside the domain stops the fit with `E_ABSORPTION_DOMAIN`.
+- **Analytical transit and inverse-Gaussian models have a limited scope.** Steady-state doses, infusions, inter-occasion variability and time-varying covariates are handled by switching the subject to the equivalent ODE model. Resets and doses into another compartment are rejected. See [scope](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html#scope-first-version) on the ferx-core absorption page.
+
+### Warnings you may see here
+
+- `flip_flop` (warning): an analytical transit or inverse-Gaussian model is outside the region where its closed form is valid, because elimination is at least as fast as absorption (the flip-flop regime). ferx then evaluates the equivalent ODE model instead, which is correct but slower. The check uses the typical values at the start of the fit. `ferx_model_validate()` with data reports it before fitting. Here the starting values of `one_cpt_transit` are changed to a long mean transit time:
+
+  ```{r}
+  #| label: flip-flop
+  flip_lines <- sub("theta TVMTT\\(1.0,", "theta TVMTT(20.0,", readLines(one_transit$model))
+  flip_lines <- sub("theta TVN\\(3.0,", "theta TVN(0.5,", flip_lines)
+  flip_model <- file.path(comparison_dir, "flip_flop_start.ferx")
+  writeLines(flip_lines, flip_model)
+  flip_check <- ferx_model_validate(flip_model, one_transit$data)
+  fit_flip <- ferx_fit(flip_model, one_transit$data, verbose = FALSE)
+  c(ofv = fit_flip$ofv, fit_flip$theta)
+  ferx_get_warnings(fit_flip, as_df = TRUE)[, c("severity", "category")]
+  ```
+
+  The fit still reaches the optimum of the original model, but the warning stays. It refers to the starting values: check them when the regime is unexpected. The analytical inverse-Gaussian models report the same category. So does a model without an ODE equivalent (next item) whose subjects reach the regime at their individual estimates. See the ferx-core section on the [flip-flop regime](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html#the-flip-flop-regime).
+
+- `absorption_twin_declined` (warning): ferx could not build the equivalent ODE model of an analytical absorption model, so the fallback above is unavailable. The model still fits. Subjects that would need the fallback (steady-state or infusion doses, inter-occasion variability, time-varying covariates, the flip-flop regime) are rejected with an error. The usual cause is an individual parameter named like a state of the ODE version, such as `CENTRAL`:
+
+  ```{r}
+  #| label: twin-declined
+  twin_lines <- sub("^  V   = TVV  \\* exp\\(ETA_V\\)", "  CENTRAL = TVV * exp(ETA_V)",
+                    readLines(one_transit$model))
+  twin_lines <- sub("v=V,", "v=CENTRAL,", twin_lines)
+  twin_model <- file.path(comparison_dir, "twin_declined.ferx")
+  writeLines(twin_lines, twin_model)
+  fit_twin <- ferx_fit(twin_model, one_transit$data, verbose = FALSE)
+  fit_twin$ofv
+  ferx_get_warnings(fit_twin, as_df = TRUE)$message
+  ```
+
+  With flip-flop starting values as well, the same model cannot fit:
+
+  ```{r}
+  #| label: twin-declined-flip-flop
+  twinless_flip <- file.path(comparison_dir, "twin_declined_flip_flop.ferx")
+  writeLines(sub("theta TVN\\(3.0,", "theta TVN(0.5,", sub("theta TVMTT\\(1.0,", "theta TVMTT(20.0,", twin_lines)),
+             twinless_flip)
+  inherits(try(ferx_fit(twinless_flip, one_transit$data, verbose = FALSE), silent = TRUE), "try-error")
+  twinless_check <- ferx_model_validate(twinless_flip, one_transit$data)
+  ```
+
+  Renaming the parameter restores the ODE fallback. See "When a model loses its ODE twin" on the ferx-core [absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html) page.
 
 ## Summary
 
-## Reference
+- Lag times: `lagtime=` on analytical models, `LAGTIME` in ODE models, and `lag=` for a single route.
+- Absorption shapes: `transit()`, `igd()`, `weibull()` and `zero_order()` in ODE models, combined with pathway fractions and `first_order()`. `ode_template` writes the disposition around them.
+- Closed forms: `pk one_cpt_transit`, `two_cpt_transit`, `one_cpt_ig` and `two_cpt_ig` give the same fits as their ODE versions.
+- Compare absorption models by OFV and warnings, and add exposure metrics with `[derived]`.
+- Bioavailability goes in `f=` or an `F` parameter. Oral data alone do not identify it.
 
+Next: @sec-variability adds inter-occasion variability and other random-effect structures.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit`, `?ferx_model_validate`, `?ferx_predict`
+- ferx-core: [absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html), [lag time](https://ferx-nlme.github.io/ferx-core/model-file/lagtime.html), [ODE models](https://ferx-nlme.github.io/ferx-core/model-file/ode-models.html), [`[derived]`](https://ferx-nlme.github.io/ferx-core/model-file/derived.html)
+:::

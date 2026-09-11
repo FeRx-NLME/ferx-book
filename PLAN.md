@@ -458,6 +458,14 @@ Per-chapter loop:
 ### Step 4: Part III, by category, one PR per chapter
 
 - [ ] 4.1 A: 14 structural (WIP 11), 15 absorption (WIP 10), 16 variability (WIP 09 + 13)
+  - Owner notes (2026-09-11), to do after ch15, before ch16:
+    - **Scaling**: check whether `[scaling]` needs its own section (now a ch14
+      subsection). Cover every form the ferx-core scaling page lists, each with a run.
+    - **`[derived]` for analytic vs ODE models**: in ch14, add compartment states in
+      `[derived]` (analytic fixed layout `compartments[i]`, central in concentration;
+      named ODE states, unscaled amounts; `integral` over states) and how to turn them
+      into analysis outputs. ch12 gets a pointer. ch15 uses `[derived]` exposure
+      metrics across absorption models.
 - [ ] 4.2 B: 17 covariates (WIP 08)
 - [ ] 4.3 C: 18 dosing (WIP 15 + 16), 19 censoring (WIP 14; rewrite drop semantics)
 - [ ] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature)
@@ -503,6 +511,25 @@ Per-chapter loop:
   took 440 s and ended unconverged (OFV 17.7; critical `convergence` +
   `ode_solver`). At 1e-6/1e-8 it converges in 9 s. The book shows only the
   moderate-tolerance comparison.
+- **ferx-r bug (found in 4.1, ch15), important:** `fit$individual_estimates` is wrong
+  for ODE models.
+  - `build_individual_estimates()` in `src/rust/src/lib.rs` reads `pk.values[i]`
+    sequentially for ODE models, but the engine's slot layout differs.
+  - Observed: `warfarin_ode_lagtime` gives KA = LAGTIME = 0; `warfarin_ode` gives
+    KA = 0; `transit_savic` gives KA = TVN, MTT = 0 and NTR = TVKA;
+    `sequential_absorption` gives KA = TVDUR and DUR = 0.
+  - Values via `[output]` in sdtab are correct: they match the analytical twin.
+  - Also affects `ferx_xpose` patab and `ferx_cov_screen` on ODE models.
+  - ch15 shows the bug in a callout and uses `[output]` as the workaround. Remove
+    that callout after the pin bump.
+- ferx-core docs wording (found in 4.1, ch15), minor: the `flip_flop` heads-up
+  (`W_TRANSIT_FLIP_FLOP` / `W_IG_FLIP_FLOP`, `api/validation.rs`) is a fit-start check
+  on the **starting** typical values, by design; its message says "check the …
+  starting estimates". absorption.qmd says "at the typical-value estimates", which
+  reads like final estimates. In practice:
+  - A fit that starts in-domain and ends in flip-flop gets no note, because the
+    reroute is correct anyway.
+  - `one_cpt_ig` with TVMAT 15 FIX took 158 s on that path.
 - ferx-r (found in 3.10–3.13), to check:
   - `ferx_load_fit()` returns a fit without ~30 R-side fields
     (`individual_estimates`, `condition_number`, `eigenvalues`, `exclusions`,
