@@ -2,10 +2,19 @@
 #   ```{r}
 #   #| label: setup
 #   #| include: false
+#   #| cache: false   # never cache: knitr does not replay side effects
 #   source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 #   ```
 # Helpers defined here are named book_*() so tools/audit.R never mistakes them
 # for ferx exports.
+
+# Renders must run in a UTF-8 locale (gt and ggplot2 labels use non-ASCII
+# characters); a bare shell with no LANG gives R the "C" locale.
+if (!isTRUE(l10n_info()$`UTF-8`)) {
+  for (loc in c("C.UTF-8", "en_US.UTF-8")) {
+    if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", loc)))) break
+  }
+}
 
 suppressPackageStartupMessages({
   library(ferx)
