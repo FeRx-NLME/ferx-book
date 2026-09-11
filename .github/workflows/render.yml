@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, book/v2-workflow]
   workflow_dispatch:
 
 permissions:
@@ -13,10 +13,13 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
 
     env:
-      FERX_NO_AUTODIFF: "1"
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # Pinned ferx-r build the book documents. Must match ferx_r_sha in
+      # _variables.yml (checked by tools/audit.R).
+      FERX_R_SHA: 846aa4b7840d9ab5cff871a040efc85a513346a8
 
     steps:
       - uses: actions/checkout@v4
@@ -38,17 +41,13 @@ jobs:
       - name: Install R packages
         run: |
           Rscript -e "install.packages('pak', repos = 'https://r-lib.github.io/p/pak/stable/')"
-          Rscript -e "pak::pkg_install(c('rmarkdown', 'knitr', 'ggplot2', 'dplyr', 'tidyr', 'patchwork', 'vpc', 'downlit', 'xml2', 'FeRx-NLME/ferx-r'))"
+          Rscript -e "pak::pkg_install(c('rmarkdown', 'knitr', 'ggplot2', 'dplyr', 'tidyr', 'patchwork', 'gt', 'survival', 'yaml', 'downlit', 'xml2', paste0('FeRx-NLME/ferx-r@', Sys.getenv('FERX_R_SHA'))))"
+
+      - name: Audit chapters against the pinned build
+        run: Rscript tools/audit.R
 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
-
-      - name: Restore Quarto freeze cache
-        uses: actions/cache@v4
-        with:
-          path: _freeze
-          key: quarto-freeze-${{ hashFiles('chapters/**/*.qmd', 'index.qmd') }}
-          restore-keys: quarto-freeze-
 
       - name: Render book
         run: quarto render
