@@ -498,6 +498,11 @@ Per-chapter loop:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- ferx-core (found in 4.1), to check: on `warfarin_ode` with the model's own
+  tolerances (`ode_reltol 1e-10`, `ode_abstol 1e-12`), `ode_method = rosenbrock23`
+  took 440 s and ended unconverged (OFV 17.7; critical `convergence` +
+  `ode_solver`). At 1e-6/1e-8 it converges in 9 s. The book shows only the
+  moderate-tolerance comparison.
 - ferx-r (found in 3.10–3.13), to check:
   - `ferx_load_fit()` returns a fit without ~30 R-side fields
     (`individual_estimates`, `condition_number`, `eigenvalues`, `exclusions`,

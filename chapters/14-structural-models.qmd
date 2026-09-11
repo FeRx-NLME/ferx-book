@@ -7,26 +7,224 @@
 source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
-
 ## Where you are
+
+*The analysis workflow* used a built-in two-compartment model throughout. This chapter looks at the structural model itself: which models are built in, when you need to write differential equations instead, how the two relate, and the solver settings for ODE models. It also covers two special cases: observation scaling, and fits without random effects.
+
+::: {.callout-warning}
+## Maturity: stable, beta and experimental parts
+Analytical 1-, 2- and 3-compartment models are **stable** in ferx-core. ODE models, the stiff steppers and `[scaling]` are **beta**, and the Vern7 stepper is **experimental**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
 
 ## The data
 
-## Minimal runnable call
+Every model in this chapter is a bundled example with its own dataset.
 
-## Reading the result
+## Minimal runnable call: a built-in model
 
-## Options that matter
+A built-in model is named in `[structural_model]` with `pk`, followed by the individual parameters it uses:
+
+```{r}
+#| label: one-cpt-iv
+iv1 <- ferx_example("one_cpt_iv")
+invisible(ferx_model_get_section(iv1$model, "structural_model"))
+fit_iv1 <- ferx_fit(iv1$model, iv1$data, verbose = FALSE)
+fit_iv1$estimates[, c("estimate", "rse_pct")]
+```
+
+The built-in models are `one_cpt_iv`, `one_cpt_oral`, `two_cpt_iv`, `two_cpt_oral`, `three_cpt_iv` and `three_cpt_oral`, plus the absorption variants in @sec-absorption. Their parameter names show in each bundled model:
+
+```{r}
+#| label: builtin-lines
+builtin <- c("one_cpt_iv", "two_cpt_iv", "three_cpt_iv", "warfarin", "two_cpt_oral_cov", "three_cpt_oral")
+data.frame(example = builtin, structural_model = vapply(builtin, function(e) {
+  trimws(ferx_model_get_section(ferx_example(e)$model, "structural_model", strip = TRUE)[1])
+}, character(1)), row.names = NULL)
+```
+
+## Reading the result: analytical and ODE twins
+
+The same disposition can be written as differential equations. `[structural_model]` then declares the ODE states and the observed state. `[odes]` gives the right-hand sides, and `[scaling]` turns the observed amount into a concentration:
+
+```{r}
+#| label: ode-twin
+iv2_ode <- ferx_example("two_cpt_iv_ode")
+for (block in c("structural_model", "odes", "scaling")) {
+  invisible(ferx_model_get_section(iv2_ode$model, block))
+}
+```
+
+Each analytical example has an ODE twin in the package. Fitted to the same data, each pair reaches the same OFV; the ODE version only takes longer. The covariance step is skipped here to save time:
+
+```{r}
+#| label: tbl-twins
+#| tbl-cap: "Analytical models and their ODE twins (covariance step skipped)."
+pairs <- list(
+  list("one_cpt_iv", ferx_example("one_cpt_iv"), ferx_example("one_cpt_iv_ode")),
+  list("two_cpt_iv", ferx_example("two_cpt_iv"), ferx_example("two_cpt_iv_ode")),
+  list("three_cpt_iv", ferx_example("three_cpt_iv"), ferx_example("three_cpt_iv_ode")),
+  list("warfarin", ferx_example("warfarin"), ferx_example("warfarin_ode")),
+  list("three_cpt_oral", ferx_example("three_cpt_oral"), ferx_example("three_cpt_oral_ode")),
+  list("two_cpt_oral_cov", ferx_example("two_cpt_oral_cov"), ferx_example("two_cpt_oral_cov_ode"))
+)
+fit_timed <- function(ex) {
+  start <- Sys.time()
+  f <- ferx_fit(ex$model, ex$data, covariance = FALSE, verbose = FALSE)
+  c(ofv = f$ofv, seconds = as.numeric(difftime(Sys.time(), start, units = "secs")))
+}
+twin_results <- do.call(rbind, lapply(pairs, function(p) {
+  a <- fit_timed(p[[2]]); o <- fit_timed(p[[3]])
+  data.frame(model = p[[1]], ofv_analytical = a[["ofv"]], ofv_ode = o[["ofv"]],
+             seconds_analytical = round(a[["seconds"]], 1), seconds_ode = round(o[["seconds"]], 1))
+}))
+twin_results
+```
+
+Use the analytical form whenever a built-in model fits the problem, and write ODEs only when it doesn't.
+
+### Generating the ODEs from a template
+
+`ode_template` generates the ODE system of a built-in model, so you don't write `[odes]` by hand. It is useful as a starting point for modifying one compartment:
+
+```{r}
+#| label: ode-template
+tmpl <- ferx_example("two_cpt_oral_cov_ode_template")
+invisible(ferx_model_get_section(tmpl$model, "structural_model"))
+cov <- ferx_example("two_cpt_oral_cov")
+all.equal(ferx_predict(tmpl$model, tmpl$data)$PRED, ferx_predict(cov$model, cov$data)$PRED,
+          tolerance = 1e-3)
+```
+
+The template's population predictions match the analytical model. Its full fit is in the table below.
 
 ## Variants
 
+### Nonlinear elimination
+
+Michaelis-Menten elimination has no built-in closed form, so `mm_oral` writes it as ODEs. Here the central state is a concentration, so the model needs no `[scaling]`:
+
+```{r}
+#| label: mm
+mm <- ferx_example("mm_oral")
+invisible(ferx_model_get_section(mm$model, "odes"))
+fit_mm <- ferx_fit(mm$model, mm$data, verbose = FALSE)
+fit_mm$estimates[1:4, c("estimate", "rse_pct")]
+```
+
+### Time inside the ODEs
+
+The right-hand sides of `[odes]` can use `TIME`, `TAD` (time after dose) and `TAFD` (time after first dose). `warfarin_ode_time` adds two accumulator states: the concentration integrated over the first 24 hours, and the time spent above 0.5 in the first 24 hours after each dose. It also computes summary columns in `[derived]` (@sec-tables-figures):
+
+```{r}
+#| label: ode-time
+ot <- ferx_example("warfarin_ode_time")
+invisible(ferx_model_get_section(ot$model, "odes"))
+fit_ot <- ferx_fit(ot$model, ot$data, verbose = FALSE)
+head(distinct(fit_ot$sdtab, ID, KE, T_HALF, CMAX, AUC_72), 3)
+```
+
+### ODE solver settings
+
+```{r}
+#| label: tbl-settings-ode
+book_settings_table(c("ode_method", "ode_reltol", "ode_abstol", "ode_max_steps",
+                      "ode_stiff_abort_after", "ode_auto_switch"))
+```
+
+The bundled ODE twins set very tight tolerances (`ode_reltol = 1e-10`, `ode_abstol = 1e-12`) so that they match the analytical models exactly. Looser tolerances are faster and change the OFV slightly:
+
+```{r}
+#| label: tbl-ode-tolerance
+w_ode <- ferx_example("warfarin_ode")
+tolerances <- list(default = list(), tight = list(ode_reltol = 1e-10, ode_abstol = 1e-12))
+do.call(rbind, lapply(names(tolerances), function(nm) {
+  settings <- utils::modifyList(list(ode_reltol = 1e-4, ode_abstol = 1e-6), tolerances[[nm]])
+  start <- Sys.time()
+  # suppress the R warnings that report overriding the model file's settings
+  f <- suppressWarnings(ferx_fit(w_ode$model, w_ode$data, covariance = FALSE, settings = settings,
+                                 verbose = FALSE))
+  data.frame(tolerance = nm, ode_reltol = settings$ode_reltol, ode_abstol = settings$ode_abstol,
+             ofv = round(f$ofv, 5), seconds = round(as.numeric(difftime(Sys.time(), start, units = "secs")), 1))
+}))
+```
+
+`ode_method` selects the stepper: explicit (`rk45`, `vern7`), stiff (`rosenbrock23`, `rodas4`, `rodas5p`) or `auto`, which starts explicit and escalates when stiffness is detected. On this non-stiff model, all of them converge, to OFVs within about 0.01 of each other at moderate tolerances, but at different speeds:
+
+```{r}
+#| label: tbl-ode-methods
+ode_methods <- c("auto", "rk45", "vern7", "rosenbrock23", "rodas4", "rodas5p")
+do.call(rbind, lapply(ode_methods, function(m) {
+  start <- Sys.time()
+  f <- suppressWarnings(ferx_fit(w_ode$model, w_ode$data, covariance = FALSE,
+                                 settings = list(ode_method = m, ode_reltol = 1e-6, ode_abstol = 1e-8),
+                                 verbose = FALSE))
+  data.frame(ode_method = m, converged = f$converged, ofv = round(f$ofv, 4),
+             seconds = round(as.numeric(difftime(Sys.time(), start, units = "secs")), 1))
+}))
+```
+
+### Observation scaling
+
+`[scaling]` converts model predictions to the units of `DV` before the residual is computed. In `warfarin_scaled` the doses are recorded in micrograms while concentrations are in mg/L, so `obs_scale = 1000` divides every prediction by 1000:
+
+```{r}
+#| label: scaling
+ws <- ferx_example("warfarin_scaled")
+invisible(ferx_model_get_section(ws$model, "scaling"))
+head(read.csv(ws$data, na.strings = ".")[, c("ID", "TIME", "AMT", "DV")], 3)
+fit_ws <- ferx_fit(ws$model, ws$data, verbose = FALSE)
+fit_ref <- ferx_fit(ferx_example("warfarin")$model, ferx_example("warfarin")$data, verbose = FALSE)
+rbind(scaled = fit_ws$theta, milligram_doses = fit_ref$theta)
+```
+
+`obs_scale` can also be a parameter, as in the ODE twins above (`obs_scale = V1`). ferx-core's [scaling](https://ferx-nlme.github.io/ferx-core/model-file/scaling.html) page describes the other forms, including readout expressions and multiple analytes.
+
+### Fits without random effects
+
+A model may declare no `omega` at all. All subjects then share one set of parameters (a naive-pooled fit), and `sigma` carries all the spread:
+
+```{r}
+#| label: pooled
+pooled <- ferx_example("one_cpt_iv_pooled")
+invisible(ferx_model_get_section(pooled$model, "parameters"))
+fit_pooled <- ferx_fit(pooled$model, pooled$data, verbose = FALSE)
+c(converged = fit_pooled$converged, ofv = fit_pooled$ofv, n_eta = nrow(fit_pooled$omega))
+isTRUE(all.equal(fit_pooled$sdtab$PRED, fit_pooled$sdtab$IPRED))
+```
+
+With no random effects the individual and population predictions are identical.
+
+### The ODE template fit
+
+```{r}
+#| label: template-fit
+fit_tmpl <- ferx_fit(tmpl$model, tmpl$data, covariance = FALSE, verbose = FALSE)
+c(template = fit_tmpl$ofv, analytical = ferx_fit(cov$model, cov$data, covariance = FALSE, verbose = FALSE)$ofv)
+```
+
+### Initial conditions
+
+ferx-core also supports an `[initial_conditions]` block to set non-zero starting amounts for ODE states, for example an endogenous baseline. No bundled ferx-r example uses it; see the ferx-core [initial conditions](https://ferx-nlme.github.io/ferx-core/model-file/initial-conditions.html) page.
+
 ## Pitfalls
+
+- **ODE models are slower.** Use them only when no built-in model fits, and check the cost of tight tolerances.
+- **`CMT` refers to the declared states.** In an ODE model, compartment numbers follow the order of `states=[...]`, starting at 1 (ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html)).
+- **Scale the observation.** An ODE state is an amount unless you write it as a concentration. Give `[scaling]` an `obs_scale` (or write the state in concentration units, as `mm_oral` does).
+
+### Warnings you may see here
+
+- `ode_solver` (warning or info): the ODE solver's health at the final estimates, for example steps clamped at the minimum step size, unfinished segments, or an `auto` escalation (as info). The message names the counts. Consider a stiff `ode_method` or looser tolerances. See [solver warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-solver).
 
 ## Summary
 
-## Reference
+- Built-in `pk` models cover 1–3 compartments, IV and oral. Their ODE twins reach the same fit, only more slowly.
+- Write `[odes]` for nonlinear or custom systems. `ode_template` generates a built-in model's ODEs for you.
+- Tune ODE fits with `ode_method` and the tolerance settings.
+- Use `[scaling]` for unit conversion. A model without `omega` gives a naive-pooled fit.
 
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit` (ODE settings), `?ferx_model_get_section`
+- ferx-core: [structural model](https://ferx-nlme.github.io/ferx-core/model-file/structural-model.html), [ODE models](https://ferx-nlme.github.io/ferx-core/model-file/ode-models.html), [scaling](https://ferx-nlme.github.io/ferx-core/model-file/scaling.html), [initial conditions](https://ferx-nlme.github.io/ferx-core/model-file/initial-conditions.html), [ODE stepper selection](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html#ode-stepper-selection)
+:::
