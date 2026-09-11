@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **in progress: Step 0** (started 2026-09-11). Revision 2, after scrutiny
+Status: **Step 0 done (Gate 0 passed locally); next: Step 1 skeleton** (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -283,7 +283,28 @@ CI and on `tools/audit.R`. Don't start the next step before the gate passes.
   - Delete `chapters/*_cache`, `*_files`, `_freeze/`, `_book/`, `*.knit.md`,
     `.DS_Store`, empty `data/`.
   - `.gitignore` additions.
-- [ ] **0.5 Smoke all 66 examples.**
+- [x] **0.5 Smoke all 66 examples.** Result (`tools/example-status.csv`):
+  - **66/66 run**: 62 fits (all converged), 2 adaptive simulations, 2
+    prediction-only examples.
+  - 395 s sequential locally.
+  - Slowest: two_cpt_oral_cov_ode (89 s), _ode_template (87 s),
+    three_cpt_oral_ode, warfarin_dcm, three_cpt_iv_ode and warfarin_sde (~30 s each).
+  - Thread tool timings (`tools/out/time-thread.txt`, local):
+
+    | Tool | Time |
+    |---|---|
+    | covsearch (two_cpt_oral_base `$search`) | 78 s |
+    | ruvsearch (one_cpt_transit `$search`) | 34 s |
+    | bootstrap (50 samples, two_cpt_oral_cov) | 13 s |
+    | bayes | 10 s |
+    | allometry | 3.2 s (emits a cor-matrix warning; show it honestly) |
+    | modelsearch (warfarin `$search`) | 2.8 s |
+    | SIR | 1.7 s |
+    | gam_screen | 0.7 s |
+    | NPDE (nsim=200) | 0.4 s |
+
+  - Render budget: all book compute ≈ 10–15 min locally. CI is assumed to be
+    2–3× slower. No example needs an eval-reason.
   - `tools/smoke-examples.R` fits each one (adaptive: `ferx_simulate_adaptive`) and
     writes `tools/example-status.csv` (ok, converged, warnings, seconds, error).
   - Output: the render-time budget and the list of eval-reason candidates.
@@ -307,8 +328,12 @@ CI and on `tools/audit.R`. Don't start the next step before the gate passes.
     0 unassigned) from the §5 rules. Hand edits survive re-seeding.
   - Verified: the audit fails on the old `main` chapters as expected.
 
-**Gate 0:** pinned install; CI pinned; smoke CSV; inventory; audit runs (all
-coverage "unassigned").
+**Gate 0:** pinned install; CI pinned; smoke CSV; inventory; audit runs.
+
+**Gate 0 status (2026-09-11): passed locally.** The CI half is folded into Gate 1:
+the CI audit step fails on the old `main` chapters until the Step 1 skeleton
+replaces them, so the first PR into `book/v2-workflow` carries Step 0 + Step 1.
+Pushing and opening that PR needs owner OK.
 
 ### Step 1: Skeleton and conventions
 
@@ -427,5 +452,5 @@ Per-chapter loop:
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |
 | D7 | Other NLME software | **Decided:** ferx only; no comparison chapter or text |
-| D4 | Mirror more ferx-core examples into ferx-r | Proposed: not now; list as follow-ups |
-| D6 | Part II thread = two_cpt_oral_base → two_cpt_oral_cov | Proposed; confirm after Step 0.5 timing |
+| D4 | Mirror ferx-core examples into ferx-r for features that fit from R but have no bundled example: `[covariate_model]` (two_cpt_oral_covmodel), repeated TTE (rtte_exponential, rtte_weibull_reset), fixed-rate infusion (dose_rate, one_cpt_infusion) | **Open (re-raised after 0.6).** Without it, these get mention + link only. With it: a ferx-r PR, then a re-pin (rerun Step 0.2/0.5/0.7) |
+| D6 | Part II thread = two_cpt_oral_base → two_cpt_oral_cov | **Confirmed on timing (0.5):** base fit 0.9 s, cov fit 0.5 s, covsearch 78 s, bootstrap 50 in 13 s. The covsearch selection outcome is reported as the run gives it in ch 09 |
