@@ -1,6 +1,4 @@
----
-title: "Preface"
----
+# Preface {.unnumbered}
 
 ```{r}
 #| label: setup
@@ -9,20 +7,64 @@ title: "Preface"
 source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
+This book teaches nonlinear mixed-effects (NLME) modeling with **ferx**, an R package whose estimation and simulation engine is written in Rust ([ferx-core](https://ferx-nlme.github.io/ferx-core/)). It is organised as an analysis workflow. You follow a project from the raw dataset to a report, and every step is a piece of R code you can run.
 
 ## About this book
 
+The book is about *using* ferx in R: which function to call at each stage of an analysis, what comes back, and how to turn it into diagnostics, simulations and tables. The model language, estimation algorithms and every option are specified in the [ferx-core documentation](https://ferx-nlme.github.io/ferx-core/). The book links there for the full technical detail rather than repeating it.
+
+Every code chunk is executed when the book is built, and every output shown is the real result of that code. The examples use the models and datasets bundled with the package (`ferx_example()`), so you can run them yourself.
+
 ## The workflow
+
+The chapters follow the stages of a modeling analysis:
+
+| Stage | What happens | Chapters |
+|---|---|---|
+| **Data** | prepare, check and select records | @sec-data |
+| **Model** | write, inspect and edit the model file | @sec-model-files |
+| **Estimate** | initial estimates, fitting, estimation methods | @sec-first-fit, @sec-estimation-methods |
+| **Evaluate** | diagnostics, VPCs, model selection, parameter uncertainty | @sec-diagnostics, @sec-vpc, @sec-model-selection, @sec-uncertainty |
+| **Simulate** | predictions and scenario simulations | @sec-simulation |
+| **Report** | tables, figures, saving and sharing results | @sec-tables-figures, @sec-reproducibility |
+
+Estimation and evaluation form a loop: you fit, evaluate, revise the model and fit again. @sec-complete-analysis runs the whole workflow once on a small example. After that, *The analysis workflow* covers each stage in depth.
+
+The scenario Parts apply the same workflow to specific modeling problems, grouped by category:
+
+- **General PK modeling**: structural models, absorption, variability (@sec-structural-models, @sec-absorption, @sec-variability)
+- **Covariates** (@sec-covariates)
+- **Dosing and data**: dosing regimens and exposure metrics, censored observations (@sec-dosing, @sec-censoring)
+- **Endpoints beyond PK**: PK/PD, binary and time-to-event models (@sec-pkpd, @sec-binary, @sec-time-to-event)
+- **Adaptive dosing** (@sec-adaptive-dosing)
+- **Experimental features** (@sec-experimental)
+
+@sec-reference lists every function, fit setting, model block and bundled example, with the chapter that covers it.
 
 ## The pinned build
 
-This book documents ferx-r `{{< var ferx_r_sha_short >}}` (engine ferx-core `{{< var ferx_core_sha_short >}}`).
+::: {.callout-important}
+## Version
+This book was built with ferx-r commit `{{< var ferx_r_sha_short >}}` (package version {{< var ferx_r_version >}}), which embeds ferx-core `{{< var ferx_core_sha_short >}}`. @sec-installation shows how to install exactly this build.
 
-## How to read this book
+The linked ferx-core documentation follows the engine's development branch, so it can describe features that are newer than this build.
+:::
 
 ## Prerequisites
 
+You should be comfortable with R, including data frames, dplyr and ggplot2, and with the basics of population pharmacokinetics: compartment models, between-subject variability and residual error. Besides ferx, the book uses these R packages:
+
+```{r}
+#| label: book-packages
+book_packages <- c("ggplot2", "dplyr", "tidyr", "patchwork", "gt", "survival")
+data.frame(package = book_packages,
+           version = vapply(book_packages, function(p) as.character(packageVersion(p)), ""),
+           row.names = NULL)
+```
+
+## Conventions
+
+- Lines starting with `#>` are output printed by the code above them.
+- Each chapter ends with a **Reference** box that points to the R help pages (`?function`) and the ferx-core documentation for that topic.
+- Features that ferx-core labels *beta* or *experimental* carry a callout with that label. The ferx-core [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html) page defines the levels.
+- The R help pages of your installed build (`?ferx_fit`, `?ferx_simulate`, …) are the complete reference for every function argument.

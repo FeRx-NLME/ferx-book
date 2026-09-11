@@ -40,6 +40,9 @@ knitr::opts_chunk$set(
 
 theme_set(theme_minimal(base_size = 12))
 
+# Inline `r x` numbers: plain notation (knitr otherwise prints 11610 as 1.161^{4}).
+options(scipen = 100)
+
 # Scratch directory for tools that write run directories (bootstrap, search,
 # FREM, allometry). Never write into the book tree.
 book_tempdir <- function(name) {

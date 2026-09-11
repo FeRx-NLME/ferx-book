@@ -7,16 +7,60 @@
 source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
-:::
+ferx is an R package with a compiled Rust engine (ferx-core) inside. Installing it compiles that engine from source, so you need a Rust toolchain and the first install takes a long time. The ferx-r README notes that later installs are faster.
 
 ## Requirements
 
+- **R** with a working build toolchain. The package's `SystemRequirements` are GNU make, Cargo and rustc (>= 1.70).
+- **Rust**: a standard stable toolchain installed with [rustup](https://www.rust-lang.org/tools/install). No custom toolchain is required.
+- **Windows**: Rtools matching your R version, plus the GNU-ABI Rust toolchain. See the Windows notes in the [ferx-r README](https://github.com/FeRx-NLME/ferx-r#windows).
+
 ## Installing the pinned build
+
+This book documents one specific ferx-r commit, `{{< var ferx_r_sha_short >}}` (package version {{< var ferx_r_version >}}, engine ferx-core `{{< var ferx_core_sha_short >}}`). Every output in the book was produced with it. To get exactly the same behaviour, install that commit:
+
+```r
+install.packages("pak")
+pak::pak("FeRx-NLME/ferx-r@{{< var ferx_r_sha >}}")
+```
+
+Installing without a commit gives you the latest development version. That is fine for your own work, but its output can differ from what this book shows:
+
+```r
+pak::pak("FeRx-NLME/ferx-r")
+```
 
 ## Checking the installation
 
+Load the package and confirm the version:
+
+```{r}
+#| label: version
+library(ferx)
+packageVersion("ferx")
+```
+
+The package ships example models and datasets, so a real fit is the quickest end-to-end check. It exercises the model parser, the data reader and the estimation engine:
+
+```{r}
+#| label: smoke-fit
+ex <- ferx_example("warfarin")
+fit <- ferx_fit(ex$model, ex$data, verbose = FALSE)
+fit$converged
+```
+
+If this prints `TRUE`, ferx is installed and working. @sec-complete-analysis walks through the same example as a full analysis.
+
+::: {.callout-note}
+## Stopping a long fit
+`ferx_fit()` checks for R interrupts while it runs, so **Ctrl-C** (or RStudio's stop button) cancels a fit. The call then ends with an error saying the fit was cancelled. The ferx-core [installation page](https://ferx-nlme.github.io/ferx-core/installation.html) describes the behaviour in detail.
+:::
+
 ## Reference
 
+::: {.callout-tip}
+## Reference
+- ferx-r: [README: installation](https://github.com/FeRx-NLME/ferx-r#installation), including Windows and Docker
+- ferx-core: [installation](https://ferx-nlme.github.io/ferx-core/installation.html)
+- R help: `?ferx_example`, `?ferx_fit`
+:::

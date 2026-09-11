@@ -7,26 +7,229 @@
 source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 ```
 
-::: {.callout-note}
-## Chapter being rebuilt
-This chapter is being rewritten against the pinned ferx-r build ({{< var ferx_r_sha_short >}}).
+::: {.callout-warning}
+## Maturity: beta
+ferx-core labels adaptive dosing **beta**: the feature is usable, but its syntax and outputs may still change. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
 :::
 
 ## Where you are
 
+In a regular simulation (@sec-simulation) the dosing regimen is fixed in the dataset before the simulation starts. Therapeutic drug monitoring (TDM) and titration protocols do not work that way. The next dose depends on a measured level: *if the trough is below 10 mg/L, increase the dose by 25%*.
+
+ferx simulates such protocols with a **controller** that you declare in the model file's `[adaptive_dosing]` block. At each decision time the controller reads the simulated state of each virtual patient, applies the first matching rule, and issues the next dose. `ferx_simulate_adaptive()` runs the simulation and returns what happened: the concentrations, every decision, the doses given, and one summary row per virtual patient. With those outputs you can compare dosing strategies before using them.
+
+This is *simulation* of a dosing policy under a population model. It does not estimate an individual patient's parameters from their measured levels.
+
 ## The data
+
+The bundled `adaptive_tdm` example titrates a vancomycin-style IV infusion every 12 hours on the measured trough concentration:
+
+```{r}
+#| label: tdm-model
+ex <- ferx_example("adaptive_tdm")
+ferx_model_show(ex$model)
+```
+
+The PK part is an ordinary one-compartment ODE model. The `[adaptive_dosing]` block is the dosing policy:
+
+| Key in this model | What it does |
+|---|---|
+| `with_assay_error = true`, `assay_cmt = 1` | Titrate on the *measured* concentration of output 1, including its residual (assay) error |
+| `at = every 12 from 0 to 96` | Decision times |
+| `start_dose = 1000` | Starting value of the running dose |
+| `route = infuse(cmt=1, over=1)` | Each dose is a 1-hour infusion into compartment 1 |
+| `dose_bounds = [250, 2000]` | Every dose is clamped to this range |
+| `target_window = [10, 20]` | Band used only to *report* attainment; it does not affect dosing |
+| `confirm = 1` | Act on the first breach of a rule |
+| `when signal < 10 : increase 25%` | Rules, evaluated top to bottom; the first match wins |
+
+The block supports more than this example uses. `observe = <expression>` titrates on a latent, noise-free quantity instead of a measured one. `levels` defines a discrete dose ladder. `auc_target` reports exposure attainment. The `hold` and `stop` actions skip or discontinue dosing. All are specified on the ferx-core [adaptive dosing page](https://ferx-nlme.github.io/ferx-core/model-file/adaptive-dosing.html).
+
+The dataset supplies only the patients and the observation grid. It contains no doses, because the controller issues all of them:
+
+```{r}
+#| label: tdm-data
+tdm_data <- read.csv(ex$data, na.strings = ".")
+head(tdm_data, 10)
+```
 
 ## Minimal runnable call
 
+```{r}
+#| label: tdm-simulate
+n_sim <- 200
+res <- ferx_simulate_adaptive(ex$model, ex$data, n_sim = n_sim, seed = 1)
+names(res)
+sapply(res, nrow)
+```
+
+Each of the `r length(unique(tdm_data$ID))` subjects in the dataset is simulated `r n_sim` times with fresh random effects, giving `r nrow(res$metrics)` virtual patient runs.
+
 ## Reading the result
+
+The four data frames describe the same runs at different levels of detail. Follow one virtual patient (subject 1 in replicate 1) through them.
+
+`decisions` has one row per decision time: the signal the controller read and what it did.
+
+```{r}
+#| label: one-patient-decisions
+res$decisions |> filter(SIM == 1, ID == "1")
+```
+
+`doses` is the dose ledger. It records the amount given, the signal and the rule that fired. When no rule matches, the running dose is given again and `RULE` shows the route (here `infuse`).
+
+```{r}
+#| label: one-patient-doses
+res$doses |> filter(SIM == 1, ID == "1") |> select(TIME, AMT, RATE, SIGNAL, RULE)
+```
+
+The first dose is already `r res$doses$AMT[res$doses$SIM == 1 & res$doses$ID == "1"][1]` mg rather than the `start_dose` of 1000 mg. At the first decision (time 0) no drug has been given, so the trough is zero and the rule `signal < 10 : increase 25%` fires immediately.
+
+`trajectories` holds the simulated concentrations on the dataset's observation grid, in the same layout as `ferx_simulate()` output:
+
+```{r}
+#| label: one-patient-trajectory
+res$trajectories |> filter(SIM == 1, ID == "1")
+```
+
+`metrics` has one row per virtual patient run, summarising the whole course:
+
+```{r}
+#| label: metrics
+head(res$metrics)
+```
+
+`PCT_TIME_IN_WINDOW` is the *fraction* (between 0 and 1) of that patient's decisions at which the signal was inside `target_window`. `CUM_DOSE` and `N_DOSES` count the controller's doses.
+
+Summaries across all runs show how the policy performs in the population. The trough at each decision time:
+
+```{r}
+#| label: fig-trough-by-decision
+#| fig-cap: "Measured trough at each decision time across 1000 virtual patient runs: median (line), 10th–90th percentile (band), target window (dashed)."
+res$decisions |>
+  group_by(TIME) |>
+  summarise(p10 = quantile(SIGNAL, 0.1), p50 = median(SIGNAL), p90 = quantile(SIGNAL, 0.9)) |>
+  ggplot(aes(TIME, p50)) +
+  geom_ribbon(aes(ymin = p10, ymax = p90), alpha = 0.25) +
+  geom_line() +
+  geom_hline(yintercept = c(10, 20), linetype = "dashed") +
+  labs(x = "Time (h)", y = "Measured trough (mg/L)")
+```
+
+And the dose each patient ended up on:
+
+```{r}
+#| label: fig-dose-paths
+#| fig-cap: "Dose issued at each decision for the five subjects in the first three replicates."
+res$doses |>
+  filter(SIM <= 3) |>
+  ggplot(aes(TIME, AMT, group = interaction(SIM, ID))) +
+  geom_step(alpha = 0.6) +
+  geom_hline(yintercept = c(250, 2000), linetype = "dotted") +
+  labs(x = "Time (h)", y = "Dose (mg)")
+```
+
+Over all runs, the mean fraction of decisions in the target window is `r round(mean(res$metrics$PCT_TIME_IN_WINDOW), 3)`, and the mean cumulative dose is `r round(mean(res$metrics$CUM_DOSE))` mg.
 
 ## Options that matter
 
+| Argument | Default | Meaning |
+|---|---|---|
+| `model` | — | Model file; it must contain an `[adaptive_dosing]` block |
+| `data` | `NULL` | Dataset with subjects, observation grid, covariates and optionally base doses. When `NULL`, the model's `[data]` block is used |
+| `n_sim` | `1` | Replicates per subject |
+| `seed` | `42` | Random seed |
+| `verify` | `TRUE` | After each run, replay the realized doses through the standard simulation engine and stop with an error if the result diverges |
+| `max_decisions` | `0` | Upper limit on decision points per run (a runaway guard); `0` keeps the engine default |
+
+`max_decisions` is a safety limit, not a way to shorten the schedule. A schedule with more decision points than the limit stops with an error:
+
+```{r}
+#| label: max-decisions
+try(ferx_simulate_adaptive(ex$model, ex$data, n_sim = 1, seed = 1, max_decisions = 3))
+```
+
+A model without an `[adaptive_dosing]` block is rejected with an error as well. Use `ferx_simulate()` for fixed regimens.
+
 ## Variants
+
+### Comparing two dosing strategies
+
+The main use of adaptive simulation is comparing policies. Here is a more aggressive version of the same protocol, which changes the dose in 50% steps instead of 25%. Edit a *copy* of the model: `ferx_model_set_section()` edits a file path in place, and the example model lives inside the installed package.
+
+```{r}
+#| label: aggressive-model
+strategy_dir <- book_tempdir("adaptive-strategies")
+aggressive <- file.path(strategy_dir, "adaptive_tdm_aggressive.ferx")
+invisible(file.copy(ex$model, aggressive, overwrite = TRUE))
+
+rules <- ferx_model_get_section(ex$model, "adaptive_dosing")
+rules <- sub("increase 25%", "increase 50%", rules, fixed = TRUE)
+rules <- sub("decrease 25%", "decrease 50%", rules, fixed = TRUE)
+ferx_model_set_section(aggressive, "adaptive_dosing", rules)
+```
+
+Simulate both strategies with the same seed and compare the per-patient metrics:
+
+```{r}
+#| label: tbl-strategies
+#| tbl-cap: "Two titration strategies, 1000 virtual patient runs each."
+res_aggressive <- ferx_simulate_adaptive(aggressive, ex$data, n_sim = n_sim, seed = 1)
+
+bind_rows(
+  `25% steps` = res$metrics,
+  `50% steps` = res_aggressive$metrics,
+  .id = "strategy"
+) |>
+  group_by(strategy) |>
+  summarise(
+    `mean fraction in window` = mean(PCT_TIME_IN_WINDOW),
+    `mean cumulative dose (mg)` = mean(CUM_DOSE),
+    `mean increases` = mean(N_INCREASES),
+    `mean decreases` = mean(N_DECREASES)
+  ) |>
+  gt::gt() |>
+  gt::fmt_number(columns = -strategy, decimals = 2)
+```
+
+### A loading dose followed by titration
+
+A dataset can also carry a *base regimen*: ordinary dose rows that the controller adds its own doses to. `adaptive_vanco_loading` gives one typical patient a 1500 mg loading dose at time 0 and titrates daily maintenance boluses from 24 h. It titrates on the latent concentration, using `observe` rather than an assay-noised measurement:
+
+```{r}
+#| label: vanco-model
+ex_load <- ferx_example("adaptive_vanco_loading")
+ferx_model_get_section(ex_load$model, "adaptive_dosing")
+read.csv(ex_load$data, na.strings = ".")
+```
+
+```{r}
+#| label: vanco-simulate
+res_load <- ferx_simulate_adaptive(ex_load$model, ex_load$data, n_sim = 1, seed = 1)
+res_load$doses |> select(TIME, AMT, SIGNAL, RULE)
+res_load$metrics |> select(CUM_DOSE, N_DOSES, N_INCREASES, PCT_TIME_IN_WINDOW)
+```
+
+The dose ledger and `CUM_DOSE` (`r round(res_load$metrics$CUM_DOSE, 1)` mg) contain only the controller's maintenance doses. The 1500 mg loading dose from the dataset is not counted, so the total given is `r round(res_load$metrics$CUM_DOSE + 1500, 1)` mg.
 
 ## Pitfalls
 
+- **The dose ledger excludes base doses.** `doses`, `CUM_DOSE` and `N_DOSES` count controller doses only. Add the dose rows of your dataset to get the full regimen.
+- **Signals are read before the dose; trajectories at the same time include a bolus.** The controller reads the level *before* the dose given at that decision time. A `trajectories` row at the same time already includes a bolus given then. In the loading-dose run the first signal is `r round(res_load$doses$SIGNAL[1], 2)` mg/L, while the trajectory at 24 h is `r round(res_load$trajectories$IPRED[res_load$trajectories$TIME == 24], 2)` mg/L. The difference is the `r round(res_load$doses$AMT[1], 1)` mg bolus divided by the volume of 80 L. Use `decisions$SIGNAL` for trough-based attainment.
+- **`PCT_TIME_IN_WINDOW` is a fraction of decisions.** Despite its name, it is a proportion between 0 and 1 of the signal-bearing decisions, not a percentage of time.
+- **`target_window` does not steer dosing.** Only the `when` rules change doses. The window only feeds the attainment metric.
+- **Scope.** The controller runs on ODE models, titrates on one signal per block, and rejects stochastic (`[diffusion]`) models. Some combinations of base doses with time-varying covariates, IOV or system resets are rejected with an error. `?ferx_simulate_adaptive` and the ferx-core page list them.
+
 ## Summary
+
+- Declare the dosing policy in `[adaptive_dosing]` and simulate it with `ferx_simulate_adaptive()`.
+- Read `decisions` and `doses` to see how individual patients were titrated. Use `metrics` to compare strategies across the population.
+- Compare strategies by editing a copy of the model and simulating each version with the same seed.
 
 ## Reference
 
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_simulate_adaptive`, `?ferx_model_get_section`, `?ferx_model_set_section`
+- ferx-core: [adaptive (feedback) dosing](https://ferx-nlme.github.io/ferx-core/model-file/adaptive-dosing.html): all block keys, rule actions, verification and current limits
+:::
