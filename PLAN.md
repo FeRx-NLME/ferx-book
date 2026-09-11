@@ -525,6 +525,21 @@ Per-chapter loop:
   - Also affects `ferx_xpose` patab and `ferx_cov_screen` on ODE models.
   - ch15 shows the bug in a callout and uses `[output]` as the workaround. Remove
     that callout after the pin bump.
+- **Engine bug (found in 4.1, ch16), important:** `block_omega (ETA_CL, ETA_V)` plus a
+  diagonal `omega ETA_KA` (`warfarin_block_omega`) fits the same model as a full 3×3
+  block: identical OFV (−283.3167 FOCE) and identical omega matrix, including
+  non-zero ETA_KA covariances, although `n_parameters` says 8 vs 10. The same
+  happens with the `omega_structure` demo (`ETA_V × ETA_TLAG` reported). ch16 shows
+  it in a callout; remove it after the pin bump. A task was spawned (ferx-core cwd)
+  to locate it. Also: `warfarin_iov` / `warfarin`, as bundled, use `method = foce`
+  with proportional error. FOCE gives biased IOV estimates (TVCL 0.32) vs
+  FOCEI/SAEM/chain (0.17); ch16 shows this. Consider changing the bundled examples
+  to focei (ferx-r).
+- ferx-core docs (found in 4.1, ch16), minor:
+  - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
+    returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.
+  - fit-options docs claim `nlopt_lbfgs` unscaled stalls near −1165 on
+    `two_cpt_oral_cov`; at the pin all `parameter_scaling` values reach −1199.326.
 - ferx-core docs (found in 4.1, ch14), minor: derived.qmd says named state access
   in `integral()` is not available for analytical models (use `compartments[i]`).
   At the pin, `integral(central, from=0, to=24, step=0.5)` on analytical `warfarin`
