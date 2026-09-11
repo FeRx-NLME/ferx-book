@@ -36,6 +36,7 @@ _quarto.yml     # Book structure — new chapters must be registered here
 | 08 | `ferx_fit()` | ODE models |
 | 09 | `ferx_fit()` | BLOQ M3 method |
 | 10 | `ferx_fit()` | IOV |
+| 15 | `ferx_modelsearch()`, `ferx_iivsearch()`, `ferx_iovsearch()`, `ferx_ruvsearch()`, `ferx_covsearch()`, `ferx_allometry()`, `ferx_amd()`, `ferx_amd_plan()`, `ferx_search_config()`, `ferx_search_space()`, `ferx_search_coverage()`, `ferx_search_results()` | MFL search spaces, the `.ferxsearch` config, the strictness gate, the AMD pipeline |
 
 Update this table when new chapters are added.
 
