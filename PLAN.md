@@ -472,7 +472,7 @@ Per-chapter loop:
 - [x] 4.2 B: 17 covariates (WIP 08) — local branch v2/ch17-covariates, not pushed
 - [x] 4.3 C: 18 dosing (WIP 15 + 16), 19 censoring (WIP 14; rewrite drop semantics) — local branches v2/ch18-dosing, v2/ch19-censoring, not pushed
 - [x] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature) — local branches v2/ch20…ch22, not pushed
-- [ ] 4.5 F: 24 experimental (WIP 21)
+- [x] 4.5 F: 24 experimental (WIP 21) — local branch v2/ch24-experimental, not pushed
 
 **Gate 4:** 66/66 examples executed (or eval-reason = smoke error).
 
@@ -567,6 +567,11 @@ Per-chapter loop:
   - **Empty `sdtab`:** TTE-only fits return an empty `sdtab` (0 rows).
   - **Stale model comment:** the `tte_exponential` comment says `[event_model]` cannot reference individual parameters; the docs now say it can.
   - **`ferx_simulate()` without `horizon`:** it prints "Error simulating: …" and returns NULL rather than raising an R error.
+- ferx-core/ferx-r (found in 4.5, ch24), to check:
+  - **`warfarin_dcm`:** the fitted network (141 weights, FOCEI/lbfgs, 27 s) outputs a constant clearance multiplier (1.0319 for all 30 subjects, sd 8e-9), reaching the base-model OFV (−1185.46 vs −1185.40). The explicit covariate model reaches −1199.33.
+  - **Regularised DCM:** `settings = list(nn_l2 = 0.01)` did not finish within 10 min with bobyqa, or within about 25 min with lbfgs. The book documents `nn_l2`/`nn_smooth` without running them.
+  - **`warfarin_sde`:** the diffusion variance collapses (RSE 113%), with OFV −279.27 vs −280.32 without `[diffusion]` (FOCE).
+  - **Bundled model comments:** the `warfarin_dcm` comment names other software, so ch24 prints its blocks without comments.
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.
