@@ -495,6 +495,19 @@ Per-chapter loop:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- ferx-core/ferx-r (found in 3.3), to check:
+  - On `two_cpt_oral_base` (fd gradient → bobyqa) the fit runs 98 objective
+    evaluations and converges identically for `maxiter` = 5, 20 and 500.
+    `maxiter` does not limit it, although the engine's own message calls
+    `maxiter` "the evaluation budget". On warfarin (analytic → nlopt_lbfgs)
+    `maxiter = 5` does stop the fit (critical `convergence`). As a result
+    `ferx_check_init()` ("short pilot") is a full fit on the base model.
+  - `ferx_inits_from_nca()` returns identical thetas for `nca`, `nca_sweep` and
+    `nca_ebe` on both `two_cpt_oral_base` and warfarin. The Rd says `nca` leaves
+    `Q`/`V2` at model defaults, but the returned `TVQ`/`TVV2` differ from the
+    model defaults.
+  - On `two_cpt_oral_base`, `inits_from_nca` + fd/bobyqa "converges" to OFV
+    24422 (vs −1185). The book shows this honestly as a pitfall.
 - ferx-r (found in 3.2): `print.ferx_model` and `print.ferx_conddist` are exported S3
   methods with no help page (`help()` finds nothing). `ferx_model_validate()`
   reporting compact TTE models INVALID is confirmed on the pin (`tte_weibull`:
