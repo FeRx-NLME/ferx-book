@@ -471,7 +471,7 @@ Per-chapter loop:
       metrics across absorption models.
 - [x] 4.2 B: 17 covariates (WIP 08) — local branch v2/ch17-covariates, not pushed
 - [x] 4.3 C: 18 dosing (WIP 15 + 16), 19 censoring (WIP 14; rewrite drop semantics) — local branches v2/ch18-dosing, v2/ch19-censoring, not pushed
-- [ ] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature)
+- [x] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature) — local branches v2/ch20…ch22, not pushed
 - [ ] 4.5 F: 24 experimental (WIP 21)
 
 **Gate 4:** 66/66 examples executed (or eval-reason = smoke error).
@@ -563,6 +563,10 @@ Per-chapter loop:
   - **Misclassified notice:** the finite-difference inner-gradient notice is categorised `data_quality` (warning).
   - **FOCE runs without complaint:** the docs say FOCE is biased for binary endpoints, but `method = "foce"` on the random-intercept model runs silently with the same OFV as FOCEI.
   - **SAEM default seed:** on that model the default seed ends at a degenerate point (RSE 2e6%), while seeds 1–3 agree.
+- ferx-r/ferx-core (found in 4.4, ch22), to check:
+  - **Empty `sdtab`:** TTE-only fits return an empty `sdtab` (0 rows).
+  - **Stale model comment:** the `tte_exponential` comment says `[event_model]` cannot reference individual parameters; the docs now say it can.
+  - **`ferx_simulate()` without `horizon`:** it prints "Error simulating: …" and returns NULL rather than raising an R error.
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.
