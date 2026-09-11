@@ -232,20 +232,23 @@ It excludes all records for those subjects regardless of any other condition.
 
 An `accept` condition keeps only rows where the expression is true.
 
-### R-side preview with `ferx_selection()`
+### R-side preview with `ferx_apply_selection()`
 
 Before fitting, preview which records would be dropped:
 
 ```{r}
 #| label: sel-preview
 ex_sel <- ferx_example("warfarin_data_selection")
-sel <- ferx_selection(ex_sel$data, ignore = "DV < 1.0")
+sel <- ferx_apply_selection(ex_sel$data, ignore = "DV < 1.0")
 cat("Excluded obs:", sel$exclusions$n_obs_excluded, "\n")
-ferx_selection_excluded(sel)[, c("ID", "TIME", "DV")]
+ferx_apply_selection(sel, excluded = TRUE)[, c("ID", "TIME", "DV")]
 ```
 
-`ferx_selection()` returns the filtered data frame (plus an `$exclusions` list);
-`ferx_selection_excluded()` returns only the dropped rows.
+`ferx_apply_selection()` returns the filtered data frame (plus an
+`$exclusions` list); passing `excluded = TRUE` returns only the dropped rows
+instead. It accepts a path, a data frame, an already-selected `ferx_data`
+object, or a `ferx_fit`, so `ferx_apply_selection(fit, excluded = TRUE)`
+recovers the rows a completed fit dropped.
 
 ### What `fit$exclusions` reports
 
@@ -549,7 +552,7 @@ Key outputs that differ from a standard ODE fit:
 #| eval: false
 fit_sde$uses_sde               # TRUE
 fit_sde$theta["DIFF_CENTRAL"]  # fitted diffusion variance
-ferx_estimates(fit_sde)        # DIFF_CENTRAL appears in the theta block
+fit_sde$estimates              # DIFF_CENTRAL appears in the theta block
 ```
 
 ### SDE-specific notes

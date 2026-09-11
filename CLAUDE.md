@@ -29,7 +29,7 @@ _quarto.yml     # Book structure — new chapters must be registered here
 | 01 | installation | — |
 | 02 | `ferx_fit()`, `ferx_example()` | basic 1-cpt oral |
 | 03 | — | model DSL syntax |
-| 04 | `ferx_fit()`, `ferx_estimates()`, `ferx_cor_matrix()` | FOCE/FOCEI, fit options |
+| 04 | `ferx_fit()`, `fit$estimates`, `fit$cor_matrix` | FOCE/FOCEI, fit options |
 | 05 | `ferx_predict()`, `ferx_simulate()`, diagnostic plots | sdtab, CWRES/IWRES |
 | 06 | `ferx_simulate()` | simulation, VPC |
 | 07 | — | parameter transforms, mu-referencing |
@@ -96,7 +96,7 @@ Past incidents introduced a fabricated theta/omega table under `summary(fit)` wh
 1. **Derive output from source, not memory.** Before writing any output snippet, read the relevant print/format function in `../ferx-r/R/` (primarily `fit.R` and `diagnostics.R`). Key facts:
    - `summary(fit)` calls `print.ferx_summary()` — shows run metadata (convergence, OFV/AIC/BIC, method, shrinkage, wall time). **It does not print a theta/omega table.**
    - `print(fit)` calls `print.ferx_fit()` — sections: `--- Objective Function ---`, `--- THETA Estimates ---`, `--- OMEGA Estimates ---`, `--- SIGMA Estimates ---`, `--- OMEGA_IOV Estimates (Inter-Occasion Variability) ---`
-   - `ferx_estimates()` in `diagnostics.R` — omega rows use `fit$eta_names[i]` directly (e.g. `ETA_CL`), not wrapped in `OMEGA(...)`
+   - `fit$estimates` is computed by `.ferx_compute_estimates()` in `R/ferx_estimates.R` — omega rows use `fit$eta_names[i]` directly (e.g. `ETA_CL`), not wrapped in `OMEGA(...)`. The accessors `ferx_estimates()`, `ferx_cor_matrix()` and `ferx_eta_cov()` were removed in ferx 0.2.0 (#226) in favour of the `fit$estimates` / `fit$cor_matrix` / `fit$eta_cov` fields
    - SIGMA rows: value is on the **SD scale**; format is `  %-16s %-14s = %.6f  (var = %.6f, CV% = %.1f)  SE = %s`
    - IOV rows: format is `  %s = %.6f  (CV%% = %s)  SE = %s  Shrinkage = %s` — no column header row
 
