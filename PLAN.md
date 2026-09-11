@@ -554,8 +554,10 @@ Per-chapter loop:
   says "IIV: none" although the model has a 7×7 block. The pre-fit structure parser
   (`.ferx_parse_structure()`) only matches `omega NAME` lines, so every `block_omega`
   eta is dropped (`warfarin_block_omega` prints `IIV: ETA_KA`). Filed as
-  [ferx-r #358](https://github.com/FeRx-NLME/ferx-r/issues/358). ch17 still prints the
-  object; add an "at this build" note or re-read the output after the fix.
+  [ferx-r #358](https://github.com/FeRx-NLME/ferx-r/issues/358), fixed in
+  [ferx-r #362](https://github.com/FeRx-NLME/ferx-r/pull/362) (open, not yet merged; no
+  ordering constraint with #360). ch17 still prints the object. Until the pin includes
+  #362, add an "at this build" note. After the pin bump, re-read the printed `IIV:` line.
 - ferx-r/ferx-core (found in 4.2, ch17), to check: `ferx_allometry()` on a model
   with inline `(WT/70)^THETA_WT` (`two_cpt_oral_cov`) adds WT scaling again with no
   note. Only `[covariate_model]` relations are detected. The Rd says "a parameter
