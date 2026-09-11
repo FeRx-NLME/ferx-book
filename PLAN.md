@@ -1,0 +1,406 @@
+# PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
+
+Status: **proposed, not started**. Revision 2, 2026-09-11, after scrutiny round 1
+(§1b). Supersedes `PLAN-v1-archive.md`.
+
+Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
+runnable book on **using ferx-r in an R modeling analysis**. Technical detail (DSL
+grammar, estimator math, exhaustive option semantics) lives in the
+[ferx-core docs](https://ferx-nlme.github.io/ferx-core/) and is linked, not copied.
+The book is about ferx only: **no comparison text to other NLME software.**
+
+---
+
+## 1. Evaluation of the v1 plan
+
+v1 got the approach right (PKNCA principles, one warfarin thread, a coverage map,
+maturity callouts). What went wrong:
+
+| # | Problem | Evidence (audit 2026-09-11) |
+|---|---|---|
+| 1 | **Stale baseline.** Written against ferx 0.1.6; ferx-r 0.2.0 renamed or removed ~15 functions with no aliases | ~12 evaluated chunks now error: `ferx_estimates`, `ferx_eta_cov`, `ferx_to_frem`, `ferx_selection`, `ferx_model_new`, `ferx_plot_trace` |
+| 2 | **"Executed" never verified.** Global `cache: true` replays 0.1.6 output, so renders look green | 19 `*_cache/` dirs, May–June 2026 |
+| 3 | **Organised by feature, not by analysis workflow.** No data-management chapter, no tables chapter, reporting is a stub | 04-fitting is a 675-line option dump |
+| 4 | **Mostly not run.** 54 `eval:false` chunks, no reasons given; stale "not bundled" claims | ch 07, 12, 18, 20 almost entirely non-evaluated |
+| 5 | **Wrong content** | `bloq_method="drop"` does not remove rows; `is_*` keys are rejected (now `imp_*`); invented DW/condition-number output; a `[bloq]` block that doesn't exist |
+| 6 | **Coverage gaps** | 22 of 47 exports and 39 of 66 examples unused; no adaptive dosing, search, bootstrap, allometry, binary, joint PK-TTE, Bayes, Laplace |
+| 7 | **No execution gates** | no clean-render check, so drift went unnoticed |
+
+## 1b. Scrutiny round 1: defects found in revision 1 of this plan, now fixed
+
+| # | Defect in revision 1 | Fix in revision 2 |
+|---|---|---|
+| S1 | **CI ignored.** `.github/workflows/render.yml` renders and deploys the book with `pak::pkg_install('FeRx-NLME/ferx-r')` (unpinned main HEAD). The "pin" was local only, so CI and readers get a different build | Step 0.3: pin CI to `@<sha>`; the installation chapter tells readers the same `@<sha>` |
+| S2 | **Live site is frozen.** `main` chapters still use the removed names, and its last green CI run was 2026-06-21. Any push to `main` now fails | Any hotfix to `main` is out of scope. v2 replaces it; state this in the final PR |
+| S3 | **Coverage only counted exports and examples.** ~90 `settings` keys, function arguments, DSL blocks, data columns and output columns were untracked, so "every option" couldn't be guaranteed | Step 0.6: machine-generated feature inventory from pinned sources; audit fails on any uncovered row (§6) |
+| S4 | **Examples were listed but not run** | Every runnable example is executed (§5). Variants run in loops producing live comparison tables. Only examples that fail the smoke test are listed, with the smoke error |
+| S5 | **Cross-chapter object reuse.** Ch 11 "reuses fits from 05–10", but Quarto renders each chapter in its own R session | Every chapter is self-contained; refits are cached |
+| S6 | **Stage order inconsistent.** Banner said EVALUATE→SIMULATE, but chapters went 07 EVALUATE, 08 SIMULATE, 09–10 EVALUATE | Part II reordered to follow a real project (§5) |
+| S7 | **Warfarin can't carry Part II.** 10 subjects, no covariate columns (`ID,TIME,DV,EVID,AMT,CMT,RATE,MDV`), so no covariate step and a meaningless bootstrap | Part II thread = `two_cpt_oral_base` → `two_cpt_oral_cov` (30 subjects, WT/CRCL, bundled `.ferxsearch`). Warfarin stays for the ch 02 tour. Verified in Step 0 (D6) |
+| S8 | **Cache still unsafe.** The knitr cache key ignores the package version | `_common.R` sets `cache.extra` = pinned ferx SHA; CI renders with no cache |
+| S9 | **Step 0 order would lose work.** Hygiene deleted files before the WIP snapshot commit | Branch and snapshot first (0.1), then hygiene |
+| S10 | **Doc drift.** Linked ferx-core docs track engine main (16 commits past the pin) | Preface callout: ferx-core docs may describe newer engine features. Book prose is based on the pinned build only |
+| S11 | **Comparison text.** Revision 1 had a "For NONMEM users" chapter and NONMEM-parity notes | Chapter dropped; audit bans other-software names (§2 rule 8) |
+| S12 | **No PR slicing or render budget** | PRs into `book/v2-workflow` at each gate, with CI as the clean-render gate; per-chapter time budget from smoke timings (Step 0.5) |
+| S13 | **No pilot of a non-standard chapter shape** | Step 2 also pilots ch 23 (adaptive dosing), which has no fit and 4 outputs |
+
+---
+
+## 2. Ground rules (non-negotiable)
+
+1. **One pinned ferx-r build.** Local install, CI and reader install instructions all
+   use the same commit. The preface prints version + commit.
+2. **Every ferx call is real.** Only exports, arguments, settings keys and
+   `ferx_example()` names present in the pinned build. Plain R (dplyr, ggplot2, gt)
+   for plots and tables is fine. Nothing ferx-side is invented.
+3. **Every chunk runs.**
+   - `eval: false` needs `#| eval-reason:`.
+   - It is allowed only for `ferx_model_edit()` (opens an editor), `ferx_xpose()`
+     (xpose not a dependency, D2), or an example that fails the smoke test (reason =
+     the recorded error).
+4. **No hand-written output.** Prose numbers use inline R. Tables of options,
+   columns and slots are generated from live objects where possible (`names(fit)`,
+   `names(sim)`, `formals()`).
+5. **Done = clean render.** A green CI render (fresh environment, no cache) plus a
+   green `tools/audit.R`.
+6. **Self-contained chapters.** No object from another chapter.
+7. **Not available from R? Say so and point elsewhere.** Never imply availability.
+8. **ferx only.** No comparisons to or translations from other NLME software.
+   - Describe the data format as "the ferx data format" and link ferx-core
+     `data-format`.
+   - Audit bans (case-insensitive, outside URLs): NONMEM, Monolix, nlmixr, PsN,
+     Pumas, pyDarwin, Phoenix, NLME software names.
+   - `ferx_xpose(backend = "xpose4")` is a ferx argument and is allowed.
+9. **Link, don't copy.** Each chapter ends with a Reference callout (`?fn` +
+   `https://ferx-nlme.github.io/ferx-core/<path>.html`). Never link to stale
+   `ferx-nlme.github.io/model-dsl|learn|examples` pages.
+10. **Report behaviour as it is.** If a fit doesn't converge or warns, show that
+    honestly. Never tune settings to hide it without saying so.
+
+---
+
+## 3. Baseline facts (verified 2026-09-11)
+
+**ferx-r**
+- `origin/main` = `846aa4b`: 50 exports, 22 S3 methods, 66 examples, 4 `.ferxsearch`.
+- ferx-core is locked at `8694824` in `src/rust/Cargo.lock`.
+- Makevars builds `ci,nn,survival`; `lto = "thin"`.
+- Installed "0.3.0" is a post-release snapshot lacking `ferx_coef`, `ferx_se`,
+  `ferx_ruvsearch`. Not usable as the pin.
+- Local `../ferx-r` is on `feat/sim-horizon-526` (0.1.6) with uncommitted files.
+  Never install from it or touch it; use `git archive origin/main`.
+
+**CI** (`.github/workflows/render.yml`)
+- ubuntu, R 4.4, Rust stable, unpinned ferx-r, installs `vpc`.
+- Dead `_freeze` cache step (config has `freeze: false`); stale `FERX_NO_AUTODIFF`.
+- Last run ~8 min, 2026-06-21.
+
+**Datasets** (subjects / key columns)
+
+| Dataset | Subjects | Key columns |
+|---|---|---|
+| warfarin | 10 | base only |
+| two_cpt_oral_cov | 30 | + WT, CRCL |
+| warfarin_bloq | 10 | + CENS |
+| warfarin_iov | 10 | + OCC |
+| emax_pkpd | 3 | — |
+| adaptive_tdm | 5 | — |
+| tte_weibull | 30 | — |
+
+**Local R packages:** ggplot2, dplyr, tidyr, knitr, gt, patchwork, survival,
+rmarkdown present. xpose, vpc, npde, flextable absent.
+
+**ferx-core docs:** live at `/ferx-core/<path>.html` (all sidebar pages 200). They
+track engine main, ahead of the pin.
+
+### Availability from R (the book claims only the left column)
+
+| Available (pinned ferx-r) | Not available from R: mention + pointer |
+|---|---|
+| methods foce, focei, laplace (+`n_agq`), saem, gn, gn_hybrid, imp, impmap, bayes; chains | `vi` (verify, 0.4) |
+| covsearch, modelsearch, ruvsearch, search config/space/coverage/results | iivsearch, iovsearch, amd, globalsearch (ferx-core CLI) |
+| covariance step, SIR, bootstrap, bayes posterior, `ferx_simulate_with_uncertainty` | — |
+| `ferx_simulate_adaptive` + `[adaptive_dosing]` | MAP-Bayesian dose individualisation (doesn't exist) |
+| TTE (exp/Weibull/Gompertz/competing risks), joint PK-TTE, `ferx_predict_survival`, binary | repeated TTE (verify, 0.4); `[markov_model]`/CTMM (feature not built) |
+| built-in absorption inputs, per-route lag, analytic transit/IG | — |
+| SDE, `[covariate_nn]` (experimental) | `[dynamics_nn]` (design only) |
+| compartment-free models, weighted kappa | `mbma_naproxen` (ferx-core only) |
+| FREM (`ferx_model_to_frem`) | `[covariate_model]`, mixture (verify at pin, 0.4) |
+
+---
+
+## 4. The workflow the book teaches
+
+```
+ DATA ─► MODEL ─► ESTIMATE ⇄ EVALUATE ─► SIMULATE ─► REPORT
+                   └─ revise model ─┘
+```
+
+- Data management = DATA.
+- Analysis = MODEL, ESTIMATE, EVALUATE (diagnostics, VPC, selection, uncertainty),
+  SIMULATE.
+- Outputs & reporting = REPORT.
+
+Every Part II chapter opens with the banner, active stage bolded. Part III chapters
+run the same loop compactly for one scenario.
+
+**Chapter template:**
+1. Where you are
+2. The data
+3. Minimal runnable call
+4. Reading the result
+5. Options that matter (the chapter's **home options table**: every option assigned
+   to this chapter by the inventory, with default + one line + link)
+6. Variants (live loop over bundled variants → comparison table)
+7. Pitfalls (verified only)
+8. Summary → next
+9. Reference callout (+ maturity callout if beta/experimental)
+
+---
+
+## 5. Target structure (25 chapters + preface)
+
+Part II thread: **`two_cpt_oral_base` → `two_cpt_oral_cov`**. Confirm in Step 0; if
+it's too slow or doesn't converge, fall back to warfarin and note it. **All 66
+examples are placed and run**; each has one home chapter.
+
+### Part I: Getting started
+
+| Ch | Title | Content | Examples run |
+|---|---|---|---|
+| index | Preface | audience; workflow diagram; ferx-r vs ferx-core; pinned-build box; R deps; datasets | — |
+| 01 | Installing ferx | `pak::pak("FeRx-NLME/ferx-r@<sha>")`, toolchain, verify install, threads, Ctrl-C | — |
+| 02 | A complete analysis in one chapter | warfarin: data → model → fit → estimates → GOF → VPC → table → save; each section links to Part II | warfarin |
+
+### Part II: The analysis workflow
+
+| Ch | Stage | Title | Functions / features (home) | Examples run |
+|---|---|---|---|---|
+| 03 | DATA | Preparing and checking the analysis dataset | data format and reserved columns (table from inventory); exploratory plots; covariate summaries; `ferx_get_columns`; `ferx_apply_selection` (+`excluded`), `print.ferx_data`; `ferx_fit(ignore, accept, ignore_ids)`; `[data]`, `[data_selection]` | two_cpt_oral_cov (data), warfarin_data_selection |
+| 04 | MODEL | Writing and managing model files | `ferx_model` (templates, `print.ferx_model`), `_show`, `_inspect`, `_validate`, `_get_section`, `_set_section`, `_edit` (eval-reason); DSL block map → ferx-core | two_cpt_oral_base |
+| 05 | ESTIMATE | Initial estimates and a first fit | `ferx_inits_from_nca` (`print.ferx_inits`), `ferx_check_init`, `ferx_fit` core args, `print`/`summary.ferx_fit`, fit-object slots (live `names(fit)`), `ferx_coef`, `ferx_se`, `ferx_get_warnings`, `check_diagnostics` | (thread) |
+| 06 | ESTIMATE | Estimation methods and controlling the fit | all methods + when to use; chains; `settings` run-control / optimizer / inner-loop / covariance groups; multi-start; `threads`; `ferx_fit_async`, `ferx_collect`, `ferx_stop`, `plot.ferx_job`, `print.ferx_job`, `$.ferx_job`; `ferx_trace`, `plot.ferx_fit`, `ferx_runlog`, `ferx_runlog_iters`, `ferx_conddist` (`print.ferx_conddist`) | warfarin_saem, mm_multistart |
+| 07 | EVALUATE | Diagnosing the model | GOF from `fit$sdtab`; individual fits; ETA distributions, shrinkage, `fit$eta_cov`, `fit$cor_matrix`; `ferx_calc_npde` (+`npde_*` settings); `ferx_xpose` (eval-reason) | (thread) |
+| 08 | EVALUATE | Simulation-based evaluation: VPC | `ferx_simulate` (`n_sim`, `seed`, `match`) for VPC; ggplot VPC (ferx provides simulations, not a VPC function) | (thread) |
+| 09 | EVALUATE | Model development and selection | ΔOFV, AIC/BIC, `ferx_bic`, `check_strictness`; `ferx_search_config` / `_space` / `_coverage` / `_results` (+print methods); `ferx_modelsearch`, `ferx_covsearch`, `ferx_ruvsearch` (+print/summary); CLI-only tools pointer | warfarin `$search` (modelsearch), two_cpt_oral_base `$search` (covsearch → two_cpt_oral_cov), one_cpt_transit `$search` (ruvsearch) |
+| 10 | EVALUATE | Parameter uncertainty of the final model | covariance settings, `ferx_covariance`; `ferx_sir` + inline `sir` (+`sir_*`); `ferx_bootstrap`, `ferx_bootstrap_summarize`, `print`/`plot.ferx_bootstrap`; `method="bayes"` (+`bayes_*`); CI comparison table | two_cpt_oral_cov |
+| 11 | SIMULATE | Simulating scenarios | `ferx_predict`; design datasets (empty DV); alternative regimens / populations; `match` options; `ferx_simulate_with_uncertainty` | (thread) |
+| 12 | REPORT | Tables and figures | parameter table (values as ferx reports them), run table, exposure table via `[derived]`/`[output]`, figure set | two_cpt_oral_derived |
+| 13 | REPORT | Reproducibility and sharing | `ferx_save_fit` / `ferx_load_fit` (.fitrx), `ferx_fit(output, include_data)`, seeds, `checkpoint`, `sessionInfo` + ferx SHA, project layout, Quarto report skeleton | (thread) |
+
+### Part III: Modeling scenarios, by category
+
+Pattern: scenario → data → model (live `ferx_model_get_section`) → fit → key
+diagnostic → simulate/output. Variants run in a loop.
+
+| Cat | Ch | Title | Home features | Examples run |
+|---|---|---|---|---|
+| A General PK | 14 | Structural models: analytical and ODE | 1/2/3-cpt IV/oral; analytic↔ODE; `ode_template`; `ode_*` settings; TIME/TAD in `[odes]`; nonlinear elimination; pooled fits; `[scaling]` | one_cpt_iv, one_cpt_iv_ode, two_cpt_iv, two_cpt_iv_ode, three_cpt_iv, three_cpt_iv_ode, three_cpt_oral, three_cpt_oral_ode, warfarin_ode, two_cpt_oral_cov_ode, two_cpt_oral_cov_ode_template, warfarin_ode_time, mm_oral, one_cpt_iv_pooled, warfarin_scaled |
+| A | 15 | Absorption and bioavailability | lag (ODE, per-route); `transit()`; analytic transit/IG; IG, biphasic IG, Weibull, zero-order, parallel/mixed/sequential; F (logit, analytic vs ODE) | warfarin_ode_lagtime, per_route_lag_absorption, transit_savic, transit_2cpt, one_cpt_transit, two_cpt_transit, igd_inverse_gaussian, one_cpt_ig, two_cpt_ig, biphasic_igd_absorption, weibull_absorption, zero_order_absorption, parallel_absorption, mixed_absorption, sequential_absorption, bioavailability, bioavailability_ode, warfarin_logit_f |
+| A | 16 | Variability: random effects, residual error, IOV | transforms, mu-referencing (`mu_referencing`, `scale_params`); block omega; error models, LTBS, per-CMT; IOV (`iov_*`) | warfarin_block_omega, warfarin_additive_eta, warfarin_ltbs, warfarin_iov, warfarin_iov_saem, one_cpt_transit_iov |
+| B Covariates | 17 | Covariate modeling toolbox | ETA-vs-covariate plots; `ferx_cov_screen`, `ferx_gam_screen`; if/else effects; `ferx_allometry` (+print); FREM `ferx_model_to_frem(output_dir = tempdir())` (+`frem_*`); covsearch recap → ch 09 | warfarin_if (+ two_cpt_oral_base/cov reused, refit) |
+| C Dosing & data | 18 | Dosing regimens and exposure metrics | SS, ADDL/II, RATE/infusions, EVID resets, dosing into absorption cpt; `[derived]`/`[output]` | warfarin_ss, warfarin_addl, ss_absorption, infusion_absorption, warfarin_derived |
+| C | 19 | Censored observations | `bloq_method` m3 vs drop (drop keeps rows at the limit); `ignore="CENS==1"`; CENS=-1 | warfarin_bloq |
+| D Endpoints | 20 | PK/PD models | multi-endpoint per CMT, per-CMT error, derived PD readouts, compartment-free time-course | emax_pkpd, emax_timecourse, warfarin_derived_pkpd |
+| D | 21 | Binary endpoints | `[binary_model]`, simulating binary outcomes | binary_logistic |
+| D | 22 | Time-to-event | TTE data; hazards; competing risks; `ferx_predict_survival(model, data, times, fit)`; `ferx_simulate(horizon)`; KM overlay (survival); joint PK-TTE | tte_exponential, tte_weibull, tte_gompertz, tte_competing_risks, pktte_joint |
+| E Adaptive dosing | 23 | Simulating adaptive dosing and TDM strategies | `[adaptive_dosing]` concepts; `ferx_simulate_adaptive(n_sim, seed, verify, max_decisions)`; `trajectories` / `doses` / `decisions` / `metrics`; target attainment; base regimen + loading; unsupported combinations; not MAP dosing | adaptive_tdm, adaptive_vanco_loading |
+| F Experimental | 24 | Experimental features | `[diffusion]` SDE; `[covariate_nn]` (+`nn_*`) | warfarin_sde, warfarin_dcm |
+
+Example count: 02:1, 03:2, 04:1, 06:2, 12:1, 14:15, 15:18, 16:6, 17:1, 18:5, 19:1,
+20:3, 21:1, 22:5, 23:2, 24:2 = **66**.
+
+### Part IV: Reference
+
+| Ch | Title | Content |
+|---|---|---|
+| 25 | Function, option and example index | Generated from `tools/features.csv`: every export, S3 method, argument, settings key, DSL block, example → chapter link. Maturity table. "Not available from R" table. ferx-core page map |
+
+---
+
+## 6. Coverage guarantee: the feature inventory
+
+`tools/inventory.R` builds `tools/features.csv` **from pinned sources only**: the
+installed pinned package, plus ferx-core at the locked SHA via `git show 8694824:...`.
+
+| kind | Source | Expected rows | Coverage rule |
+|---|---|---|---|
+| export | `getNamespaceExports` | 50 | executed call in home chapter (except eval-reason) |
+| s3method | NAMESPACE `S3method` | 22 | executed in home chapter |
+| argument | `formals()` of every export | ~350 | name appears in home chapter (code or options table) |
+| setting | `settings` keys from `?ferx_fit` Rd | ~90 | row in home chapter's options table |
+| example | `ferx_example()` | 66 | executed `ferx_example("name")` in home chapter |
+| searchfile | `inst/examples/search/` | 4 | executed in ch 09 |
+| dsl_block | block list at pinned ferx-core parser/docs | ~25 | mentioned + linked; executed if an example uses it |
+| data_column | reserved columns at pinned data reader/docs | ~15 | ch 03 table |
+| output | `names()` of fit, sdtab, simulate, predict, survival, adaptive outputs | live | table generated live in home chapter |
+| unavailable | §3 right column | ~10 | ch 25 table + pointer at point of need |
+
+Every row has a `home` chapter (assigned in Step 1). `tools/audit.R` fails if a row
+has no home or its name doesn't occur in its home chapter. Each audit prints
+"covered X/Y" per kind. Residual risk: the audit proves presence, not correctness.
+That is mitigated by the per-chapter loop (read the Rd, run first, write prose from
+real output).
+
+---
+
+## 7. Stepwise execution
+
+Each step ends at a **gate**. A gate is a PR into `book/v2-workflow` that is green on
+CI and on `tools/audit.R`. Don't start the next step before the gate passes.
+
+### Step 0: Baseline, pin, guardrails (no chapter writing)
+
+- [ ] **0.1 Branch.**
+  - Commit WIP on `restructure/workflow-tutorial` as a reference snapshot (exclude
+    `.DS_Store`, `*.knit.md`).
+  - Create `book/v2-workflow` from `main`; add PLAN files.
+- [ ] **0.2 Pin locally.**
+  - `git archive` ferx-r `846aa4b` → scratch → `R CMD INSTALL`.
+  - Confirm the engine SHA = `8694824` from the build's Cargo.lock.
+  - Confirm 50 exports / 66 examples.
+  - Write `_variables.yml` (`ferx_r_sha`, `ferx_core_sha`, version).
+- [ ] **0.3 Pin CI.**
+  - `render.yml`: `FeRx-NLME/ferx-r@846aa4b`; add gt + survival; drop vpc,
+    `FERX_NO_AUTODIFF`, the dead `_freeze` step.
+  - Add a `pull_request` trigger for `book/v2-workflow`.
+- [ ] **0.4 Hygiene.**
+  - Delete `chapters/*_cache`, `*_files`, `_freeze/`, `_book/`, `*.knit.md`,
+    `.DS_Store`, empty `data/`.
+  - `.gitignore` additions.
+- [ ] **0.5 Smoke all 66 examples.**
+  - `tools/smoke-examples.R` fits each one (adaptive: `ferx_simulate_adaptive`) and
+    writes `tools/example-status.csv` (ok, converged, warnings, seconds, error).
+  - Output: the render-time budget and the list of eval-reason candidates.
+  - Also time the thread: base fit, covsearch, bootstrap (small `samples`),
+    modelsearch, ruvsearch.
+- [ ] **0.6 Verify open items**, then update §3:
+  - `vi` from R; `[covariate_model]` and mixture at the pin; RTTE from R
+  - RATE −1/−2; CWRES definition
+  - determinism of bootstrap/search with fixed seed and threads
+  - whether `ferx_stop` can be demoed reliably
+- [ ] **0.7 Inventory.** `tools/inventory.R` → `tools/features.csv`; check the row
+  counts are plausible.
+- [ ] **0.8 Audit.** `tools/audit.R` checks:
+  - (a) exports exist; (b) example names exist; (c) coverage per §6;
+  - (d) eval-reason present; (e) no `#>` outside executed chunks;
+  - (f) stale links; (g) banned other-software names; (h) no cross-chapter objects
+    (heuristic: objects used before defined per chapter).
+
+**Gate 0:** pinned install; CI pinned; smoke CSV; inventory; audit runs (all
+coverage "unassigned").
+
+### Step 1: Skeleton and conventions
+
+- [ ] 1.1 `_quarto.yml` Parts I–IV tree; navbar unchanged.
+- [ ] 1.2 `chapters/_common.R`:
+  - libraries, theme, knitr options
+  - `cache.extra = ferx_r_sha`
+  - `set.seed`, thread cap
+  - `tempdir()` for tool output
+- [ ] 1.3 Includes: stage banner (+ light/dark SCSS), maturity / reference /
+  not-from-R callouts, pinned-build box.
+- [ ] 1.4 Assign `home` for every inventory row. Stub every chapter with template
+  headings and its home list.
+
+**Gate 1:** CI renders the skeleton; audit coverage shows every row assigned (0
+covered).
+
+### Step 2: Pilot (index, 01, 02, 23)
+
+- [ ] 2.1 Preface and 01 installation.
+- [ ] 2.2 02 complete warfarin analysis.
+- [ ] 2.3 23 adaptive dosing (non-fit template stress test).
+
+**Gate 2:** CI + audit green for these files. **Owner review of voice, depth and
+format before scaling out.**
+
+### Step 3: Part II, one PR per chapter, in order 03 → 13
+
+Per-chapter loop:
+1. Read the Rd (pinned) + linked ferx-core pages.
+2. Run the code in R first.
+3. Write prose from the real output, using inline R numbers.
+4. Build the home options table.
+5. Delete the chapter cache and render locally.
+6. Run the audit for that chapter's rows.
+7. Open the PR; CI green.
+
+| Chapter | WIP source to mine | Known traps |
+|---|---|---|
+| 03 data | WIP 17 | `ferx_apply_selection` returns data with an `exclusions` attribute |
+| 04 model | WIP 03 | `ferx_model(template=, path=)` returns an object; `_validate` returns a list |
+| 05 first fit | WIP 04 (top) | default method focei; `fit$estimates` |
+| 06 methods | WIP 04 (rest) | `imp_*` keys; imp = MC-EM by default; SAEM `n_mh_steps`=20; `lbfgs` is an alias |
+| 07 diagnostics | WIP 05 | drop the fabricated DW output; `gradient_tol` default 0.1 |
+| 08 VPC | WIP 06 | sim columns `DRAW`/`CMT`/`OBSERVED` |
+| 09 selection | new | tools write directories: `tempdir()`; runtime |
+| 10 uncertainty | WIP 07 | `sir_keep_samples`; bootstrap size vs budget |
+| 11 scenarios | WIP 06 | design datasets with empty DV |
+| 12 tables | new | report values as ferx gives them; state any derived formula |
+| 13 reproducibility | WIP 20 | `.fitrx` paths |
+
+**Gate 3:** Part II coverage 100% for its home rows.
+
+### Step 4: Part III, by category, one PR per chapter
+
+- [ ] 4.1 A: 14 structural (WIP 11), 15 absorption (WIP 10), 16 variability (WIP 09 + 13)
+- [ ] 4.2 B: 17 covariates (WIP 08)
+- [ ] 4.3 C: 18 dosing (WIP 15 + 16), 19 censoring (WIP 14; rewrite drop semantics)
+- [ ] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature)
+- [ ] 4.5 F: 24 experimental (WIP 21)
+
+**Gate 4:** 66/66 examples executed (or eval-reason = smoke error).
+
+### Step 5: Part IV
+
+- [ ] 25 index generated from `features.csv`.
+
+**Gate 5:** audit coverage 100% on every kind.
+
+### Step 6: Finalise
+
+- [ ] 6.1 Full CI render (record time) and local clean render.
+- [ ] 6.2 Link check (ferx-core URLs 200).
+- [ ] 6.3 Rewrite `CLAUDE.md`:
+  - chapter table and the pin procedure
+  - inventory + smoke + audit procedure
+  - the ferx-only rule
+  - remove stale ferx-site cross-link and `ferx_estimates` guidance
+- [ ] 6.4 PR `book/v2-workflow` → `main` (template filled; note S2 live-site
+  freeze). Merging deploys.
+
+### Step 7: Upstream issues (separate, already queued as tasks)
+
+- ferx-r:
+  - docs claim nn is off by default
+  - `ferx_model_validate` rejects compact TTE models
+  - pkgdown omits post-0.3.0 exports
+- ferx-core:
+  - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
+    `ferx_mbma_data`, `ferx_search`)
+  - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
+- Any example failing the smoke test → ferx-r issue.
+
+### Maintenance: pin bump
+
+1. Diff NAMESPACE, `formals`, settings keys, example registry (rerun
+   `inventory.R` and diff the CSV).
+2. Read NEWS.
+3. Rerun smoke + audit.
+4. Bump `_variables.yml` + CI SHA.
+5. Clean render.
+
+---
+
+## 8. Decisions
+
+| # | Decision | Outcome |
+|---|---|---|
+| D1 | Pin | **Decided:** ferx-r `origin/main` `846aa4b`; re-pin to next release tag when cut |
+| D2 | xpose | **Decided:** mention only; `ferx_xpose` eval-reason |
+| D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
+| D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |
+| D7 | Other NLME software | **Decided:** ferx only; no comparison chapter or text |
+| D4 | Mirror more ferx-core examples into ferx-r | Proposed: not now; list as follow-ups |
+| D6 | Part II thread = two_cpt_oral_base → two_cpt_oral_cov | Proposed; confirm after Step 0.5 timing |
