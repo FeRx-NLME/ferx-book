@@ -470,7 +470,7 @@ Per-chapter loop:
       into analysis outputs. ch12 gets a pointer. ch15 uses `[derived]` exposure
       metrics across absorption models.
 - [x] 4.2 B: 17 covariates (WIP 08) — local branch v2/ch17-covariates, not pushed
-- [ ] 4.3 C: 18 dosing (WIP 15 + 16), 19 censoring (WIP 14; rewrite drop semantics)
+- [x] 4.3 C: 18 dosing (WIP 15 + 16), 19 censoring (WIP 14; rewrite drop semantics) — local branches v2/ch18-dosing, v2/ch19-censoring, not pushed
 - [ ] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature)
 - [ ] 4.5 F: 24 experimental (WIP 21)
 
