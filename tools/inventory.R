@@ -89,6 +89,14 @@ for (r in gsub('"', "", regmatches(roles_txt, gregexpr('"[a-z0-9_]+"', roles_txt
   add("data_column", toupper(r))
 }
 
+# ---- fit warning categories: WarningCode::as_str() tokens --------------------------
+# The `category` column of ferx_get_warnings(fit, as_df = TRUE); a stable public
+# token per ferx-core docs/warnings.qmd.
+types_rs <- git_show("src/types.rs")
+for (line in grep('^\\s+WarningCode::[A-Za-z]+ => "[a-z_]+",', types_rs, value = TRUE)) {
+  add("warning_code", sub('^.*=> "([a-z_]+)".*$', "\\1", line))
+}
+
 # ---- fit object slots: names() of a real fit on the pinned build -------------------
 ex <- ferx_example("warfarin")
 fit <- suppressMessages(ferx_fit(ex$model, ex$data, verbose = FALSE))

@@ -167,7 +167,13 @@ run the same loop compactly for one scenario.
 5. Options that matter (the chapter's **home options table**: every option assigned
    to this chapter by the inventory, with default + one line + link)
 6. Variants (live loop over bundled variants → comparison table)
-7. Pitfalls (verified only)
+7. Pitfalls (verified only), ending with **"Warnings you may see here"**:
+   - the fit-warning `category` tokens whose home is this chapter
+     (`tools/homes.csv`, kind `warning_code`);
+   - for each: severity and what it flags (from ferx-core `warnings.qmd` at the
+     pin), plus a link to `https://ferx-nlme.github.io/ferx-core/warnings.html#codes-<group>`;
+   - show a warning live only when a bundled example in the chapter actually
+     triggers it. Never build a broken model just to provoke one.
 8. Summary → next
 9. Reference callout (+ maturity callout if beta/experimental)
 
@@ -238,18 +244,34 @@ Example count: 02:1, 03:2, 04:1, 06:2, 12:1, 14:15, 15:18, 16:6, 17:1, 18:5, 19:
 `tools/inventory.R` builds `tools/features.csv` **from pinned sources only**: the
 installed pinned package, plus ferx-core at the locked SHA via `git show 8694824:...`.
 
-| kind | Source | Expected rows | Coverage rule |
+| kind | Source (as implemented) | Rows | Coverage rule (`tools/audit.R`) |
 |---|---|---|---|
-| export | `getNamespaceExports` | 50 | executed call in home chapter (except eval-reason) |
-| s3method | NAMESPACE `S3method` | 22 | executed in home chapter |
-| argument | `formals()` of every export | ~350 | name appears in home chapter (code or options table) |
-| setting | `settings` keys from `?ferx_fit` Rd | ~90 | row in home chapter's options table |
-| example | `ferx_example()` | 66 | executed `ferx_example("name")` in home chapter |
-| searchfile | `inst/examples/search/` | 4 | executed in ch 09 |
-| dsl_block | block list at pinned ferx-core parser/docs | ~25 | mentioned + linked; executed if an example uses it |
-| data_column | reserved columns at pinned data reader/docs | ~15 | ch 03 table |
-| output | `names()` of fit, sdtab, simulate, predict, survival, adaptive outputs | live | table generated live in home chapter |
+| export | `getNamespaceExports` | 50 | `name(` in home chapter |
+| s3method | NAMESPACE `S3method` | 22 | generic + class named in home chapter |
+| argument | `formals()` of every export | 245 | parent fn named + `` `arg` `` or `arg =` |
+| setting | pinned ferx-core `apply_fit_option()` match arms, minus keys reserved for `ferx_fit()` arguments | 107 | `` `key` `` or `key =` |
+| example | `ferx_example()` | 66 | `ferx_example("name")` |
+| searchfile | `inst/examples/search/` | 4 | `ferx_example("name")` + `$search` in ch 09 |
+| dsl_block | pinned `BLOCK_REGISTRY` | 22 | `[block]` mentioned |
+| data_column | pinned `DATA_BLOCK_ROLES` | 14 | column named |
+| warning_code | pinned `WarningCode::as_str()` (`src/types.rs`) | 34 | `` `token` `` in home chapter's "Warnings you may see here" |
+| fit_slot | `names()` of a real warfarin fit | 108 | named in home chapter (ch 25 generated table) |
 | unavailable | §3 right column | ~10 | ch 25 table + pointer at point of need |
+
+**Validation and parse diagnostics** (`E_*` / `W_*` codes from `ferx_model_validate()`,
+~128 at the pin) are *not* tracked per code, because they are error messages rather
+than features. Ch 04 explains the diagnostics list that `ferx_model_validate()`
+returns and links ferx-core `file-formats/check-report.html`. Experimental-feature
+codes (`W_EXPERIMENTAL_SDE`, `W_EXPERIMENTAL_NN`) are shown live in ch 24.
+
+**Warning system placement:**
+- ch 05 introduces fit warnings: the two channels `fit$warnings` /
+  `fit$warnings_structured`, `ferx_get_warnings()`, severity levels, stable
+  `category` tokens, and the extra lines `summary()` adds (e.g. EBE fallbacks
+  from `fit$total_ebe_fallbacks`).
+- ch 07 covers acting on diagnostic warnings.
+- ch 09 covers gating candidate models on severity with `check_strictness()`.
+- ch 25 holds the full table.
 
 Every row has a `home` chapter (assigned in Step 1). `tools/audit.R` fails if a row
 has no home or its name doesn't occur in its home chapter. Each audit prints

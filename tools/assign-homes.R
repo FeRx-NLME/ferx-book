@@ -107,6 +107,21 @@ example_home <- c(
 
 column_home <- c(TENTRY = 22, FREMTYPE = 17)
 
+# Fit warning categories (ferx-core docs/warnings.qmd groups) -> the chapter whose
+# "Warnings you may see here" list explains them.
+warning_home <- c(
+  convergence = 5, general = 5,
+  optimizer_health = 6, gradient_fallback = 6, mu_referencing = 6, optimizer_config = 6,
+  multi_start = 6, cancelled = 6, threads = 6, flat_parameter = 6, init_outside_bounds = 6,
+  parameter_at_runaway_guard = 6, importance_sampling = 6,
+  dw_autocorrelation = 7, eta_normality = 7, eps_shrinkage = 7, eta_shrinkage = 7,
+  boundary_estimate = 7, inflated_rse = 7, high_correlation = 7, condition_number = 7,
+  covariance_step = 10, covariance_failed = 10, covariance_regularized = 10, sir = 10,
+  data_quality = 3, ode_solver = 14, flip_flop = 15, absorption_twin_declined = 15,
+  omega_structure = 16, bloq_method = 19, simulation = 22, experimental = 24,
+  vi_bad_basin = 25  # vi is not accepted by ferx_fit() (PLAN §3)
+)
+
 rule <- function(kind, name, parent, detail) {
   n <- switch(kind,
     export = export_home[name],
@@ -120,6 +135,7 @@ rule <- function(kind, name, parent, detail) {
     data_column = if (name %in% names(column_home)) column_home[name] else 3,
     example = example_home[name],
     searchfile = 9,
+    warning_code = warning_home[name],
     fit_slot = 25,
     NA
   )

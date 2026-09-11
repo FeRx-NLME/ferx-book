@@ -96,6 +96,7 @@ covered <- function(kind, name, parent, detail, home) {
     setting     = has(paste0("(`", esc(name), "`|\\b", esc(name), "\\s*=)")),
     dsl_block   = has(paste0("\\[", esc(name), "( [A-Za-z_]+)?\\]")),
     data_column = has(paste0("\\b", esc(name), "\\b")),
+    warning_code = has(paste0("`", esc(name), "`")),
     has(paste0("\\b", esc(name), "\\b"))
   )
 }
