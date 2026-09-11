@@ -274,23 +274,53 @@ head(res$candidates[, c("step", "tool", "id", "description", "criterion",
                         "value", "rank", "passed", "selected")], 8)
 ```
 
-Every step's own result object is nested under `$tools`, keyed by its
-directory, and the final model is a fitted model seeded with its own
-estimates:
+Each step that ran has an entry under `$tools`, named by its position and
+pipeline step (`01-structural`, `02-iivsearch`, `03-residual`) — not by its
+directory, which is the tool's own name and is on the entry as `$directory`
+(`01-modelsearch`, `02-iivsearch`, `03-ruvsearch`):
 
 ```{r}
 #| label: amd-final
 names(res$tools)
+vapply(res$tools, function(t) t$directory, character(1))
+```
+
+An entry is a plain list, not a `ferx_modelsearch()` / `ferx_iivsearch()`
+object: what the step decided (`status`, `reason`, `criterion`, `selected`,
+`seconds`), its own slice of `$candidates`, and — when the run kept a
+`directory` — the engine's own table read back from disk (`models` or
+`steps`, whichever that tool writes) plus `input_model_path`,
+`final_model_path` and `model_paths`. Run a tool on its own when you want its
+object, with the fit and the options only a direct call returns.
+
+```{r}
+#| label: amd-tool-entry
+names(res$tools[["01-structural"]])
+```
+
+The two "final" fields are different things: `res$final_model` is the model
+*text* the pipeline ended on (written to `res$final_model_path`), while the
+fitted `ferx_fit` is `res$fit`.
+
+```{r}
+#| label: amd-final-fit
 res$final_ofv
 res$d_ofv          # final - start; negative is an improvement
+class(res$final_model)
+class(res$fit)
 ```
 
 ::: {.callout-warning}
 ## `criterion` says what `value` is on
 
-It is not always the step's own scale. A ruvsearch candidate is fitted to its
-parent's CWRES, so its number must not be compared with a data OFV. The
-column is there so you do not have to remember which step you are reading.
+It is not always the step's own scale. With `cwres_prescreen = TRUE`,
+ruvsearch screens its candidates against the parent's CWRES and refits only
+the winner to the data: those rows are marked `screened` and carry
+`criterion = "cwres_ofv"`, and their numbers must not be compared with a data
+OFV. The engine default is `cwres_prescreen = FALSE` — every candidate is
+fitted to the data, and the rows read `criterion = "ofv"` like any other
+step, which is what the runs in this chapter do. The column is there so you
+do not have to remember which of the two you are reading.
 :::
 
 ## Reading a run back
@@ -331,8 +361,14 @@ closest existing tool.
   without a remediation rather than with one that names a command that does
   not exist.
 - **The strictness gate is shared.** `[strictness]` applies to every tool,
-  and `converged` / `passed` are columns of every result table. Inside an AMD
-  step the init-stall gate is turned off by design: each step starts from a
+  and `converged` / `passed` are columns of every table that reports on
+  fitted candidates — the candidate tables, the structural and variability
+  `models.csv`, the covsearch and ruvsearch `steps.csv`, and AMD's own step
+  table. They are not on the per-stage *ranking* summaries an R object
+  carries alongside those (`ferx_iivsearch()$steps` is `step`, `kind`,
+  `parent`, `id`, `criterion`, `d_criterion`, `rank`, `best`), which rank
+  models the candidate rows already reported on. Inside an AMD step the init-stall gate is turned off
+  by design: each step starts from a
   model already at its own optimum, where "did not move from the initial
   estimates" is the expected outcome rather than a failed fit.
 - **Search is not a substitute for judgement.** These tools decide within the

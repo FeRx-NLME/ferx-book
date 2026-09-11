@@ -240,15 +240,20 @@ Before fitting, preview which records would be dropped:
 #| label: sel-preview
 ex_sel <- ferx_example("warfarin_data_selection")
 sel <- ferx_apply_selection(ex_sel$data, ignore = "DV < 1.0")
-cat("Excluded obs:", sel$exclusions$n_obs_excluded, "\n")
+sel
 ferx_apply_selection(sel, excluded = TRUE)[, c("ID", "TIME", "DV")]
 ```
 
-`ferx_apply_selection()` returns the filtered data frame (plus an
-`$exclusions` list); passing `excluded = TRUE` returns only the dropped rows
-instead. It accepts a path, a data frame, an already-selected `ferx_data`
-object, or a `ferx_fit`, so `ferx_apply_selection(fit, excluded = TRUE)`
-recovers the rows a completed fit dropped.
+`ferx_apply_selection()` returns a `ferx_data` object — the retained rows as a
+data frame, whose print method leads with the exclusion summary shown above.
+The summary is carried as an attribute rather than a column, so read it with
+`attr(sel, "exclusions")`: `n_records_total`, `n_obs_excluded`,
+`n_dose_excluded`, `n_other_excluded`, `excluded_subject_ids`, `fired_ignore`
+and `fired_accept`. Passing `excluded = TRUE` returns the dropped rows
+instead of the retained ones. It accepts a path, a data frame, an
+already-selected `ferx_data` object, or a `ferx_fit`, so
+`ferx_apply_selection(fit, excluded = TRUE)` recovers the rows a completed
+fit dropped.
 
 ### What `fit$exclusions` reports
 
