@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Step 3 done** (PR #16 Steps 0–2 CI green; PR #17 ch03–09 CI green; PR #18 ch10–13 open). **Next: Step 4 (Part III scenarios)**. Full clean local render 10m54s; coverage 415/672 (started 2026-09-11). Revision 2, after scrutiny
+Status: **Steps 0–5 done** (PRs #16–#20 open, stacked; #16–#19 CI green). Part II + Part III + reference chapter written; audit --strict 672/672 covered. **Next: Step 6 (finalise)** (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -478,7 +478,7 @@ Per-chapter loop:
 
 ### Step 5: Part IV
 
-- [ ] 25 index generated from `features.csv`.
+- [x] 25 index generated from `features.csv` by `tools/make-reference.R` (static markdown: functions, S3, settings, blocks, columns, examples, search files, warning categories, fit slots with `?ferx_fit` descriptions, not-available-from-R, maturity from ferx-core at the pin). Regenerate at a pin bump with `LANG=en_US.UTF-8 Rscript tools/make-reference.R`.
 
 **Gate 5:** audit coverage 100% on every kind.
 
@@ -573,6 +573,9 @@ Per-chapter loop:
   - **`warfarin_sde`:** the diffusion variance collapses (RSE 113%), with OFV −279.27 vs −280.32 without `[diffusion]` (FOCE).
   - **Bundled model comments:** the `warfarin_dcm` comment names other software, so ch24 prints its blocks without comments.
 - ferx-r (found in Step 5): `ferx_fit(method = "vi")` is rejected by `match.arg`, although `method = vi` in the model file runs. The VI ELBO (`vi.neg_two_elbo`, `vi.elbo_trace`, `vi.n_fd_subjects`) is not on the R fit object. `[markov_model]` is rejected at parse time (`E_BLOCK_FEATURE_DISABLED`, since ferx-r does not build the `markov` feature).
+- ferx-r doc typos (found in Step 5):
+  - the `?ferx_fit` value entry for `cov_matrix` reads "matrix (params ? params)", a lost ×; `tools/make-reference.R` corrects it;
+  - the `?ferx_get_columns` and `?ferx_runlog` titles name other software; the generator drops that word.
 - ferx-core docs (found in 4.1, ch16), minor:
   - error-model/iov docs claim `shrinkage_kappa` is a placeholder, but ferx-r
     returns `shrinkage_kappa` and `shrinkage_kappa_by_occ` populated.
