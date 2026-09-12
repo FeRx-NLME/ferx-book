@@ -382,7 +382,7 @@ rbind(estimated_f = c(ofv = fit_bio$ofv, fit_bio$theta),
       fixed_f = c(ofv = fit_fixed_f$ofv, fit_fixed_f$theta))
 ```
 
-The R warning refers to the fixed `THETA_F`, which has no standard error. The OFV changes by only `r round(fit_fixed_f$ofv - fit_bio$ofv, 2)`. The data carry almost no information on `F`, only on `CL/F` and `V/F`. `warfarin_logit_f` shows the same problem more strongly. Its estimates end at a bound, with relative standard errors near 3000%:
+The R warning refers to the fixed `THETA_F`, which has no standard error. The OFV changes by only `r round(fit_fixed_f$ofv - fit_bio$ofv, 2)`. The data carry almost no information on `F`, only on `CL/F` and `V/F`. `warfarin_logit_f` shows the same problem more strongly. Its estimates end at a bound, with grossly inflated relative standard errors:
 
 ```{r}
 #| label: warfarin-logit-f
@@ -391,6 +391,8 @@ fit_logit_f <- ferx_fit(logit_f$model, logit_f$data, verbose = FALSE)
 fit_logit_f$estimates[, c("estimate", "rse_pct")]
 ferx_get_warnings(fit_logit_f, as_df = TRUE)[, c("severity", "category")]
 ```
+
+The worst relative standard error is `r format(round(max(fit_logit_f$estimates$rse_pct, na.rm = TRUE)), big.mark = ",")`%.
 
 Estimating absolute bioavailability needs data after doses by a route with known bioavailability, such as intravenous doses in the same subjects. Otherwise fix `F`, or leave it out and interpret `CL` and `V` as apparent values.
 

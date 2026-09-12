@@ -1,6 +1,6 @@
 # PLAN.md — ferx-book v2: an analysis-workflow tutorial for ferx-r
 
-Status: **Steps 0–5 done, Step 6.2–6.3 done** (PRs #16–#21 open, stacked into book/v2-workflow; owner merges). Part II + Part III + reference chapter written; audit --strict 672/672 covered. **Next: Step 6 (finalise)** (started 2026-09-11). Revision 2, after scrutiny
+Status: **Steps 0–6.3 done.** #23 squash-merged into book/v2-workflow as `47204e5`, which carried the whole #16–#21 stack with it; those PRs are closed as superseded. The pin bump to ferx-r `078e489` / ferx-core `8372248c` is open as #24. Part II + Part III + reference chapter written; audit --strict 737/737 covered. **Next: Step 6.4** (started 2026-09-11). Revision 2, after scrutiny
 round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
@@ -86,8 +86,8 @@ maturity callouts). What went wrong:
 ## 3. Baseline facts (verified 2026-09-11)
 
 **ferx-r**
-- `origin/main` = `846aa4b`: 50 exports, 22 S3 methods, 66 examples, 4 `.ferxsearch`.
-- ferx-core is locked at `8694824` in `src/rust/Cargo.lock`.
+- `origin/main` = `078e489` (pin at the time of writing `846aa4b`): 54 exports, 28 S3 methods, 67 examples, 7 `.ferxsearch`.
+- ferx-core is locked at `8372248c` in `src/rust/Cargo.lock`.
 - Makevars builds `ci,nn,survival`; `lto = "thin"`.
 - Installed "0.3.0" is a post-release snapshot lacking `ferx_coef`, `ferx_se`,
   `ferx_ruvsearch`. Not usable as the pin.
@@ -122,7 +122,7 @@ track engine main, ahead of the pin.
 | Available (pinned ferx-r) | Not available from R: mention + pointer |
 |---|---|
 | methods foce, focei, laplace (+`n_agq`), saem, gn, gn_hybrid, imp, impmap, bayes; chains | `vi`: the `method` argument rejects it, **but `method = vi` in `[fit_options]` runs from R** (corrected in Step 5: two_cpt_oral_base, 19 s, estimates ≈ FOCEI; `ofv` NaN unless `vi_final_ofv = laplace`). Covered in ch06; `vi_*` rows re-homed to ch06 |
-| covsearch, modelsearch, ruvsearch, search config/space/coverage/results | iivsearch, iovsearch, amd, globalsearch (ferx-core CLI) |
+| covsearch, modelsearch, ruvsearch, iivsearch, iovsearch, amd, search config/space/coverage/results | globalsearch (ferx-core CLI) |
 | covariance step, SIR, bootstrap (**verified seed-deterministic**; only `seconds`/timing and the printed directory differ), bayes posterior, `ferx_simulate_with_uncertainty` | — |
 | `ferx_simulate_adaptive` + `[adaptive_dosing]` | MAP-Bayesian dose individualisation (doesn't exist) |
 | TTE (exp/Weibull/Gompertz/competing risks), joint PK-TTE, `ferx_predict_survival`, binary | `[markov_model]`/CTMM (feature not built) |
@@ -241,16 +241,16 @@ Example count: 02:1, 03:2, 04:1, 06:2, 12:1, 14:15, 15:18, 16:6, 17:1, 18:5, 19:
 ## 6. Coverage guarantee: the feature inventory
 
 `tools/inventory.R` builds `tools/features.csv` **from pinned sources only**: the
-installed pinned package, plus ferx-core at the locked SHA via `git show 8694824:...`.
+installed pinned package, plus ferx-core at the locked SHA via `git show <ferx_core_sha>:...`.
 
 | kind | Source (as implemented) | Rows | Coverage rule (`tools/audit.R`) |
 |---|---|---|---|
-| export | `getNamespaceExports` | 50 | `name(` in home chapter |
-| s3method | NAMESPACE `S3method` | 22 | generic + class named in home chapter |
-| argument | `formals()` of every export | 245 | parent fn named + `` `arg` `` or `arg =` |
+| export | `getNamespaceExports` | 54 | `name(` in home chapter |
+| s3method | NAMESPACE `S3method` | 28 | generic + class named in home chapter |
+| argument | `formals()` of every export | 296 | parent fn named + `` `arg` `` or `arg =` |
 | setting | pinned ferx-core `apply_fit_option()` match arms, minus keys reserved for `ferx_fit()` arguments | 107 | `` `key` `` or `key =` |
-| example | `ferx_example()` | 66 | `ferx_example("name")` |
-| searchfile | `inst/examples/search/` | 4 | `ferx_example("name")` + `$search` in ch 09 |
+| example | `ferx_example()` | 67 | `ferx_example("name")` |
+| searchfile | `inst/examples/search/` | 7 | `ferx_example("name")` + `$search` in ch 09 |
 | dsl_block | pinned `BLOCK_REGISTRY` | 22 | `[block]` mentioned |
 | data_column | pinned `DATA_BLOCK_ROLES` | 14 | column named |
 | warning_code | pinned `WarningCode::as_str()` (`src/types.rs`) | 34 | `` `token` `` in home chapter's "Warnings you may see here" |
@@ -474,7 +474,7 @@ Per-chapter loop:
 - [x] 4.4 D: 20 PK/PD (WIP 12), 21 binary (new), 22 TTE (WIP 18; fix the signature) — local branches v2/ch20…ch22, not pushed
 - [x] 4.5 F: 24 experimental (WIP 21) — local branch v2/ch24-experimental, not pushed
 
-**Gate 4:** 66/66 examples executed (or eval-reason = smoke error).
+**Gate 4:** 67/67 examples executed (or eval-reason = smoke error).
 
 ### Step 5: Part IV
 
@@ -554,6 +554,30 @@ Per-chapter loop:
   Verified: the FREM model prints all seven etas, and `warfarin_block_omega` prints
   `ETA_CL, ETA_V, ETA_KA`. Sourcing the pre-fit structure from the engine instead of
   the R parser is [ferx-r #363](https://github.com/FeRx-NLME/ferx-r/issues/363), open.
+- **ferx-r bug (found reviewing the 078e489 bump, ch16):** `fit$cov_matrix` labels its
+  omega rows and columns row-major while ordering their values column-major, so for a
+  3×3 block two labels are wrong (positions 3 and 4 swap).
+  - On `warfarin_block_omega` the two zero-variance diagonal entries — the held
+    covariances — are labelled `ETA_V,ETA_V` and `ETA_KA,ETA_V`. But `ETA_V,ETA_V` is
+    estimated: `se_omega` gives it 0.004298, and in the full-block twin its `cov_matrix`
+    entry is 0.0347. The zeros sit at positions 3 and 5, which column-major are (3,1)
+    and (3,2), matching the zeros in `se_omega` (documented column-major in `?ferx_fit`).
+  - `cor_matrix` inherits the same dimnames, and the Rd for `cov_matrix` does not state
+    an ordering for block omega elements.
+  - Not reader-visible: no chapter prints `cov_matrix` or `cor_matrix` for a block model.
+    Nothing to remove from the book when this is fixed; recheck the labels then.
+- **ferx-core doc gap (found building the ch25 lookup tables):** `docs/data-format.qmd` at
+  `8372248c` never mentions `ADDL`, `FREMTYPE` or `TENTRY`, although the engine reads all
+  three and the book fits `warfarin_addl`, FREM datasets and `TENTRY` delayed entry. They
+  are the only three of the book's 14 data columns with no type and no description in the
+  generated reference table, which leaves those cells blank by design rather than by
+  invention. Adding them to the data-format table upstream fills the table automatically.
+- **ferx-r doc bug (found reviewing the 078e489 bump):** `?ferx_fit` says `model_name` is
+  the "Model name from the `.ferx` file", falling back to the basename "when the file
+  declares no name" — but no model-file syntax for declaring a name exists. ferx-core's
+  block list is closed-world with no `[model]`/`[metadata]` block, and
+  `.ferx_fit_from_raw()` falls back to the basename whenever the engine returns empty or
+  `"Unnamed"`. Either the sentence is stale or the key is undocumented.
 - ferx-r/ferx-core (found in 4.2, ch17), to check: `ferx_allometry()` on a model
   with inline `(WT/70)^THETA_WT` (`two_cpt_oral_cov`) adds WT scaling again with no
   note. Only `[covariate_model]` relations are detected. The Rd says "a parameter
@@ -681,7 +705,7 @@ Per-chapter loop:
 
 | # | Decision | Outcome |
 |---|---|---|
-| D1 | Pin | **Decided:** ferx-r `origin/main` `846aa4b`; re-pin to next release tag when cut |
+| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` (ferx-core `8372248c`); re-pin to next release tag when cut |
 | D2 | xpose | **Decided:** mention only; `ferx_xpose` eval-reason |
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |

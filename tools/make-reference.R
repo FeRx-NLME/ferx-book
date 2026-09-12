@@ -45,6 +45,12 @@ rd_tag <- function(x) attr(x, "Rd_tag") %||% ""
 first_sentence <- function(x) {
   x <- gsub("\\s+", " ", trimws(x))
   x <- gsub("\\s*\\([^()]*\\b(NONMEM|Monolix|nlmixr2?|Pharmpy|Xpose4?)\\b[^()]*\\)", "", x, ignore.case = TRUE)
+  # Same for a parenthetical aside naming an engine-internal identifier such as
+  # read_nonmem_csv(), where the underscore hides the word boundary. The aside can
+  # itself contain `fn()` calls, so allow one level of nested parentheses.
+  inner <- "(?:[^()]|\\([^()]*\\))*"
+  x <- gsub(paste0("\\s*\\(", inner, "(NONMEM|Monolix|nlmixr|Pharmpy)", inner, "\\)"),
+            "", x, ignore.case = TRUE, perl = TRUE)
   protected <- gsub("\\b(e\\.g|i\\.e|vs|approx|cf)\\.", "\\1<DOT>", x)
   sentences <- gsub("<DOT>", ".", unlist(strsplit(protected, "(?<=[.!?])\\s+(?=[A-Z`(])", perl = TRUE)))
   sentences <- sentences[!grepl(banned, sentences, ignore.case = TRUE)]
@@ -86,6 +92,47 @@ md_table <- function(df) {
 }
 code <- function(x) paste0("`", x, "`")
 
+# ---- ferx-core doc tables -------------------------------------------------------------
+# Split one markdown table row into cells, ignoring pipes inside `code spans`.
+split_row <- function(line) {
+  chars <- strsplit(line, "")[[1]]; cells <- character(); cur <- ""; in_code <- FALSE
+  for (ch in chars) {
+    if (ch == "`") in_code <- !in_code
+    if (ch == "|" && !in_code) { cells <- c(cells, cur); cur <- "" } else cur <- paste0(cur, ch)
+  }
+  trimws(c(cells, cur)[-1])
+}
+core_doc <- function(path) {
+  txt <- system2("git", c("-C", core_dir, "show", paste0(pin$ferx_core_sha, ":docs/", path)),
+                 stdout = TRUE, stderr = TRUE)
+  if (!is.null(attr(txt, "status"))) {
+    stop("git show ", pin$ferx_core_sha_short, ":docs/", path, " failed in '", core_dir, "':\n  ",
+         paste(txt, collapse = "\n  "), call. = FALSE)
+  }
+  txt
+}
+# Rows of a pipe table whose first cell is a single code span, as a character matrix.
+core_key_rows <- function(lines) {
+  rows <- grep("^\\|\\s*`[^`]+`\\s*\\|", lines, value = TRUE)
+  cells <- lapply(rows, split_row)
+  cells <- cells[vapply(cells, length, 0L) >= 2]
+  if (!length(cells)) return(NULL)
+  width <- max(vapply(cells, length, 0L))
+  do.call(rbind, lapply(cells, function(x) c(x, rep("", width - length(x)))))
+}
+core_key <- function(x) gsub("`", "", x)
+# A description cell, reduced to its first sentence and stripped of other software.
+desc_cell <- function(x) vapply(x, first_sentence, "")
+# Fail loudly rather than emitting a table of blanks.
+lookup <- function(rows, keys, column, what) {
+  if (is.null(rows)) stop("no table rows parsed for ", what, " from ferx-core at the pin", call. = FALSE)
+  m <- setNames(rows[, column], core_key(rows[, 1]))
+  hit <- keys %in% names(m)
+  if (!any(hit)) stop("none of the ", what, " keys matched the ferx-core table at the pin", call. = FALSE)
+  out <- unname(m[keys]); out[is.na(out)] <- ""
+  out
+}
+
 # ---- sections -----------------------------------------------------------------------
 out <- c(
   "# Function, option and example index {#sec-reference}",
@@ -98,9 +145,27 @@ out <- c(
 # Functions
 ex <- inv[inv$kind == "export", ]
 ex <- ex[order(ex$name), ]
+# Arguments as `name`, or `name = default` when the default is a constant.
+default_label <- function(d) {
+  if (identical(d, quote(expr = ))) return(NA_character_)
+  if (is.null(d)) return("NULL")
+  if (is.atomic(d) && length(d) == 1 && !is.na(d)) return(deparse(d))
+  NA_character_
+}
+formals_of <- function(fn) {
+  f <- try(formals(get(fn, envir = asNamespace("ferx"))), silent = TRUE)
+  if (inherits(f, "try-error")) NULL else f
+}
 args_of <- function(fn) {
   a <- features$name[features$kind == "argument" & features$parent == fn]
-  if (length(a)) paste(code(a), collapse = ", ") else ""
+  if (!length(a)) return("")
+  f <- formals_of(fn)
+  labels <- vapply(a, function(one) {
+    if (is.null(f) || !one %in% names(f)) return(code(one))
+    d <- default_label(f[[one]])
+    if (is.na(d)) code(one) else code(paste0(one, " = ", d))
+  }, "")
+  paste(labels, collapse = ", ")
 }
 fun_tab <- data.frame(
   Function = paste0(code(paste0(ex$name, "()"))),
@@ -121,9 +186,10 @@ st <- st[order(st$name), ]
 st <- merge(st, settings_docs, by.x = "name", by.y = "key", all.x = TRUE)
 st[is.na(st)] <- ""
 out <- c(out, "## Fit settings", "",
-  "Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. Descriptions are in the settings tables of the chapters and on the ferx-core [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) page.", "",
+  "Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The chapter column points at the section that uses the key; the ferx-core [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) page gives the full semantics. A blank *Values* cell means the key takes a free value (a number, a name or a list) rather than a fixed set.", "",
   md_table(data.frame(Setting = code(st$name), Values = gsub("\\|", "\\\\|", st$values),
-                      Default = gsub("\\|", "\\\\|", st$default), Chapter = chapter_link(st$home),
+                      Default = gsub("\\|", "\\\\|", st$default),
+                      Meaning = desc_cell(st$description), Chapter = chapter_link(st$home),
                       check.names = FALSE)))
 
 # Model file blocks
@@ -149,17 +215,35 @@ bl <- inv[inv$kind == "dsl_block", ]
 bl <- bl[order(bl$name), ]
 missing_pages <- setdiff(paste0("docs/", block_pages[bl$name], ".qmd"), core_files)
 if (length(missing_pages)) stop("ferx-core pages not found at the pin: ", paste(missing_pages, collapse = ", "))
+block_rows <- core_key_rows(core_doc("model-file/index.qmd"))
+block_keys <- paste0("[", bl$name, "]")
 out <- c(out, "## Model file blocks", "",
-  md_table(data.frame(Block = code(paste0("[", bl$name, "]")), Chapter = chapter_link(bl$home),
+  "The blocks a `.ferx` model file can contain. *Required* and *Purpose* are the ferx-core block overview at the pinned engine; block names are closed-world, so a header outside this table is an error.", "",
+  md_table(data.frame(Block = code(block_keys),
+                      Required = lookup(block_rows, block_keys, 2, "model file block"),
+                      Purpose = desc_cell(lookup(block_rows, block_keys, 3, "model file block")),
+                      Chapter = chapter_link(bl$home),
                       `ferx-core page` = sprintf("[%s](https://ferx-nlme.github.io/ferx-core/%s.html)",
                                                  basename(block_pages[bl$name]), block_pages[bl$name]),
                       check.names = FALSE)))
 
 # Data columns
 dc <- inv[inv$kind == "data_column", ]
+# data-format.qmd uses two table shapes: Column|Type|Description and
+# Column|Type|Default|Description. The description is the last filled cell of a row.
+dc_rows <- core_key_rows(core_doc("data-format.qmd"))
+if (is.null(dc_rows)) stop("no data column rows parsed from ferx-core at the pin", call. = FALSE)
+dc_desc <- vapply(seq_len(nrow(dc_rows)), function(i) {
+  cells <- dc_rows[i, ][nzchar(dc_rows[i, ])]
+  if (length(cells) < 3) "" else cells[length(cells)]
+}, "")
+dc_rows <- cbind(dc_rows[, 1:2, drop = FALSE], dc_desc)
 out <- c(out, "## Data columns", "",
-  "The full format is on the ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html) page.", "",
-  md_table(data.frame(Column = code(dc$name), Chapter = chapter_link(dc$home), check.names = FALSE)))
+  "Columns the ferx data format recognises. *Type* and *Meaning* are taken from the ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html) page at the pinned engine, and are blank for the columns that page does not list; the chapter column covers those.", "",
+  md_table(data.frame(Column = code(dc$name),
+                      Type = lookup(dc_rows, dc$name, 2, "data column"),
+                      Meaning = desc_cell(lookup(dc_rows, dc$name, 3, "data column")),
+                      Chapter = chapter_link(dc$home), check.names = FALSE)))
 
 # Examples and search files
 eg <- inv[inv$kind == "example", ]
@@ -174,9 +258,27 @@ out <- c(out, "## Bundled examples", "",
 # Warning categories
 wc <- inv[inv$kind == "warning_code", ]
 wc <- wc[order(wc$name), ]
+warn_rows <- core_key_rows(core_doc("warnings.qmd"))
 out <- c(out, "## Warning categories", "",
-  "Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`. Each chapter's *Warnings you may see here* section explains the ones it meets; the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.", "",
-  md_table(data.frame(Category = code(wc$name), Chapter = chapter_link(wc$home), check.names = FALSE)))
+  "Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.", "",
+  md_table(data.frame(Category = code(wc$name),
+                      Severity = lookup(warn_rows, wc$name, 2, "warning category"),
+                      Meaning = desc_cell(lookup(warn_rows, wc$name, 3, "warning category")),
+                      Chapter = chapter_link(wc$home), check.names = FALSE)))
+
+# Error codes (ferx-core check report). Not in features.csv: these stop a fit or a check,
+# so they never reach fit$warnings.
+err_rows <- core_key_rows(core_doc("file-formats/check-report.qmd"))
+if (is.null(err_rows)) stop("no error code rows parsed from ferx-core at the pin", call. = FALSE)
+err_rows <- err_rows[grepl("^`E_[A-Z_]+`$", err_rows[, 1]), , drop = FALSE]
+if (!nrow(err_rows)) stop("no E_* codes parsed from the ferx-core check report at the pin", call. = FALSE)
+err_rows <- err_rows[order(core_key(err_rows[, 1])), , drop = FALSE]
+err_tab <- data.frame(Code = code(core_key(err_rows[, 1])), Severity = err_rows[, 2],
+                      Meaning = desc_cell(err_rows[, 3]), check.names = FALSE)
+err_tab <- err_tab[nzchar(err_tab$Meaning), ]
+out <- c(out, "## Error codes", "",
+  sprintf("A model file that cannot be run stops with one of these codes rather than a warning, so it never reaches `fit$warnings`. `ferx_model_validate()` (@sec-model-files) reports them before a fit, and a failed `ferx_fit()` names one in its error message. The %d codes below are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.", nrow(err_tab)), "",
+  md_table(err_tab))
 
 # Fit slots
 fs <- inv[inv$kind == "fit_slot", ]
@@ -191,7 +293,7 @@ out <- c(out, "## Fit object slots", "",
 na_tab <- data.frame(
   Feature = c("Variational inference as `ferx_fit(method = \"vi\")`",
               "`[markov_model]` (continuous-time Markov endpoints)",
-              "IIV and IOV structure searches, the automatic model-development pipeline, global search",
+              "Global search (`globalsearch`)",
               "`[simulation]` block",
               "`[dynamics_nn]` (neural-network ODE terms)",
               "Hand-written `[covariate_model]` relations, repeated time-to-event, fixed-rate infusions into the central compartment",

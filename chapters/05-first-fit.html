@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Initial estimates and a first fit – FeRx NLME - R package (ferx)</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/06-estimation-methods.html" rel="next">
+<link href="../chapters/04-model-files.html" rel="prev">
+<link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-c7996399ee3efbb3c94d3741158479a6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-4150e552e6099c4b22d8f49097b96794.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-c7996399ee3efbb3c94d3741158479a6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-fdfce306a46c4b2f3b5c642032a1e658.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-8c9cc4f15f6b55afc787459dd4a4f731.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-fdfce306a46c4b2f3b5c642032a1e658.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+</head>
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">FeRx NLME - R package (ferx)</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+<li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/get-started.html"> 
+<span class="menu-text">Get started</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/features.html"> 
+<span class="menu-text">Features</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/changelog.html"> 
+<span class="menu-text">Changelog</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/roadmap.html"> 
+<span class="menu-text">Roadmap</span></a>
+  </li>  
+</ul>
+<ul class="navbar-nav navbar-nav-scroll ms-auto">
+<li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/ferx-core/"> 
+<span class="menu-text">ferx-core</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/ferx-book/"> 
+<span class="menu-text">ferx-r</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/reference/"> 
+<span class="menu-text">Reference</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/FeRx-NLME"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+</div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/05-first-fit.html"><span class="chapter-title">Initial estimates and a first fit</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="../index.html" class="sidebar-logo-link">
+      <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Getting started</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-complete-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">A complete analysis in one chapter</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">The analysis workflow</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-model-files.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Writing and managing model files</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-first-fit.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Initial estimates and a first fit</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-estimation-methods.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Estimation methods and controlling the fit</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-diagnostics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Diagnosing the model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-vpc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Simulation-based evaluation: VPC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-model-selection.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model development and selection</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-uncertainty.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Parameter uncertainty</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-simulation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Simulating scenarios</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-tables-figures.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Tables and figures</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-reproducibility.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Reproducibility and sharing</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: general PK modeling</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-absorption.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Absorption and bioavailability</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-variability.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Variability: random effects, residual error and IOV</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: covariates</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Covariate modeling</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: dosing and data</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-censoring.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Censored observations (BLOQ)</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-binary.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Binary endpoints</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-time-to-event.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Time-to-event models</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: adaptive dosing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: experimental</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+<li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">The data</a></li>
+  <li>
+<a href="#starting-values" id="toc-starting-values" class="nav-link" data-scroll-target="#starting-values">Starting values</a>
+  <ul class="collapse">
+<li><a href="#from-the-model-file" id="toc-from-the-model-file" class="nav-link" data-scroll-target="#from-the-model-file">From the model file</a></li>
+  <li><a href="#from-the-data-nca-based-starting-values" id="toc-from-the-data-nca-based-starting-values" class="nav-link" data-scroll-target="#from-the-data-nca-based-starting-values">From the data: NCA-based starting values</a></li>
+  <li><a href="#a-pilot-run" id="toc-a-pilot-run" class="nav-link" data-scroll-target="#a-pilot-run">A pilot run</a></li>
+  </ul>
+</li>
+  <li><a href="#minimal-runnable-call" id="toc-minimal-runnable-call" class="nav-link" data-scroll-target="#minimal-runnable-call">Minimal runnable call</a></li>
+  <li>
+<a href="#reading-the-result" id="toc-reading-the-result" class="nav-link" data-scroll-target="#reading-the-result">Reading the result</a>
+  <ul class="collapse">
+<li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><code>summary()</code></a></li>
+  <li><a href="#parameter-estimates" id="toc-parameter-estimates" class="nav-link" data-scroll-target="#parameter-estimates">Parameter estimates</a></li>
+  <li><a href="#the-fit-object" id="toc-the-fit-object" class="nav-link" data-scroll-target="#the-fit-object">The fit object</a></li>
+  <li><a href="#warnings" id="toc-warnings" class="nav-link" data-scroll-target="#warnings">Warnings</a></li>
+  </ul>
+</li>
+  <li><a href="#options-that-matter" id="toc-options-that-matter" class="nav-link" data-scroll-target="#options-that-matter">Options that matter</a></li>
+  <li>
+<a href="#variants" id="toc-variants" class="nav-link" data-scroll-target="#variants">Variants</a>
+  <ul class="collapse">
+<li><a href="#starting-from-nca-based-values" id="toc-starting-from-nca-based-values" class="nav-link" data-scroll-target="#starting-from-nca-based-values">Starting from NCA-based values</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#pitfalls" id="toc-pitfalls" class="nav-link" data-scroll-target="#pitfalls">Pitfalls</a>
+  <ul class="collapse">
+<li><a href="#warnings-you-may-see-here" id="toc-warnings-you-may-see-here" class="nav-link" data-scroll-target="#warnings-you-may-see-here">Warnings you may see here</a></li>
+  </ul>
+</li>
+  <li><a href="#summary-1" id="toc-summary-1" class="nav-link" data-scroll-target="#summary-1">Summary</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/05-first-fit.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/05-first-fit.html"><span class="chapter-title">Initial estimates and a first fit</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-first-fit" class="quarto-section-identifier"><span class="chapter-title">Initial estimates and a first fit</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><div class="cell" data-layout-align="center">
+<div class="workflow-banner" role="note" aria-label="Workflow stage: ESTIMATE">
+<span class="stage">DATA</span><span class="sep"> → </span><span class="stage">MODEL</span><span class="sep"> → </span><span class="stage active">ESTIMATE</span><span class="sep"> ⇄ </span><span class="stage">EVALUATE</span><span class="sep"> → </span><span class="stage">SIMULATE</span><span class="sep"> → </span><span class="stage">REPORT</span>
+</div>
+</div>
+<section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
+<p>The dataset is checked (<a href="#sec-data" class="quarto-xref"><span class="quarto-unresolved-ref">sec-data</span></a>) and the base model is written and validated (<a href="#sec-model-files" class="quarto-xref"><span class="quarto-unresolved-ref">sec-model-files</span></a>). This chapter produces the first fit. It covers where starting values come from, how to fit, what the fit object contains, and how to read the warnings ferx attaches to it. Choosing and tuning estimation methods follows in <a href="#sec-estimation-methods" class="quarto-xref"><span class="quarto-unresolved-ref">sec-estimation-methods</span></a>.</p>
+</section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<p>The base model and its dataset from the previous chapters:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="starting-values" class="level2"><h2 class="anchored" data-anchor-id="starting-values">Starting values</h2>
+<section id="from-the-model-file" class="level3"><h3 class="anchored" data-anchor-id="from-the-model-file">From the model file</h3>
+<p>Every <code>theta</code>, <code>omega</code> and <code>sigma</code> in <code>[parameters]</code> carries an initial value. For thetas it is the first number in <code>theta NAME(initial, lower, upper)</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">init_lines</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [parameters]</span></span>
+<span><span class="co">#&gt;   theta TVCL(5.0, 0.1, 100.0)</span></span>
+<span><span class="co">#&gt;   theta TVV1(50.0, 1.0, 500.0)</span></span>
+<span><span class="co">#&gt;   theta TVQ(10.0, 0.1, 100.0)</span></span>
+<span><span class="co">#&gt;   theta TVV2(100.0, 1.0, 500.0)</span></span>
+<span><span class="co">#&gt;   theta TVKA(1.2, 0.01, 10.0)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   omega ETA_CL ~ 0.10</span></span>
+<span><span class="co">#&gt;   omega ETA_V1 ~ 0.10</span></span>
+<span><span class="co">#&gt;   omega ETA_Q  ~ 0.05</span></span>
+<span><span class="co">#&gt;   omega ETA_V2 ~ 0.05</span></span>
+<span><span class="co">#&gt;   omega ETA_KA ~ 0.15</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   sigma PROP_ERR ~ 0.02 (sd)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="from-the-data-nca-based-starting-values" class="level3"><h3 class="anchored" data-anchor-id="from-the-data-nca-based-starting-values">From the data: NCA-based starting values</h3>
+<p><code>ferx_inits_from_nca()</code> derives starting values from the data using non-compartmental analysis (NCA). It returns them for inspection without fitting. The <code>method</code> is <code>"nca_sweep"</code> (default), <code>"nca"</code> or <code>"nca_ebe"</code>. They differ in how much refinement runs on top of the NCA estimates; <code>?ferx_inits_from_nca</code> describes each.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">nca</span> <span class="op">&lt;-</span> <span class="fu">ferx_inits_from_nca</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="va">nca</span></span>
+<span><span class="co">#&gt; &lt;ferx_inits&gt; NCA-based starting values (method = nca_sweep)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Theta:</span></span>
+<span><span class="co">#&gt;       TVCL       TVV1        TVQ       TVV2       TVKA </span></span>
+<span><span class="co">#&gt;  4.3455257 73.0446185  7.2446104 69.1928716  0.2372377 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Omega:</span></span>
+<span><span class="co">#&gt;           ETA_CL ETA_V1 ETA_Q ETA_V2 ETA_KA</span></span>
+<span><span class="co">#&gt; ETA_CL 0.1029478    0.0  0.00   0.00   0.00</span></span>
+<span><span class="co">#&gt; ETA_V1 0.0000000    0.1  0.00   0.00   0.00</span></span>
+<span><span class="co">#&gt; ETA_Q  0.0000000    0.0  0.05   0.00   0.00</span></span>
+<span><span class="co">#&gt; ETA_V2 0.0000000    0.0  0.00   0.05   0.00</span></span>
+<span><span class="co">#&gt; ETA_KA 0.0000000    0.0  0.00   0.00   0.15</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 1 note(s):</span></span>
+<span><span class="co">#&gt;  - inits_from_nca: 27/30 subjects had a valid AUC estimate; others excluded from NCA pooling</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The result is a <code>ferx_inits</code> object, and <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> shows the suggested thetas, the omega matrix and any notes. On this dataset all three methods return the same thetas:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">nca</span><span class="op">$</span><span class="va">theta</span>, <span class="fu">ferx_inits_from_nca</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca"</span><span class="op">)</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">nca</span><span class="op">$</span><span class="va">theta</span>, <span class="fu">ferx_inits_from_nca</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca_ebe"</span><span class="op">)</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>To fit from these values directly, pass <code>inits_from_nca</code> to <code>ferx_fit()</code>: <code>TRUE</code>, or one of the method names. The same option exists as the <code>inits_from_nca</code> key in <code>[fit_options]</code> or <code>settings</code>. The <em>Variants</em> section below shows that this is not always an improvement.</p>
+</section><section id="a-pilot-run" class="level3"><h3 class="anchored" data-anchor-id="a-pilot-run">A pilot run</h3>
+<p><code>ferx_check_init()</code> runs a short pilot fit with the optimizer trace switched on. It returns the <code>fit</code>, the <code>trace</code> (one row per objective evaluation) and a one-row <code>summary</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pilot</span> <span class="op">&lt;-</span> <span class="fu">ferx_check_init</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Model file [fit_options] sets `covariance = true` but ferx_fit()</span></span>
+<span><span class="co">#&gt; argument overrides it with `false`. The call-time value will be used.</span></span>
+<span><span class="co">#&gt; Warning: Model file [fit_options] sets `maxiter = 500` but ferx_fit() argument</span></span>
+<span><span class="co">#&gt; overrides it with `5`. The call-time value will be used.</span></span>
+<span><span class="va">pilot</span><span class="op">$</span><span class="va">summary</span></span>
+<span><span class="co">#&gt;   n_iter ofv_start   ofv_end ofv_drop converged</span></span>
+<span><span class="co">#&gt; 1     98 -1171.882 -1185.403 13.52044      TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The two R warnings come from <code>ferx_check_init()</code> itself. It overrides <code>covariance</code> and <code>maxiter</code> from the model file, and ferx reports every such override. A falling objective function value (OFV) shows that the optimizer moves away from the starting values in a useful direction. On this model the pilot already reached convergence. The trace shows the path:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">iter</span>, <span class="va">ofv</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">coord_cartesian</span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html">range</a></span><span class="op">(</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span><span class="op">$</span><span class="va">ofv</span><span class="op">[</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span><span class="op">$</span><span class="va">iter</span> <span class="op">&gt;</span> <span class="fl">10</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Objective evaluation"</span>, y <span class="op">=</span> <span class="st">"OFV"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-pilot-trace" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-pilot-trace-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="05-first-fit_files/figure-html/fig-pilot-trace-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pilot-trace-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section></section><section id="minimal-runnable-call" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call">Minimal runnable call</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit</span></span>
+<span><span class="co">#&gt; ============================================================</span></span>
+<span><span class="co">#&gt;  NONLINEAR MIXED EFFECTS MODEL ESTIMATION</span></span>
+<span><span class="co">#&gt; ============================================================</span></span>
+<span><span class="co">#&gt;  Model: two_cpt_oral_base        Dataset: two_cpt_oral_cov</span></span>
+<span><span class="co">#&gt;  Method: FOCEI | Gradient: FD | Subjects: 30 | Obs: 300</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   98 iterations   0.9s</span></span>
+<span><span class="co">#&gt;  OFV: -1185.4029    AIC: -1163.4029    BIC: -1122.6613</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;   Structural:  2-cpt oral  (TVCL, TVV1, TVQ, TVV2, TVKA)</span></span>
+<span><span class="co">#&gt;   IIV:         ETA_CL, ETA_V1, ETA_Q, ETA_V2, ETA_KA</span></span>
+<span><span class="co">#&gt;   IOV:         none</span></span>
+<span><span class="co">#&gt;   Residual:    proportional</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; THETA</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt; Parameter            Estimate           SE       %RSE</span></span>
+<span><span class="co">#&gt; ----------------------------------------------------</span></span>
+<span><span class="co">#&gt; TVCL                 4.464777     0.321687        7.2</span></span>
+<span><span class="co">#&gt; TVV1                48.242263     3.102676        6.4</span></span>
+<span><span class="co">#&gt; TVQ                  9.584211     0.412957        4.3</span></span>
+<span><span class="co">#&gt; TVV2                93.788147     3.432590        3.7</span></span>
+<span><span class="co">#&gt; TVKA                 1.247470     0.097536        7.8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; OMEGA  (between-subject variability)</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;   ETA_CL                   [log-normal]  = 0.155126  CV% = 41.0  SE = 0.040177</span></span>
+<span><span class="co">#&gt;   ETA_V1                   [log-normal]  = 0.119906  CV% = 35.7  SE = 0.032564</span></span>
+<span><span class="co">#&gt;   ETA_Q                    [log-normal]  = 0.052574  CV% = 23.2  SE = 0.014448</span></span>
+<span><span class="co">#&gt;   ETA_V2                   [log-normal]  = 0.038458  CV% = 19.8  SE = 0.010511</span></span>
+<span><span class="co">#&gt;   ETA_KA                   [log-normal]  = 0.175833  CV% = 43.8  SE = 0.048690</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; SIGMA  (residual error)</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;   PROP_ERR         [proportional] = 0.019620  (var = 0.000385, CV% = 2.0)  SE = 0.001123  [initial specified as SD]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; SHRINKAGE</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;  ETA_CL: -0.2%   ETA_V1: 3.6%   ETA_Q: 2.9%   ETA_V2: 2.4%   ETA_KA: 4.2%   EPS: 27.9%</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; DIAGNOSTICS</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;  Covariance: computed   Cond: 1.2   DW: 2.91 [negative autocorrelation]   IWRES lag-1 r: -0.532</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; RUN INFO</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;  Gradient (requested): fd   (used: fd)</span></span>
+<span><span class="co">#&gt;  ferx v0.3.0 (core v0.4.0)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; SETTINGS  (model file / call-time override)</span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;   method                       focei  [model only]</span></span>
+<span><span class="co">#&gt;   maxiter                      500  [model only]</span></span>
+<span><span class="co">#&gt;   covariance                   true  [model only]</span></span>
+<span><span class="co">#&gt;   gradient                     fd  [model only]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;  1 warning  --  call ferx_get_warnings(fit) for details</span></span>
+<span><span class="co">#&gt; ============================================================</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on the fit gives one screen with everything you need to judge it:</p>
+<ul>
+<li>
+<strong>Header</strong>: method, gradient, number of subjects and observations, convergence status and OFV/AIC/BIC.</li>
+<li>
+<strong>Model structure</strong>, as ferx derived it from the file.</li>
+<li>
+<strong>THETA</strong>, <strong>OMEGA</strong> and <strong>SIGMA</strong> estimates with standard errors. Omegas are variances; for log-normal etas the CV% is shown alongside.</li>
+<li>
+<strong>Shrinkage</strong>, the <strong>diagnostics</strong> line (covariance step, condition number, Durbin-Watson statistic of the residuals) and run information.</li>
+<li>
+<strong>Settings</strong>: every setting, and whether it came from the model file or the call.</li>
+<li>A <strong>warning count</strong>.</li>
+</ul>
+<p>The fit used <code>method = focei</code> and <code>gradient = fd</code> from the model’s <code>[fit_options]</code>, marked <code>[model only]</code>.</p>
+</section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
+<section id="summary" class="level3"><h3 class="anchored" data-anchor-id="summary"><code>summary()</code></h3>
+<p><code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> returns a <code>ferx_summary</code> object. Its print method shows run metadata and all warnings in one compact block, without the parameter tables:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="co">#&gt; --------------------------------------------------</span></span>
+<span><span class="co">#&gt; ferx NLME Fit Summary</span></span>
+<span><span class="co">#&gt; --------------------------------------------------</span></span>
+<span><span class="co">#&gt; Model:     two_cpt_oral_base</span></span>
+<span><span class="co">#&gt; Dataset:   two_cpt_oral_cov</span></span>
+<span><span class="co">#&gt; Converged: YES</span></span>
+<span><span class="co">#&gt; Method:    FOCEI</span></span>
+<span><span class="co">#&gt; Gradient:  fd (requested) -&gt; fd (used)</span></span>
+<span><span class="co">#&gt; ferx v0.3.0 (core v0.4.0)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Settings (model file / call-time override):</span></span>
+<span><span class="co">#&gt;   method                       focei  [model only]</span></span>
+<span><span class="co">#&gt;   maxiter                      500  [model only]</span></span>
+<span><span class="co">#&gt;   covariance                   true  [model only]</span></span>
+<span><span class="co">#&gt;   gradient                     fd  [model only]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Structure: 2-cpt oral  (TVCL, TVV1, TVQ, TVV2, TVKA)  |  IIV: ETA_CL, ETA_V1, ETA_Q, ETA_V2, ETA_KA  |  IOV: none  |  Residual: proportional</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; OFV: -1185.4029  AIC: -1163.4029  BIC: -1122.6613</span></span>
+<span><span class="co">#&gt; Subjects: 30  Obs: 300  Params: 11  Iter: 98</span></span>
+<span><span class="co">#&gt; Shrinkage: ETA1=-0.2%  ETA2=3.6%  ETA3=2.9%  ETA4=2.4%  ETA5=4.2% </span></span>
+<span><span class="co">#&gt; EPS shrinkage: 27.9%</span></span>
+<span><span class="co">#&gt; DW: 2.91 [negative autocorrelation]</span></span>
+<span><span class="co">#&gt; lag-1 r: -0.532</span></span>
+<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 0.9s</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Warnings:</span></span>
+<span><span class="co">#&gt;   * Negative IWRES autocorrelation detected (Durbin-Watson = 2.91). Possible over-parameterization or misspecified error model. </span></span>
+<span><span class="co">#&gt;   * 23 EBE fallback(s) </span></span>
+<span><span class="co">#&gt; --------------------------------------------------</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The last warning line, the number of EBE fallbacks, comes from <code>fit$total_ebe_fallbacks</code> (23 here). It is a run statistic rather than a structured fit warning, so <code>ferx_get_warnings()</code> below does not list it.</p>
+</section><section id="parameter-estimates" class="level3"><h3 class="anchored" data-anchor-id="parameter-estimates">Parameter estimates</h3>
+<p><code>fit$estimates</code> is the tidy table of all estimated parameters. The row names are the parameter names:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"transform"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;             transform    estimate          se   rse_pct    lower_95</span></span>
+<span><span class="co">#&gt; TVCL         identity  4.46477703 0.321686843  7.204992  3.83427082</span></span>
+<span><span class="co">#&gt; TVV1         identity 48.24226342 3.102676235  6.431448 42.16101799</span></span>
+<span><span class="co">#&gt; TVQ          identity  9.58421103 0.412956534  4.308717  8.77481623</span></span>
+<span><span class="co">#&gt; TVV2         identity 93.78814734 3.432589611  3.659940 87.06027170</span></span>
+<span><span class="co">#&gt; TVKA         identity  1.24746996 0.097535917  7.818699  1.05629956</span></span>
+<span><span class="co">#&gt; ETA_CL       variance  0.15512571 0.040176839 25.899535  0.07637911</span></span>
+<span><span class="co">#&gt; ETA_V1       variance  0.11990623 0.032563777 27.157701  0.05608123</span></span>
+<span><span class="co">#&gt; ETA_Q        variance  0.05257400 0.014448304 27.481841  0.02425533</span></span>
+<span><span class="co">#&gt; ETA_V2       variance  0.03845768 0.010511317 27.332169  0.01785550</span></span>
+<span><span class="co">#&gt; ETA_KA       variance  0.17583275 0.048689756 27.690948  0.08040083</span></span>
+<span><span class="co">#&gt; PROP_ERR proportional  0.01961993 0.001122783  5.722667  0.01741927</span></span>
+<span><span class="co">#&gt;              upper_95</span></span>
+<span><span class="co">#&gt; TVCL       5.09528324</span></span>
+<span><span class="co">#&gt; TVV1      54.32350884</span></span>
+<span><span class="co">#&gt; TVQ       10.39360584</span></span>
+<span><span class="co">#&gt; TVV2     100.51602298</span></span>
+<span><span class="co">#&gt; TVKA       1.43864036</span></span>
+<span><span class="co">#&gt; ETA_CL     0.23387232</span></span>
+<span><span class="co">#&gt; ETA_V1     0.18373124</span></span>
+<span><span class="co">#&gt; ETA_Q      0.08089268</span></span>
+<span><span class="co">#&gt; ETA_V2     0.05905986</span></span>
+<span><span class="co">#&gt; ETA_KA     0.27126468</span></span>
+<span><span class="co">#&gt; PROP_ERR   0.02182058</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>ferx_coef()</code> and <code>ferx_se()</code> pull values by <code>param</code> name. Unlike indexing the table, a misspelt name is an error that suggests the closest match:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_coef</span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV1"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      TVCL      TVV1 </span></span>
+<span><span class="co">#&gt;  4.464777 48.242263</span></span>
+<span><span class="fu">ferx_se</span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV1"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      TVCL      TVV1 </span></span>
+<span><span class="co">#&gt; 0.3216868 3.1026762</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_coef</span><span class="op">(</span><span class="va">fit</span>, <span class="st">"TVCLL"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error : `ferx_coef()`: unknown parameter "TVCLL".</span></span>
+<span><span class="co">#&gt; Did you mean: TVCL?</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="the-fit-object" class="level3"><h3 class="anchored" data-anchor-id="the-fit-object">The fit object</h3>
+<p>A fit is a named list with 109 elements. These are the ones you will use most:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead><tr class="header">
+<th>What you want</th>
+<th>Where</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Parameter table</td>
+<td><code>fit$estimates</code></td>
+</tr>
+<tr class="even">
+<td>Residuals, <code>PRED</code>, <code>IPRED</code> per observation</td>
+<td>
+<code>fit$sdtab</code> (<a href="#sec-diagnostics" class="quarto-xref"><span class="quarto-unresolved-ref">sec-diagnostics</span></a>)</td>
+</tr>
+<tr class="odd">
+<td>Individual parameters per subject</td>
+<td><code>fit$individual_estimates</code></td>
+</tr>
+<tr class="even">
+<td>Random effects per subject</td>
+<td><code>fit$ebe_etas</code></td>
+</tr>
+<tr class="odd">
+<td>OFV, AIC, BIC, convergence</td>
+<td>
+<code>fit$ofv</code>, <code>fit$aic</code>, <code>fit$bic</code>, <code>fit$converged</code>
+</td>
+</tr>
+<tr class="even">
+<td>Shrinkage</td>
+<td>
+<code>fit$shrinkage_eta</code>, <code>fit$shrinkage_eps</code>
+</td>
+</tr>
+<tr class="odd">
+<td>Parameter correlations</td>
+<td><code>fit$cor_matrix</code></td>
+</tr>
+</tbody>
+</table>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">individual_estimates</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID       CL       V1         Q        V2        KA</span></span>
+<span><span class="co">#&gt; 1  1 4.361100 42.73915 11.328501  88.82908 2.2309505</span></span>
+<span><span class="co">#&gt; 2  2 5.971974 60.77906 12.027250  85.12711 3.3378922</span></span>
+<span><span class="co">#&gt; 3  3 4.943563 50.09244  8.064383  68.61451 1.2038170</span></span>
+<span><span class="co">#&gt; 4  4 3.057613 21.53131  7.877633  86.96908 0.9459051</span></span>
+<span><span class="co">#&gt; 5  5 5.822952 39.95174 11.235369  65.71342 1.2051695</span></span>
+<span><span class="co">#&gt; 6  6 7.726836 45.63701  8.423313 113.38805 1.4900728</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>?ferx_fit</code> documents every element. <a href="#sec-reference" class="quarto-xref"><span class="quarto-unresolved-ref">sec-reference</span></a> lists them all with the chapter that uses each one.</p>
+</section><section id="warnings" class="level3"><h3 class="anchored" data-anchor-id="warnings">Warnings</h3>
+<p>ferx classifies everything it notices during a fit. Each warning has a <strong>severity</strong> and a stable <strong>category</strong> token:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead><tr class="header">
+<th>Severity</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>critical</td>
+<td>The result cannot be trusted as it is (for example no convergence or an ill-conditioned covariance)</td>
+</tr>
+<tr class="even">
+<td>warning</td>
+<td>The result stands, but a caveat applies</td>
+</tr>
+<tr class="odd">
+<td>info</td>
+<td>A note; no action needed</td>
+</tr>
+</tbody>
+</table>
+<p><code>ferx_get_warnings()</code> prints them grouped by severity. With <code>as_df = TRUE</code> it returns a data frame you can filter:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ferx fit warnings  (two_cpt_oral_base)</span></span>
+<span><span class="co">#&gt; -------------------------------------------------</span></span>
+<span><span class="co">#&gt; [WARNING]  dw_autocorrelation</span></span>
+<span><span class="co">#&gt;             Negative IWRES autocorrelation detected (Durbin-Watson = 2.91).</span></span>
+<span><span class="co">#&gt;             Possible over-parameterization or misspecified error model.</span></span>
+<span><span class="co">#&gt;             Negative IWRES autocorrelation suggests over-parameterisation or a</span></span>
+<span><span class="co">#&gt;             misspecified error model. Consider removing a parameter or</span></span>
+<span><span class="co">#&gt;             simplifying the residual model.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; -------------------------------------------------</span></span>
+<span><span class="co">#&gt; 0 CRITICAL   1 WARNING   0 INFO</span></span>
+<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity           category</span></span>
+<span><span class="co">#&gt; 1  warning dw_autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>fit$warnings</code> holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. For example, reject any fit with a critical warning. <code>check_diagnostics()</code> returns the residual autocorrelation and shrinkage behind two common warnings as data frames:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">check_diagnostics</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $autocorrelation</span></span>
+<span><span class="co">#&gt;   dw_statistic     lag1_r                     flag</span></span>
+<span><span class="co">#&gt; 1     2.909624 -0.5317195 negative autocorrelation</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $shrinkage</span></span>
+<span><span class="co">#&gt;      param type    shrinkage shrinkage_pct</span></span>
+<span><span class="co">#&gt; 1   ETA_CL  eta -0.001741857    -0.1741857</span></span>
+<span><span class="co">#&gt; 2   ETA_V1  eta  0.036479174     3.6479174</span></span>
+<span><span class="co">#&gt; 3    ETA_Q  eta  0.029262011     2.9262011</span></span>
+<span><span class="co">#&gt; 4   ETA_V2  eta  0.024078873     2.4078873</span></span>
+<span><span class="co">#&gt; 5   ETA_KA  eta  0.041522934     4.1522934</span></span>
+<span><span class="co">#&gt; 6 PROP_ERR  eps  0.278867695    27.8867695</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>What these diagnostics mean and how to act on them is the subject of <a href="#sec-diagnostics" class="quarto-xref"><span class="quarto-unresolved-ref">sec-diagnostics</span></a>.</p>
+</section></section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
+<p>Arguments of <code>ferx_fit()</code> introduced here. A call-time value always overrides the model file’s <code>[fit_options]</code>, and ferx reports the override:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead><tr class="header">
+<th>Argument</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>model</code></td>
+<td>—</td>
+<td>Model file or <code>ferx_model</code> object</td>
+</tr>
+<tr class="even">
+<td><code>data</code></td>
+<td><code>NULL</code></td>
+<td>Dataset; <code>NULL</code> uses the <code>ferx_model</code> object’s data or the model’s <code>[data]</code> block</td>
+</tr>
+<tr class="odd">
+<td><code>method</code></td>
+<td><code>NULL</code></td>
+<td>Estimation method(s); <code>NULL</code> uses the model file, otherwise <code>"focei"</code> (<a href="#sec-estimation-methods" class="quarto-xref"><span class="quarto-unresolved-ref">sec-estimation-methods</span></a>)</td>
+</tr>
+<tr class="even">
+<td><code>covariance</code></td>
+<td><code>NULL</code></td>
+<td>Run the covariance step (standard errors); <code>NULL</code> uses the model file, which defaults to <code>TRUE</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>verbose</code></td>
+<td><code>NULL</code></td>
+<td>Print progress; <code>NULL</code> uses the model file, which defaults to <code>TRUE</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>inits_from_nca</code></td>
+<td><code>FALSE</code></td>
+<td>Replace starting values with NCA-based ones (<code>TRUE</code> or a method name)</td>
+</tr>
+</tbody>
+</table>
+<p>The other <code>ferx_fit()</code> arguments are covered where they matter: <code>threads</code>, <code>gradient</code>, <code>optimizer_trace</code> and <code>settings</code> in <a href="#sec-estimation-methods" class="quarto-xref"><span class="quarto-unresolved-ref">sec-estimation-methods</span></a>; <code>ignore</code>, <code>accept</code> and <code>ignore_ids</code> in <a href="#sec-data" class="quarto-xref"><span class="quarto-unresolved-ref">sec-data</span></a>; <code>bloq_method</code> in <a href="#sec-censoring" class="quarto-xref"><span class="quarto-unresolved-ref">sec-censoring</span></a>; <code>mu_referencing</code> and <code>scale_params</code> in <a href="#sec-variability" class="quarto-xref"><span class="quarto-unresolved-ref">sec-variability</span></a>; <code>sir</code> and <code>fd_hessian_step</code> in <a href="#sec-uncertainty" class="quarto-xref"><span class="quarto-unresolved-ref">sec-uncertainty</span></a>; <code>output</code> and <code>include_data</code> in <a href="#sec-reproducibility" class="quarto-xref"><span class="quarto-unresolved-ref">sec-reproducibility</span></a>.</p>
+<p>For example, skipping the covariance step:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nocov</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Model file [fit_options] sets `covariance = true` but ferx_fit()</span></span>
+<span><span class="co">#&gt; argument overrides it with `false`. The call-time value will be used.</span></span>
+<span><span class="va">fit_nocov</span><span class="op">$</span><span class="va">covariance_status</span></span>
+<span><span class="co">#&gt; [1] "not_requested"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_nocov</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       estimate se</span></span>
+<span><span class="co">#&gt; TVCL  4.464777 NA</span></span>
+<span><span class="co">#&gt; TVV1 48.242263 NA</span></span>
+<span><span class="co">#&gt; TVQ   9.584211 NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead><tr class="header">
+<th>Function</th>
+<th>Arguments</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>ferx_inits_from_nca()</code></td>
+<td>
+<code>model</code>, <code>data</code>, <code>method</code> (<code>"nca_sweep"</code>, <code>"nca"</code>, <code>"nca_ebe"</code>)</td>
+</tr>
+<tr class="even">
+<td><code>ferx_check_init()</code></td>
+<td>
+<code>model</code>, <code>data</code>, <code>method</code> (default <code>"focei"</code>), <code>maxiter</code> (pilot iteration limit), further arguments passed to <code>ferx_fit()</code>
+</td>
+</tr>
+<tr class="odd">
+<td>
+<code>ferx_coef()</code>, <code>ferx_se()</code>
+</td>
+<td>
+<code>fit</code>, <code>param</code> (names; <code>NULL</code> for all)</td>
+</tr>
+<tr class="even">
+<td><code>ferx_get_warnings()</code></td>
+<td>
+<code>fit</code>, <code>as_df</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>check_diagnostics()</code></td>
+<td><code>fit</code></td>
+</tr>
+</tbody>
+</table></section><section id="variants" class="level2"><h2 class="anchored" data-anchor-id="variants">Variants</h2>
+<section id="starting-from-nca-based-values" class="level3"><h3 class="anchored" data-anchor-id="starting-from-nca-based-values">Starting from NCA-based values</h3>
+<p>Fit the base model three ways: from the model file’s starting values, from NCA-based starting values, and from NCA-based values with <code>gradient = "auto"</code> instead of the model file’s finite differences:</p>
+<div id="tbl-nca-fits" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-nca-fits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;5.1: The same model from different starting values.
+</figcaption><div aria-describedby="tbl-nca-fits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nca</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_nca_auto</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, gradient <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>                         verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Model file [fit_options] sets `gradient = fd` but ferx_fit() argument</span></span>
+<span><span class="co">#&gt; overrides it with `auto`. The call-time value will be used.</span></span>
+<span></span>
+<span><span class="va">worst</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">sev</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">severity</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="st">"critical"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">sev</span><span class="op">)</span> <span class="st">"critical"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="st">"warning"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">sev</span><span class="op">)</span> <span class="st">"warning"</span> <span class="kw">else</span> <span class="st">"none"</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span></span>
+<span>  start <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"model file"</span>, <span class="st">"NCA"</span>, <span class="st">"NCA, gradient = auto"</span><span class="op">)</span>,</span>
+<span>  converged <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">converged</span>, <span class="va">fit_nca</span><span class="op">$</span><span class="va">converged</span>, <span class="va">fit_nca_auto</span><span class="op">$</span><span class="va">converged</span><span class="op">)</span>,</span>
+<span>  ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_nca</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_nca_auto</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span>,</span>
+<span>  worst_warning <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu">worst</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>, <span class="fu">worst</span><span class="op">(</span><span class="va">fit_nca</span><span class="op">)</span>, <span class="fu">worst</span><span class="op">(</span><span class="va">fit_nca_auto</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;                  start converged       ofv worst_warning</span></span>
+<span><span class="co">#&gt; 1           model file      TRUE -1185.403       warning</span></span>
+<span><span class="co">#&gt; 2                  NCA      TRUE 24422.470      critical</span></span>
+<span><span class="co">#&gt; 3 NCA, gradient = auto      TRUE -1185.462       warning</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</figure>
+</div>
+<p>All three report <code>converged = TRUE</code> (with <code>gradient = "auto"</code>, ferx used the analytic gradient). The NCA start with finite differences, however, ended at an OFV about 25608 points higher than the other two, with a critical warning. Its warnings show why the result cannot be trusted:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_nca</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity               category</span></span>
+<span><span class="co">#&gt; 1  warning                general</span></span>
+<span><span class="co">#&gt; 2  warning covariance_regularized</span></span>
+<span><span class="co">#&gt; 3  warning          eps_shrinkage</span></span>
+<span><span class="co">#&gt; 4  warning           inflated_rse</span></span>
+<span><span class="co">#&gt; 5  warning     dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 6 critical       condition_number</span></span>
+<span><span class="co">#&gt; 7  warning          eta_normality</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The NCA-based absorption rate constant (<code>TVKA</code> = 0.237) is far from the estimate of the successful fits (1.247). Convergence only means the optimizer stopped. Always compare the OFV and read the warnings before accepting a fit.</p>
+</section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
+<p><strong>A fit stopped by its iteration limit.</strong> <code>maxiter</code> limits the outer optimizer iterations. A fit that hits the limit is marked unconverged with a critical <code>convergence</code> warning. For the warfarin example with <code>method = "focei"</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">warf</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<span><span class="va">fit_short</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>,</span>
+<span>                      settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>maxiter <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = foce` but ferx_fit() argument</span></span>
+<span><span class="co">#&gt; overrides it with `focei`. The call-time value will be used.</span></span>
+<span><span class="co">#&gt; Warning: Model file [fit_options] sets `maxiter = 300` but ferx_fit() argument</span></span>
+<span><span class="co">#&gt; overrides it with `5`. The call-time value will be used.</span></span>
+<span><span class="va">fit_short</span><span class="op">$</span><span class="va">converged</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
+<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_short</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span>, <span class="st">"message"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity           category</span></span>
+<span><span class="co">#&gt; 1  warning            general</span></span>
+<span><span class="co">#&gt; 2 critical        convergence</span></span>
+<span><span class="co">#&gt; 3  warning dw_autocorrelation</span></span>
+<span><span class="co">#&gt;                                                                                                                       message</span></span>
+<span><span class="co">#&gt; 1           Outer optimization hit the evaluation budget (maxiter = 5) before converging; increase maxiter for a tighter fit.</span></span>
+<span><span class="co">#&gt; 2                                                                                         Outer optimization did not converge</span></span>
+<span><span class="co">#&gt; 3 Negative IWRES autocorrelation detected (Durbin-Watson = 2.61). Possible over-parameterization or misspecified error model.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>Other points</strong>:</p>
+<ul>
+<li>
+<code>n_iterations</code> and the rows of the optimizer trace count objective evaluations, not outer iterations, so they can be much larger than <code>maxiter</code>.</li>
+<li>Reading <code>fit$estimates["NAME", ]</code> with a misspelt name silently returns <code>NA</code>. <code>ferx_coef()</code> and <code>ferx_se()</code> stop with an error instead.</li>
+</ul>
+<section id="warnings-you-may-see-here" class="level3"><h3 class="anchored" data-anchor-id="warnings-you-may-see-here">Warnings you may see here</h3>
+<ul>
+<li>
+<code>convergence</code> (critical): the optimizer did not converge. Reject the fit, then change starting values, method or bounds and refit. See <a href="https://ferx-nlme.github.io/ferx-core/warnings.html#codes-convergence">convergence and covariance warnings</a>.</li>
+<li>
+<code>general</code> (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, and a misspelt data-selection column (<a href="#sec-data" class="quarto-xref"><span class="quarto-unresolved-ref">sec-data</span></a>). Read the message. See <a href="https://ferx-nlme.github.io/ferx-core/warnings.html#codes-solver">solver, numerics and unclassified warnings</a>.</li>
+</ul></section></section><section id="summary-1" class="level2"><h2 class="anchored" data-anchor-id="summary-1">Summary</h2>
+<ul>
+<li>Starting values come from <code>[parameters]</code>. <code>ferx_inits_from_nca()</code> proposes data-based ones, and <code>ferx_check_init()</code> runs a pilot.</li>
+<li>
+<code>ferx_fit(model, data)</code> fits. <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> show the result, and <code>fit$estimates</code>, <code>ferx_coef()</code> and <code>ferx_se()</code> give the numbers.</li>
+<li>Judge a fit by convergence, OFV <strong>and</strong> warnings. <code>ferx_get_warnings(as_df = TRUE)</code> makes them scriptable.</li>
+</ul>
+<p>Next: <a href="#sec-estimation-methods" class="quarto-xref"><span class="quarto-unresolved-ref">sec-estimation-methods</span></a> chooses and tunes the estimation method.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Reference
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>R help: <code>?ferx_fit</code>, <code>?summary.ferx_fit</code>, <code>?ferx_inits_from_nca</code>, <code>?ferx_check_init</code>, <code>?ferx_coef</code>, <code>?ferx_get_warnings</code>, <code>?check_diagnostics</code>
+</li>
+<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html">fit options</a>, <a href="https://ferx-nlme.github.io/ferx-core/warnings.html">warnings</a>
+</li>
+</ul>
+</div>
+</div>
+
+
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/ferx-nlme\.github\.io\/ferx-book\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="../chapters/04-model-files.html" class="pagination-link" aria-label="Writing and managing model files">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Writing and managing model files</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/06-estimation-methods.html" class="pagination-link" aria-label="Estimation methods and controlling the fit">
+        <span class="nav-page-text"><span class="chapter-title">Estimation methods and controlling the fit</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/05-first-fit.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

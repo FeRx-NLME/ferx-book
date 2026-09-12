@@ -48,7 +48,7 @@ PLAN.md              # design, decisions, progress, upstream findings
 | | 05 first fit | `ferx_inits_from_nca()`, `ferx_check_init()`, fit accessors, warnings |
 | | 06 estimation methods | all methods incl. VI via `[fit_options]`, settings, traces, run logs, async |
 | | 07 diagnostics, 08 VPC | GOF, eta diagnostics, NPDE; `ferx_simulate()` VPC |
-| | 09 model selection | LRT/BIC, covsearch, modelsearch, ruvsearch, search configs |
+| | 09 model selection | LRT/BIC, covsearch, modelsearch, ruvsearch, iivsearch, iovsearch, `ferx_amd()`, search configs |
 | | 10 uncertainty | covariance, SIR, bootstrap, Bayes |
 | | 11 simulation, 12 tables/figures, 13 reproducibility | designs, `[derived]`/`[output]`, `.fitrx` |
 | Scenarios | 14 structural models | analytical vs ODE, `[scaling]`, `[derived]` states |

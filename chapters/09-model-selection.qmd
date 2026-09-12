@@ -251,7 +251,16 @@ iiv <- ferx_iivsearch(config = bo$search, directory = book_tempdir("iivsearch"),
 iiv
 ```
 
-The search runs in two stages. The eta-count stage drops etas one at a time from the input structure; the block stage then offers covariance blocks over the etas that survived. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool. Read the printed output carefully: the input model itself fails the strictness gate, so the candidates are ranked among themselves rather than against it, and the gate excluded `r sum(!iiv$models$passed)` of the fitted models. A search result is a ranking of what passed, not proof that the winner is a good model.
+The search runs in two stages. The eta-count stage removes etas from the input structure -- `top_down_exhaustive` tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool.
+
+Read the printed output carefully. The input model is a candidate in its own right: the step tables rank it, and in the eta-count stage it ranks first. The strictness gate is separate from that ranking. It rejected `r sum(!iiv$models$passed)` of the fitted models, and one of them reached a better criterion than the winner did:
+
+```{r}
+#| label: iivsearch-gate
+iiv$models[, c("id", "structure", "criterion", "rank", "passed")]
+```
+
+`run8` scores `r round(min(iiv$models$criterion[!iiv$models$passed]), 2)` against the selected `r round(iiv$final_criterion, 2)`, and is out because it did not pass. The input carries no rank in this combined table because it is the parent each stage starts from. A search result is a ranking of what passed, not proof that the winner is the best model fitted.
 
 ```{r}
 #| label: iivsearch-final
@@ -270,9 +279,17 @@ iiv_block <- ferx_iivsearch(model = bo$model, data = bo$data,
                             block_retries = 1,
                             directory = book_tempdir("iivsearch-block"), progress = FALSE)
 c(input = iiv_block$input_structure, final = iiv_block$final_structure)
+iiv_block$models[, c("id", "structure", "criterion", "rank", "passed")]
 ```
 
-Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The diagonal one is selected -- but read why. The input's criterion is the better of the two; it is out because it fails the strictness gate, which the printed notes state. A selection is only as meaningful as the gate that produced it.
+Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The input is kept -- but read why. The diagonal candidate reaches the better criterion of the two, and it is out because it fails the strictness gate. The `failures` column gives the reason:
+
+```{r}
+#| label: iivsearch-blocks-reason
+na.omit(iiv_block$models$failures)
+```
+
+The optimizer never moved away from the initial estimates, so that fit is not evidence about the structure at all, and the gate is right to drop it. A selection is only as meaningful as the gate that produced it.
 
 ## Inter-occasion variability search
 
@@ -285,7 +302,7 @@ iov <- ferx_iovsearch(config = iov_ex$search, directory = book_tempdir("iovsearc
 iov
 ```
 
-`distribution = "same-as-iiv"`, the default, declares each added kappa the way its eta is declared. The search added a kappa on `V`, then found in the second step that dropping `ETA_V` improved the BIC(random) further: an IOV search can change the IIV structure, because the two are fitted together. `CL` already carries a kappa in the base model and is left as it is.
+`distribution = "same-as-iiv"`, the default, declares each added kappa the way its eta is declared. The first step added kappas on `KA` and `V`; the second then found that dropping `ETA_V` improved the BIC(random) further: an IOV search can change the IIV structure, because the two are fitted together. `CL` already carries a kappa in the base model and is left as it is.
 
 ```{r}
 #| label: iovsearch-final
