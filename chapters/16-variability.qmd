@@ -85,7 +85,8 @@ head(fit_w$ebe_etas, 3)
 | Level | Declaration | Meaning | Example |
 |---|---|---|---|
 | Between subjects | `omega ETA_CL ~ 0.07` | One random effect with its variance | `warfarin` |
-| | `omega ETA_CL ~ 0.0 FIX` | A variance held fixed (at 0: no variability on that parameter) | |
+| | `omega ETA_CL ~ 0.2645751 (sd)` | The same variance declared as a standard deviation | (below) |
+| | `omega ETA_CL ~ 0.0 FIX` | A variance held fixed (at 0: no variability on that parameter) | (below) |
 | | `block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]` | Correlated random effects (lower triangle) | `warfarin_block_omega` |
 | Between occasions | `kappa KAPPA_CL ~ 0.04` | One IOV random effect per occasion | `warfarin_iov` |
 | | `block_kappa (KAPPA_CL, KAPPA_V) = [...]` | Correlated IOV random effects | (variant below) |
@@ -110,6 +111,81 @@ Estimation options that act on these parameters:
 #| label: tbl-settings-variability
 book_settings_table(c("iov_column", "iov_occasion", "mu_referencing", "parameter_scaling", "scale_params"))
 ```
+
+### Variance or standard deviation?
+
+An initial value for `omega` or `sigma` is a **variance** unless you say otherwise. Appending `(sd)` declares a standard deviation instead, which the parser squares; `(variance)` states the default explicitly. So these declare the same model, and the warfarin example's `omega ETA_CL ~ 0.07` could equally be written as an SD of `r round(sqrt(0.07), 7)`:
+
+```{r}
+#| label: sd-vs-variance
+as_sd <- file.path(variability_dir, "warfarin_omega_sd.ferx")
+writeLines(sub("  omega ETA_CL ~ 0.07", "  omega ETA_CL ~ 0.2645751 (sd)",
+               readLines(w$model), fixed = TRUE), as_sd)
+sigma_as_variance <- file.path(variability_dir, "warfarin_sigma_variance.ferx")
+writeLines(sub("  sigma PROP_ERR ~ 0.01 (sd)", "  sigma PROP_ERR ~ 0.0001",
+               readLines(w$model), fixed = TRUE), sigma_as_variance)
+fit_as_sd <- ferx_fit(as_sd, w$data, verbose = FALSE)
+fit_sigma_var <- ferx_fit(sigma_as_variance, w$data, verbose = FALSE)
+c(bundled = fit_w$ofv, omega_as_sd = fit_as_sd$ofv, sigma_as_variance = fit_sigma_var$ofv)
+```
+
+The two scales differ only in what you type. What comes back is reported on a fixed scale, whichever form you declared: an `omega` row is a variance, and a `sigma` row is a standard deviation. `print()` on a fit spells the residual error out all three ways, and records which form the file used:
+
+```{r}
+#| label: sigma-notation
+grep("PROP_ERR", capture.output(print(fit_w)), value = TRUE)
+fit_w$estimates[, c("transform", "estimate", "init_as_sd")]
+```
+
+`init_as_sd` is the declaration, not the reported scale (@sec-first-fit): it is `TRUE` for the bundled `sigma PROP_ERR ~ 0.01 (sd)` and `FALSE` for every variance-scale row.
+
+::: {.callout-important}
+## `(sd)` on a block is ignored at this build
+`block_omega` and `block_kappa` take variances and covariances only, because one tag cannot say which of the lower-triangle entries it applies to. ferx-core documents `(sd)` as not accepted there, but the pinned build neither rejects nor applies it -- the annotation is dropped and the numbers are read as variances:
+
+```{r}
+#| label: block-sd-ignored
+block_sd <- file.path(variability_dir, "warfarin_block_sd.ferx")
+block_ex <- ferx_example("warfarin_block_omega")
+writeLines(sub("block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]",
+               "block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02] (sd)",
+               readLines(block_ex$model), fixed = TRUE), block_sd)
+invisible(capture.output(block_sd_valid <- ferx_model_validate(block_sd)$ok))
+block_sd_valid
+fit_block_sd <- ferx_fit(block_sd, block_ex$data, verbose = FALSE)
+fit_block_plain <- ferx_fit(block_ex$model, block_ex$data, verbose = FALSE)
+c(with_sd_tag = fit_block_sd$ofv, without = fit_block_plain$ofv)
+```
+
+Write block entries as variances, and convert by hand.
+:::
+
+### Fixing a parameter
+
+`FIX` after a declaration holds a parameter at its initial value. It works on a `theta`, on an `omega` or `kappa` variance, and on a `sigma`. Two reasons to reach for it: the data cannot identify the parameter, so you hold it at a value from elsewhere (@sec-absorption fixes a bioavailability that way), or you want no variability at all on a parameter.
+
+A variance of zero is the second case, and it has to be written `FIX`:
+
+```{r}
+#| label: fix-omega
+no_iiv_on_ka <- file.path(variability_dir, "warfarin_no_iiv_ka.ferx")
+writeLines(sub("  omega ETA_KA ~ 0.40", "  omega ETA_KA ~ 0.0 FIX",
+               readLines(w$model), fixed = TRUE), no_iiv_on_ka)
+fit_no_iiv_ka <- ferx_fit(no_iiv_on_ka, w$data, verbose = FALSE)
+c(all_three = fit_w$n_parameters, ka_fixed = fit_no_iiv_ka$n_parameters)
+c(all_three = fit_w$ofv, ka_fixed = fit_no_iiv_ka$ofv)
+```
+
+Fixing the `KA` variance saves one parameter and costs `r round(fit_no_iiv_ka$ofv - fit_w$ofv, 1)` OFV on these data, so that random effect is clearly worth keeping. The variability it carried does not vanish, it moves: the `CL` variance goes from `r round(fit_w$estimates["ETA_CL", "estimate"], 3)` to `r round(fit_no_iiv_ka$estimates["ETA_CL", "estimate"], 2)` and the residual error more than doubles.
+
+A fixed parameter still has a row in `fit$estimates`. It carries the value the engine stores for a declared zero, with a standard error of 0, and it no longer counts towards `n_parameters`:
+
+```{r}
+#| label: fixed-row
+fit_no_iiv_ka$estimates[c("ETA_CL", "ETA_KA"), c("estimate", "se", "rse_pct")]
+```
+
+Leaving the same zero **free** is refused rather than fitted: the optimizer would start on its lower rail and could not move off it (@sec-dosing shows the message).
 
 ## Variants
 
