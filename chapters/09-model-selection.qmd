@@ -240,9 +240,91 @@ rs$final_features
 
 The search accepted a time-varying residual error in the first iteration, and nothing further in the second. The base model of this workflow, which carried a residual autocorrelation warning in @sec-diagnostics, can be searched the same way with the inline arguments (`model`, `data`, `p_value`, `max_iter`, …).
 
+## Variability search
+
+`ferx_iivsearch()` decides the random-effect structure: which parameters carry an eta, and which etas share a covariance block. The space is written with `IIV` and `COVARIANCE` statements, and `?` marks what the search may decide. The bundled `warfarin_block_omega` configuration makes every PK parameter's eta exploratory and offers a block over whichever survive:
+
+```{r}
+#| label: iivsearch
+bo <- ferx_example("warfarin_block_omega")
+iiv <- ferx_iivsearch(config = bo$search, directory = book_tempdir("iivsearch"), progress = FALSE)
+iiv
+```
+
+The search runs in two stages. The eta-count stage drops etas one at a time from the input structure; the block stage then offers covariance blocks over the etas that survived. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool. Read the printed output carefully: the input model itself fails the strictness gate, so the candidates are ranked among themselves rather than against it, and the gate excluded `r sum(!iiv$models$passed)` of the fitted models. A search result is a ranking of what passed, not proof that the winner is a good model.
+
+```{r}
+#| label: iivsearch-final
+iiv$final_structure
+iiv$final_etas
+```
+
+With `algorithm = "skip"` the eta-count stage is left out and only the block stage runs, which is the cheap way to ask one question: should these two etas be correlated?
+
+```{r}
+#| label: iivsearch-blocks
+iiv_block <- ferx_iivsearch(model = bo$model, data = bo$data,
+                            search_space = "COVARIANCE?(IIV, [ETA_CL, ETA_V])",
+                            algorithm = "skip", block_retries = 1,
+                            directory = book_tempdir("iivsearch-block"), progress = FALSE)
+iiv_block$final_structure
+```
+
+## Inter-occasion variability search
+
+`ferx_iovsearch()` decides which parameters carry an occasion random effect. It reads the occasion column from the base model's `iov_column`, so a model without one has nothing to search. The bundled `warfarin_iov` configuration offers a kappa on every parameter that has an eta:
+
+```{r}
+#| label: iovsearch
+iov_ex <- ferx_example("warfarin_iov")
+iov <- ferx_iovsearch(config = iov_ex$search, directory = book_tempdir("iovsearch"), progress = FALSE)
+iov
+```
+
+`distribution = "same-as-iiv"`, the default, declares each added kappa the way its eta is declared. The search added a kappa on `V`, then found in the second step that dropping `ETA_V` improved the BIC(random) further: an IOV search can change the IIV structure, because the two are fitted together. `CL` already carries a kappa in the base model and is left as it is.
+
+```{r}
+#| label: iovsearch-final
+iov$final_kappas
+iov$final_structure
+```
+
+## The whole pipeline at once
+
+`ferx_amd()` runs the tools above in order as one automatic model-development pipeline: structural, IIV, residual, IOV, allometry, covariates. One search space describes the whole pipeline, and the engine hands each step only the statements its tool can read. A step the space says nothing about is skipped, and says so.
+
+`ferx_amd_plan()` shows that plan without fitting anything, which is the cheap way to check a configuration before spending the run:
+
+```{r}
+#| label: amd-plan
+amd_ex <- ferx_example("warfarin_amd")
+ferx_amd_plan(config = amd_ex$search)
+```
+
+Three of the six steps are already ruled out by the model and the space: the model declares no `iov_column`, and the space carries no `ALLOMETRY` or `COVARIATE` statement because `warfarin.csv` has no covariate column. Running it fits the rest:
+
+```{r}
+#| label: amd
+amd <- ferx_amd(config = amd_ex$search, directory = book_tempdir("amd"), progress = FALSE)
+amd
+```
+
+The pipeline improved nothing: `warfarin_amd.ferx` is already the model these three steps would choose, so each step re-selected its own input and the final OFV equals the starting one. That is a useful result to see printed rather than hidden -- the step table carries each step's criterion before and after, its candidate count, the strictness verdict and its wall clock, so a step that "won" by having its siblings rejected looks different from one that found something. `summary()` adds every candidate of every step, and the same two tables are written to the run directory as `steps.csv` and `candidates.csv`.
+
+The pipeline can also be stated inline, with a shorter order and steps left out. `strategy = "SIR"` runs structural, IIV and residual only; `skip` drops a step from whichever order was chosen; `retries_on` says when the extra perturbed-restart pass runs:
+
+```{r}
+#| label: amd-inline
+amd_sir <- ferx_amd(model = amd_ex$model, data = amd_ex$data,
+                    search_space = "PERIPHERALS(0..1); IIV?(@PK, exp)",
+                    strategy = "SIR", skip = "residual", retries_on = "final",
+                    retries = 0, directory = book_tempdir("amd-sir"), progress = FALSE)
+amd_sir$steps[, c("step", "status", "criterion", "candidates", "seconds")]
+```
+
 ## Tools not available from R
 
-ferx-core also has variability searches (IIV and IOV structures), an automatic model-development pipeline and a global search. They run from the ferx command line and have no R function in the pinned ferx-r build. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages.
+ferx-core also has a global search. It runs from the ferx command line and has no R function in the pinned ferx-r build. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages.
 
 ## Options that matter
 
@@ -255,15 +337,20 @@ ferx-core also has variability searches (IIV and IOV structures), an automatic m
 | `ferx_search_coverage()` | `space` (space, config or MFL text) |
 | `ferx_search_results()` | `directory`, `partial` (`NULL` prefers the complete table), `type` (`"candidates"`, `"models"`, `"steps"`) |
 
-The three search functions share the entry arguments `model`, `data` and `config`; the run arguments `threads`, `retries`, `directory`, `resume` and `progress`; and for model and covariate search `search_space`, `rank` and `cutoff`. A search is stated either by `config` or by the inline arguments, not both:
+The search functions share the entry arguments `model`, `data` and `config`; the run arguments `threads`, `retries`, `directory`, `resume` and `progress`; and, wherever candidates are ranked rather than tested, `search_space`, `rank` and `cutoff`. A search is stated either by `config` or by the inline arguments, not both:
 
 | Function | Search arguments |
 |---|---|
 | `ferx_covsearch()` | `algorithm` (`"scm-forward-then-backward"` or `"scm-forward"`), `p_forward`, `p_backward`, `max_steps`, `adaptive_scope_reduction` |
 | `ferx_modelsearch()` | `algorithm` (`"reduced_stepwise"`, `"exhaustive_stepwise"`, `"exhaustive"`), `iiv_strategy` (`"absorption_delay"`, `"add_diagonal"`, `"no_add"`) |
 | `ferx_ruvsearch()` | `groups`, `p_value`, `skip` (families not to test), `max_iter` (1 to 3), `cwres_prescreen` (screen candidates on the parent's CWRES before refitting) |
+| `ferx_iivsearch()` | `algorithm` (`"top_down_exhaustive"`, `"bottom_up_stepwise"`, `"simultaneous_stepwise"`, `"skip"`), `correlation_algorithm` (the block stage: `"top_down_exhaustive"` or `"skip"`), `as_fullblock` (a bottom-up candidate blocks every eta it carries), `block_retries` (extra starts per eta in the largest block) |
+| `ferx_iovsearch()` | `column` (the occasion column; defaults to the model's `iov_column`, and disagreeing with it is an error), `distribution` (`"same-as-iiv"`, `"disjoint"`, `"joint"`, `"explicit"`), `groups` (the blocks `"explicit"` names), `block_retries` |
+| `ferx_amd()`, `ferx_amd_plan()` | `strategy` (`"default"`, `"reevaluation"`, `"SIR"`, `"SRI"`, `"RSI"`), `skip` (steps to leave out), `retries_on` (`"all_final"`, `"final"`, `"skip"`) |
 
-`print()` and `summary()` exist for the results of all three: `ferx_covsearch`, `ferx_modelsearch` and `ferx_ruvsearch` objects. `ferx_search_config` and `ferx_search_space` objects have `print()` methods.
+Only a `.ferxsearch` file can carry a per-tool section (`[modelsearch]`, `[iivsearch]`, `[covsearch]`, …); the inline form runs each step at its own defaults.
+
+`print()` and `summary()` exist for the results of all of them: `ferx_covsearch`, `ferx_modelsearch`, `ferx_ruvsearch`, `ferx_iivsearch`, `ferx_iovsearch` and `ferx_amd` objects. `ferx_search_config` and `ferx_search_space` objects have `print()` methods.
 
 ## Pitfalls
 
@@ -277,11 +364,13 @@ The three search functions share the entry arguments `model`, `data` and `config
 - Compare fitted models by likelihood ratio test (nested) or with `fit$aic`, `fit$bic` and `ferx_bic()`. Gate candidates with `check_strictness()`.
 - Describe searches in `.ferxsearch` files; check them with `ferx_search_config()`, `ferx_search_space()` and `ferx_search_coverage()`.
 - Run covariate, structural and residual error searches with `ferx_covsearch()`, `ferx_modelsearch()` and `ferx_ruvsearch()`, and read their tables with `ferx_search_results()`.
+- Search the random-effect structure with `ferx_iivsearch()` and the occasion structure with `ferx_iovsearch()`; both can change the IIV structure, so read what they selected rather than only the criterion.
+- Run the whole order as one pipeline with `ferx_amd()`, after checking it with `ferx_amd_plan()`. A step the space says nothing about is skipped, and the step table says why.
 
 Next: @sec-uncertainty quantifies the uncertainty of the selected covariate model.
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_bic`, `?check_strictness`, `?ferx_search_config`, `?ferx_search_space`, `?ferx_search_coverage`, `?ferx_search_results`, `?ferx_covsearch`, `?ferx_modelsearch`, `?ferx_ruvsearch`
-- ferx-core: [search configuration](https://ferx-nlme.github.io/ferx-core/tools/search.html), [covsearch](https://ferx-nlme.github.io/ferx-core/tools/covsearch.html), [modelsearch](https://ferx-nlme.github.io/ferx-core/tools/modelsearch.html), [ruvsearch](https://ferx-nlme.github.io/ferx-core/tools/ruvsearch.html), [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html)
+- R help: `?ferx_bic`, `?check_strictness`, `?ferx_search_config`, `?ferx_search_space`, `?ferx_search_coverage`, `?ferx_search_results`, `?ferx_covsearch`, `?ferx_modelsearch`, `?ferx_ruvsearch`, `?ferx_iivsearch`, `?ferx_iovsearch`, `?ferx_amd`, `?ferx_amd_plan`
+- ferx-core: [search configuration](https://ferx-nlme.github.io/ferx-core/tools/search.html), [covsearch](https://ferx-nlme.github.io/ferx-core/tools/covsearch.html), [modelsearch](https://ferx-nlme.github.io/ferx-core/tools/modelsearch.html), [ruvsearch](https://ferx-nlme.github.io/ferx-core/tools/ruvsearch.html), [iivsearch](https://ferx-nlme.github.io/ferx-core/tools/iivsearch.html), [iovsearch](https://ferx-nlme.github.io/ferx-core/tools/iovsearch.html), [amd](https://ferx-nlme.github.io/ferx-core/tools/amd.html), [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html)
 :::
