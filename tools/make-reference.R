@@ -260,24 +260,26 @@ wc <- inv[inv$kind == "warning_code", ]
 wc <- wc[order(wc$name), ]
 warn_rows <- core_key_rows(core_doc("warnings.qmd"))
 out <- c(out, "## Warning categories", "",
-  "Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.", "",
+  "Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fit that ran, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. A model that never ran fails with a check report code instead, listed under *Check report codes* below. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.", "",
   md_table(data.frame(Category = code(wc$name),
                       Severity = lookup(warn_rows, wc$name, 2, "warning category"),
                       Meaning = desc_cell(lookup(warn_rows, wc$name, 3, "warning category")),
                       Chapter = chapter_link(wc$home), check.names = FALSE)))
 
-# Error codes (ferx-core check report). Not in features.csv: these stop a fit or a check,
-# so they never reach fit$warnings.
+# Check report codes (E_* and W_*). Not in features.csv, and a different channel from the
+# warning categories above: these come from the parser and the pre-fit checks.
 err_rows <- core_key_rows(core_doc("file-formats/check-report.qmd"))
-if (is.null(err_rows)) stop("no error code rows parsed from ferx-core at the pin", call. = FALSE)
-err_rows <- err_rows[grepl("^`E_[A-Z_]+`$", err_rows[, 1]), , drop = FALSE]
-if (!nrow(err_rows)) stop("no E_* codes parsed from the ferx-core check report at the pin", call. = FALSE)
+if (is.null(err_rows)) stop("no check report rows parsed from ferx-core at the pin", call. = FALSE)
+err_rows <- err_rows[grepl("^`[EW]_[A-Z_]+`$", err_rows[, 1]), , drop = FALSE]
+if (!nrow(err_rows)) stop("no E_/W_ codes parsed from the ferx-core check report at the pin", call. = FALSE)
 err_rows <- err_rows[order(core_key(err_rows[, 1])), , drop = FALSE]
 err_tab <- data.frame(Code = code(core_key(err_rows[, 1])), Severity = err_rows[, 2],
                       Meaning = desc_cell(err_rows[, 3]), check.names = FALSE)
 err_tab <- err_tab[nzchar(err_tab$Meaning), ]
-out <- c(out, "## Error codes", "",
-  sprintf("A model file that cannot be run stops with one of these codes rather than a warning, so it never reaches `fit$warnings`. `ferx_model_validate()` (@sec-model-files) reports them before a fit, and a failed `ferx_fit()` names one in its error message. The %d codes below are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.", nrow(err_tab)), "",
+n_err <- sum(startsWith(err_tab$Code, "`E_"))
+out <- c(out, "## Check report codes", "",
+  sprintf("Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises the same message but without the code, so validate the model when you want the identifier rather than the prose. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The %d codes below (%d errors, %d warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.",
+          nrow(err_tab), n_err, nrow(err_tab) - n_err), "",
   md_table(err_tab))
 
 # Fit slots

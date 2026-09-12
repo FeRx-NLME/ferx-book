@@ -566,6 +566,13 @@ Per-chapter loop:
     an ordering for block omega elements.
   - Not reader-visible: no chapter prints `cov_matrix` or `cor_matrix` for a block model.
     Nothing to remove from the book when this is fixed; recheck the labels then.
+- **ferx-r usability gap (found reviewing the ch25 lookup tables):** a refused `ferx_fit()`
+  drops the stable check-report code. `ferx_model_validate()` returns `E_UNKNOWN_BLOCK` in
+  `$diagnostics$code`, but fitting the same file raises only
+  ``Error parsing model: Unknown block `[not_a_block]` (line 30). ...`` — same prose, no
+  identifier. The stable code is therefore unavailable on the path most users hit first, and
+  a script cannot branch on it without validating separately. ch25 says so; if the fit error
+  gains the code, drop that sentence.
 - **ferx-core doc gap (found building the ch25 lookup tables):** `docs/data-format.qmd` at
   `8372248c` never mentions `ADDL`, `FREMTYPE` or `TENTRY`, although the engine reads all
   three and the book fits `warfarin_addl`, FREM datasets and `TENTRY` delayed entry. They

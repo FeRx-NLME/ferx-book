@@ -350,7 +350,7 @@ Every example is available with `ferx_example()` and its name, which returns the
 
 ## Warning categories
 
-Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.
+Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fit that ran, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. A model that never ran fails with a check report code instead, listed under *Check report codes* below. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.
 
 | Category | Severity | Meaning | Chapter |
 |---|---|---|---|
@@ -389,9 +389,9 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, with the severity
 | `threads` | Info | Thread-count efficiency note. | @sec-estimation-methods |
 | `vi_bad_basin` | Critical | VI's final ELBO tightness check found that a flat objective is an unusable variational bound, not convergence. | @sec-estimation-methods |
 
-## Error codes
+## Check report codes
 
-A model file that cannot be run stops with one of these codes rather than a warning, so it never reaches `fit$warnings`. `ferx_model_validate()` (@sec-model-files) reports them before a fit, and a failed `ferx_fit()` names one in its error message. The 30 codes below are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.
+Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises the same message but without the code, so validate the model when you want the identifier rather than the prose. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 48 codes below (30 errors, 18 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.
 
 | Code | Severity | Meaning |
 |---|---|---|
@@ -425,6 +425,24 @@ A model file that cannot be run stops with one of these codes rather than a warn
 | `E_SIGMA_ORDER_MISMATCH` | error | A single-endpoint `[error_model]` names its sigmas in an order other than the `[parameters]` declaration order. |
 | `E_THETA_INIT_OUTSIDE_BOUNDS` | error | A `theta` whose initial value is **strictly outside** its own declared range. |
 | `E_UNKNOWN_BLOCK` | error | A `[block]` header is not a recognised block name. |
+| `W_ABSORPTION_TWIN_DECLINED` | warning | An analytic transit / inverse-Gaussian model's ODE twin could not be built, so the model stays closed-form with no ODE fallback. |
+| `W_ADDL_MISSING_II` | warning | ADDL > 0 on a dose row but II is zero or missing; additional doses were not expanded. |
+| `W_DERIVED_COVARIATE_SHADOW` | warning | A `[derived]` name shadows a covariate (allowed but may be confusing). |
+| `W_DERIVED_STEP_IGNORED` | warning | `step=` given for a DV-based integral (ignored; DV integrals always use observation times). |
+| `W_DESIGN_DV` | warning | Simulation reader only: one or more `EVID=0` rows had a missing `DV` and were kept as design points to simulate at, so the dataset contributes more rows than a fit of the same file would. |
+| `W_ETA_NOT_DECLARED` | warning | As `E_ETA_NOT_DECLARED`, but reported without `--data`, where ferx cannot yet know whether the dataset supplies the column. |
+| `W_EXPERIMENTAL_NN` | warning | The model uses neural-network components (`[covariate_nn]`), an [experimental](../maturity.qmd) feature. |
+| `W_EXPERIMENTAL_SDE` | warning | The model uses stochastic differential equations (`[diffusion]`), an [experimental](../maturity.qmd) feature. |
+| `W_GN_NO_RANDOM_EFFECTS` | warning | `method = gn` as the last estimating stage on a model with no random effects (`n_eta = 0`). |
+| `W_INIT_OUTSIDE_BOUNDS` | warning | An initial estimate strictly outside one of ferx's **internal** rails rather than a declared bound: the hidden `1e9` θ cap, the Ω `±6` (variance ≤ 1.6e5) / off-diagonal `±10` guards, or the Σ `[-8, 5]` guard. |
+| `W_IOV_OCC_MISSING` | warning | Some rows in the IOV occasion column had missing or unparseable values; those rows were assigned occasion=0. |
+| `W_MISSING_DV` | warning | One or more `EVID=0` rows had a missing `DV` (`.`/`NA`/blank) but were not marked `MDV=1`; they were skipped rather than scored as `DV=0`. |
+| `W_NEGATIVE_LAGTIME` | warning | Lag time is negative at the initial typical-value point. |
+| `W_OUTPUT_DUPLICATE` | warning | A name in `[output]` is already written to sdtab automatically (e.g. `TAFD`, `TAD`, an eta name). |
+| `W_SDE_RESET` | warning | EVID=3/4 resets under an SDE `[diffusion]` model are not honoured. |
+| `W_STEADY_STATE_ABSOLUTE_TIME` | warning | An `SS=1` dose (`II > 0`) on a model whose `[odes]` right-hand side reads an **absolute** clock — `TAFD`, `T`/`t`, or the bare `TIME` built-in. |
+| `W_STEADY_STATE_II` | warning | SS=1 doses with missing / non-positive `II` (treated as non-SS). |
+| `W_STEADY_STATE_INFUSION` | warning | SS=1 infusion whose length *after bioavailability* exceeds `II` (overlapping pulses; SS skipped) — the run-in's own test (#1281). |
 
 ## Fit object slots
 
