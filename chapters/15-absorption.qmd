@@ -353,6 +353,34 @@ for (name in c("parallel_absorption", "mixed_absorption", "biphasic_igd_absorpti
 
 `first_order(ka=)` exists for these combinations. A single first-order route is the analytical `pk ..._oral` model. On the shared data none of the two-route models is supported by the data (see the comparison table).
 
+Every route in those equations reads the **same** dose event, and the pathway fractions split it inside the equation. So a two-route model needs one dose record, not one per route. The shared dataset has exactly that: a single `EVID = 1` row into `CMT` 1 per subject, followed by observations.
+
+```{r}
+#| label: parallel-dose-records
+parallel_data <- read.csv(shared$parallel_absorption$data, na.strings = ".")
+head(parallel_data, 3)
+table(dose_rows_per_subject = table(parallel_data$ID[parallel_data$EVID == 1]))
+```
+
+Giving each route its own dose row delivers the dose twice. A copy of subject 1 with the dose row duplicated doubles the peak:
+
+```{r}
+#| label: parallel-double-dose
+subject1 <- filter(parallel_data, ID == 1)
+one_dose <- file.path(comparison_dir, "parallel_one_dose.csv")
+two_doses <- file.path(comparison_dir, "parallel_two_doses.csv")
+write.csv(subject1, one_dose, row.names = FALSE, na = ".")
+write.csv(arrange(bind_rows(filter(subject1, EVID == 1), subject1), TIME, desc(EVID)),
+          two_doses, row.names = FALSE, na = ".")
+peak <- function(data) {
+  max(ferx_simulate(shared$parallel_absorption$model, data, n_sim = 1, seed = 1)$IPRED)
+}
+peaks <- c(one_dose_row = peak(one_dose), two_dose_rows = peak(two_doses))
+peaks
+```
+
+The peak is `r round(peaks[["two_dose_rows"]] / peaks[["one_dose_row"]], 2)` times higher, because `FR1 + FR2 = 1` applied to two dose records is two doses. When the routes start at different times, keep the single record and give one route a `lag=`, as `per_route_lag_absorption` does above.
+
 ### Bioavailability
 
 `bioavailability` estimates the fraction `F` on the logit scale, so it stays between 0 and 1, with a random effect on that scale. It is passed with `f=` to the `pk` line. `bioavailability_ode` is the ODE version: an individual parameter named `F` is applied to the dose by the engine and does not appear in the equations. Both give the same fit:
