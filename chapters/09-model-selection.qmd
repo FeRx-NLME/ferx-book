@@ -259,16 +259,20 @@ iiv$final_structure
 iiv$final_etas
 ```
 
-With `algorithm = "skip"` the eta-count stage is left out and only the block stage runs, which is the cheap way to ask one question: should these two etas be correlated?
+With `algorithm = "skip"` the eta-count stage is left out and only the block stage runs, which is the cheap way to ask one question: should `CL` and `V` share a covariance block? Skipping the eta-count stage means naming the block stage explicitly -- asking for neither is an error rather than a search with nothing left to do. The statements name parameters, not etas:
 
 ```{r}
 #| label: iivsearch-blocks
 iiv_block <- ferx_iivsearch(model = bo$model, data = bo$data,
-                            search_space = "COVARIANCE?(IIV, [ETA_CL, ETA_V])",
-                            algorithm = "skip", block_retries = 1,
+                            search_space = "COVARIANCE?(IIV, [CL, V])",
+                            algorithm = "skip",
+                            correlation_algorithm = "top_down_exhaustive",
+                            block_retries = 1,
                             directory = book_tempdir("iivsearch-block"), progress = FALSE)
-iiv_block$final_structure
+c(input = iiv_block$input_structure, final = iiv_block$final_structure)
 ```
+
+Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The diagonal one is selected -- but read why. The input's criterion is the better of the two; it is out because it fails the strictness gate, which the printed notes state. A selection is only as meaningful as the gate that produced it.
 
 ## Inter-occasion variability search
 
