@@ -114,7 +114,7 @@ book_settings_table(c("iov_column", "iov_occasion", "mu_referencing", "parameter
 
 ### Variance or standard deviation?
 
-An initial value for `omega` or `sigma` is a **variance** unless you say otherwise. Appending `(sd)` declares a standard deviation instead, which the parser squares; `(variance)` states the default explicitly. So these declare the same model, and the warfarin example's `omega ETA_CL ~ 0.07` could equally be written as an SD of `r round(sqrt(0.07), 7)`:
+An initial value for `omega`, `kappa` or `sigma` is a **variance** unless you say otherwise. Appending `(sd)` declares a standard deviation instead, which the parser squares; `(variance)` states the default explicitly. So these declare the same model, and the warfarin example's `omega ETA_CL ~ 0.07` could equally be written as an SD of `r round(sqrt(0.07), 7)`:
 
 ```{r}
 #| label: sd-vs-variance
@@ -124,9 +124,14 @@ writeLines(sub("  omega ETA_CL ~ 0.07", "  omega ETA_CL ~ 0.2645751 (sd)",
 sigma_as_variance <- file.path(variability_dir, "warfarin_sigma_variance.ferx")
 writeLines(sub("  sigma PROP_ERR ~ 0.01 (sd)", "  sigma PROP_ERR ~ 0.0001",
                readLines(w$model), fixed = TRUE), sigma_as_variance)
+explicit_variance <- file.path(variability_dir, "warfarin_omega_variance_tag.ferx")
+writeLines(sub("  omega ETA_CL ~ 0.07", "  omega ETA_CL ~ 0.07 (variance)",
+               readLines(w$model), fixed = TRUE), explicit_variance)
 fit_as_sd <- ferx_fit(as_sd, w$data, verbose = FALSE)
 fit_sigma_var <- ferx_fit(sigma_as_variance, w$data, verbose = FALSE)
-c(bundled = fit_w$ofv, omega_as_sd = fit_as_sd$ofv, sigma_as_variance = fit_sigma_var$ofv)
+fit_explicit_var <- ferx_fit(explicit_variance, w$data, verbose = FALSE)
+c(bundled = fit_w$ofv, omega_as_sd = fit_as_sd$ofv,
+  sigma_as_variance = fit_sigma_var$ofv, omega_variance_tag = fit_explicit_var$ofv)
 ```
 
 The two scales differ only in what you type. What comes back is reported on a fixed scale, whichever form you declared: an `omega` row is a variance, and a `sigma` row is a standard deviation. `print()` on a fit spells the residual error out all three ways, and records which form the file used:
@@ -141,7 +146,7 @@ fit_w$estimates[, c("transform", "estimate", "init_as_sd")]
 
 ::: {.callout-important}
 ## `(sd)` on a block is ignored at this build
-`block_omega` and `block_kappa` take variances and covariances only, because one tag cannot say which of the lower-triangle entries it applies to. ferx-core documents `(sd)` as not accepted there, but the pinned build neither rejects nor applies it -- the annotation is dropped and the numbers are read as variances:
+`block_omega`, `block_kappa` and `block_sigma` take variances and covariances only, because one tag cannot say which of the lower-triangle entries it applies to. ferx-core documents `(sd)` as not accepted there, but the pinned build neither rejects nor applies it -- the annotation is dropped and the numbers are read as variances. The tagged file even validates clean:
 
 ```{r}
 #| label: block-sd-ignored
@@ -157,7 +162,7 @@ fit_block_plain <- ferx_fit(block_ex$model, block_ex$data, verbose = FALSE)
 c(with_sd_tag = fit_block_sd$ofv, without = fit_block_plain$ofv)
 ```
 
-Write block entries as variances, and convert by hand.
+All three block forms behave this way. Write block entries as variances, and convert by hand.
 :::
 
 ### Fixing a parameter
@@ -176,7 +181,7 @@ c(all_three = fit_w$n_parameters, ka_fixed = fit_no_iiv_ka$n_parameters)
 c(all_three = fit_w$ofv, ka_fixed = fit_no_iiv_ka$ofv)
 ```
 
-Fixing the `KA` variance saves one parameter and costs `r round(fit_no_iiv_ka$ofv - fit_w$ofv, 1)` OFV on these data, so that random effect is clearly worth keeping. The variability it carried does not vanish, it moves: the `CL` variance goes from `r round(fit_w$estimates["ETA_CL", "estimate"], 3)` to `r round(fit_no_iiv_ka$estimates["ETA_CL", "estimate"], 2)` and the residual error more than doubles.
+Fixing the `KA` variance saves one parameter and costs `r round(fit_no_iiv_ka$ofv - fit_w$ofv, 1)` OFV on these data, so that random effect is clearly worth keeping. The variability it carried does not vanish, it moves: the `CL` variance goes from `r round(fit_w$estimates["ETA_CL", "estimate"], 3)` to `r round(fit_no_iiv_ka$estimates["ETA_CL", "estimate"], 2)`, and the residual error grows `r round(fit_no_iiv_ka$estimates["PROP_ERR", "estimate"] / fit_w$estimates["PROP_ERR", "estimate"])`-fold, from `r signif(fit_w$estimates["PROP_ERR", "estimate"], 3)` to `r signif(fit_no_iiv_ka$estimates["PROP_ERR", "estimate"], 3)`. Absorption variability the model can no longer express has to come out somewhere.
 
 A fixed parameter still has a row in `fit$estimates`. It carries the value the engine stores for a declared zero, with a standard error of 0, and it no longer counts towards `n_parameters`:
 

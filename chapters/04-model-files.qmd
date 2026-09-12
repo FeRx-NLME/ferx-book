@@ -141,7 +141,7 @@ Fitting itself is the topic of @sec-first-fit.
 
 ### Piping through an analysis
 
-The argument order across the package is chosen so that a whole step reads as one pipeline: `ferx_model()` takes the data first, and the functions that consume a fit take the fit first. So a dataset can go to a fitted model and on to its warnings without naming an intermediate object:
+The argument order across the package is chosen so that a whole step reads as one pipeline: `ferx_model()` takes the data first, and the accessors that summarise a fit take the fit first. So a dataset can go to a fitted model and on to its warnings without naming an intermediate object:
 
 ```{r}
 #| label: pipeline
@@ -152,19 +152,20 @@ base$data |>
   select(severity, category)
 ```
 
-The same holds for the other accessors and for simulation, where the model comes first:
+The same holds for the other fit accessors, and for simulation and prediction, where the model comes first and a fit is passed by name:
 
 ```{r}
 #| label: pipeline-more
-fit |> check_diagnostics() |> _$shrinkage |> head(3)
+fit |> check_diagnostics() |> getElement("shrinkage") |> head(3)
 base$model |> ferx_simulate(base$data, n_sim = 1, seed = 1) |> head(3)
 ```
 
-One exception is worth knowing: `ferx_model_validate()` reads a model *file*, so a path pipes into it, as above, but a `ferx_model` object does not.
+Which object pipes in is decided by the name of each function's first argument, as the argument table at the end of this chapter records. The four `ferx_model_*` helpers whose first argument is `path` -- `ferx_model_show()`, `ferx_model_inspect()`, `ferx_model_validate()` and `ferx_model_edit()` -- read a model *file*, so a path pipes into them but a `ferx_model` object does not. The two whose first argument is `x`, `ferx_model_get_section()` and `ferx_model_set_section()`, take either.
 
 ```{r}
 #| label: pipeline-validate
 try(m |> ferx_model_validate())
+m |> ferx_model_get_section("error_model", strip = TRUE)
 ```
 
 ## Editing model files from R

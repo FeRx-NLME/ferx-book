@@ -353,7 +353,7 @@ for (name in c("parallel_absorption", "mixed_absorption", "biphasic_igd_absorpti
 
 `first_order(ka=)` exists for these combinations. A single first-order route is the analytical `pk ..._oral` model. On the shared data none of the two-route models is supported by the data (see the comparison table).
 
-Every route in those equations reads the **same** dose event, and the pathway fractions split it inside the equation. So a two-route model needs one dose record, not one per route. The shared dataset has exactly that: a single `EVID = 1` row into `CMT` 1 per subject, followed by observations.
+An input-rate function reads the dose records that target **its own compartment**. Both routes above feed `central` from the same depot dose, so the pathway fractions split one dose event between them: two routes into one compartment need one dose record, not one per route. Two routes into *different* compartments are the other case, and each needs its own record. The shared dataset is the first case -- a single `EVID = 1` row into `CMT` 1 per subject, then observations:
 
 ```{r}
 #| label: parallel-dose-records
@@ -362,7 +362,7 @@ head(parallel_data, 3)
 table(dose_rows_per_subject = table(parallel_data$ID[parallel_data$EVID == 1]))
 ```
 
-Giving each route its own dose row delivers the dose twice. A copy of subject 1 with the dose row duplicated doubles the peak:
+Adding a second record to feed the second route therefore gives the subject two doses. A copy of subject 1 with the dose row duplicated doubles the peak:
 
 ```{r}
 #| label: parallel-double-dose
@@ -379,7 +379,18 @@ peaks <- c(one_dose_row = peak(one_dose), two_dose_rows = peak(two_doses))
 peaks
 ```
 
-The peak is `r round(peaks[["two_dose_rows"]] / peaks[["one_dose_row"]], 2)` times higher, because `FR1 + FR2 = 1` applied to two dose records is two doses. When the routes start at different times, keep the single record and give one route a `lag=`, as `per_route_lag_absorption` does above.
+The peak is `r round(peaks[["two_dose_rows"]] / peaks[["one_dose_row"]], 2)` times higher. That is ordinary dose superposition, not something the fractions do: they normalise within each dose event and never across records, so a duplicated record doubles a single-route model just the same. Genuine repeated dosing is of course fine -- one record per dose, and the profiles superpose.
+
+When two routes into one compartment start at different times, keep the single record and give one route a `lag=`, as `per_route_lag_absorption` does above. That combination is refused under steady-state dosing, where the engine asks for the run-in to be written out instead (@sec-dosing):
+
+```{r}
+#| label: per-route-lag-ss
+ss_data <- mutate(filter(parallel_data, ID == 1), SS = ifelse(EVID == 1, 1, 0), II = ifelse(EVID == 1, 24, 0))
+ss_file <- file.path(comparison_dir, "per_route_lag_ss.csv")
+write.csv(ss_data, ss_file, row.names = FALSE, na = ".")
+lag_ss <- try(ferx_fit(shared$per_route_lag_absorption$model, ss_file, verbose = FALSE), silent = TRUE)
+sub("\\. .*", ".", conditionMessage(attr(lag_ss, "condition")))
+```
 
 ### Bioavailability
 

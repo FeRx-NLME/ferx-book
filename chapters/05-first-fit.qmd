@@ -131,31 +131,46 @@ try(ferx_coef(fit, "TVCLL"))
 
 ### Parameter transformations and the `transform` column
 
-The engine does not estimate every parameter on the scale you read. It searches on a transformed scale that keeps each parameter in its domain -- a variance cannot go negative, a bioavailability cannot leave (0, 1) -- and reports the estimate back on the natural scale. The `transform` column of `fit$estimates` names the scale each row is reported on, so a table never mixes scales silently:
+A parameter is not always estimated on the scale you want to read. The `transform` column of `fit$estimates` names the scale the row was **estimated** on, which is what you need in order to know whether `estimate` is the number you want:
 
-| `transform` | Reported as | Which parameters |
+| `transform` | `estimate` holds | Which parameters |
 |---|---|---|
-| `identity` | the value itself | `theta`, whether or not it has bounds |
+| `identity` | the value itself | a `theta` written as `TVCL * exp(ETA_CL)` |
+| `log` | the log of the value | a `theta` written as `exp(TVCL + ETA_CL)` |
+| `logit` | the logit of the value | a `theta` written as `inv_logit(THETA_F + ETA_F)` |
+| `logit_probability` | the logit of the value | a `theta` declared on the (0, 1) scale and used as `inv_logit(logit(THETA_F) + ETA_F)` |
 | `variance` | a variance | `omega` and `kappa` diagonals |
 | `proportional` | a coefficient of variation on the fraction scale | a proportional `sigma` |
-| `additive` | a standard deviation in the units of `DV` | an additive `sigma` |
-| `logit_probability` | a probability in (0, 1) | a `theta` declared on the logit scale |
+| `additive` | a standard deviation, in the units the error model sees | an additive `sigma` |
 
-`fit$theta_transforms` gives the same information for the fixed effects alone, which is the quickest way to see whether a bounded parameter is being searched on a transformed scale:
+The first four are the transforms a fixed effect can carry, and `fit$theta_transforms` lists them for the thetas alone. Bounds do not appear here: this column reflects how the parameter is written in `[individual_parameters]`, not the internal scale the optimizer packs it onto, and every bounded theta of this model reads `identity`:
 
 ```{r}
 #| label: theta-transforms
 fit$theta_transforms
 ```
 
-Two things this column does *not* tell you. It does not say how a random effect enters the model: `fit$eta_log_transformed` does that, one flag per eta, `TRUE` for the log-normal form `TVCL * exp(ETA_CL)` and `FALSE` for an additive one (@sec-variability).
+For the three transformed cases, `estimate` is on the transformed scale and the interpretable value is in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it. Those columns are `NA` for every untransformed row, which is how you tell the two apart. The `bioavailability` example (@sec-absorption) estimates a fraction this way:
 
 ```{r}
-#| label: eta-log-transformed
-setNames(fit$eta_log_transformed, rownames(fit$omega))
+#| label: natural-scale
+fit_logit <- ferx_fit(ferx_example("bioavailability")$model,
+                      ferx_example("bioavailability")$data, verbose = FALSE)
+fit_logit$estimates[, c("transform", "estimate", "lower_95", "estimate_natural", "lower_95_natural")]
 ```
 
-And it does not convert for you. An omega row is a variance, so a between-subject CV% is yours to compute (@sec-tables-figures), and a log-transform-both-sides model reports its residual error on the log scale (@sec-variability).
+`THETA_F` reads above 0 on the logit scale and `r round(fit_logit$estimates["THETA_F", "estimate_natural"], 3)` as a fraction; its lower confidence bound is negative as a logit and a probability only in the natural column. Reading `estimate` as the fraction would be wrong.
+
+For the random effects, `fit$eta_param_types` says how each eta enters the model -- `log_normal`, `additive`, `logit`, `logit_probability` or `custom`:
+
+```{r}
+#| label: eta-param-types
+setNames(fit$eta_param_types, rownames(fit$omega))
+```
+
+`fit$eta_log_transformed` is a narrower flag and not a substitute: it is `TRUE` only for the `TVCL * exp(ETA_CL)` form, so an eta written `exp(TVCL + ETA_CL)` is log-normal and still reads `FALSE`.
+
+Nothing here converts for you. An omega row is a variance, so a between-subject CV% is yours to compute (@sec-tables-figures), and a log-transform-both-sides model reports an `additive` sigma on the log scale rather than in the units of `DV` (@sec-variability).
 
 ### The fit object
 

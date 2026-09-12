@@ -567,13 +567,15 @@ Per-chapter loop:
   - Not reader-visible: no chapter prints `cov_matrix` or `cor_matrix` for a block model.
     Nothing to remove from the book when this is fixed; recheck the labels then.
 - **ferx-core bug (found writing the ch16 scales section), important:** `(sd)` on a
-  `block_omega` is silently ignored instead of rejected.
+  `block_omega`, `block_kappa` or `block_sigma` is silently ignored instead of rejected.
   - `docs/model-file/parameters.qmd` at `8372248c` says the tag "is not accepted there
     because the lower-triangle list mixes variances and covariances and a single tag
     would be ambiguous". The pinned build neither rejects nor applies it:
     `warfarin_block_omega` with `[0.07, 0.02, 0.02] (sd)` validates as `VALID` with zero
     diagnostics, fits to the same OFV (−280.4858) as without the tag, and leaves
     `init_as_sd` `FALSE` for every omega row.
+  - All three block forms behave the same way: `block_kappa` gives OFV 202.186055 tagged and
+    untagged, and `block_sigma` gives -280.751039 both ways with 9 parameters each.
   - So a user who writes SDs in a block gets them read as variances with no warning.
     Diagonal `omega`/`sigma` handle `(sd)` correctly — verified equivalent:
     `omega ETA_CL ~ 0.07` and `~ 0.2645751 (sd)` both give OFV −280.364, as do
