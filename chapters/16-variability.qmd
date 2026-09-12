@@ -98,7 +98,17 @@ head(fit_w$ebe_etas, 3)
 | | `iiv_on_ruv = ETA_RUV` | A random effect that scales each subject's residual error | (variant below) |
 | | `CMT=2: DV ~ ...` | One error model per observed compartment | @sec-pkpd |
 
-A random effect can enter an individual parameter in any expression. The two common forms are log-normal, `TVCL * exp(ETA_CL)`, and additive, `TVTLAG + ETA_TLAG`.
+A random effect can enter an individual parameter in any expression, and the expression is what decides the parameter's domain. Which form to reach for:
+
+| The parameter is | Write it as | `transform` of the theta |
+|---|---|---|
+| Always positive, varying multiplicatively | `TVCL * exp(ETA_CL)` | `identity` |
+| Near zero, or able to go negative | `TVTLAG + ETA_TLAG` | `identity` |
+| Bounded to (0, 1), typical value on that scale | `inv_logit(logit(THETA_F) + ETA_F)` | `logit_probability` |
+| Bounded to (0, 1), typical value on the logit scale | `inv_logit(THETA_F + ETA_F)` | `logit` |
+| Typical value declared on the log scale | `exp(TVCL + ETA_CL)` | `log` |
+
+The last three change the scale the theta is estimated and reported on, which @sec-first-fit covers. The first two do not, and are the forms this chapter uses.
 
 Estimation options that act on these parameters:
 
