@@ -367,10 +367,11 @@ fit_bio <- ferx_fit(bio$model, bio$data, verbose = FALSE)
 fit_bio_ode <- ferx_fit(bio_ode$model, bio_ode$data, verbose = FALSE)
 c(analytical = fit_bio$ofv, ode = fit_bio_ode$ofv)
 fit_bio$estimates[, c("estimate", "rse_pct")]
-round(fit_bio$cor_matrix[c("TVCL", "TVV", "THETA_F"), c("TVCL", "TVV", "THETA_F")], 2)
+bio_cor <- fit_bio$cor_matrix[c("TVCL", "TVV", "THETA_F"), c("TVCL", "TVV", "THETA_F")]
+round(bio_cor, 2)
 ```
 
-The data contain oral doses only. With oral data, clearance, volume and `F` cannot be separated, which the correlations of 0.98 to 1 show. Fix `F` at the value used in the simulation (0.70, according to the model file) with `FIX`:
+The data contain oral doses only. With oral data, clearance, volume and `F` cannot be separated, which the correlations above show: every pair is between `r round(min(abs(bio_cor[lower.tri(bio_cor)])), 2)` and `r round(max(abs(bio_cor[lower.tri(bio_cor)])), 2)` in absolute value. Fix `F` at the value used in the simulation (0.70, according to the model file) with `FIX`:
 
 ```{r}
 #| label: bioavailability-fixed

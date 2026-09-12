@@ -251,7 +251,7 @@ iiv <- ferx_iivsearch(config = bo$search, directory = book_tempdir("iivsearch"),
 iiv
 ```
 
-The search runs in two stages. The eta-count stage removes etas from the input structure -- `top_down_exhaustive` tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool.
+The printed output has three steps. The eta-count stage removes etas from the input structure -- `top_down_exhaustive` tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. The third step, `compare_to_input`, puts the winner of the block stage back against the input structure, and it is there that the selection is made. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool.
 
 Read the printed output carefully. The input model is a candidate in its own right: the step tables rank it, and in the eta-count stage it ranks first. The strictness gate is separate from that ranking. It rejected `r sum(!iiv$models$passed)` of the fitted models, and one of them reached a better criterion than the winner did:
 
@@ -289,7 +289,7 @@ Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and 
 with(iiv_block$models, failures[!is.na(failures)])
 ```
 
-The optimizer never moved away from the initial estimates, so that fit is not evidence about the structure at all, and the gate is right to drop it. A selection is only as meaningful as the gate that produced it.
+No free parameter moved more than 1% of its initial value, so `reject_init_stall` refused the fit. Whether that is the right call here depends on where the candidate started, which the printed output does not say: a candidate handed its parent's optimum can sit still because it is already converged, which is why `ferx_amd()` turns this gate off inside its steps (below). Read a gated-out candidate as unjudged rather than as rejected on merit, and refit it yourself if it matters. A selection is only as meaningful as the gate that produced it.
 
 ## Inter-occasion variability search
 
@@ -319,10 +319,11 @@ iov$final_structure
 ```{r}
 #| label: amd-plan
 amd_ex <- ferx_example("warfarin_amd")
-ferx_amd_plan(config = amd_ex$search)
+plan <- ferx_amd_plan(config = amd_ex$search)
+plan
 ```
 
-Three of the six steps are already ruled out by the model and the space: the model declares no `iov_column`, and the space carries no `ALLOMETRY` or `COVARIATE` statement because `warfarin.csv` has no covariate column. Running it fits the rest:
+`r sum(!is.na(plan$skipped))` of the `r nrow(plan)` steps are already ruled out by the model and the space, and the `skipped` column says why: the model declares no `iov_column`, and the space carries no `ALLOMETRY` or `COVARIATE` statement because `warfarin.csv` has no covariate column. Running it fits the rest:
 
 ```{r}
 #| label: amd

@@ -25,6 +25,9 @@ features <- read.csv("tools/features.csv", stringsAsFactors = FALSE)
 homes <- read.csv("tools/homes.csv", stringsAsFactors = FALSE)
 inv <- merge(features, homes, by = c("kind", "name", "parent"), all.x = TRUE)
 settings_docs <- read.csv("tools/settings-docs.csv", stringsAsFactors = FALSE)
+# settings-docs.R escapes pipes for markdown; md_table() escapes again, so undo it here
+# and keep every cell as raw text until it is written.
+settings_docs[] <- lapply(settings_docs, function(x) if (is.character(x)) gsub("\\\\\\|", "|", x) else x)
 
 # ---- chapter links ------------------------------------------------------------------
 chapter_ids <- list()
@@ -51,14 +54,22 @@ first_sentence <- function(x) {
   inner <- "(?:[^()]|\\([^()]*\\))*"
   x <- gsub(paste0("\\s*\\(", inner, "(NONMEM|Monolix|nlmixr|Pharmpy)", inner, "\\)"),
             "", x, ignore.case = TRUE, perl = TRUE)
+  # A parenthetical that translates another tool's control record is a comparison.
+  x <- gsub("\\s*\\(`\\$[A-Z]+`[^)]*\\)", "", x)
+  # Links in ferx-core docs are relative to ferx-core, so they cannot survive the move;
+  # keep the link text only.
+  x <- gsub("\\[([^]]+)\\]\\([^)]*\\)", "\\1", x)
   protected <- gsub("\\b(e\\.g|i\\.e|vs|approx|cf)\\.", "\\1<DOT>", x)
-  sentences <- gsub("<DOT>", ".", unlist(strsplit(protected, "(?<=[.!?])\\s+(?=[A-Z`(])", perl = TRUE)))
+  sentences <- gsub("<DOT>", ".", unlist(strsplit(protected, "(?<=[.!?])\\s+(?=[A-Z`(*])", perl = TRUE)))
   sentences <- sentences[!grepl(banned, sentences, ignore.case = TRUE)]
   if (!length(sentences)) return("")
   out <- sentences[1]
+  # A short opener ("Infusion rate.", "Integer.") carries no information on its own:
+  # take the next sentence too, which is where the convention or the range lives.
+  if (nchar(out) < 80 && length(sentences) > 1) out <- paste(out, sentences[2])
   # ferx-r's roxygen for cov_matrix has "params ? params" (a lost multiplication sign).
   out <- sub("(params) \\? (params)", "\\1 × \\2", out)
-  gsub("\\|", "\\\\|", out)
+  out
 }
 # Help-page titles that name other software lose that word (ferx-only rule).
 clean_title <- function(x) {
@@ -85,7 +96,8 @@ fit_rd <- db[["ferx_fit.Rd"]]
 walk_value(fit_rd[[which(vapply(fit_rd, rd_tag, "") == "\\value")]])
 
 md_table <- function(df) {
-  esc <- function(x) gsub("\n", " ", as.character(x))
+  # Cells hold raw text: escape pipes here, once, rather than at each call site.
+  esc <- function(x) gsub("\\|", "\\\\|", gsub("\n", " ", as.character(x)))
   c(paste0("| ", paste(names(df), collapse = " | "), " |"),
     paste0("|", paste(rep("---", ncol(df)), collapse = "|"), "|"),
     apply(df, 1, function(r) paste0("| ", paste(esc(r), collapse = " | "), " |")), "")
@@ -95,12 +107,14 @@ code <- function(x) paste0("`", x, "`")
 # ---- ferx-core doc tables -------------------------------------------------------------
 # Split one markdown table row into cells, ignoring pipes inside `code spans`.
 split_row <- function(line) {
+  # A backslash-escaped pipe is content, not a separator. Hide it while splitting.
+  line <- gsub("\\\\\\|", "\001", line)
   chars <- strsplit(line, "")[[1]]; cells <- character(); cur <- ""; in_code <- FALSE
   for (ch in chars) {
     if (ch == "`") in_code <- !in_code
     if (ch == "|" && !in_code) { cells <- c(cells, cur); cur <- "" } else cur <- paste0(cur, ch)
   }
-  trimws(c(cells, cur)[-1])
+  gsub("\001", "|", trimws(c(cells, cur)[-1]))
 }
 core_doc <- function(path) {
   txt <- system2("git", c("-C", core_dir, "show", paste0(pin$ferx_core_sha, ":docs/", path)),
@@ -111,24 +125,58 @@ core_doc <- function(path) {
   }
   txt
 }
-# Rows of a pipe table whose first cell is a single code span, as a character matrix.
-core_key_rows <- function(lines) {
-  rows <- grep("^\\|\\s*`[^`]+`\\s*\\|", lines, value = TRUE)
-  cells <- lapply(rows, split_row)
-  cells <- cells[vapply(cells, length, 0L) >= 2]
-  if (!length(cells)) return(NULL)
-  width <- max(vapply(cells, length, 0L))
-  do.call(rbind, lapply(cells, function(x) c(x, rep("", width - length(x)))))
+# Every pipe table in a doc, as a character matrix carrying its own header names.
+# Anchoring on the header is what keeps a column selection meaningful: several ferx-core
+# pages hold more than one table whose first cell is a code span, and the same key can
+# appear in two of them with different meanings.
+core_tables <- function(lines) {
+  is_sep <- grepl("^\\|[-: |]+\\|?\\s*$", lines)
+  tabs <- list(); i <- 1L
+  while (i <= length(lines)) {
+    if (grepl("^\\|", lines[i]) && i + 1L <= length(lines) && is_sep[i + 1L]) {
+      hdr <- split_row(lines[i]); j <- i + 2L; body <- list()
+      while (j <= length(lines) && grepl("^\\|", lines[j]) && !is_sep[j]) {
+        body[[length(body) + 1L]] <- split_row(lines[j]); j <- j + 1L
+      }
+      if (length(body)) {
+        m <- do.call(rbind, lapply(body, function(x) {
+          length(x) <- length(hdr); x[is.na(x)] <- ""; x
+        }))
+        colnames(m) <- hdr
+        tabs[[length(tabs) + 1L]] <- m
+      }
+      i <- j
+    } else i <- i + 1L
+  }
+  tabs
 }
 core_key <- function(x) gsub("`", "", x)
 # A description cell, reduced to its first sentence and stripped of other software.
 desc_cell <- function(x) vapply(x, first_sentence, "")
 # Fail loudly rather than emitting a table of blanks.
-lookup <- function(rows, keys, column, what) {
-  if (is.null(rows)) stop("no table rows parsed for ", what, " from ferx-core at the pin", call. = FALSE)
-  m <- setNames(rows[, column], core_key(rows[, 1]))
-  hit <- keys %in% names(m)
-  if (!any(hit)) stop("none of the ", what, " keys matched the ferx-core table at the pin", call. = FALSE)
+# Values of `value_col` for `keys`, read from whichever tables carry both named columns.
+# Stops rather than guessing when the columns are gone or two tables disagree.
+lookup <- function(tabs, keys, key_col, value_col, what) {
+  has <- function(m, p) any(grepl(p, colnames(m)))
+  hit <- Filter(function(m) has(m, key_col) && has(m, value_col), tabs)
+  if (!length(hit)) {
+    stop("no ferx-core table at the pin has both a '", key_col, "' and a '", value_col,
+         "' column for ", what, "; the documentation layout changed", call. = FALSE)
+  }
+  k <- unlist(lapply(hit, function(m) core_key(m[, grep(key_col, colnames(m))[1]])))
+  v <- unlist(lapply(hit, function(m) m[, grep(value_col, colnames(m))[1]]))
+  keep <- k %in% keys
+  k <- k[keep]; v <- v[keep]
+  clash <- unique(k[duplicated(k) & !duplicated(paste(k, v))])
+  if (length(clash)) {
+    stop("ferx-core gives conflicting '", value_col, "' values for ", what, ": ",
+         paste(clash, collapse = ", "), " at the pin", call. = FALSE)
+  }
+  m <- setNames(v, k)
+  if (!any(keys %in% names(m))) {
+    stop("none of the ", what, " keys matched the ferx-core '", key_col, "' column at the pin",
+         call. = FALSE)
+  }
   out <- unname(m[keys]); out[is.na(out)] <- ""
   out
 }
@@ -169,7 +217,7 @@ args_of <- function(fn) {
 }
 fun_tab <- data.frame(
   Function = paste0(code(paste0(ex$name, "()"))),
-  Description = vapply(ex$name, function(n) gsub("\\|", "\\\\|", alias_title[[n]] %||% ""), ""),
+  Description = vapply(ex$name, function(n) alias_title[[n]] %||% "", ""),
   Arguments = vapply(ex$name, args_of, ""),
   Chapter = chapter_link(ex$home), check.names = FALSE)
 s3 <- inv[inv$kind == "s3method", ]
@@ -186,9 +234,8 @@ st <- st[order(st$name), ]
 st <- merge(st, settings_docs, by.x = "name", by.y = "key", all.x = TRUE)
 st[is.na(st)] <- ""
 out <- c(out, "## Fit settings", "",
-  "Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The chapter column points at the section that uses the key; the ferx-core [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) page gives the full semantics. A blank *Values* cell means the key takes a free value (a number, a name or a list) rather than a fixed set.", "",
-  md_table(data.frame(Setting = code(st$name), Values = gsub("\\|", "\\\\|", st$values),
-                      Default = gsub("\\|", "\\\\|", st$default),
+  "Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The chapter column points at the section that uses the key; the ferx-core [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) page gives the full semantics. A blank *Values* cell means the key takes a free value (a number, a name or a list) rather than a fixed set; a blank *Meaning* means the pinned engine documents the key only in terms of other software, which this book does not quote.", "",
+  md_table(data.frame(Setting = code(st$name), Values = st$values, Default = st$default,
                       Meaning = desc_cell(st$description), Chapter = chapter_link(st$home),
                       check.names = FALSE)))
 
@@ -215,13 +262,21 @@ bl <- inv[inv$kind == "dsl_block", ]
 bl <- bl[order(bl$name), ]
 missing_pages <- setdiff(paste0("docs/", block_pages[bl$name], ".qmd"), core_files)
 if (length(missing_pages)) stop("ferx-core pages not found at the pin: ", paste(missing_pages, collapse = ", "))
-block_rows <- core_key_rows(core_doc("model-file/index.qmd"))
-block_keys <- paste0("[", bl$name, "]")
+block_tabs <- core_tables(core_doc("model-file/index.qmd"))
+# A block that takes an instance name is listed as `[covariate_nn NAME]` upstream.
+block_named <- unlist(lapply(Filter(function(m) any(grepl("^Block", colnames(m))), block_tabs),
+                             function(m) core_key(m[, grep("^Block", colnames(m))[1]])))
+block_keys <- vapply(bl$name, function(n) {
+  plain <- paste0("[", n, "]")
+  if (plain %in% block_named) return(plain)
+  named <- grep(paste0("^\\[", n, " [A-Z]+\\]$"), block_named, value = TRUE)
+  if (length(named)) named[1] else plain
+}, "")
 out <- c(out, "## Model file blocks", "",
-  "The blocks a `.ferx` model file can contain. *Required* and *Purpose* are the ferx-core block overview at the pinned engine; block names are closed-world, so a header outside this table is an error.", "",
+  "The blocks a `.ferx` model file can contain. *Required* and *Purpose* are the ferx-core block overview at the pinned engine, and are blank for a block that overview does not list; the chapter column covers those. Block names are closed-world, so a header outside this table is an error.", "",
   md_table(data.frame(Block = code(block_keys),
-                      Required = lookup(block_rows, block_keys, 2, "model file block"),
-                      Purpose = desc_cell(lookup(block_rows, block_keys, 3, "model file block")),
+                      Required = lookup(block_tabs, block_keys, "^Block", "^Required", "model file block"),
+                      Purpose = desc_cell(lookup(block_tabs, block_keys, "^Block", "^Purpose", "model file block")),
                       Chapter = chapter_link(bl$home),
                       `ferx-core page` = sprintf("[%s](https://ferx-nlme.github.io/ferx-core/%s.html)",
                                                  basename(block_pages[bl$name]), block_pages[bl$name]),
@@ -231,18 +286,12 @@ out <- c(out, "## Model file blocks", "",
 dc <- inv[inv$kind == "data_column", ]
 # data-format.qmd uses two table shapes: Column|Type|Description and
 # Column|Type|Default|Description. The description is the last filled cell of a row.
-dc_rows <- core_key_rows(core_doc("data-format.qmd"))
-if (is.null(dc_rows)) stop("no data column rows parsed from ferx-core at the pin", call. = FALSE)
-dc_desc <- vapply(seq_len(nrow(dc_rows)), function(i) {
-  cells <- dc_rows[i, ][nzchar(dc_rows[i, ])]
-  if (length(cells) < 3) "" else cells[length(cells)]
-}, "")
-dc_rows <- cbind(dc_rows[, 1:2, drop = FALSE], dc_desc)
+dc_tabs <- core_tables(core_doc("data-format.qmd"))
 out <- c(out, "## Data columns", "",
   "Columns the ferx data format recognises. *Type* and *Meaning* are taken from the ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html) page at the pinned engine, and are blank for the columns that page does not list; the chapter column covers those.", "",
   md_table(data.frame(Column = code(dc$name),
-                      Type = lookup(dc_rows, dc$name, 2, "data column"),
-                      Meaning = desc_cell(lookup(dc_rows, dc$name, 3, "data column")),
+                      Type = lookup(dc_tabs, dc$name, "^Column", "^Type", "data column"),
+                      Meaning = desc_cell(lookup(dc_tabs, dc$name, "^Column", "^Description", "data column")),
                       Chapter = chapter_link(dc$home), check.names = FALSE)))
 
 # Examples and search files
@@ -258,23 +307,27 @@ out <- c(out, "## Bundled examples", "",
 # Warning categories
 wc <- inv[inv$kind == "warning_code", ]
 wc <- wc[order(wc$name), ]
-warn_rows <- core_key_rows(core_doc("warnings.qmd"))
+warn_tabs <- core_tables(core_doc("warnings.qmd"))
 out <- c(out, "## Warning categories", "",
   "Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fit that ran, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. A model that never ran fails with a check report code instead, listed under *Check report codes* below. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.", "",
   md_table(data.frame(Category = code(wc$name),
-                      Severity = lookup(warn_rows, wc$name, 2, "warning category"),
-                      Meaning = desc_cell(lookup(warn_rows, wc$name, 3, "warning category")),
+                      Severity = lookup(warn_tabs, wc$name, "^Code", "^Severity", "warning category"),
+                      Meaning = desc_cell(lookup(warn_tabs, wc$name, "^Code", "^Flags", "warning category")),
                       Chapter = chapter_link(wc$home), check.names = FALSE)))
 
 # Check report codes (E_* and W_*). Not in features.csv, and a different channel from the
 # warning categories above: these come from the parser and the pre-fit checks.
-err_rows <- core_key_rows(core_doc("file-formats/check-report.qmd"))
-if (is.null(err_rows)) stop("no check report rows parsed from ferx-core at the pin", call. = FALSE)
-err_rows <- err_rows[grepl("^`[EW]_[A-Z_]+`$", err_rows[, 1]), , drop = FALSE]
+err_tabs <- Filter(function(m) all(c("Code", "Severity", "Meaning") %in% colnames(m)),
+                   core_tables(core_doc("file-formats/check-report.qmd")))
+if (!length(err_tabs)) {
+  stop("no Code/Severity/Meaning table in the ferx-core check report at the pin", call. = FALSE)
+}
+err_rows <- do.call(rbind, lapply(err_tabs, function(m) m[, c("Code", "Severity", "Meaning")]))
+err_rows <- err_rows[grepl("^`[EW]_[A-Z_]+`$", err_rows[, "Code"]), , drop = FALSE]
 if (!nrow(err_rows)) stop("no E_/W_ codes parsed from the ferx-core check report at the pin", call. = FALSE)
-err_rows <- err_rows[order(core_key(err_rows[, 1])), , drop = FALSE]
-err_tab <- data.frame(Code = code(core_key(err_rows[, 1])), Severity = err_rows[, 2],
-                      Meaning = desc_cell(err_rows[, 3]), check.names = FALSE)
+err_rows <- err_rows[order(core_key(err_rows[, "Code"])), , drop = FALSE]
+err_tab <- data.frame(Code = code(core_key(err_rows[, "Code"])), Severity = err_rows[, "Severity"],
+                      Meaning = desc_cell(err_rows[, "Meaning"]), check.names = FALSE)
 err_tab <- err_tab[nzchar(err_tab$Meaning), ]
 n_err <- sum(startsWith(err_tab$Code, "`E_"))
 out <- c(out, "## Check report codes", "",
@@ -326,14 +379,6 @@ out <- c(out, "## Not available from R", "",
 # Maturity
 mat <- system2("git", c("-C", core_dir, "show", paste0(pin$ferx_core_sha, ":docs/maturity.qmd")), stdout = TRUE)
 rows <- grep("^\\| .* \\| \\*\\*(stable|beta|experimental|alpha)\\*\\* \\|", mat, value = TRUE)
-split_row <- function(line) {
-  chars <- strsplit(line, "")[[1]]; cells <- character(); cur <- ""; in_code <- FALSE
-  for (ch in chars) {
-    if (ch == "`") in_code <- !in_code
-    if (ch == "|" && !in_code) { cells <- c(cells, cur); cur <- "" } else cur <- paste0(cur, ch)
-  }
-  trimws(c(cells, cur)[-1])
-}
 mat_rows <- do.call(rbind, lapply(rows, function(r) {
   cells <- split_row(r)
   page <- sub(".*\\]\\(([^)]+)\\.qmd[^)]*\\).*", "\\1", cells[3])
