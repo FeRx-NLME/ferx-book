@@ -81,7 +81,7 @@ Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eva
 ## Bumping the pin
 
 1. Install the new ferx-r commit (`git archive origin/main` of `../ferx-r`, then `R CMD INSTALL`), and update `_variables.yml` and `FERX_R_SHA` in the workflow.
-2. `Rscript tools/inventory.R`, `Rscript tools/assign-homes.R`, `Rscript tools/settings-docs.R`, `Rscript tools/smoke-examples.R`.
+2. `Rscript tools/inventory.R`, `Rscript tools/assign-homes.R`, `Rscript tools/settings-docs.R`, `Rscript tools/smoke-examples.R`. `inventory.R` also writes `tools/features-pin.yml`, the pin `features.csv` was generated at; commit it with the CSV, or the audit refuses to run.
 3. `LANG=en_US.UTF-8 Rscript tools/make-reference.R`.
 4. `Rscript tools/audit.R --strict`; give new rows a home and cover them.
 5. Render every chapter from an empty cache and re-read prose that quotes results. Remove "at this build" callouts whose issue is fixed (see `PLAN.md` Step 7).
@@ -89,6 +89,8 @@ Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eva
 ## Sibling repositories
 
 - `../ferx-r`: the R package (API, bundled examples in `inst/examples/`, roxygen). The local checkout may be on a feature branch; install the pin from `origin/main`, never from the working tree.
+- **The tools resolve `../ferx-core` relative to the working directory**, so from a git worktree that is `<book>/.claude/worktrees/ferx-core`, which does not exist. Link it once, from the book root: `ln -s ../../../ferx-core .claude/worktrees/ferx-core` (or pass the path: `Rscript tools/inventory.R /path/to/ferx-core`). Reads are `git show <ferx_core_sha>:<path>`, so the link's branch and working tree never affect the result.
+- Without it, `inventory.R`, `settings-docs.R` and `make-reference.R` now **stop** with that recipe rather than producing partial output, and `audit.R` fails on a missing or stale `tools/features-pin.yml` rather than grading the book against an old `features.csv`. Both used to be silent: a worktree run once rewrote `tools/settings-docs.csv` with all 95 ferx-core descriptions blank, and the audit then printed `AUDIT OK`.
 - `../ferx-core`: the Rust engine and its docs. Read docs at the pinned commit with `git show <ferx_core_sha>:docs/...`; the published docs may be ahead of the pin.
 
 ## Pull requests

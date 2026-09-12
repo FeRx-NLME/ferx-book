@@ -16,6 +16,8 @@ args <- commandArgs(trailingOnly = TRUE)
 core_dir <- if (length(args) >= 1) args[1] else "../ferx-core"
 pin <- yaml::read_yaml("_variables.yml")
 suppressMessages(library(ferx))
+source("tools/pin-core.R")
+core_dir <- require_ferx_core(core_dir, pin$ferx_core_sha)
 if (!l10n_info()$`UTF-8`) stop("run in a UTF-8 locale, e.g. LANG=en_US.UTF-8")
 stopifnot(identical(as.character(packageVersion("ferx")), pin$ferx_r_version))
 
@@ -137,7 +139,12 @@ block_pages <- c(
   data = "model-file/data", data_selection = "model-file/data-selection",
   simulation = "model-file/simulation", initial_conditions = "model-file/initial-conditions",
   mixture = "estimation/mixture")
-core_files <- system2("git", c("-C", core_dir, "ls-tree", "-r", "--name-only", pin$ferx_core_sha, "docs"), stdout = TRUE)
+core_files <- system2("git", c("-C", core_dir, "ls-tree", "-r", "--name-only", pin$ferx_core_sha, "docs"),
+                      stdout = TRUE, stderr = TRUE)
+if (!is.null(attr(core_files, "status"))) {
+  stop("git ls-tree ", pin$ferx_core_sha_short, ":docs failed in '", core_dir, "':\n  ",
+       paste(core_files, collapse = "\n  "), call. = FALSE)
+}
 bl <- inv[inv$kind == "dsl_block", ]
 bl <- bl[order(bl$name), ]
 missing_pages <- setdiff(paste0("docs/", block_pages[bl$name], ".qmd"), core_files)

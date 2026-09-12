@@ -42,6 +42,27 @@ if (requireNamespace("ferx", quietly = TRUE)) {
   }
 }
 
+# features.csv is the list every coverage number below is counted against, so a
+# stale one makes the whole audit a statement about the wrong build. It has
+# happened: an inventory run that could not reach ferx-core left the file
+# untouched and this script still printed AUDIT OK. tools/inventory.R stamps the
+# pin it ran at; refuse to grade anything else.
+stamp_path <- "tools/features-pin.yml"
+if (!file.exists(stamp_path)) {
+  note("pin", paste0(stamp_path, " is missing - run tools/inventory.R, which records",
+                     " the pin tools/features.csv was generated at"))
+} else {
+  stamp <- yaml::read_yaml(stamp_path)
+  for (key in c("ferx_r_sha", "ferx_core_sha")) {
+    # as.character on both sides: an all-digit sha is read back as a number.
+    got <- if (is.null(stamp[[key]])) "<missing>" else as.character(stamp[[key]])
+    if (!identical(got, as.character(pin[[key]]))) {
+      note("pin", sprintf("features.csv was generated at %s %s, _variables.yml pins %s - re-run tools/inventory.R",
+                          key, got, pin[[key]]))
+    }
+  }
+}
+
 # ---- per-file checks ------------------------------------------------------------
 banned <- "\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|Pharmpy|pyDarwin|Phoenix\\s*NLME|NLMIXED|WinBUGS|Stan)\\b"
 strip_urls <- function(x) gsub("https?://[^ )>\"']+", "", x)

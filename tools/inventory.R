@@ -15,14 +15,12 @@ core_dir <- if (length(args) >= 1) args[1] else "../ferx-core"
 
 pin <- yaml::read_yaml("_variables.yml")
 suppressMessages(library(ferx))
+source("tools/pin-core.R")
 
-git_show <- function(path) {
-  out <- system2("git", c("-C", core_dir, "show", paste0(pin$ferx_core_sha, ":", path)),
-                 stdout = TRUE, stderr = TRUE)
-  status <- attr(out, "status")
-  if (!is.null(status) && status != 0) stop("git show failed for ", path, ": ", paste(out, collapse = "\n"))
-  out
-}
+# Resolve the checkout before any work: a missing one used to surface as a
+# `git show` failure per file, deep into the run.
+core_dir <- require_ferx_core(core_dir, pin$ferx_core_sha)
+git_show <- function(path) git_show_at(core_dir, pin$ferx_core_sha, path)
 
 rows <- list()
 add <- function(kind, name, parent = "", detail = "") {
@@ -104,7 +102,10 @@ for (s in names(fit)) add("fit_slot", s, parent = "ferx_fit")
 
 features <- do.call(rbind, rows)
 features <- features[!duplicated(features[c("kind", "name", "parent")]), ]
-write.csv(features, "tools/features.csv", row.names = FALSE)
+write_csv_atomic(features, "tools/features.csv")
+# The pin this inventory was taken at; tools/audit.R refuses to grade the book
+# against a features.csv generated at a different one.
+write_pin_stamp(pin)
 
 counts <- table(features$kind)
 message("ferx ", as.character(packageVersion("ferx")), " / ferx-core ", pin$ferx_core_sha_short)

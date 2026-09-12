@@ -15,9 +15,12 @@ args <- commandArgs(trailingOnly = TRUE)
 core_dir <- if (length(args) >= 1) args[1] else "../ferx-core"
 pin <- yaml::read_yaml("_variables.yml")
 suppressMessages(library(ferx))
+source("tools/pin-core.R")
 
-doc <- system2("git", c("-C", core_dir, "show", paste0(pin$ferx_core_sha, ":docs/model-file/fit-options.qmd")),
-               stdout = TRUE)
+# Fatal, not a warning: reading no fit-options page used to leave every
+# ferx-core-sourced description blank in a file this script then overwrote.
+core_dir <- require_ferx_core(core_dir, pin$ferx_core_sha)
+doc <- git_show_at(core_dir, pin$ferx_core_sha, "docs/model-file/fit-options.qmd")
 
 # Split a markdown table row on `|`, ignoring pipes inside backticks.
 split_row <- function(line) {
@@ -98,6 +101,14 @@ out <- do.call(rbind, lapply(keys, function(k) {
   data.frame(key = k, values = "", default = "", description = "", source = "undocumented",
              stringsAsFactors = FALSE)
 }))
-write.csv(out, "tools/settings-docs.csv", row.names = FALSE)
+# The fit-options page is the source of most descriptions. None of them means
+# the page was read but not parsed - a silent way to blank the whole file.
+from_core <- sum(startsWith(out$source, "ferx-core"))
+if (from_core == 0L) {
+  stop("no setting description came from ferx-core's fit-options page at ",
+       pin$ferx_core_sha_short, "; refusing to overwrite tools/settings-docs.csv",
+       call. = FALSE)
+}
+write_csv_atomic(out, "tools/settings-docs.csv")
 print(table(out$source))
 if (any(out$source == "undocumented")) message("undocumented: ", paste(out$key[out$source == "undocumented"], collapse = ", "))
