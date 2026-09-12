@@ -1,0 +1,272 @@
+# Dosing regimens and exposure metrics {#sec-dosing}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+Most earlier chapters used a single dose per subject. Real studies repeat doses, sample at steady state, infuse, or give doses into absorption processes. This chapter shows how these regimens are written in the dataset, and how ferx computes exposure metrics per subject and per dosing interval with `[derived]`.
+
+::: {.callout-warning}
+## Maturity
+The dataset columns used here are part of the stable ferx data format. `[derived]` and the built-in absorption models are **beta** in ferx-core. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+## The data
+
+In `warfarin_addl`, each subject has a single dose record that stands for seven daily doses: `II = 24` is the interval and `ADDL = 6` the number of additional doses. Samples are taken on days 1, 2, 4, 6, 7 and 8:
+
+```{r}
+#| label: data
+addl <- ferx_example("warfarin_addl")
+dosing_dir <- book_tempdir("dosing")
+addl_data <- read.csv(addl$data, na.strings = ".")
+filter(addl_data, ID == 1) |> select(ID, TIME, DV, EVID, AMT, II, ADDL)
+```
+
+## Minimal runnable call: repeated doses
+
+A dataset with `ADDL` fits like any other:
+
+```{r}
+#| label: addl-fit
+fit_addl <- ferx_fit(addl$model, addl$data, verbose = FALSE)
+fit_addl$theta
+```
+
+ferx expands the record into seven doses before fitting. Writing the seven dose rows out explicitly gives the same fit:
+
+```{r}
+#| label: addl-explicit
+dose_rows <- filter(addl_data, EVID == 1)
+explicit_doses <- dose_rows[rep(seq_len(nrow(dose_rows)), dose_rows$ADDL + 1), ] |>
+  group_by(ID) |>
+  mutate(TIME = TIME + (row_number() - 1) * II, II = 0, ADDL = 0) |>
+  ungroup()
+explicit <- bind_rows(explicit_doses, filter(addl_data, EVID == 0)) |> arrange(ID, TIME, desc(EVID))
+explicit_file <- file.path(dosing_dir, "warfarin_explicit_doses.csv")
+write.csv(explicit, explicit_file, row.names = FALSE, na = ".")
+c(addl = fit_addl$ofv, explicit_rows = ferx_fit(addl$model, explicit_file, verbose = FALSE)$ofv)
+```
+
+## Reading the result: time after dose and exposure per subject
+
+`sdtab` has two time columns besides `TIME`: `TAFD`, the time after the first dose, and `TAD`, the time after the most recent dose, which restarts at each expanded dose. The model's `[derived]` block uses them for exposure metrics:
+
+```{r}
+#| label: addl-derived
+invisible(ferx_model_get_section(addl$model, "derived"))
+fit_addl$sdtab |>
+  filter(ID == 1) |>
+  select(TIME, TAFD, TAD, DAY, IPRED, CMAX, CMIN_TAU, CMIN_LATE)
+```
+
+`CMAX` and the two troughs have one value per subject. `CMIN_TAU` filters on `TAD < 1e-10`, the samples taken at dose times (24, 72, 120 and 144 hours; the tolerance absorbs rounding). `CMIN_LATE` filters on the last 4 hours of an interval, which here only the sample at 168 hours meets.
+
+The typical profile over the whole regimen comes from `ferx_predict()` on a design with the same dose record and a fine time grid (@sec-simulation):
+
+```{r}
+#| label: fig-addl-profile
+#| fig-cap: "Typical concentration profile over seven daily doses (line) with the observed concentrations (points)."
+design <- data.frame(ID = 1, TIME = c(0, seq(0.25, 192, by = 0.25)), DV = NA,
+                     EVID = c(1, rep(0, 768)), AMT = c(100, rep(NA, 768)), CMT = 1, RATE = 0,
+                     MDV = c(1, rep(0, 768)), II = c(24, rep(0, 768)), ADDL = c(6, rep(0, 768)))
+design_file <- file.path(dosing_dir, "addl_design.csv")
+write.csv(design, design_file, row.names = FALSE, na = ".")
+typical <- ferx_predict(addl$model, design_file, fit = fit_addl)
+ggplot(typical, aes(TIME, PRED)) +
+  geom_line() +
+  geom_point(data = filter(addl_data, EVID == 0), aes(TIME, DV), alpha = 0.4) +
+  geom_vline(xintercept = seq(0, 144, by = 24), linetype = "dotted") +
+  labs(x = "Time (h)", y = "Concentration")
+```
+
+## Options that matter
+
+Dose records use these columns of the ferx data format (@sec-data):
+
+| Column | Meaning |
+|---|---|
+| `EVID` | `1` for a dose; `2` other event, `3` reset, `4` reset and dose |
+| `AMT`, `CMT` | Amount and the compartment it goes into |
+| `RATE` | `0` for a bolus; a positive rate for a zero-order input over `AMT / RATE` |
+| `II`, `ADDL` | Interval and number of additional doses after this one |
+| `SS` | `1`: the dose is the last of an infinite series at interval `II` (steady state) |
+
+Time quantities available in `[derived]` and in `[odes]`:
+
+| Name | Meaning |
+|---|---|
+| `TIME` | Time in the dataset |
+| `TAFD` | Time after the first dose |
+| `TAD` | Time after the most recent dose (steady-state aware) |
+
+`[derived]` aggregates and integrals for exposure metrics, with the filters used in this chapter:
+
+| Expression | Result |
+|---|---|
+| `max(IPRED)`, `tmax(IPRED)`, `min(IPRED)` | One value per subject over the observation rows |
+| `min(IPRED, TAD < 1e-10)` | The same, over the rows where the filter holds (`NaN` if none) |
+| `integral(IPRED, from=0, to=72)` | Area over a fixed interval |
+| `integral(X, window=24, anchor=0, step=0.1)` | One area per dosing window |
+| `integral(DV, from=0, to=72)` | Area of the observations, at the observation times |
+
+The ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html) and [`[derived]`](https://ferx-nlme.github.io/ferx-core/model-file/derived.html) pages give the full rules.
+
+## Variants
+
+### Steady state
+
+`warfarin_ss` samples one dosing interval of a once-daily regimen at steady state. The dose record carries `SS = 1` and `II = 24`, and the concentrations are higher than after a single dose:
+
+```{r}
+#| label: ss
+ss <- ferx_example("warfarin_ss")
+ss_data <- read.csv(ss$data, na.strings = ".")
+filter(ss_data, ID == 1)
+fit_ss <- ferx_fit(ss$model, ss$data, verbose = FALSE)
+fit_ss$theta
+```
+
+An `SS = 1` dose stands for an infinite series of earlier doses. A long explicit run-in gives the same predictions. Here 30 daily doses precede the sampled interval:
+
+```{r}
+#| label: ss-run-in
+run_in <- ss_data |>
+  mutate(TIME = ifelse(EVID == 0, TIME + 30 * 24, TIME), SS = 0, ADDL = ifelse(EVID == 1, 30, 0))
+run_in_file <- file.path(dosing_dir, "warfarin_run_in.csv")
+write.csv(run_in, run_in_file, row.names = FALSE, na = ".")
+steady <- ferx_predict(ss$model, ss$data, fit = fit_ss)
+explicit_run_in <- ferx_predict(ss$model, run_in_file, fit = fit_ss)
+head(data.frame(TIME = steady$TIME, steady_state = steady$PRED, run_in = explicit_run_in$PRED), 7)
+max(abs(steady$PRED / explicit_run_in$PRED - 1))
+```
+
+### Exposure per dosing window
+
+`AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)` gives one area per 24-hour window. With `IPRED`, the values on the fine grid are taken from the nearest observation, so the result depends on the sampling (@sec-derived-states). An integral over the model state, `compartments[1]` (the central concentration in this analytical model), evaluates the model on the grid instead. The comparison below adds that column and computes the exact area of each window for subject 1 from its individual parameters:
+
+```{r}
+#| label: tbl-window-auc
+#| tbl-cap: "Area per 24-hour window for subject 1: from `IPRED`, from the model state, and exact."
+state_lines <- sub("AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)",
+                   "AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.1)\n  AUC_TAU_STATE = integral(compartments[1], window=24, anchor=0, step=0.1)",
+                   readLines(addl$model), fixed = TRUE)
+state_model <- file.path(dosing_dir, "warfarin_addl_state_auc.ferx")
+writeLines(state_lines, state_model)
+fit_state <- ferx_fit(state_model, addl$data, verbose = FALSE)
+
+p <- filter(fit_state$individual_estimates, ID == "1")
+ke <- p$CL / p$V
+concentration <- function(t) {
+  sapply(t, function(time) sum(sapply(seq(0, 144, by = 24), function(dose_time) {
+    tad <- time - dose_time
+    if (tad <= 0) 0 else 100 * p$KA / (p$V * (p$KA - ke)) * (exp(-ke * tad) - exp(-p$KA * tad))
+  })))
+}
+distinct(filter(fit_state$sdtab, ID == 1), DAY, AUC_TAU, AUC_TAU_STATE) |>
+  mutate(AUC_EXACT = sapply(DAY, function(day) integrate(concentration, (day - 1) * 24, day * 24)$value))
+```
+
+The state integral matches the exact areas and rises as the drug accumulates. The `IPRED` integral does not: the day-4 window, with a single sample, even comes out below day 2. Windows are reported on the rows that fall in them, so days 3 and 5, which have no samples, have no row.
+
+### Filters without matching rows
+
+`warfarin_derived` defines metrics for a multiple-dose study, but ships with the single-dose warfarin data. Aggregates whose filter matches no row are `NaN`: there is no sample at a dose time (`CTROUGH`) and none on day 14 (`CMAX_D14`). On the seven-dose data the trough is defined, and day 14 is still outside the study:
+
+```{r}
+#| label: derived-filters
+derived <- ferx_example("warfarin_derived")
+invisible(ferx_model_get_section(derived$model, "derived"))
+fit_single <- ferx_fit(derived$model, derived$data, verbose = FALSE)
+fit_repeated <- ferx_fit(derived$model, addl$data, verbose = FALSE)
+metrics <- c("CMAX", "TMAX", "CTROUGH", "CMAX_D1", "CMAX_D14", "AUC_0_72", "AUC_DV_72")
+bind_rows(single_dose = distinct(filter(fit_single$sdtab, ID == 1), across(all_of(metrics))),
+          seven_doses = distinct(filter(fit_repeated$sdtab, ID == 1), across(all_of(metrics))), .id = "data")
+```
+
+`AUC_DV_72` integrates the observations at their sampling times, so it is lower than the model-based area when sampling is sparse.
+
+### Doses into absorption processes
+
+A dose into a compartment fed by a built-in absorption function (@sec-absorption) can be a steady-state dose or an infusion. The dose then passes through the absorption process. `ss_absorption` gives an `SS = 1` dose every 8 hours into `first_order(ka=KA)`, and `infusion_absorption` infuses 100 at a rate of 25 into the same kind of model. Both are single-subject prediction examples:
+
+```{r}
+#| label: absorption-doses
+ss_abs <- ferx_example("ss_absorption")
+inf_abs <- ferx_example("infusion_absorption")
+grep("d/dt", readLines(ss_abs$model), value = TRUE)
+read.csv(ss_abs$data, na.strings = ".")[1:2, ]
+read.csv(inf_abs$data, na.strings = ".")[1:2, ]
+```
+
+A single first-order absorption route is also the analytical `pk one_cpt_oral` model, with the dose in its depot. Predicting both data files with that model gives the same concentrations. For the steady-state case, an explicit run-in of 60 doses does too:
+
+```{r}
+#| label: absorption-doses-check
+analytical <- function(ka, file) {
+  writeLines(c("[parameters]", "  theta TVCL(1.0, 0.01, 50.0)", "  theta TVV(20.0, 0.5, 200.0)",
+               sprintf("  theta TVKA(%s, 0.005, 20.0)", ka), "  omega ETA_CL ~ 0.0 FIX",
+               "  sigma PROP_ERR ~ 0.01 (sd)", "", "[individual_parameters]", "  CL = TVCL * exp(ETA_CL)",
+               "  V  = TVV", "  KA = TVKA", "", "[structural_model]", "  pk one_cpt_oral(cl=CL, v=V, ka=KA)", "",
+               "[error_model]", "  DV ~ proportional(PROP_ERR)"), file)
+  file
+}
+ss_run_in <- read.csv(ss_abs$data, na.strings = ".") |>
+  mutate(TIME = ifelse(EVID == 0, TIME + 60 * 8, TIME), SS = 0, ADDL = ifelse(EVID == 1, 60, 0))
+ss_run_in_file <- file.path(dosing_dir, "ss_absorption_run_in.csv")
+write.csv(ss_run_in, ss_run_in_file, row.names = FALSE, na = ".")
+
+data.frame(TIME = ferx_predict(ss_abs$model, ss_abs$data)$TIME,
+           steady_state_kernel = ferx_predict(ss_abs$model, ss_abs$data)$PRED,
+           analytical = ferx_predict(analytical(0.15, file.path(dosing_dir, "ss_analytical.ferx")), ss_abs$data)$PRED,
+           run_in_60_doses = ferx_predict(ss_abs$model, ss_run_in_file)$PRED)
+data.frame(TIME = ferx_predict(inf_abs$model, inf_abs$data)$TIME,
+           infusion_kernel = ferx_predict(inf_abs$model, inf_abs$data)$PRED,
+           analytical = ferx_predict(analytical(0.6, file.path(dosing_dir, "inf_analytical.ferx")), inf_abs$data)$PRED)
+```
+
+The two examples declare `omega ETA_CL ~ 0.0` without `FIX`. That is fine for prediction, but a fit stops and asks for `FIX` or a positive starting variance (@sec-variability):
+
+```{r}
+#| label: absorption-doses-fit
+fit_attempt <- tryCatch(ferx_fit(ss_abs$model, ss_abs$data, verbose = FALSE), error = conditionMessage)
+sub(",.*", "", fit_attempt)  # first clause
+```
+
+### Other dose records
+
+- **Infusions into the central compartment:** `RATE > 0` on a dose into a compartment without an absorption process. No bundled ferx-r example uses a fixed-rate infusion into the central compartment. See the ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html) page.
+- **Other events and resets:** `EVID = 2` records carry covariate changes or output times without a dose. `EVID = 3` resets the system, and `EVID = 4` resets and doses, for example between study periods. No bundled example uses them.
+- **Designs for simulation:** dose records with `II` and `ADDL` in a design dataset, as in @sec-simulation.
+
+## Pitfalls
+
+- **Aggregates and integrals use the observation rows.** `CMAX`, troughs and `IPRED` integrals only see sampled times. Use integrals over model states, or predictions on a fine design, for model-based exposure.
+- **A filter can match nothing.** The metric is then `NaN`. Check the sampling design before reading a `TAD`- or day-based metric.
+- **Test for a dose time with a tolerance.** `TAD < 1e-10` rather than `TAD == 0`.
+- **Steady state needs `II`.** An `SS = 1` record uses `II` as the interval. For doses into built-in absorption processes, ferx-core rejects steady state combined with an absorption lag time or a `zero_order()` input ([absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html)).
+
+### Warnings you may see here
+
+- `data_quality` (warning): inconsistent `ADDL`/`II` records, or other dataset problems (@sec-data).
+
+## Summary
+
+- `II` with `ADDL` writes repeated doses compactly; the fit is identical to explicit dose rows.
+- `SS = 1` puts a dose at steady state; predictions match a long explicit run-in.
+- `TAD` and `TAFD` restart per dose and count from the first dose; use them in `[derived]` filters.
+- Integrate model states for exposure per dosing window. `IPRED` integrals depend on the sampling.
+- Steady-state doses and infusions pass through built-in absorption processes.
+
+Next: @sec-censoring handles concentrations below the limit of quantification.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit`, `?ferx_predict`
+- ferx-core: [data format](https://ferx-nlme.github.io/ferx-core/data-format.html), [`[derived]`](https://ferx-nlme.github.io/ferx-core/model-file/derived.html), [absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html)
+:::

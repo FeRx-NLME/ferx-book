@@ -1,0 +1,295 @@
+# Preparing and checking the analysis dataset {#sec-data}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+```{r}
+#| label: stage-banner
+#| echo: false
+#| output: asis
+book_stage_banner("DATA")
+```
+
+## Where you are
+
+Every analysis starts with a dataset. ferx reads a single CSV file with one row per event: a dose, an observation or another event, per subject and time. Before writing a model it pays to check that the file says what you think it says. Are doses where they should be, are observations and covariates plausible, and are the records you intend to exclude really excluded?
+
+This chapter covers the column layout ferx expects, checking a dataset in R, and the three ways to exclude records without editing the file. It uses the bundled `two_cpt_oral_cov` dataset, which the rest of *The analysis workflow* builds on.
+
+## The data
+
+`ferx_get_columns()` reads only the header line and sorts the columns into the standard ones ferx recognises and everything else. Columns it doesn't recognise are treated as covariates:
+
+```{r}
+#| label: get-columns
+ex <- ferx_example("two_cpt_oral_cov")
+ferx_get_columns(ex)
+```
+
+It accepts the list returned by `ferx_example()`, a path, or a fitted model (it then reads `fit$data_path`). Read the full file with `read.csv()`. `.` marks an empty cell:
+
+```{r}
+#| label: read-data
+pk <- read.csv(ex$data, na.strings = ".")
+head(pk, 12)
+```
+
+### The column layout
+
+The standard columns and their meaning (details: ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html)):
+
+| Column | Meaning |
+|---|---|
+| `ID` | Subject identifier |
+| `TIME` | Event time. It need not start at zero |
+| `DV` | Observed value on observation rows |
+| `EVID` | Event type: `0` observation, `1` dose, `2` other event, `3` system reset, `4` reset and dose. If the column is absent, rows with a nonzero `AMT` are treated as doses |
+| `AMT` | Dose amount |
+| `CMT` | Compartment the dose goes into or the observation belongs to |
+| `RATE` | `0` for a bolus, `> 0` for an infusion at that rate |
+| `MDV` | `1` = the row's `DV` is not used in the likelihood |
+| `II` | Interdose interval, used with `SS` and `ADDL` |
+| `SS` | Steady-state flag |
+| `ADDL` | Number of additional doses at interval `II` |
+| `CENS` | `1` = below the lower limit (`DV` holds the limit), `-1` = above the upper limit, `0` = quantified |
+
+`two_cpt_oral_cov` uses only the first eight, plus two covariates. Other bundled datasets show the remaining columns in use, and the scenario chapters cover each one:
+
+```{r}
+#| label: tbl-column-use
+#| tbl-cap: "Standard columns beyond the basic eight in some bundled datasets."
+basic <- c("ID", "TIME", "DV", "EVID", "AMT", "CMT", "RATE", "MDV")
+examples <- c("warfarin_ss", "warfarin_addl", "warfarin_bloq", "warfarin_iov")
+data.frame(
+  example = examples,
+  extra_columns = vapply(examples, function(e) {
+    paste(setdiff(names(read.csv(ferx_example(e)$data, nrows = 1)), basic), collapse = ", ")
+  }, character(1)),
+  row.names = NULL
+)
+```
+
+`SS`, `II` and `ADDL` are covered in @sec-dosing, `CENS` in @sec-censoring, and the occasion column `OCC` in @sec-variability.
+
+Two rules about row order and missing values matter when you build a dataset (details on the ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html) page):
+
+- When an observation and a dose share a `TIME`, the row order decides: an observation listed *before* the dose is a pre-dose trough.
+- An observation row (`EVID = 0`) with an empty `DV` is skipped rather than scored as zero, and ferx warns about it. Set `MDV = 1` to mark such rows explicitly.
+
+## Checking the dataset
+
+A few lines of dplyr answer the basic structural questions:
+
+```{r}
+#| label: structure
+pk |>
+  group_by(ID) |>
+  summarise(doses = sum(EVID == 1), observations = sum(EVID == 0),
+            first_time = min(TIME), last_time = max(TIME)) |>
+  summary()
+```
+
+Every one of the `r n_distinct(pk$ID)` subjects has `r unique(table(pk$ID[pk$EVID == 1]))` dose and `r unique(table(pk$ID[pk$EVID == 0]))` observations. The observed concentrations range from `r min(pk$DV, na.rm = TRUE)` to `r max(pk$DV, na.rm = TRUE)`. Missing `DV` values occur only on dose rows:
+
+```{r}
+#| label: missing-dv
+pk |> filter(is.na(DV)) |> count(EVID, MDV)
+```
+
+Plot the profiles before any modeling. On a log scale the two-phase decline is already visible:
+
+```{r}
+#| label: fig-profiles
+#| fig-cap: "Observed concentrations for the 30 subjects (log scale)."
+pk |>
+  filter(EVID == 0) |>
+  ggplot(aes(TIME, DV, group = ID)) +
+  geom_line(alpha = 0.4) +
+  geom_point(size = 0.8) +
+  scale_y_log10() +
+  labs(x = "Time (h)", y = "Concentration")
+```
+
+### Covariates
+
+`WT` and `CRCL` are covariates. Check whether they are constant within subjects, then summarise them one row per subject:
+
+```{r}
+#| label: covariates
+pk |>
+  group_by(ID) |>
+  summarise(n_wt = n_distinct(WT), n_crcl = n_distinct(CRCL)) |>
+  summarise(max(n_wt), max(n_crcl))
+
+subjects <- pk |> distinct(ID, WT, CRCL)
+summary(subjects[, c("WT", "CRCL")])
+```
+
+```{r}
+#| label: fig-covariates
+#| fig-cap: "Body weight and creatinine clearance, one point per subject."
+ggplot(subjects, aes(WT, CRCL)) +
+  geom_point() +
+  labs(x = "Body weight (kg)", y = "Creatinine clearance")
+```
+
+The model file for this dataset declares both columns in a `[covariates]` block. Without such a block, every non-standard column is treated as a covariate automatically. @sec-covariates covers covariate modeling.
+
+## Excluding records
+
+::: {.callout-warning}
+## Maturity: beta
+ferx-core labels data selection **beta**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+You often need to leave records out of an analysis: samples below a threshold, a time window, or whole subjects. ferx does this at read time, so the CSV file stays unchanged, and it reports exactly what was excluded. Conditions are comparisons on column names (`==`, `!=`, `<`, `<=`, `>`, `>=`), with `&&` to combine terms within one condition:
+
+- `ignore`: a record is excluded when **any** condition is true.
+- `accept`: a record is kept only when **all** conditions are true.
+- `ignore_ids`: all records of these subjects are excluded.
+
+### Preview the selection in R
+
+`ferx_apply_selection()` shows what a selection would do before you fit. It returns the retained records as a `ferx_data` object, and `print()` on it summarises the exclusions. As an example, exclude observations below 0.2 and, suppose, subjects 3 and 7 after a data review:
+
+```{r}
+#| label: preview
+sel <- ferx_apply_selection(ex$data, ignore = "DV < 0.2", ignore_ids = c(3, 7))
+sel
+```
+
+With `excluded = TRUE` you get the excluded records instead, each with the first rule that removed it:
+
+```{r}
+#| label: preview-excluded
+dropped <- ferx_apply_selection(sel, excluded = TRUE)
+dropped |> count(.exclude_reason)
+```
+
+An `accept` condition states what to keep. This one keeps only the first 24 hours:
+
+```{r}
+#| label: preview-accept
+ferx_apply_selection(ex$data, accept = "TIME <= 24")
+```
+
+### Select at fit time
+
+The fit applies the same selection in the engine. Pass the conditions to `ferx_fit()` directly, or pass the previewed `ferx_data` object as `data`:
+
+```{r}
+#| label: fit-selection
+fit_sel <- ferx_fit(ex$model, ex$data, ignore = "DV < 0.2", ignore_ids = c(3, 7), verbose = FALSE)
+str(fit_sel$exclusions)
+```
+
+```{r}
+#| label: fit-ferx-data
+fit_sel2 <- ferx_fit(ex$model, sel, verbose = FALSE)
+c(conditions = fit_sel$ofv, ferx_data = fit_sel2$ofv)
+```
+
+`fit$exclusions` records how many observation, dose and other records were dropped, which subjects were dropped entirely, and which rules fired. The same conditions can also go through `settings` as `ignore`, `accept` and `ignore_subjects`.
+
+### Select in the model file
+
+A selection that belongs to the analysis itself can live in the model file, in a `[data_selection]` block. The bundled `warfarin_data_selection` model drops observations below 1.0:
+
+```{r}
+#| label: ds-block
+ws <- ferx_example("warfarin_data_selection")
+ferx_model_get_section(ws$model, "data_selection")
+fit_ws <- ferx_fit(ws$model, ws$data, verbose = FALSE)
+fit_ws$exclusions$fired_ignore
+fit_ws$exclusions$n_obs_excluded
+```
+
+`ferx_apply_selection()` on a fit replays the rules that fired, so you can inspect the excluded rows afterwards:
+
+```{r}
+#| label: ds-replay
+ferx_apply_selection(fit_ws, excluded = TRUE)
+```
+
+Conditions given in the `ferx_fit()` call are merged with those in `[data_selection]`, not replacing them.
+
+## Naming the dataset in the model file
+
+::: {.callout-warning}
+## Maturity: beta
+ferx-core labels the `[data]` block **beta**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+A `[data]` block lets a model file name its own dataset, so that model and data travel together. A relative `path` is resolved from the model file's directory. None of the bundled models has one, so add one to a copy:
+
+```{r}
+#| label: data-block
+run_dir <- book_tempdir("data-block")
+invisible(file.copy(ex$data, file.path(run_dir, "pk.csv"), overwrite = TRUE))
+model_with_data <- file.path(run_dir, "two_cpt_oral_cov.ferx")
+writeLines(c(readLines(ex$model), "", "[data]", "  path = pk.csv"), model_with_data)
+
+fit_db <- ferx_fit(model_with_data, verbose = FALSE)
+basename(fit_db$data_path)
+```
+
+`ferx_fit()` was called without `data`, so the file named in `[data]` was used. An explicit `data` argument takes precedence over the block. `[data]` can also rename columns whose headers differ from the standard names. See the ferx-core [`[data]` block](https://ferx-nlme.github.io/ferx-core/model-file/data.html) page.
+
+## Options that matter
+
+| Function | Argument | Meaning |
+|---|---|---|
+| `ferx_get_columns()` | `data` | Path, `ferx_example()` list or fit |
+| `ferx_apply_selection()` | `data` | Path, data frame, `ferx_data` object or fit |
+| | `ignore` | Exclude a record when any condition is true |
+| | `accept` | Keep a record only when all conditions are true |
+| | `ignore_ids` | Subject IDs to exclude entirely |
+| | `excluded` | `TRUE` returns the excluded records with `.exclude_reason` |
+| `ferx_fit()` | `ignore`, `accept`, `ignore_ids` | The same selection, applied by the engine and merged with `[data_selection]` |
+| `settings` | `ignore`, `accept`, `ignore_subjects` | Setting-based spelling of the same selection |
+
+In a model file the same selection is written in `[data_selection]`, and the dataset path in `[data]`.
+
+## Pitfalls
+
+**The R preview is lenient; the fit is strict.** `ferx_apply_selection()` treats a condition on an unknown column as never matching. It excludes nothing and says nothing. The fit applies the same condition but warns. Here `CONC` is a misspelling of `DV`:
+
+```{r}
+#| label: typo
+attr(ferx_apply_selection(ex$data, ignore = "CONC < 0.2"), "exclusions")$n_obs_excluded
+fit_typo <- ferx_fit(ex$model, ex$data, ignore = "CONC < 0.2", verbose = FALSE)
+typo_warning <- ferx_get_warnings(fit_typo, as_df = TRUE)
+typo_warning <- typo_warning[grepl("FILTER", typo_warning$message), ]
+typo_warning$severity
+strwrap(typo_warning$message, width = 80)
+```
+
+Always check `fit$exclusions` (or the warnings) after fitting with a selection.
+
+**Other points**:
+
+- Empty cells never match a comparison. `DV < 0.2` does not exclude dose rows, whose `DV` is empty.
+- `||` is not supported within a condition. Use several conditions instead, since any matching `ignore` condition excludes the record.
+- Conditions on `ADDL` or on the occasion column have no effect.
+
+### Warnings you may see here
+
+- `data_quality` (warning): the dataset has a problem, such as a missing `DV`, inconsistent `ADDL`/`II` records or a non-positive `DV`. Fix the data before trusting the fit. See [dataset and model structure warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-structure).
+
+## Summary
+
+- Check the header with `ferx_get_columns()`, then check structure, missing values, profiles and covariates with ordinary R before modeling.
+- Preview exclusions with `ferx_apply_selection()`. Apply them with `ferx_fit(ignore, accept, ignore_ids)` or in `[data_selection]`, and confirm them in `fit$exclusions`.
+- `[data]` lets a model name its dataset. An explicit `data` argument wins.
+
+Next: @sec-model-files writes the model for this dataset.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_get_columns`, `?ferx_apply_selection`, `?print.ferx_data`, `?ferx_fit`
+- ferx-core: [data format](https://ferx-nlme.github.io/ferx-core/data-format.html), [`[data]`](https://ferx-nlme.github.io/ferx-core/model-file/data.html), [`[data_selection]`](https://ferx-nlme.github.io/ferx-core/model-file/data-selection.html), [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html)
+:::

@@ -4,107 +4,95 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## What this is
 
-ferx-book is the Quarto book for the ferx R package — a guided narrative from installation through advanced modeling. It is the companion to [ferx-site](../ferx-site), which hosts the reference docs and standalone examples.
+ferx-book is the Quarto book for the ferx R package: a fully runnable tutorial on using ferx-r in an R modeling analysis, organised as a workflow (data → model → estimate → evaluate → simulate → report), followed by scenario chapters and a generated reference index. Technical detail (DSL grammar, estimator math, every option) lives in the [ferx-core docs](https://ferx-nlme.github.io/ferx-core/) and is linked, not copied.
 
-The book's code chunks execute against the installed ferx R package, which wraps the ferx-core Rust engine. **All code in the book must run correctly against the current ferx-r and ferx-core.** When either sibling repo changes, book chapters may need updating.
+`PLAN.md` records the design, ground rules, decisions and upstream findings of the v2 rebuild. Read it before larger changes.
 
-## Sibling repositories
+## Ground rules
 
-- `../ferx-r` — R package: user API, bundled examples (`inst/examples/`), roxygen docs
-- `../ferx-core` — Rust engine: `.ferx` DSL, fit options, estimators
-- `../ferx-site` — Website: standalone example pages (cross-link target for book callouts)
+1. **One pinned ferx-r build.** Every chunk runs against the ferx-r commit in `_variables.yml` (`ferx_r_sha`), which CI installs (`FERX_R_SHA` in `.github/workflows/render.yml`) and chapter 01 tells readers to install. `tools/audit.R` checks the two match.
+2. **Every ferx call is real.** Only exports, arguments, settings keys and `ferx_example()` names present in the pinned build. Variants are built by code from bundled models and data (copies in a temp dir) and actually run.
+3. **Every chunk runs.** `eval: false` needs `#| eval-reason:` and is allowed only for `ferx_xpose()` and the interactive-only job handles of `ferx_fit_async()`.
+4. **No hand-written output.** Never write `#>` lines or invent numbers. Numbers in prose are inline R. Output tables of options come from generated files (`book_settings_table()`), not typed defaults.
+5. **Report behaviour as it is.** Non-convergence, collapsed variances, warnings and bugs at the pinned build are shown, not tuned away. A bug gets an "at this build" callout and an entry in `PLAN.md` Step 7.
+6. **ferx only.** No comparisons to or translations from other NLME software, in prose or in printed output. The audit bans their names; when ferx output (engine messages, bundled model comments) names them, print only the part that does not.
+7. **Self-contained chapters.** No object from another chapter. Link, don't copy: end each chapter with a Reference callout (`?fn` + ferx-core page).
 
 ## Repository layout
 
 ```
-chapters/       # One .qmd per chapter (numbered 01–NN)
-data/           # Data files used directly in chapters (prefer ferx_example() over copies here)
-_quarto.yml     # Book structure — new chapters must be registered here
+chapters/            # 01–25, one .qmd per chapter; _common.R is sourced by every chapter
+index.qmd            # preface
+_quarto.yml          # book structure (parts and chapters)
+_variables.yml       # pinned ferx-r / ferx-core commits
+tools/
+  inventory.R        # builds features.csv from the installed package + ferx-core at the pin
+  features.csv       # every export, argument, S3 method, setting, DSL block, data column,
+                     # example, search file, warning category and fit slot
+  homes.csv          # the chapter that must cover each features.csv row
+  assign-homes.R     # rule-based homes for new rows (keeps existing homes)
+  audit.R            # hard checks + coverage of features.csv in the home chapters
+  settings-docs.R    # builds settings-docs.csv (values/defaults/descriptions of settings)
+  make-reference.R   # generates chapters/25-reference.qmd (do not edit that file by hand)
+  smoke-examples.R   # runs every bundled example (example-status.csv)
+PLAN.md              # design, decisions, progress, upstream findings
 ```
 
-## Chapter ↔ feature mapping
+## Chapters
 
-| Chapter | Primary ferx-r functions | Key ferx-core features |
-|---------|--------------------------|------------------------|
-| 01 | installation | — |
-| 02 | `ferx_fit()`, `ferx_example()` | basic 1-cpt oral |
-| 03 | — | model DSL syntax |
-| 04 | `ferx_fit()`, `ferx_estimates()`, `ferx_cor_matrix()` | FOCE/FOCEI, fit options |
-| 05 | `ferx_predict()`, `ferx_simulate()`, diagnostic plots | sdtab, CWRES/IWRES |
-| 06 | `ferx_simulate()` | simulation, VPC |
-| 07 | — | parameter transforms, mu-referencing |
-| 08 | `ferx_fit()` | ODE models |
-| 09 | `ferx_fit()` | BLOQ M3 method |
-| 10 | `ferx_fit()` | IOV |
+| Part | Chapter | Covers |
+|---|---|---|
+| Getting started | 01 installation, 02 complete analysis | pinned install; warfarin tour |
+| Analysis workflow | 03 data | `ferx_get_columns()`, `ferx_apply_selection()`, `[data]`, `[data_selection]` |
+| | 04 model files | `ferx_model*()` helpers, templates, validation |
+| | 05 first fit | `ferx_inits_from_nca()`, `ferx_check_init()`, fit accessors, warnings |
+| | 06 estimation methods | all methods incl. VI via `[fit_options]`, settings, traces, run logs, async |
+| | 07 diagnostics, 08 VPC | GOF, eta diagnostics, NPDE; `ferx_simulate()` VPC |
+| | 09 model selection | LRT/BIC, covsearch, modelsearch, ruvsearch, search configs |
+| | 10 uncertainty | covariance, SIR, bootstrap, Bayes |
+| | 11 simulation, 12 tables/figures, 13 reproducibility | designs, `[derived]`/`[output]`, `.fitrx` |
+| Scenarios | 14 structural models | analytical vs ODE, `[scaling]`, `[derived]` states |
+| | 15 absorption, 16 variability | absorption kernels, bioavailability; omega/sigma/IOV, error models |
+| | 17 covariates | screens, allometry, `[covariate_model]`, FREM |
+| | 18 dosing, 19 censoring | ADDL/SS/infusions, exposure metrics; M3 BLOQ |
+| | 20 PK/PD, 21 binary, 22 TTE | multi-endpoint, compartment-free; `[binary_model]`; `[event_model]` |
+| | 23 adaptive dosing, 24 experimental | `ferx_simulate_adaptive()`; SDE, `[covariate_nn]` |
+| Reference | 25 index | generated by `tools/make-reference.R` |
 
-Update this table when new chapters are added.
+Which chapter covers which feature row is in `tools/homes.csv`.
 
-## Keeping chapters in sync with ferx-r and ferx-core
+## Checks
 
-### Audit procedure (run before any PR touching code chunks)
-
-1. Grep all `ferx_example("...")` calls: `grep -r 'ferx_example' chapters/`
-   - Each name must exist in `../ferx-r/R/example.R` (or wherever the registry lives)
-2. Grep all data file references: `grep -r 'read.csv\|ex\$data\|ex\$model' chapters/`
-   - Each file must exist in `../ferx-r/inst/examples/data/` or `data/`
-3. Grep all `[fit_options]` keys used in `.ferx` snippets: compare against `../ferx-core/docs/src/model-file/fit-options.md`
-4. Check that function signatures in narrative prose match current roxygen docs in `../ferx-r/man/`
-
-### Example execution
-
-All chapters use knitr R chunks. Before rendering:
-
-1. Rebuild ferx-r: `cd ../ferx-r && R CMD INSTALL .`
-2. Render a single chapter: `quarto render chapters/<chapter>.qmd`
-3. Render the full book: `quarto render`
-
-Run on the local CPU build. Do not assume cached outputs are valid after ferx-r or ferx-core changes.
-
-### When ferx-r adds a new feature
-
-- If the feature has a corresponding `inst/examples/*.R` script, check whether an existing chapter covers it or a new chapter is warranted
-- If a new bundled example name is added to `ferx_example()`, update the chapter that introduces `ferx_example()` usage (ch02 or the relevant feature chapter)
-- Update the chapter ↔ feature mapping table above
-
-### When ferx-core adds a new DSL feature or fit option
-
-- Update the model DSL chapter (ch03) or the relevant feature chapter
-- Check that any `.ferx` snippets in other chapters that use changed syntax are still valid
-
-## Cross-links to ferx-site
-
-Chapters may link to ferx-site example pages for extended worked examples. Use the pattern:
-
-```markdown
-::: {.callout-tip}
-For a full worked example, see [Example: IOV](https://ferx-nlme.github.io/ferx-site/examples/iov.html) on the ferx website.
-:::
+```sh
+Rscript tools/audit.R --strict                 # hard checks + full coverage (CI runs this)
+Rscript tools/audit.R --chapter=15-absorption  # uncovered rows of one chapter
 ```
 
-Verify that linked pages exist in `../ferx-site/examples/` before merging.
+Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eval: false` has a reason, no `#>` lines in sources, no retired site links, no banned software names. Coverage rules: exports `name(`, arguments `` `arg` `` or `arg =` with the function named, settings `` `key` ``/`key =`/`"key"`, DSL blocks `[block]`, warning categories `` `category` ``, examples `ferx_example("name")`. HTML comments never count.
 
-## R output in documentation — no fabricated output
+## Rendering
 
-**Never hand-write or invent R output in `.qmd` chapter files.** All comment blocks showing function output (lines starting with `#>` inside ` ```{r} ` chunks, or bare `#` lines in fenced ` ``` ` blocks) must exactly match what the current ferx-r code produces.
+- Render a chapter from an **empty cache**: `rm -rf chapters/<ch>_cache chapters/<ch>_files && quarto render chapters/<ch>.qmd`. Knitr does not replay side effects, so a partially cached chapter can fail (e.g. a temp dir created in a cached chunk).
+- Local renders need a UTF-8 locale (`_environment.local` sets `LANG`); `_common.R` also forces one.
+- `cache.extra` is the pinned SHA, so a pin bump invalidates all caches. CI renders without a cache.
+- Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy to `book_tempdir()` first. (`ferx_model_to_frem()` needs explicit `output_model`/`output_data` at the pinned build for the same reason.)
+- A single-chapter render warns about cross-references to other chapters; a full `quarto render` resolves them.
 
-### Why this matters
-Past incidents introduced a fabricated theta/omega table under `summary(fit)` when `print.ferx_summary()` produces only run metadata; wrong IOV section headers (`--- KAPPA (IOV) Estimates ---` vs the real `--- OMEGA_IOV Estimates (Inter-Occasion Variability) ---`); wrong CV% values (RSE % shown instead of log-normal CV%); and spurious column-header rows that don't exist in the actual print format. Users copy these snippets and are confused when they differ from real output.
+## Bumping the pin
 
-### Rules
+1. Install the new ferx-r commit (`git archive origin/main` of `../ferx-r`, then `R CMD INSTALL`), and update `_variables.yml` and `FERX_R_SHA` in the workflow.
+2. `Rscript tools/inventory.R`, `Rscript tools/assign-homes.R`, `Rscript tools/settings-docs.R`, `Rscript tools/smoke-examples.R`. `inventory.R` also writes `tools/features-pin.yml`, the pin `features.csv` was generated at; commit it with the CSV, or the audit refuses to run.
+3. `LANG=en_US.UTF-8 Rscript tools/make-reference.R`.
+4. `Rscript tools/audit.R --strict`; give new rows a home and cover them.
+5. Render every chapter from an empty cache and re-read prose that quotes results. Remove "at this build" callouts whose issue is fixed (see `PLAN.md` Step 7).
 
-1. **Derive output from source, not memory.** Before writing any output snippet, read the relevant print/format function in `../ferx-r/R/` (primarily `fit.R` and `diagnostics.R`). Key facts:
-   - `summary(fit)` calls `print.ferx_summary()` — shows run metadata (convergence, OFV/AIC/BIC, method, shrinkage, wall time). **It does not print a theta/omega table.**
-   - `print(fit)` calls `print.ferx_fit()` — sections: `--- Objective Function ---`, `--- THETA Estimates ---`, `--- OMEGA Estimates ---`, `--- SIGMA Estimates ---`, `--- OMEGA_IOV Estimates (Inter-Occasion Variability) ---`
-   - `ferx_estimates()` in `diagnostics.R` — omega rows use `fit$eta_names[i]` directly (e.g. `ETA_CL`), not wrapped in `OMEGA(...)`
-   - SIGMA rows: value is on the **SD scale**; format is `  %-16s %-14s = %.6f  (var = %.6f, CV% = %.1f)  SE = %s`
-   - IOV rows: format is `  %s = %.6f  (CV%% = %s)  SE = %s  Shrinkage = %s` — no column header row
+## Sibling repositories
 
-2. **Preferred: run the actual code.** Render the chapter (`quarto render chapters/<chapter>.qmd`) and copy the console output verbatim. See "Example execution" above.
+- `../ferx-r`: the R package (API, bundled examples in `inst/examples/`, roxygen). The local checkout may be on a feature branch; install the pin from `origin/main`, never from the working tree.
+- **The tools resolve `../ferx-core` relative to the working directory**, so from a git worktree that is `<book>/.claude/worktrees/ferx-core`, which does not exist. Link it once, from the book root: `ln -s ../../../ferx-core .claude/worktrees/ferx-core` (or pass the path: `Rscript tools/inventory.R /path/to/ferx-core`). Reads are `git show <ferx_core_sha>:<path>`, so the link's branch and working tree never affect the result.
+- Without it, `inventory.R`, `settings-docs.R` and `make-reference.R` now **stop** with that recipe rather than producing partial output, and `audit.R` fails on a missing or stale `tools/features-pin.yml` rather than grading the book against an old `features.csv`. Both used to be silent: a worktree run once rewrote `tools/settings-docs.csv` with all 95 ferx-core descriptions blank, and the audit then printed `AUDIT OK`.
+- `../ferx-core`: the Rust engine and its docs. Read docs at the pinned commit with `git show <ferx_core_sha>:docs/...`; the published docs may be ahead of the pin.
 
-3. **If output must be approximate** (e.g. numbers vary by platform), add a comment: `# (values are illustrative; run the model to get exact numbers)` — never silently invent values.
+## Pull requests
 
-4. **Audit before every PR.** For any PR touching `.qmd` files with output snippets, verify each snippet against the current `../ferx-r/R/` source or a live render.
-
-## Pull Requests
-
-When creating a PR in this repo, always read `.github/PULL_REQUEST_TEMPLATE.md` and fill every section before calling `gh pr create`.
+Read `.github/PULL_REQUEST_TEMPLATE.md` and fill every section before `gh pr create`. The repository owner merges PRs.
