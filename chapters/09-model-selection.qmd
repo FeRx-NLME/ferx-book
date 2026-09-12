@@ -348,6 +348,22 @@ amd_sir$steps[, c("step", "status", "criterion", "candidates", "seconds")]
 
 ferx-core also has a global search. It runs from the ferx command line and has no R function in the pinned ferx-r build. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages.
 
+A `.ferxsearch` file may still carry a section for such a tool, because the engine accepts a section for every tool *it* knows. The file loads, and ferx warns rather than running a search that quietly ignores part of its own configuration. Where the section can be run somewhere, the warning says where:
+
+```{r}
+#| label: unconsumed-sections
+sections_dir <- book_tempdir("search-sections")
+unconsumed <- function(section, body) {
+  path <- file.path(sections_dir, paste0(gsub("\\[|\\]", "", section), ".ferxsearch"))
+  writeLines(c(readLines(base$search), "", section, body), path)
+  tryCatch(ferx_search_config(path), warning = conditionMessage)
+}
+unconsumed("[globalsearch]", '  algorithm = "exhaustive"')
+unconsumed("[structsearch]", "  x = 1")
+```
+
+`[globalsearch]` has an engine tool behind it, so the message names `ferx globalsearch`. `[structsearch]` is accepted vocabulary with no engine module yet, so it is reported without a remediation that would name a command nobody can run.
+
 ## Options that matter
 
 | Function | Arguments |
