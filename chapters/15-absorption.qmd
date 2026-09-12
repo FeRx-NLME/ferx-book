@@ -195,25 +195,22 @@ The small OFV difference comes from the ODE solver tolerance of the bundled mode
 head(fit_lag_analytical$individual_estimates, 3)
 ```
 
-::: {.callout-important}
-## `individual_estimates` of ODE models at this build
-For ODE models, `fit$individual_estimates` of the pinned ferx-r build does not report all individual parameters correctly. For `warfarin_ode_lagtime`, `KA` and `LAGTIME` come out as 0:
+The ODE fit reports the same individual parameters, to about four significant digits:
 
 ```{r}
 #| label: ode-individual-estimates
 head(fit_lag_ode$individual_estimates, 3)
 ```
 
-Until this is fixed, list the individual parameters of an ODE model in `[output]` (@sec-tables-figures). They then appear in `fit$sdtab` with the right values, which agree with the analytical fit above to about four significant digits:
+Listing the same parameters in `[output]` (@sec-tables-figures) puts them in `fit$sdtab` as well, next to the predictions and residuals, which is the form a table script wants:
 
 ```{r}
-#| label: ode-output-workaround
+#| label: ode-output-table
 lag_output <- file.path(comparison_dir, "warfarin_ode_lagtime_output.ferx")
 writeLines(c(readLines(lag_ode$model), "", "[output]", "  CL V KA LAGTIME"), lag_output)
 fit_lag_output <- ferx_fit(lag_output, lag_ode$data, verbose = FALSE)
 head(distinct(fit_lag_output$sdtab, ID, CL, V, KA, LAGTIME), 3)
 ```
-:::
 
 A lag time delays all routes together. `lag=` on an input-rate function delays one route only. `per_route_lag_absorption` gives the second of two first-order routes its own onset, as for an immediate-release plus delayed-release formulation:
 

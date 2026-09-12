@@ -134,25 +134,34 @@ grep("~", printout, value = TRUE)
 round(fit_block$omega_param_corr, 3)
 ```
 
-::: {.callout-important}
-## Partial blocks at this build
-The model declares no covariance for `ETA_KA`, yet the fit above reports covariances between `ETA_KA` and both other random effects. At the pinned build, a `block_omega` combined with a diagonal `omega` fits the same model as one full block. The OFV and the omega matrix are identical, while `n_parameters` counts only the declared block:
+A partial block estimates only what it declares. The model gives `ETA_KA` no covariance with the other two, so its row and column of the omega matrix stay exactly 0, and so do their standard errors. `fit$se_omega` is the lower triangle read column by column — (1,1), (2,1), (3,1), (2,2), (3,2), (3,3) — so the third and fifth entries are the two held covariances:
 
 ```{r}
-#| label: partial-block-issue
+#| label: block-omega-se
+fit_block$se_omega
+```
+
+Those two structural zeros are also the reason the fit prints an R warning that one or more diagonal elements of the correlation matrix are non-positive: ferx-r derives that matrix from `fit$cov_matrix`, which carries a zero variance for every held entry.
+
+To estimate those covariances, declare them. A copy of the model with one full 3 × 3 block, and no separate diagonal `omega`:
+
+```{r}
+#| label: partial-vs-full-block
 full_block <- file.path(variability_dir, "warfarin_full_block.ferx")
 full_lines <- sub("block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]",
                   "block_omega (ETA_CL, ETA_V, ETA_KA) = [0.07, 0.02, 0.02, 0, 0, 0.40]",
                   readLines(block$model), fixed = TRUE)
 writeLines(full_lines[!grepl("^  omega ETA_KA", full_lines)], full_block)
 fit_full_block <- ferx_fit(full_block, block$data, verbose = FALSE)
-c(partial_block = fit_block$ofv, full_block = fit_full_block$ofv)
-c(partial_block = fit_block$n_parameters, full_block = fit_full_block$n_parameters)
-all.equal(fit_block$omega, fit_full_block$omega)
+fit_full_block$omega
+data.frame(model = c("partial block", "full block"),
+           n_parameters = c(fit_block$n_parameters, fit_full_block$n_parameters),
+           ofv = c(fit_block$ofv, fit_full_block$ofv),
+           aic = c(fit_block$aic, fit_full_block$aic),
+           bic = c(fit_block$bic, fit_full_block$bic))
 ```
 
-Until this is resolved, treat a partial block as a full block. The R warning printed with the block fit above ("One or more diagonal elements are non-positive") comes from the correlation matrix of the estimates that ferx-r derives from their covariance matrix.
-:::
+The two extra covariances lower the OFV by `r round(fit_block$ofv - fit_full_block$ofv, 2)` for two degrees of freedom, which a likelihood ratio test does not call significant (p = `r round(pchisq(fit_block$ofv - fit_full_block$ofv, df = 2, lower.tail = FALSE), 3)`; @sec-model-selection). Both information criteria prefer the partial block. On these data `ETA_KA` is best left on its own, which is what the bundled model declares.
 
 ### Additive random effects
 
@@ -488,7 +497,7 @@ A `[mixture]` block assigns each subject probabilistically to one of several sub
 - **Extra variance parameters often collapse.** An additive component, a residual random effect or a between-subject variance that goes to its lower guard is not supported by the data. Remove it rather than report it.
 - **An additive random effect can make a positive parameter negative.** Use `exp()` for parameters such as clearance, volume and lag time.
 - **Keep sigma declarations in the order of the error model call.** A single `DV ~` line takes them by position.
-- **Partial omega blocks estimate a full block at this build.** See the callout above.
+- **A block estimates only the covariances it declares.** Held entries stay 0 with a standard error of 0, and the correlation matrix of the estimates is then reported as not meaningful. Widen the block if a covariance is worth estimating.
 - **LTBS reports on the log scale,** and its OFV cannot be compared with natural-scale error models.
 
 ### Warnings you may see here

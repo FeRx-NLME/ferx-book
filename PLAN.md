@@ -514,50 +514,46 @@ Per-chapter loop:
   took 440 s and ended unconverged (OFV 17.7; critical `convergence` +
   `ode_solver`). At 1e-6/1e-8 it converges in 9 s. The book shows only the
   moderate-tolerance comparison.
-- **ferx-r bug (found in 4.1, ch15), important:** `fit$individual_estimates` is wrong
-  for ODE models.
-  - `build_individual_estimates()` in `src/rust/src/lib.rs` reads `pk.values[i]`
+- ~~**ferx-r bug (found in 4.1, ch15), important:** `fit$individual_estimates` is wrong
+  for ODE models.~~ **Fixed**; in the pin from 078e489.
+  - `build_individual_estimates()` in `src/rust/src/lib.rs` read `pk.values[i]`
     sequentially for ODE models, but the engine's slot layout differs.
-  - Observed: `warfarin_ode_lagtime` gives KA = LAGTIME = 0; `warfarin_ode` gives
-    KA = 0; `transit_savic` gives KA = TVN, MTT = 0 and NTR = TVKA;
-    `sequential_absorption` gives KA = TVDUR and DUR = 0.
-  - Values via `[output]` in sdtab are correct: they match the analytical twin.
-  - Also affects `ferx_xpose` patab and `ferx_cov_screen` on ODE models.
-  - ch15 shows the bug in a callout and uses `[output]` as the workaround. Remove
-    that callout after the pin bump.
-- **Engine bug (found in 4.1, ch16), important:** `block_omega (ETA_CL, ETA_V)` plus a
+  - Was: `warfarin_ode_lagtime` gave KA = LAGTIME = 0; `warfarin_ode` gave
+    KA = 0; `transit_savic` gave KA = TVN, MTT = 0 and NTR = TVKA;
+    `sequential_absorption` gave KA = TVDUR and DUR = 0.
+  - Verified at 078e489: all four report the same values as `[output]` in sdtab and as
+    the analytical twin. ch15's callout and its `[output]` workaround framing are gone;
+    the `[output]` chunk stays as a table recipe.
+- ~~**Engine bug (found in 4.1, ch16), important:** `block_omega (ETA_CL, ETA_V)` plus a
   diagonal `omega ETA_KA` (`warfarin_block_omega`) fits the same model as a full 3×3
-  block: identical OFV (−283.3167 FOCE) and identical omega matrix, including
-  non-zero ETA_KA covariances, although `n_parameters` says 8 vs 10. The same
-  happens with the `omega_structure` demo (`ETA_V × ETA_TLAG` reported). ch16 shows
-  it in a callout; remove it after the pin bump. A task was spawned (ferx-core cwd)
-  to locate it. Also: `warfarin_iov` / `warfarin`, as bundled, use `method = foce`
+  block.~~ **Fixed** by ferx-core #1018 (PR #1364), in the pin from ferx-core 8372248c.
+  - Was: identical OFV (−283.3167 FOCE) and identical omega matrix to the full block,
+    including non-zero ETA_KA covariances, although `n_parameters` said 8 vs 10 — so the
+    reported AIC and BIC were two parameters short.
+  - Verified at 8372248c: the partial block gives OFV −280.4858 with the ETA_KA
+    covariances and their standard errors exactly 0; the full-block twin gives
+    −283.3167 with 10 parameters. dOFV 2.83 on 2 df, and both criteria prefer the
+    partial block. ch16 now shows that contrast as ordinary content, no callout.
+  - Still true and still shown: the partial block's two structural zeros make ferx-r
+    warn that the correlation matrix of the estimates has non-positive diagonal
+    elements.
+  - Also: `warfarin_iov` / `warfarin`, as bundled, use `method = foce`
   with proportional error. FOCE gives biased IOV estimates (TVCL 0.32) vs
   FOCEI/SAEM/chain (0.17); ch16 shows this. Consider changing the bundled examples
   to focei (ferx-r).
-- **ferx-r bug (found in 4.2, ch17):** `ferx_model_to_frem()` ignores `output_dir`
+- ~~**ferx-r bug (found in 4.2, ch17):** `ferx_model_to_frem()` ignores `output_dir`
   (never passed to Rust). Without `output_model`/`output_data` it writes next to the
-  model, i.e. into the installed package for `ferx_example()` models. Fixed in
-  [ferx-r #360](https://github.com/FeRx-NLME/ferx-r/pull/360) (open, not yet merged).
-  - **Merge order (dependency).** The chapter change is staged on the ferx-book
-    branch `v2/ch17-frem-output-dir`: callout dropped, both calls use `output_dir`,
-    CLAUDE.md note updated. Land it strictly in this order:
-    1. The ferx-r fix PR merges into ferx-r `main`.
-    2. Bump the book pin (`_variables.yml` `ferx_r_sha`, `FERX_R_SHA` in
-       `render.yml`) to a ferx-r commit that contains the fix, with the full
-       "Bumping the pin" procedure.
-    3. Only then render and merge `v2/ch17-frem-output-dir`.
-  - Until step 2, keep the callout and the explicit `output_model`/`output_data`
-    paths. Rendering the staged branch against `846aa4b` writes the FREM files into
-    the installed package library.
-- **ferx-r bug (found in 4.2, ch17):** `print()` of the generated FREM `ferx_model`
-  says "IIV: none" although the model has a 7×7 block. The pre-fit structure parser
-  (`.ferx_parse_structure()`) only matches `omega NAME` lines, so every `block_omega`
-  eta is dropped (`warfarin_block_omega` prints `IIV: ETA_KA`). Filed as
-  [ferx-r #358](https://github.com/FeRx-NLME/ferx-r/issues/358), fixed in
-  [ferx-r #362](https://github.com/FeRx-NLME/ferx-r/pull/362) (open, not yet merged; no
-  ordering constraint with #360). ch17 still prints the object. Until the pin includes
-  #362, add an "at this build" note. After the pin bump, re-read the printed `IIV:` line.
+  model, i.e. into the installed package for `ferx_example()` models.~~ **Fixed** in
+  [ferx-r #360](https://github.com/FeRx-NLME/ferx-r/pull/360) (merged), in the pin from
+  078e489. Verified: both calls use `output_dir`, the files land in the temp directory
+  and the installed `examples/models` directory stays clean.
+- ~~**ferx-r bug (found in 4.2, ch17):** `print()` of the generated FREM `ferx_model`
+  says "IIV: none" although the model has a 7×7 block.~~ **Fixed** in
+  [ferx-r #362](https://github.com/FeRx-NLME/ferx-r/pull/362) (merged, closing
+  [#358](https://github.com/FeRx-NLME/ferx-r/issues/358)), in the pin from 078e489.
+  Verified: the FREM model prints all seven etas, and `warfarin_block_omega` prints
+  `ETA_CL, ETA_V, ETA_KA`. Sourcing the pre-fit structure from the engine instead of
+  the R parser is [ferx-r #363](https://github.com/FeRx-NLME/ferx-r/issues/363), open.
 - ferx-r/ferx-core (found in 4.2, ch17), to check: `ferx_allometry()` on a model
   with inline `(WT/70)^THETA_WT` (`two_cpt_oral_cov`) adds WT scaling again with no
   note. Only `[covariate_model]` relations are detected. The Rd says "a parameter
