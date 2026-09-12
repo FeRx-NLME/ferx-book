@@ -129,6 +129,34 @@ ferx_se(fit, c("TVCL", "TVV1"))
 try(ferx_coef(fit, "TVCLL"))
 ```
 
+### Parameter transformations and the `transform` column
+
+The engine does not estimate every parameter on the scale you read. It searches on a transformed scale that keeps each parameter in its domain -- a variance cannot go negative, a bioavailability cannot leave (0, 1) -- and reports the estimate back on the natural scale. The `transform` column of `fit$estimates` names the scale each row is reported on, so a table never mixes scales silently:
+
+| `transform` | Reported as | Which parameters |
+|---|---|---|
+| `identity` | the value itself | `theta`, whether or not it has bounds |
+| `variance` | a variance | `omega` and `kappa` diagonals |
+| `proportional` | a coefficient of variation on the fraction scale | a proportional `sigma` |
+| `additive` | a standard deviation in the units of `DV` | an additive `sigma` |
+| `logit_probability` | a probability in (0, 1) | a `theta` declared on the logit scale |
+
+`fit$theta_transforms` gives the same information for the fixed effects alone, which is the quickest way to see whether a bounded parameter is being searched on a transformed scale:
+
+```{r}
+#| label: theta-transforms
+fit$theta_transforms
+```
+
+Two things this column does *not* tell you. It does not say how a random effect enters the model: `fit$eta_log_transformed` does that, one flag per eta, `TRUE` for the log-normal form `TVCL * exp(ETA_CL)` and `FALSE` for an additive one (@sec-variability).
+
+```{r}
+#| label: eta-log-transformed
+setNames(fit$eta_log_transformed, rownames(fit$omega))
+```
+
+And it does not convert for you. An omega row is a variance, so a between-subject CV% is yours to compute (@sec-tables-figures), and a log-transform-both-sides model reports its residual error on the log scale (@sec-variability).
+
 ### The fit object
 
 A fit is a named list with `r length(fit)` elements. These are the ones you will use most:

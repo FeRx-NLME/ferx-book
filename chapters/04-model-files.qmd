@@ -139,6 +139,34 @@ fit$converged
 
 Fitting itself is the topic of @sec-first-fit.
 
+### Piping through an analysis
+
+The argument order across the package is chosen so that a whole step reads as one pipeline: `ferx_model()` takes the data first, and the functions that consume a fit take the fit first. So a dataset can go to a fitted model and on to its warnings without naming an intermediate object:
+
+```{r}
+#| label: pipeline
+base$data |>
+  ferx_model(base$model) |>
+  ferx_fit(verbose = FALSE) |>
+  ferx_get_warnings(as_df = TRUE) |>
+  select(severity, category)
+```
+
+The same holds for the other accessors and for simulation, where the model comes first:
+
+```{r}
+#| label: pipeline-more
+fit |> check_diagnostics() |> _$shrinkage |> head(3)
+base$model |> ferx_simulate(base$data, n_sim = 1, seed = 1) |> head(3)
+```
+
+One exception is worth knowing: `ferx_model_validate()` reads a model *file*, so a path pipes into it, as above, but a `ferx_model` object does not.
+
+```{r}
+#| label: pipeline-validate
+try(m |> ferx_model_validate())
+```
+
 ## Editing model files from R
 
 ### Reading and replacing a block
