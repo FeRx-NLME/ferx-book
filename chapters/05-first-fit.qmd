@@ -166,6 +166,18 @@ fit_logit$estimates[, c("transform", "estimate", "lower_95", "estimate_natural",
 
 `THETA_F` reads above 0 on the logit scale and `r round(fit_logit$estimates["THETA_F", "estimate_natural"], 3)` as a fraction; its lower confidence bound is negative as a logit and a probability only in the natural column. Reading `estimate` as the fraction would be wrong.
 
+The natural column is the back-transform, not a separate estimate, so you can check it:
+
+```{r}
+#| label: back-transform
+logit_row <- fit_logit$estimates["THETA_F", ]
+c(estimate = logit_row$estimate,
+  back_transformed = 1 / (1 + exp(-logit_row$estimate)),
+  estimate_natural = logit_row$estimate_natural)
+```
+
+A `log` theta back-transforms with `exp()` the same way.
+
 For the random effects, `fit$eta_param_types` says how each eta enters the model -- `log_normal`, `additive`, `logit`, `logit_probability` or `custom`:
 
 ```{r}
