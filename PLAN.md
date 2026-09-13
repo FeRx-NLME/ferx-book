@@ -581,6 +581,23 @@ Per-chapter loop:
     `omega ETA_CL ~ 0.07` and `~ 0.2645751 (sd)` both give OFV −280.364, as do
     `sigma PROP_ERR ~ 0.01 (sd)` and `~ 0.0001`.
   - ch16 shows it in a callout; remove that after the pin bump that fixes it.
+- **ferx-r bug (found reviewing PR #26), important:** a `logit_probability` theta is
+  back-transformed twice. `.ferx_est_row()` handles `logit` and `logit_probability` in one
+  branch and applies `inv_logit()` to both, but the engine returns a `logit_probability`
+  theta already on (0, 1).
+  - Measured: on `warfarin_logit_f`, reconstructing each subject's `F` from `estimate`
+    matches the engine to 5.2e-18, while treating it as a logit is off by 0.53.
+    `estimate_natural` reads 0.5032 where the individual `F` run 0.0105-0.0151, and
+    `print()` tags the row `[logit scale]` with a `(typical)` line forty times the real
+    value. `lower_95`/`upper_95` are the symmetric Wald and are not affected.
+  - ferx-core is correct and correctly labelled; the same model parameterised as `logit`
+    gives the same typical F (0.79236) and a correct natural column.
+  - Fixed upstream in [ferx-r #372](https://github.com/FeRx-NLME/ferx-r/pull/372), which
+    also gives such a theta a natural-scale CI formed on the logit scale, so the two
+    parameterisations agree on every natural column. ch05 has an "at this build" callout
+    and ch16 a qualifying clause; **both come out at the next pin bump**, along with the
+    `logit-probability-bug` chunk, and the ch05 table row and `logit-probability-check`
+    chunk stay as they are -- they describe the transform, not the defect.
 - **ferx-r usability gap (found reviewing the ch25 lookup tables):** a refused `ferx_fit()`
   drops the stable check-report code. `ferx_model_validate()` returns `E_UNKNOWN_BLOCK` in
   `$diagnostics$code`, but fitting the same file raises only

@@ -143,7 +143,7 @@ A parameter is not always estimated on the scale you want to read. The `transfor
 | `identity` | the value itself | a `theta` written as `TVCL * exp(ETA_CL)` |
 | `log` | the log of the value | a `theta` written as `exp(TVCL + ETA_CL)` |
 | `logit` | the logit of the value | a `theta` written as `inv_logit(THETA_F + ETA_F)` |
-| `logit_probability` | the logit of the value | a `theta` declared on the (0, 1) scale and used as `inv_logit(logit(THETA_F) + ETA_F)` |
+| `logit_probability` | the value itself, on (0, 1) | a `theta` declared on the (0, 1) scale and used as `inv_logit(logit(THETA_F) + ETA_F)` |
 | `variance` | a variance | `omega` and `kappa` diagonals |
 | `proportional` | a coefficient of variation on the fraction scale | a proportional `sigma` |
 | `additive` | a standard deviation, in the units the error model sees | an additive `sigma` |
@@ -155,7 +155,7 @@ The first four are the transforms a fixed effect can carry, and `fit$theta_trans
 fit$theta_transforms
 ```
 
-For the three transformed cases, `estimate` is on the transformed scale and the interpretable value is in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it. Those columns are `NA` for every untransformed row, which is how you tell the two apart. The `bioavailability` example (@sec-absorption) estimates a fraction this way:
+`log` and `logit` put `estimate` on the transformed scale and the interpretable value in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it; those columns are `NA` for the rows that need no back-transform. `logit_probability` is the exception: the theta is declared on (0, 1) and the engine returns it there, so `estimate` is already the number you want. The `bioavailability` example (@sec-absorption) uses that form:
 
 ```{r}
 #| label: natural-scale
@@ -164,19 +164,32 @@ fit_logit <- ferx_fit(ferx_example("bioavailability")$model,
 fit_logit$estimates[, c("transform", "estimate", "lower_95", "estimate_natural", "lower_95_natural")]
 ```
 
-`THETA_F` reads above 0 on the logit scale and `r round(fit_logit$estimates["THETA_F", "estimate_natural"], 3)` as a fraction; its lower confidence bound is negative as a logit and a probability only in the natural column. Reading `estimate` as the fraction would be wrong.
-
-The natural column is the back-transform, not a separate estimate, so you can check it:
+`THETA_F` is the typical bioavailability, `r round(fit_logit$estimates["THETA_F", "estimate"], 3)`. The model file declares it on that scale (`theta THETA_F(0.70, 0.001, 0.999)`), and the engine's own individual parameters agree: reconstructing each subject's `F` from `estimate` reproduces them exactly.
 
 ```{r}
-#| label: back-transform
-logit_row <- fit_logit$estimates["THETA_F", ]
-c(estimate = logit_row$estimate,
-  back_transformed = 1 / (1 + exp(-logit_row$estimate)),
-  estimate_natural = logit_row$estimate_natural)
+#| label: logit-probability-check
+typical_f <- fit_logit$estimates["THETA_F", "estimate"]
+eta_f <- fit_logit$ebe_etas$ETA_F
+reconstructed <- 1 / (1 + exp(-(log(typical_f / (1 - typical_f)) + eta_f)))
+max(abs(reconstructed - fit_logit$individual_estimates$F))
 ```
 
-A `log` theta back-transforms with `exp()` the same way.
+For a `log` theta the back-transform is real and `estimate_natural` holds it: `exp(estimate)` equals it to full precision.
+
+::: {.callout-important}
+## `logit_probability` is back-transformed twice at this build
+For this transform, ferx-r applies `inv_logit()` to a value that is already on (0, 1), so `estimate_natural`, `lower_95_natural` and `upper_95_natural` are wrong, as are the `[logit scale]` tag and the `(typical)` line `print()` shows. Read `estimate`; `lower_95` and `upper_95` are unaffected. `warfarin_logit_f` makes the size of it visible -- the individual bioavailabilities bracket `estimate` and not the natural column:
+
+```{r}
+#| label: logit-probability-bug
+logit_f_fit <- ferx_fit(ferx_example("warfarin_logit_f")$model,
+                        ferx_example("warfarin_logit_f")$data, verbose = FALSE)
+logit_f_fit$estimates["THETA_F", c("estimate", "lower_95", "upper_95", "estimate_natural")]
+range(logit_f_fit$individual_estimates$F)
+```
+
+`log` and `logit` are unaffected. Reported as [ferx-r #371](https://github.com/FeRx-NLME/ferx-r/issues/371).
+:::
 
 For the random effects, `fit$eta_param_types` says how each eta enters the model -- `log_normal`, `additive`, `logit`, `logit_probability` or `custom`:
 
