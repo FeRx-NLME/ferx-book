@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Covariate modeling – FeRx NLME - R package (ferx)</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/18-dosing.html" rel="next">
+<link href="../chapters/16-variability.html" rel="prev">
+<link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-51776f957f81c5a6b38322b65a6a6987.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-31632d092df9090a2ed68f79c078059d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-51776f957f81c5a6b38322b65a6a6987.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-6d44ada141c9df161ea2f978ad2bc43c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-93ae7541692006f28ff220a78be59d58.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-6d44ada141c9df161ea2f978ad2bc43c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+</head>
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">FeRx NLME - R package (ferx)</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+<li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/get-started.html"> 
+<span class="menu-text">Get started</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/features.html"> 
+<span class="menu-text">Features</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/changelog.html"> 
+<span class="menu-text">Changelog</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/roadmap.html"> 
+<span class="menu-text">Roadmap</span></a>
+  </li>  
+</ul>
+<ul class="navbar-nav navbar-nav-scroll ms-auto">
+<li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/ferx-core/"> 
+<span class="menu-text">ferx-core</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/ferx-book/"> 
+<span class="menu-text">ferx-r</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ferx-nlme.github.io/reference/"> 
+<span class="menu-text">Reference</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/FeRx-NLME"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+</div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/17-covariates.html">Scenarios: covariates</a></li><li class="breadcrumb-item"><a href="../chapters/17-covariates.html"><span class="chapter-title">Covariate modeling</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="../index.html" class="sidebar-logo-link">
+      <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Getting started</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-complete-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">A complete analysis in one chapter</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">The analysis workflow</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-model-files.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Writing and managing model files</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-first-fit.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Initial estimates and a first fit</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-estimation-methods.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Estimation methods and controlling the fit</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-diagnostics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Diagnosing the model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-vpc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Simulation-based evaluation: VPC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-model-selection.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model development and selection</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-uncertainty.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Parameter uncertainty</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-simulation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Simulating scenarios</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-tables-figures.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Tables and figures</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-reproducibility.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Reproducibility and sharing</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: general PK modeling</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-absorption.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Absorption and bioavailability</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-variability.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Variability: random effects, residual error and IOV</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: covariates</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Covariate modeling</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: dosing and data</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-censoring.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Censored observations (BLOQ)</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-binary.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Binary endpoints</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-time-to-event.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Time-to-event models</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: adaptive dosing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Scenarios: experimental</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+<li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">The data</a></li>
+  <li><a href="#minimal-runnable-call-declaring-covariates" id="toc-minimal-runnable-call-declaring-covariates" class="nav-link" data-scroll-target="#minimal-runnable-call-declaring-covariates">Minimal runnable call: declaring covariates</a></li>
+  <li>
+<a href="#reading-the-result-the-covariate-table" id="toc-reading-the-result-the-covariate-table" class="nav-link" data-scroll-target="#reading-the-result-the-covariate-table">Reading the result: the covariate table</a>
+  <ul class="collapse">
+<li><a href="#screening-against-the-random-effects" id="toc-screening-against-the-random-effects" class="nav-link" data-scroll-target="#screening-against-the-random-effects">Screening against the random effects</a></li>
+  </ul>
+</li>
+  <li><a href="#options-that-matter" id="toc-options-that-matter" class="nav-link" data-scroll-target="#options-that-matter">Options that matter</a></li>
+  <li>
+<a href="#variants" id="toc-variants" class="nav-link" data-scroll-target="#variants">Variants</a>
+  <ul class="collapse">
+<li><a href="#covariate-effects-in-individual_parameters" id="toc-covariate-effects-in-individual_parameters" class="nav-link" data-scroll-target="#covariate-effects-in-individual_parameters">Covariate effects in <code>[individual_parameters]</code></a></li>
+  <li><a href="#conditional-effects" id="toc-conditional-effects" class="nav-link" data-scroll-target="#conditional-effects">Conditional effects</a></li>
+  <li><a href="#allometric-scaling" id="toc-allometric-scaling" class="nav-link" data-scroll-target="#allometric-scaling">Allometric scaling</a></li>
+  <li><a href="#full-random-effects-modeling-frem" id="toc-full-random-effects-modeling-frem" class="nav-link" data-scroll-target="#full-random-effects-modeling-frem">Full random effects modeling (FREM)</a></li>
+  <li><a href="#time-varying-covariates" id="toc-time-varying-covariates" class="nav-link" data-scroll-target="#time-varying-covariates">Time-varying covariates</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#pitfalls" id="toc-pitfalls" class="nav-link" data-scroll-target="#pitfalls">Pitfalls</a>
+  <ul class="collapse">
+<li><a href="#warnings-you-may-see-here" id="toc-warnings-you-may-see-here" class="nav-link" data-scroll-target="#warnings-you-may-see-here">Warnings you may see here</a></li>
+  </ul>
+</li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/17-covariates.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/17-covariates.html">Scenarios: covariates</a></li><li class="breadcrumb-item"><a href="../chapters/17-covariates.html"><span class="chapter-title">Covariate modeling</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-covariates" class="quarto-section-identifier"><span class="chapter-title">Covariate modeling</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
+<p><a href="09-model-selection.html" class="quarto-xref"><span>Model development and selection</span></a> selected the covariates of the analysis thread with a formal search. This chapter covers the rest of covariate modeling:</p>
+<ul>
+<li>declaring covariates;</li>
+<li>screening them against the random effects;</li>
+<li>writing covariate effects by hand, as conditions, or with the allometric-scaling tool;</li>
+<li>the full random effects model (FREM);</li>
+<li>covariates that change over time.</li>
+</ul>
+<p>It starts again from the covariate-free base model.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Maturity: stable, experimental and alpha parts
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <code>[covariates]</code> block is <strong>stable</strong> in ferx-core. The <code>[covariate_model]</code> block is <strong>experimental</strong>. GAM screening and the search tools, including allometric scaling, are <strong>alpha</strong>. See <a href="https://ferx-nlme.github.io/ferx-core/maturity.html">feature maturity</a>.</p>
+</div>
+</div>
+</section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<p><code>two_cpt_oral_base</code> and <code>two_cpt_oral_cov</code> share one dataset: 30 subjects with a single oral dose of 250, body weight <code>WT</code> and creatinine clearance <code>CRCL</code>. Both covariates are constant within each subject:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
+<span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
+<span><span class="va">covariate_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"covariates"</span><span class="op">)</span></span>
+<span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">distinct</span><span class="op">(</span><span class="va">ID</span>, <span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">subjects</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 30</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">subjects</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"WT"</span>, <span class="st">"CRCL"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        WT             CRCL       </span></span>
+<span><span class="co">#&gt;  Min.   :45.00   Min.   : 46.50  </span></span>
+<span><span class="co">#&gt;  1st Qu.:60.73   1st Qu.: 73.47  </span></span>
+<span><span class="co">#&gt;  Median :70.85   Median : 82.90  </span></span>
+<span><span class="co">#&gt;  Mean   :70.43   Mean   : 86.11  </span></span>
+<span><span class="co">#&gt;  3rd Qu.:80.55   3rd Qu.:102.17  </span></span>
+<span><span class="co">#&gt;  Max.   :93.70   Max.   :150.00</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="minimal-runnable-call-declaring-covariates" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call-declaring-covariates">Minimal runnable call: declaring covariates</h2>
+<p>The <code>[covariates]</code> block lists the dataset columns that are covariates, and whether each is <code>continuous</code> or <code>categorical</code>. Declaring a covariate does not put it in the model. <code>two_cpt_oral_base</code> declares both columns but uses neither:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="st">"covariates"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [covariates]</span></span>
+<span><span class="co">#&gt;   WT   continuous</span></span>
+<span><span class="co">#&gt;   CRCL continuous</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [individual_parameters]</span></span>
+<span><span class="co">#&gt;   CL = TVCL * exp(ETA_CL)</span></span>
+<span><span class="co">#&gt;   V1 = TVV1 * exp(ETA_V1)</span></span>
+<span><span class="co">#&gt;   Q  = TVQ  * exp(ETA_Q)</span></span>
+<span><span class="co">#&gt;   V2 = TVV2 * exp(ETA_V2)</span></span>
+<span><span class="co">#&gt;   KA = TVKA * exp(ETA_KA)</span></span>
+<span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="reading-the-result-the-covariate-table" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result-the-covariate-table">Reading the result: the covariate table</h2>
+<p>A fit of a model with a <code>[covariates]</code> block carries the covariate table <code>fit$covtab</code>, one row per data record, and the declared types:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_base</span><span class="op">$</span><span class="va">covtab</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID TIME EVID   WT CRCL</span></span>
+<span><span class="co">#&gt; 1  1  0.0    1 70.6 73.7</span></span>
+<span><span class="co">#&gt; 2  1  0.5    0 70.6 73.7</span></span>
+<span><span class="co">#&gt; 3  1  1.0    0 70.6 73.7</span></span>
+<span><span class="va">fit_base</span><span class="op">$</span><span class="va">covariate_types</span></span>
+<span><span class="co">#&gt;           WT         CRCL </span></span>
+<span><span class="co">#&gt; "continuous" "continuous"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The screening tools below read these. Categorical covariates must be coded as numbers in the data (<code>SEX</code> as 0 and 1). No bundled example has one; see the ferx-core <a href="https://ferx-nlme.github.io/ferx-core/model-file/covariates.html">covariates</a> page.</p>
+<section id="screening-against-the-random-effects" class="level3"><h3 class="anchored" data-anchor-id="screening-against-the-random-effects">Screening against the random effects</h3>
+<p><code>ferx_cov_screen()</code> correlates each covariate, per subject, with each parameter that has a random effect. It uses both the individual parameter and its eta, and reports the pairs whose association reaches <code>threshold</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">screen</span> <span class="op">&lt;-</span> <span class="fu">ferx_cov_screen</span><span class="op">(</span><span class="va">fit_base</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   parameter covariate       type   ebe   eta</span></span>
+<span><span class="co">#&gt; 1        CL      CRCL continuous 0.478 0.469</span></span>
+<span><span class="co">#&gt; 2        CL        WT continuous 0.360 0.382</span></span>
+<span><span class="co">#&gt; 3        V1        WT continuous 0.326 0.305</span></span>
+<span><span class="fu">ferx_cov_screen</span><span class="op">(</span><span class="va">fit_base</span>, threshold <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="co">#&gt; No covariate correlations with |r| &gt;= 0.50.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Clearance is associated with <code>CRCL</code> and <code>WT</code>, and the central volume with <code>WT</code>. <code>ferx_gam_screen()</code> goes one step further. For each eta and covariate it compares a regression of the eta on the covariate (linear, or a natural spline with <code>spline_df</code> degrees of freedom) with an intercept-only model, and ranks the pairs by the AIC improvement:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">gam</span> <span class="op">&lt;-</span> <span class="fu">ferx_gam_screen</span><span class="op">(</span><span class="va">fit_base</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    eta_name covariate  delta_aic    best_form        aic  aic_null   r_squared</span></span>
+<span><span class="co">#&gt; 1    ETA_CL      CRCL  5.4348439       Linear  -59.25279 -53.81795 0.219505924</span></span>
+<span><span class="co">#&gt; 2    ETA_CL        WT  2.8451085 Spline(df=2)  -56.66306 -53.81795 0.204011295</span></span>
+<span><span class="co">#&gt; 3    ETA_V1        WT  0.9340646       Linear  -64.80154 -63.86747 0.093171701</span></span>
+<span><span class="co">#&gt; 4    ETA_V1      CRCL  0.2941567 Spline(df=2)  -64.16163 -63.86747 0.133366019</span></span>
+<span><span class="co">#&gt; 5     ETA_Q        WT -0.9187237 Spline(df=2)  -87.23562 -88.15434 0.097610660</span></span>
+<span><span class="co">#&gt; 6     ETA_Q      CRCL -1.9393902       Linear  -86.21495 -88.15434 0.002018287</span></span>
+<span><span class="co">#&gt; 7    ETA_V2        WT  2.7840622 Spline(df=2) -100.00225 -97.21819 0.202389908</span></span>
+<span><span class="co">#&gt; 8    ETA_V2      CRCL -1.7757908       Linear  -95.44240 -97.21819 0.007445782</span></span>
+<span><span class="co">#&gt; 9    ETA_KA        WT -1.1772312 Spline(df=3)  -51.53800 -52.71523 0.148502710</span></span>
+<span><span class="co">#&gt; 10   ETA_KA      CRCL -1.7289480 Spline(df=2)  -50.98628 -52.71523 0.072907313</span></span>
+<span><span class="co">#&gt;       shrinkage</span></span>
+<span><span class="co">#&gt; 1  -0.001744168</span></span>
+<span><span class="co">#&gt; 2  -0.001744168</span></span>
+<span><span class="co">#&gt; 3   0.036475626</span></span>
+<span><span class="co">#&gt; 4   0.036475626</span></span>
+<span><span class="co">#&gt; 5   0.029265476</span></span>
+<span><span class="co">#&gt; 6   0.029265476</span></span>
+<span><span class="co">#&gt; 7   0.024072075</span></span>
+<span><span class="co">#&gt; 8   0.024072075</span></span>
+<span><span class="co">#&gt; 9   0.041527717</span></span>
+<span><span class="co">#&gt; 10  0.041527717</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The strongest pair is again <code>ETA_CL</code> with <code>CRCL</code>, as a linear effect. The <code>etas</code> and <code>covariates</code> arguments restrict the screen, <code>include_linear = FALSE</code> keeps only the spline forms, and <code>shrinkage_warn</code> sets the shrinkage above which a warning is given:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_gam_screen</span><span class="op">(</span><span class="va">fit_base</span>, etas <span class="op">=</span> <span class="st">"ETA_CL"</span>, covariates <span class="op">=</span> <span class="st">"CRCL"</span>, spline_df <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>                include_linear <span class="op">=</span> <span class="cn">FALSE</span>, shrinkage_warn <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   eta_name covariate delta_aic    best_form       aic  aic_null r_squared</span></span>
+<span><span class="co">#&gt; 1   ETA_CL      CRCL  3.510319 Spline(df=2) -57.32827 -53.81795  0.221467</span></span>
+<span><span class="co">#&gt;      shrinkage</span></span>
+<span><span class="co">#&gt; 1 -0.001744168</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Screening uses the individual random effects, so it is only informative when shrinkage is low. It is here (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>):</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">fit_base</span><span class="op">$</span><span class="va">shrinkage_eta</span>, <span class="fl">1</span><span class="op">)</span>, <span class="va">fit_base</span><span class="op">$</span><span class="va">eta_names</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ETA_CL ETA_V1  ETA_Q ETA_V2 ETA_KA </span></span>
+<span><span class="co">#&gt;   -0.2    3.6    2.9    2.4    4.2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A screen suggests candidates. The decision needs fits: a covariate search (<a href="09-model-selection.html" class="quarto-xref"><span>Model development and selection</span></a>) or the comparison of hand-written models below.</p>
+</section></section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead><tr class="header">
+<th>Function</th>
+<th>Argument</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>ferx_cov_screen()</code></td>
+<td><code>fit</code></td>
+<td>Fit of a model with a <code>[covariates]</code> block</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>threshold</code></td>
+<td>Minimum absolute association to report (default 0.2)</td>
+</tr>
+<tr class="odd">
+<td><code>ferx_gam_screen()</code></td>
+<td><code>fit</code></td>
+<td>As above</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>
+<code>etas</code>, <code>covariates</code>
+</td>
+<td>Restrict the pairs (default: all)</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>spline_df</code></td>
+<td>Spline degrees of freedom to try (default <code>c(2L, 3L)</code>)</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>include_linear</code></td>
+<td>Also try the linear form (default <code>TRUE</code>)</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>shrinkage_warn</code></td>
+<td>Warn for etas with shrinkage above this fraction (default 0.3)</td>
+</tr>
+<tr class="even">
+<td><code>ferx_allometry()</code></td>
+<td>
+<code>model</code>, <code>data</code>
+</td>
+<td>The model to scale and its dataset</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>config</code></td>
+<td>A <code>.ferxsearch</code> file with an <code>ALLOMETRY(WT, 70)</code> statement, instead of the arguments</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>
+<code>covariate</code>, <code>reference</code>
+</td>
+<td>Size covariate and reference value (default <code>WT</code> and 70)</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>
+<code>parameters</code>, <code>exponents</code>
+</td>
+<td>Parameters to scale and their exponents (default: all clearances with 0.75, all volumes with 1)</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>
+<code>estimate</code>, <code>lower</code>, <code>upper</code>
+</td>
+<td>Estimate the exponents within bounds instead of fixing them</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>fit</code></td>
+<td>Fit the base and scaled models (default <code>TRUE</code>), or only build the scaled model</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>
+<code>threads</code>, <code>retries</code>, <code>directory</code>
+</td>
+<td>Worker threads, restarts per fit, and a directory for the run journal</td>
+</tr>
+<tr class="odd">
+<td><code>ferx_model_to_frem()</code></td>
+<td>
+<code>model</code>, <code>data</code>
+</td>
+<td>The base model (with a <code>[covariates]</code> block) and its dataset</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>covariates</code></td>
+<td>A subset of the declared covariates (default: all)</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>
+<code>output_dir</code>, <code>output_model</code>, <code>output_data</code>
+</td>
+<td>Where the FREM model and data are written</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>fit</code></td>
+<td>A fit of the base model, whose estimates become the initial values</td>
+</tr>
+</tbody>
+</table></section><section id="variants" class="level2"><h2 class="anchored" data-anchor-id="variants">Variants</h2>
+<section id="covariate-effects-in-individual_parameters" class="level3"><h3 class="anchored" data-anchor-id="covariate-effects-in-individual_parameters">Covariate effects in <code>[individual_parameters]</code>
+</h3>
+<p>The usual way to add a covariate effect is to write it into the individual parameter. <code>two_cpt_oral_cov</code> scales clearance and central volume by weight with an estimated exponent, and clearance by creatinine clearance:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [individual_parameters]</span></span>
+<span><span class="co">#&gt;   CL = TVCL * (WT / 70)^THETA_WT * (CRCL / 100)^THETA_CRCL * exp(ETA_CL)</span></span>
+<span><span class="co">#&gt;   V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)</span></span>
+<span><span class="co">#&gt;   Q  = TVQ  * exp(ETA_Q)</span></span>
+<span><span class="co">#&gt;   V2 = TVV2 * exp(ETA_V2)</span></span>
+<span><span class="co">#&gt;   KA = TVKA * exp(ETA_KA)</span></span>
+<span><span class="va">fit_cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_cov</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"THETA_WT"</span>, <span class="st">"THETA_CRCL"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;             estimate  rse_pct</span></span>
+<span><span class="co">#&gt; THETA_WT   0.6534563 36.13571</span></span>
+<span><span class="co">#&gt; THETA_CRCL 0.5646128 39.23061</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="conditional-effects" class="level3"><h3 class="anchored" data-anchor-id="conditional-effects">Conditional effects</h3>
+<p>An <code>if</code>/<code>else</code> block in <code>[individual_parameters]</code> lets a covariate choose the expression. <code>warfarin_if</code> uses the same dataset. Subjects above 70 kg get allometric clearance and lighter subjects the typical clearance, with volume proportional to weight:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cond</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_if"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">cond</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [individual_parameters]</span></span>
+<span><span class="co">#&gt;   if (WT &gt; 70) {</span></span>
+<span><span class="co">#&gt;     CL = TVCL * (WT / 70)^0.75 * exp(ETA_CL)</span></span>
+<span><span class="co">#&gt;   } else {</span></span>
+<span><span class="co">#&gt;     CL = TVCL * exp(ETA_CL)</span></span>
+<span><span class="co">#&gt;   }</span></span>
+<span><span class="co">#&gt;   V1 = TVV1 * (WT / 70) * exp(ETA_V1)</span></span>
+<span><span class="co">#&gt;   Q  = TVQ  * exp(ETA_Q)</span></span>
+<span><span class="co">#&gt;   V2 = TVV2 * exp(ETA_V2)</span></span>
+<span><span class="co">#&gt;   KA = TVKA * exp(ETA_KA)</span></span>
+<span><span class="va">fit_if</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cond</span><span class="op">$</span><span class="va">model</span>, <span class="va">cond</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_if</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span>, <span class="st">"message"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity           category</span></span>
+<span><span class="co">#&gt; 1     info     mu_referencing</span></span>
+<span><span class="co">#&gt; 2  warning dw_autocorrelation</span></span>
+<span><span class="co">#&gt;                                                                                                                                                                           message</span></span>
+<span><span class="co">#&gt; 1 Mu-referencing disabled for conditional parameter(s): CL. Assign TV* unconditionally and apply the if-block to the individual parameter expression to re-enable mu-referencing.</span></span>
+<span><span class="co">#&gt; 2                                                     Negative IWRES autocorrelation detected (Durbin-Watson = 2.91). Possible over-parameterization or misspecified error model.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A parameter assigned inside an <code>if</code> block loses mu-referencing (<a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a>), and the fit says so with an <code>info</code> note. On the same data, the three models compare as follows:</p>
+<div id="tbl-covariate-models" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-covariate-models-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;17.1: Covariate models on the <code>two_cpt_oral_cov</code> dataset.
+</figcaption><div aria-describedby="tbl-covariate-models-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span>, <span class="st">"warfarin_if"</span>, <span class="st">"two_cpt_oral_cov"</span><span class="op">)</span>,</span>
+<span>           covariate_effects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"WT (conditional, fixed exponents)"</span>, <span class="st">"WT and CRCL (estimated exponents)"</span><span class="op">)</span>,</span>
+<span>           parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_base</span><span class="op">$</span><span class="va">n_parameters</span>, <span class="va">fit_if</span><span class="op">$</span><span class="va">n_parameters</span>, <span class="va">fit_cov</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span>,</span>
+<span>           ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_base</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_if</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_cov</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;               model                 covariate_effects parameters       ofv</span></span>
+<span><span class="co">#&gt; 1 two_cpt_oral_base                              none         11 -1185.403</span></span>
+<span><span class="co">#&gt; 2       warfarin_if WT (conditional, fixed exponents)         11 -1184.600</span></span>
+<span><span class="co">#&gt; 3  two_cpt_oral_cov WT and CRCL (estimated exponents)         13 -1199.326</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</figure>
+</div>
+</section><section id="allometric-scaling" class="level3"><h3 class="anchored" data-anchor-id="allometric-scaling">Allometric scaling</h3>
+<p><code>ferx_allometry()</code> adds body-size scaling to a model: <code>(WT/70)^0.75</code> on every clearance and <code>(WT/70)^1</code> on every volume of the <code>pk</code> line. With <code>fit = FALSE</code> it only builds the scaled model. The scaling is written as a <code>[covariate_model]</code> block:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">scaled</span> <span class="op">&lt;-</span> <span class="fu">ferx_allometry</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, fit <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">scaled</span><span class="op">$</span><span class="va">scalings</span></span>
+<span><span class="co">#&gt;   parameter exponent fixed theta</span></span>
+<span><span class="co">#&gt; 1        CL     0.75  TRUE  &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2         Q     0.75  TRUE  &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3        V1     1.00  TRUE  &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 4        V2     1.00  TRUE  &lt;NA&gt;</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">scaled</span><span class="op">$</span><span class="va">model_path</span>, <span class="st">"covariate_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [covariate_model]</span></span>
+<span><span class="co">#&gt;   CL ~ WT power(center = 70, fix = 0.75)</span></span>
+<span><span class="co">#&gt;   Q ~ WT power(center = 70, fix = 0.75)</span></span>
+<span><span class="co">#&gt;   V1 ~ WT power(center = 70, fix = 1.0)</span></span>
+<span><span class="co">#&gt;   V2 ~ WT power(center = 70, fix = 1.0)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Each <code>[covariate_model]</code> line states a relation (<code>PARAM ~ COV form(...)</code>), and ferx rewrites it into the expression you would otherwise write by hand. The ferx-core <a href="https://ferx-nlme.github.io/ferx-core/model-file/covariate-model.html">covariate model</a> page lists the forms (<code>linear</code>, <code>power</code>, <code>exponential</code>, <code>hockey</code>, <code>categorical</code>, …). No bundled ferx-r example writes the block by hand.</p>
+<p>With <code>fit = TRUE</code>, the default, the base and the scaled model are both fitted. <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on the <code>ferx_allometry</code> result shows the relations and both fits (its <code>digits</code> argument sets the precision):</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">allometry</span> <span class="op">&lt;-</span> <span class="fu">ferx_allometry</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in .ferx_compute_cor_matrix(result$cov_matrix): One or more diagonal</span></span>
+<span><span class="co">#&gt; elements are non-positive; correlation matrix may not be meaningful.</span></span>
+<span><span class="va">allometry</span></span>
+<span><span class="co">#&gt; ferx allometric scaling</span></span>
+<span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/data/two_cpt_oral_cov.csv</span></span>
+<span><span class="co">#&gt;   Model: /tmp/RtmpCW6590/ferx-allometry-4dedbd20479.ferx</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Scaling on WT (reference 70):</span></span>
+<span><span class="co">#&gt;   CL ~ WT power(center = 70, fix = 0.75)</span></span>
+<span><span class="co">#&gt;   Q ~ WT power(center = 70, fix = 0.75)</span></span>
+<span><span class="co">#&gt;   V1 ~ WT power(center = 70, fix = 1)</span></span>
+<span><span class="co">#&gt;   V2 ~ WT power(center = 70, fix = 1)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Fits:</span></span>
+<span><span class="co">#&gt;   model   ofv converged passed failures</span></span>
+<span><span class="co">#&gt;    base -1185      TRUE   TRUE     &lt;NA&gt;</span></span>
+<span><span class="co">#&gt;  scaled -1173      TRUE   TRUE     &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   dOFV (base - scaled): -12.74</span></span>
+<span><span class="va">allometry</span><span class="op">$</span><span class="va">dofv</span></span>
+<span><span class="co">#&gt; [1] -12.73983</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Fixed allometric exponents make this model worse. With <code>estimate = TRUE</code> the exponents are estimated between <code>lower</code> and <code>upper</code>, and <code>parameters</code> limits the scaling to clearance and central volume. <code>directory</code> keeps a journal of the run:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">allometry_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">covariate_dir</span>, <span class="st">"allometry"</span><span class="op">)</span></span>
+<span><span class="va">estimated</span> <span class="op">&lt;-</span> <span class="fu">ferx_allometry</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"CL"</span>, <span class="st">"V1"</span><span class="op">)</span>, exponents <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>                            estimate <span class="op">=</span> <span class="cn">TRUE</span>, lower <span class="op">=</span> <span class="fl">0</span>, upper <span class="op">=</span> <span class="fl">2</span>, directory <span class="op">=</span> <span class="va">allometry_dir</span><span class="op">)</span></span>
+<span><span class="va">estimated</span><span class="op">$</span><span class="va">comparison</span></span>
+<span><span class="co">#&gt;    model       ofv converged passed failures</span></span>
+<span><span class="co">#&gt; 1   base -1185.423      TRUE   TRUE     &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2 scaled -1193.593      TRUE   TRUE     &lt;NA&gt;</span></span>
+<span><span class="va">estimated</span><span class="op">$</span><span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"THETA_CL_WT"</span>, <span class="st">"THETA_V1_WT"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;              estimate  rse_pct</span></span>
+<span><span class="co">#&gt; THETA_CL_WT 0.7496625 53.00103</span></span>
+<span><span class="co">#&gt; THETA_V1_WT 0.5567606 60.76338</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span><span class="op">(</span><span class="va">allometry_dir</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "allometric.ferx"      "candidates.csv"       "fits"                </span></span>
+<span><span class="co">#&gt; [4] "search_journal.jsonl" "search_run.json"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>With estimated exponents the scaled model improves on the base by 8.2 OFV units. Both exponents are poorly determined by these 30 subjects.</p>
+<p>The same scaling can come from a <code>.ferxsearch</code> file with an <code>ALLOMETRY</code> statement. The bundled <code>two_cpt_oral_base.ferxsearch</code> holds a covariate search, so a copy with the statement is written here:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">config_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
+<span><span class="va">config_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^base = .*"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">'base = "%s"'</span>, <span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="va">config_lines</span><span class="op">)</span></span>
+<span><span class="va">config_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^data = .*"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">'data = "%s"'</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span>, <span class="va">config_lines</span><span class="op">)</span></span>
+<span><span class="va">config_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^mfl = .*"</span>, <span class="st">'mfl = "ALLOMETRY(WT, 70)"'</span>, <span class="va">config_lines</span><span class="op">)</span></span>
+<span><span class="va">config_lines</span> <span class="op">&lt;-</span> <span class="va">config_lines</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"^\\[covsearch\\]|^algorithm|^p_forward|^p_backward"</span>, <span class="va">config_lines</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">allometry_config</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">covariate_dir</span>, <span class="st">"allometry.ferxsearch"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">config_lines</span>, <span class="va">allometry_config</span><span class="op">)</span></span>
+<span><span class="fu">ferx_allometry</span><span class="op">(</span>config <span class="op">=</span> <span class="va">allometry_config</span>, fit <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">scalings</span></span>
+<span><span class="co">#&gt;   parameter exponent fixed theta</span></span>
+<span><span class="co">#&gt; 1        CL     0.75  TRUE  &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2         Q     0.75  TRUE  &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3        V1     1.00  TRUE  &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 4        V2     1.00  TRUE  &lt;NA&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>threads</code> and <code>retries</code> control the fits as in the other search tools (<a href="09-model-selection.html" class="quarto-xref"><span>Model development and selection</span></a>).</p>
+</section><section id="full-random-effects-modeling-frem" class="level3"><h3 class="anchored" data-anchor-id="full-random-effects-modeling-frem">Full random effects modeling (FREM)</h3>
+<p>FREM treats each covariate as an additional observation. The covariate gets its own random effect in one large omega block, and the covariances between the parameter and covariate random effects describe the covariate relations, without a stepwise search. <code>ferx_model_to_frem()</code> builds the FREM model and dataset from a base model with a <code>[covariates]</code> block.</p>
+<p>By default the generated files go next to the model file, which for a <code>ferx_example()</code> model is the installed package. <code>output_dir</code> writes them to a temporary directory instead:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">frem</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_to_frem</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, fit <span class="op">=</span> <span class="va">fit_base</span>,</span>
+<span>                           output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">covariate_dir</span>, <span class="st">"frem"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">frem</span></span>
+<span><span class="co">#&gt; ferx_model</span></span>
+<span><span class="co">#&gt;   Model: /tmp/RtmpCW6590/covariates/frem/two_cpt_oral_base_frem.ferx</span></span>
+<span><span class="co">#&gt;   Data:  /tmp/RtmpCW6590/covariates/frem/two_cpt_oral_base_frem_data.csv</span></span>
+<span><span class="co">#&gt;   ---</span></span>
+<span><span class="co">#&gt;   Structural:  2-cpt oral  (TVCL, TVV1, TVQ, TVV2, TVKA, TV_WT, TV_CRCL)</span></span>
+<span><span class="co">#&gt;   IIV:         ETA_CL, ETA_V1, ETA_Q, ETA_V2, ETA_KA, ETA_WT_FREM, ETA_CRCL_FREM</span></span>
+<span><span class="co">#&gt;   IOV:         none</span></span>
+<span><span class="co">#&gt;   Residual:    proportional</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The dataset gains one row per subject and covariate. Their <code>FREMTYPE</code> codes the covariate (100 for <code>WT</code>, 200 for <code>CRCL</code>), and <code>DV</code> holds the covariate value:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">frem_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">frem</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="fu">count</span><span class="op">(</span><span class="va">frem_data</span>, <span class="va">FREMTYPE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   FREMTYPE   n</span></span>
+<span><span class="co">#&gt; 1        0 330</span></span>
+<span><span class="co">#&gt; 2      100  30</span></span>
+<span><span class="co">#&gt; 3      200  30</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">frem_data</span>, <span class="va">FREMTYPE</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID TIME   DV EVID AMT CMT RATE MDV II SS CENS FREMTYPE   WT CRCL</span></span>
+<span><span class="co">#&gt; 1  1  0.5 70.6    0   0   1    0   0  0  0    0      100 70.6 73.7</span></span>
+<span><span class="co">#&gt; 2  1  0.5 73.7    0   0   1    0   0  0  0    0      200 70.6 73.7</span></span>
+<span><span class="co">#&gt; 3  2  0.5 80.9    0   0   1    0   0  0  0    0      100 80.9 80.7</span></span>
+<span><span class="co">#&gt; 4  2  0.5 80.7    0   0   1    0   0  0  0    0      200 80.9 80.7</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The model gains a fixed typical value and a random effect for each covariate, one omega block, and a small fixed covariate sigma. <code>fit = fit_base</code> put the base estimates in as initial values. The <code>[fit_options]</code> entries <code>frem_predictions</code> and <code>frem_sigma</code> tell the engine which rows belong to which covariate and which sigma they use:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">frem</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [parameters]</span></span>
+<span><span class="co">#&gt;   theta TVCL(4.464757578550209, 0.1, 100.0)</span></span>
+<span><span class="co">#&gt;   theta TVV1(48.24224473329911, 1.0, 500.0)</span></span>
+<span><span class="co">#&gt;   theta TVQ(9.584245594278087, 0.1, 100.0)</span></span>
+<span><span class="co">#&gt;   theta TVV2(93.78773933299064, 1.0, 500.0)</span></span>
+<span><span class="co">#&gt;   theta TVKA(1.2474671134949786, 0.01, 10.0)</span></span>
+<span><span class="co">#&gt;   theta TV_WT(70.43333333333334, FIX)</span></span>
+<span><span class="co">#&gt;   theta TV_CRCL(86.11000000000003, FIX)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   block_omega (ETA_CL, ETA_V1, ETA_Q, ETA_V2, ETA_KA, ETA_WT_FREM, ETA_CRCL_FREM) = [</span></span>
+<span><span class="co">#&gt;     1.551248e-1,</span></span>
+<span><span class="co">#&gt;     0.000000e0, 1.199053e-1,</span></span>
+<span><span class="co">#&gt;     0.000000e0, 0.000000e0, 5.257442e-2,</span></span>
+<span><span class="co">#&gt;     0.000000e0, 0.000000e0, 0.000000e0, 3.845706e-2,</span></span>
+<span><span class="co">#&gt;     0.000000e0, 0.000000e0, 0.000000e0, 0.000000e0, 1.758346e-1,</span></span>
+<span><span class="co">#&gt;     4.956079e-2, 4.357292e-2, 2.885259e-2, 2.467661e-2, 5.276546e-2, 1.583416e2,</span></span>
+<span><span class="co">#&gt;     9.377998e-2, 8.244961e-2, 5.459548e-2, 4.669361e-2, 9.984392e-2, 0.000000e0, 5.669423e2</span></span>
+<span><span class="co">#&gt;   ]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   sigma PROP_ERR ~ 0.02 (sd)</span></span>
+<span><span class="co">#&gt;   sigma EPSCOV ~ 1e-6 FIX</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">frem</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [individual_parameters]</span></span>
+<span><span class="co">#&gt;   CL = TVCL * exp(ETA_CL)</span></span>
+<span><span class="co">#&gt;   V1 = TVV1 * exp(ETA_V1)</span></span>
+<span><span class="co">#&gt;   Q  = TVQ  * exp(ETA_Q)</span></span>
+<span><span class="co">#&gt;   V2 = TVV2 * exp(ETA_V2)</span></span>
+<span><span class="co">#&gt;   KA = TVKA * exp(ETA_KA)</span></span>
+<span><span class="co">#&gt;   COV_WT = TV_WT + ETA_WT_FREM</span></span>
+<span><span class="co">#&gt;   COV_CRCL = TV_CRCL + ETA_CRCL_FREM</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">frem</span>, <span class="st">"fit_options"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [fit_options]</span></span>
+<span><span class="co">#&gt;   method     = focei</span></span>
+<span><span class="co">#&gt;   maxiter    = 500</span></span>
+<span><span class="co">#&gt;   covariance = true</span></span>
+<span><span class="co">#&gt;   gradient   = fd</span></span>
+<span><span class="co">#&gt;   frem_predictions = TV_WT/ETA_WT_FREM:100, TV_CRCL/ETA_CRCL_FREM:200</span></span>
+<span><span class="co">#&gt;   frem_sigma = EPSCOV</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; # Data: /tmp/RtmpCW6590/covariates/frem/two_cpt_oral_base_frem_data.csv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A <code>ferx_model</code> object fits directly. The ferx-core <a href="https://ferx-nlme.github.io/ferx-core/estimation/frem.html">FREM</a> page recommends SAEM for FREM models, as the large omega block is hard for gradient-based methods. The covariance step is skipped here to save time:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># suppress the R warnings that report overriding the model file's method and covariance setting</span></span>
+<span><span class="va">fit_frem_focei</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">frem</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fit_frem_saem</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">frem</span>, method <span class="op">=</span> <span class="st">"saem"</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">frem_correlations</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html">cov2cor</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">omega</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ETA_CL"</span>, <span class="st">"ETA_V1"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ETA_WT_FREM"</span>, <span class="st">"ETA_CRCL_FREM"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>focei <span class="op">=</span> <span class="fu">frem_correlations</span><span class="op">(</span><span class="va">fit_frem_focei</span><span class="op">)</span>, saem <span class="op">=</span> <span class="fu">frem_correlations</span><span class="op">(</span><span class="va">fit_frem_saem</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $focei</span></span>
+<span><span class="co">#&gt;        ETA_WT_FREM ETA_CRCL_FREM</span></span>
+<span><span class="co">#&gt; ETA_CL        0.01          0.01</span></span>
+<span><span class="co">#&gt; ETA_V1        0.00          0.01</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $saem</span></span>
+<span><span class="co">#&gt;        ETA_WT_FREM ETA_CRCL_FREM</span></span>
+<span><span class="co">#&gt; ETA_CL        0.39          0.47</span></span>
+<span><span class="co">#&gt; ETA_V1        0.33          0.07</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>With SAEM the correlations show what the covariate model found: clearance goes with creatinine clearance and weight, and central volume with weight. FOCEI leaves them near zero on this model. The FREM fits carry several warnings that belong to the construction:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">count</span><span class="op">(</span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_frem_saem</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">severity</span>, <span class="va">category</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   severity           category  n</span></span>
+<span><span class="co">#&gt; 1  warning dw_autocorrelation  1</span></span>
+<span><span class="co">#&gt; 2  warning            general  3</span></span>
+<span><span class="co">#&gt; 3  warning    omega_structure 10</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Two of the <code>general</code> warnings report that the covariate sigma and the covariate expressions are not used by the error or structural model, which is intended here. The third reports that the model file’s <code>maxiter</code> does not apply to SAEM (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). The <code>omega_structure</code> warnings concern the reported parameter correlations (<a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a>).</p>
+<p><code>covariates</code> builds a FREM model for a subset of the declared covariates:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">frem_crcl</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_to_frem</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, covariates <span class="op">=</span> <span class="st">"CRCL"</span>,</span>
+<span>                                output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">covariate_dir</span>, <span class="st">"frem_crcl"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">frem_crcl</span>, <span class="st">"fit_options"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [fit_options]</span></span>
+<span><span class="co">#&gt;   method     = focei</span></span>
+<span><span class="co">#&gt;   maxiter    = 500</span></span>
+<span><span class="co">#&gt;   covariance = true</span></span>
+<span><span class="co">#&gt;   gradient   = fd</span></span>
+<span><span class="co">#&gt;   frem_predictions = TV_CRCL/ETA_CRCL_FREM:100</span></span>
+<span><span class="co">#&gt;   frem_sigma = EPSCOV</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; # Data: /tmp/RtmpCW6590/covariates/frem_crcl/two_cpt_oral_base_frem_data.csv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>FREM options:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"frem_rao_blackwell"</span>, <span class="st">"frem_predictions"</span>, <span class="st">"frem_sigma"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="tbl-settings-frem" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-frem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;17.2
+</figcaption><div aria-describedby="tbl-settings-frem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<div id="kgeoaqydqh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#kgeoaqydqh table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#kgeoaqydqh thead, #kgeoaqydqh tbody, #kgeoaqydqh tfoot, #kgeoaqydqh tr, #kgeoaqydqh td, #kgeoaqydqh th {
+  border-style: none;
+}
+
+#kgeoaqydqh p {
+  margin: 0;
+  padding: 0;
+}
+
+#kgeoaqydqh .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 13px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: 100%;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#kgeoaqydqh .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#kgeoaqydqh .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#kgeoaqydqh .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#kgeoaqydqh .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#kgeoaqydqh .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#kgeoaqydqh .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#kgeoaqydqh .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#kgeoaqydqh .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#kgeoaqydqh .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#kgeoaqydqh .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#kgeoaqydqh .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#kgeoaqydqh .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#kgeoaqydqh .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#kgeoaqydqh .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kgeoaqydqh .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#kgeoaqydqh .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#kgeoaqydqh .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#kgeoaqydqh .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kgeoaqydqh .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#kgeoaqydqh .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kgeoaqydqh .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#kgeoaqydqh .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kgeoaqydqh .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#kgeoaqydqh .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kgeoaqydqh .gt_left {
+  text-align: left;
+}
+
+#kgeoaqydqh .gt_center {
+  text-align: center;
+}
+
+#kgeoaqydqh .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#kgeoaqydqh .gt_font_normal {
+  font-weight: normal;
+}
+
+#kgeoaqydqh .gt_font_bold {
+  font-weight: bold;
+}
+
+#kgeoaqydqh .gt_font_italic {
+  font-style: italic;
+}
+
+#kgeoaqydqh .gt_super {
+  font-size: 65%;
+}
+
+#kgeoaqydqh .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#kgeoaqydqh .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#kgeoaqydqh .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#kgeoaqydqh .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#kgeoaqydqh .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#kgeoaqydqh .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#kgeoaqydqh .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#kgeoaqydqh .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#kgeoaqydqh div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 18%">
+<col style="width: 12%">
+<col>
+</colgroup>
+<thead><tr class="gt_col_headings header">
+<th id="Setting" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Setting</th>
+<th id="Values" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Values</th>
+<th id="Default" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Default</th>
+<th id="Description" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Description</th>
+</tr></thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="Setting"><code>frem_rao_blackwell</code></td>
+<td class="gt_row gt_right" headers="Values"></td>
+<td class="gt_row gt_left" headers="Default"><code>true</code></td>
+<td class="gt_row gt_left" headers="Description">FREM only: Rao-Blackwellise the covariate ETAs (integrate them analytically, importance-sample only the PK ETAs).</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Setting"><code>frem_predictions</code></td>
+<td class="gt_row gt_right" headers="Values"></td>
+<td class="gt_row gt_left" headers="Default"></td>
+<td class="gt_row gt_left" headers="Description">See <code>?ferx_fit</code> and the ferx-core fit options page.</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Setting"><code>frem_sigma</code></td>
+<td class="gt_row gt_right" headers="Values"></td>
+<td class="gt_row gt_left" headers="Default"></td>
+<td class="gt_row gt_left" headers="Description">See <code>?ferx_fit</code> and the ferx-core fit options page.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p><code>frem_rao_blackwell</code> applies to importance sampling (<code>method = "imp"</code>). On this model an IMP fit takes several minutes, so it is not run here.</p>
+</section><section id="time-varying-covariates" class="level3"><h3 class="anchored" data-anchor-id="time-varying-covariates">Time-varying covariates</h3>
+<p>A covariate may change within a subject. ferx carries the last value forward from each record, and the model uses the value in force at each time. In a copy of the data, subject 1’s weight rises by 50% from 12 hours. Only that subject’s predictions change, and only from 12 hours on:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">tv_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="va">heavier</span> <span class="op">&lt;-</span> <span class="va">tv_data</span><span class="op">$</span><span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">tv_data</span><span class="op">$</span><span class="va">TIME</span> <span class="op">&gt;=</span> <span class="fl">12</span></span>
+<span><span class="va">tv_data</span><span class="op">$</span><span class="va">WT</span><span class="op">[</span><span class="va">heavier</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="va">tv_data</span><span class="op">$</span><span class="va">WT</span><span class="op">[</span><span class="va">heavier</span><span class="op">]</span></span>
+<span><span class="va">tv_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">covariate_dir</span>, <span class="st">"two_cpt_oral_cov_tv.csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">tv_data</span>, <span class="va">tv_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="va">constant_pred</span> <span class="op">&lt;-</span> <span class="fu">ferx_predict</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, fit <span class="op">=</span> <span class="va">fit_cov</span><span class="op">)</span></span>
+<span><span class="va">tv_pred</span> <span class="op">&lt;-</span> <span class="fu">ferx_predict</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">tv_file</span>, fit <span class="op">=</span> <span class="va">fit_cov</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">constant_pred</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">select</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">PRED</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">mutate</span><span class="op">(</span>PRED_time_varying <span class="op">=</span> <span class="va">tv_pred</span><span class="op">$</span><span class="va">PRED</span><span class="op">[</span><span class="va">tv_pred</span><span class="op">$</span><span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    TIME      PRED PRED_time_varying</span></span>
+<span><span class="co">#&gt; 1   0.5 2.2114606         2.2114606</span></span>
+<span><span class="co">#&gt; 2   1.0 3.1116226         3.1116226</span></span>
+<span><span class="co">#&gt; 3   2.0 3.2905693         3.2905693</span></span>
+<span><span class="co">#&gt; 4   4.0 2.3602311         2.3602311</span></span>
+<span><span class="co">#&gt; 5   6.0 1.6778386         1.6778386</span></span>
+<span><span class="co">#&gt; 6   8.0 1.3044925         1.3044925</span></span>
+<span><span class="co">#&gt; 7  12.0 0.9755278         0.8291789</span></span>
+<span><span class="co">#&gt; 8  24.0 0.6747188         0.5698892</span></span>
+<span><span class="co">#&gt; 9  36.0 0.5035083         0.4059945</span></span>
+<span><span class="co">#&gt; 10 48.0 0.3762776         0.2895959</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Logic.html">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">constant_pred</span><span class="op">$</span><span class="va">PRED</span><span class="op">[</span><span class="va">constant_pred</span><span class="op">$</span><span class="va">ID</span> <span class="op">!=</span> <span class="fl">1</span><span class="op">]</span>, <span class="va">tv_pred</span><span class="op">$</span><span class="va">PRED</span><span class="op">[</span><span class="va">tv_pred</span><span class="op">$</span><span class="va">ID</span> <span class="op">!=</span> <span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A fit uses the same records. Its covariate table shows the change:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_tv</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">tv_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">fit_tv</span><span class="op">$</span><span class="va">covtab</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">TIME</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID TIME EVID    WT CRCL</span></span>
+<span><span class="co">#&gt; 1  1    8    0  70.6 73.7</span></span>
+<span><span class="co">#&gt; 2  1   12    0 105.9 73.7</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
+<ul>
+<li><p><strong>Declaring is not using.</strong> A covariate in <code>[covariates]</code> has no effect until an individual parameter or a <code>[covariate_model]</code> relation uses it.</p></li>
+<li><p><strong>Screens are not tests.</strong> Correlations and GAM results on individual random effects suggest candidates, and they weaken as shrinkage grows. Confirm with fits.</p></li>
+<li>
+<p><strong>Allometry does not see effects written by hand.</strong> It leaves a parameter alone only when a <code>[covariate_model]</code> relation already uses the size covariate. On <code>two_cpt_oral_cov</code>, which writes <code>(WT / 70)^THETA_WT</code> into <code>[individual_parameters]</code>, it adds weight a second time:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">double</span> <span class="op">&lt;-</span> <span class="fu">ferx_allometry</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, fit <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">double</span><span class="op">$</span><span class="va">notes</span></span>
+<span><span class="co">#&gt; character(0)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"WT"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">double</span><span class="op">$</span><span class="va">model_path</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "# Two-compartment oral PK model with covariates (WT, CRCL)"              </span></span>
+<span><span class="co">#&gt; [2] "  theta THETA_WT(0.75, 0.01, 5.0)"                                       </span></span>
+<span><span class="co">#&gt; [3] "  CL = TVCL * (WT / 70)^THETA_WT * (CRCL / 100)^THETA_CRCL * exp(ETA_CL)"</span></span>
+<span><span class="co">#&gt; [4] "  V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)"                          </span></span>
+<span><span class="co">#&gt; [5] "  WT   continuous"                                                       </span></span>
+<span><span class="co">#&gt; [6] "  CL ~ WT power(center = 70, fix = 0.75)"                                </span></span>
+<span><span class="co">#&gt; [7] "  Q ~ WT power(center = 70, fix = 0.75)"                                 </span></span>
+<span><span class="co">#&gt; [8] "  V1 ~ WT power(center = 70, fix = 1.0)"                                 </span></span>
+<span><span class="co">#&gt; [9] "  V2 ~ WT power(center = 70, fix = 1.0)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</li>
+<li><p><strong>FREM needs a suitable method.</strong> Check the covariate–parameter correlations with SAEM: FOCEI found almost none on these data. Give <code>output_dir</code> a writable directory of your own, or the generated files land next to the model file.</p></li>
+</ul>
+<section id="warnings-you-may-see-here" class="level3"><h3 class="anchored" data-anchor-id="warnings-you-may-see-here">Warnings you may see here</h3>
+<ul>
+<li>
+<code>mu_referencing</code> (info): a conditional assignment switched off mu-referencing for a parameter, as for <code>warfarin_if</code> above.</li>
+<li>
+<code>general</code> (warning) on FREM models: a sigma declared but not used in <code>[error_model]</code>, or individual parameters that are computed but not used. For the generated covariate sigma and covariate expressions this is expected.</li>
+</ul></section></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<ul>
+<li>Declare covariates in <code>[covariates]</code>; the fit returns <code>covtab</code> and <code>covariate_types</code>.</li>
+<li>Screen with <code>ferx_cov_screen()</code> and <code>ferx_gam_screen()</code> while shrinkage is low, then confirm with fits.</li>
+<li>Write effects in <code>[individual_parameters]</code>, as <code>if</code>/<code>else</code> conditions, or as <code>[covariate_model]</code> relations. <code>ferx_allometry()</code> adds body-size scaling, fixed or estimated.</li>
+<li>
+<code>ferx_model_to_frem()</code> builds a FREM model from the declared covariates; fit it with SAEM.</li>
+<li>Covariates that change within a subject are carried forward from each record.</li>
+</ul>
+<p>Next: <a href="18-dosing.html" class="quarto-xref"><span>Dosing regimens and exposure metrics</span></a> covers dosing records and regimens.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Reference
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>R help: <code>?ferx_cov_screen</code>, <code>?ferx_gam_screen</code>, <code>?ferx_allometry</code>, <code>?ferx_model_to_frem</code>
+</li>
+<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/model-file/covariates.html">covariates</a>, <a href="https://ferx-nlme.github.io/ferx-core/model-file/covariate-model.html">covariate model</a>, <a href="https://ferx-nlme.github.io/ferx-core/model-file/individual-parameters.html">individual parameters</a>, <a href="https://ferx-nlme.github.io/ferx-core/estimation/frem.html">FREM</a>, <a href="https://ferx-nlme.github.io/ferx-core/tools/gam-screening.html">GAM screening</a>
+</li>
+</ul>
+</div>
+</div>
+
+
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/ferx-nlme\.github\.io\/ferx-book\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="../chapters/16-variability.html" class="pagination-link" aria-label="Variability: random effects, residual error and IOV">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Variability: random effects, residual error and IOV</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/18-dosing.html" class="pagination-link" aria-label="Dosing regimens and exposure metrics">
+        <span class="nav-page-text"><span class="chapter-title">Dosing regimens and exposure metrics</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/17-covariates.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

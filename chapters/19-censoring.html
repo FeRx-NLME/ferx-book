@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="generator" content="quarto-1.10.18">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>Installing ferx – FeRx NLME - R package (ferx)</title>
+<title>Censored observations (BLOQ) – FeRx NLME - R package (ferx)</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -67,8 +67,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../chapters/02-complete-analysis.html" rel="next">
-<link href="../index.html" rel="prev">
+<link href="../chapters/20-pkpd.html" rel="next">
+<link href="../chapters/18-dosing.html" rel="prev">
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -336,7 +336,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/01-installation.html"><span class="chapter-title">Installing ferx</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/18-dosing.html">Scenarios: dosing and data</a></li><li class="breadcrumb-item"><a href="../chapters/19-censoring.html"><span class="chapter-title">Censored observations (BLOQ)</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -365,7 +365,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Installing ferx</span></a>
+  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -499,7 +499,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../chapters/19-censoring.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Censored observations (BLOQ)</span></a>
+  <a href="../chapters/19-censoring.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Censored observations (BLOQ)</span></a>
   </div>
 </li>
       </ul>
@@ -586,15 +586,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
-<li><a href="#requirements" id="toc-requirements" class="nav-link active" data-scroll-target="#requirements">Requirements</a></li>
-  <li><a href="#installing-the-pinned-build" id="toc-installing-the-pinned-build" class="nav-link" data-scroll-target="#installing-the-pinned-build">Installing the pinned build</a></li>
-  <li><a href="#checking-the-installation" id="toc-checking-the-installation" class="nav-link" data-scroll-target="#checking-the-installation">Checking the installation</a></li>
-  <li><a href="#reference" id="toc-reference" class="nav-link" data-scroll-target="#reference">Reference</a></li>
-  </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">The data</a></li>
+  <li><a href="#minimal-runnable-call-the-m3-likelihood" id="toc-minimal-runnable-call-the-m3-likelihood" class="nav-link" data-scroll-target="#minimal-runnable-call-the-m3-likelihood">Minimal runnable call: the M3 likelihood</a></li>
+  <li><a href="#reading-the-result" id="toc-reading-the-result" class="nav-link" data-scroll-target="#reading-the-result">Reading the result</a></li>
+  <li><a href="#options-that-matter" id="toc-options-that-matter" class="nav-link" data-scroll-target="#options-that-matter">Options that matter</a></li>
+  <li>
+<a href="#variants" id="toc-variants" class="nav-link" data-scroll-target="#variants">Variants</a>
+  <ul class="collapse">
+<li><a href="#heavier-censoring" id="toc-heavier-censoring" class="nav-link" data-scroll-target="#heavier-censoring">Heavier censoring</a></li>
+  <li><a href="#observations-above-the-upper-limit" id="toc-observations-above-the-upper-limit" class="nav-link" data-scroll-target="#observations-above-the-upper-limit">Observations above the upper limit</a></li>
+  <li><a href="#checking-the-censored-fraction" id="toc-checking-the-censored-fraction" class="nav-link" data-scroll-target="#checking-the-censored-fraction">Checking the censored fraction</a></li>
+  <li><a href="#estimation-method" id="toc-estimation-method" class="nav-link" data-scroll-target="#estimation-method">Estimation method</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#pitfalls" id="toc-pitfalls" class="nav-link" data-scroll-target="#pitfalls">Pitfalls</a>
+  <ul class="collapse">
+<li><a href="#warnings-you-may-see-here" id="toc-warnings-you-may-see-here" class="nav-link" data-scroll-target="#warnings-you-may-see-here">Warnings you may see here</a></li>
+  </ul>
+</li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/19-censoring.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/01-installation.html"><span class="chapter-title">Installing ferx</span></a></li></ol></nav><div class="quarto-title">
-<h1 class="title"><span id="sec-installation" class="quarto-section-identifier"><span class="chapter-title">Installing ferx</span></span></h1>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/18-dosing.html">Scenarios: dosing and data</a></li><li class="breadcrumb-item"><a href="../chapters/19-censoring.html"><span class="chapter-title">Censored observations (BLOQ)</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-censoring" class="quarto-section-identifier"><span class="chapter-title">Censored observations (BLOQ)</span></span></h1>
 </div>
 
 
@@ -608,50 +625,275 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   
 
 
-</header><p>ferx is an R package with a compiled Rust engine (ferx-core) inside. Installing it compiles that engine from source, so you need a Rust toolchain and the first install takes a long time. The ferx-r README notes that later installs are faster.</p>
-<section id="requirements" class="level2"><h2 class="anchored" data-anchor-id="requirements">Requirements</h2>
-<ul>
-<li>
-<strong>R</strong> with a working build toolchain. The package’s <code>SystemRequirements</code> are GNU make, Cargo and rustc (&gt;= 1.70).</li>
-<li>
-<strong>Rust</strong>: a standard stable toolchain installed with <a href="https://www.rust-lang.org/tools/install">rustup</a>. No custom toolchain is required.</li>
-<li>
-<strong>Windows</strong>: Rtools matching your R version, plus the GNU-ABI Rust toolchain. See the Windows notes in the <a href="https://github.com/FeRx-NLME/ferx-r#windows">ferx-r README</a>.</li>
-</ul></section><section id="installing-the-pinned-build" class="level2"><h2 class="anchored" data-anchor-id="installing-the-pinned-build">Installing the pinned build</h2>
-<p>This book documents one specific ferx-r commit, <code>078e489</code> (package version 0.3.0, engine ferx-core <code>8372248</code>). Every output in the book was produced with it. To get exactly the same behaviour, install that commit:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"pak"</span><span class="op">)</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html">pak</a></span><span class="op">(</span><span class="st">"FeRx-NLME/ferx-r@078e48900bca32e41f91e39d3141c23e380e647e"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Installing without a commit gives you the latest development version. That is fine for your own work, but its output can differ from what this book shows:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html">pak</a></span><span class="op">(</span><span class="st">"FeRx-NLME/ferx-r"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section><section id="checking-the-installation" class="level2"><h2 class="anchored" data-anchor-id="checking-the-installation">Checking the installation</h2>
-<p>Load the package and confirm the version:</p>
-<div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span><span class="op">(</span><span class="st">"ferx"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] '0.3.0'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>The package ships example models and datasets, so a real fit is the quickest end-to-end check. It exercises the model parser, the data reader and the estimation engine:</p>
-<div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit</span><span class="op">$</span><span class="va">converged</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>If this prints <code>TRUE</code>, ferx is installed and working. <a href="02-complete-analysis.html" class="quarto-xref"><span>A complete analysis in one chapter</span></a> walks through the same example as a full analysis.</p>
-<div class="callout callout-style-default callout-note callout-titled">
+</header><section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
+<p>Assays have limits. A concentration below the lower limit of quantification (LLOQ) is reported only as “below the limit”, and one above the upper limit (ULOQ) as “above”. These observations still carry information: the true value lies outside the quantified range. This chapter shows how to mark them in the data and fit them with the M3 likelihood, and what goes wrong with the alternatives.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Stopping a long fit
+<span class="screen-reader-only">Warning</span>Maturity: beta
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit()</a></code> checks for R interrupts while it runs, so <strong>Ctrl-C</strong> (or RStudio’s stop button) cancels a fit. The call then ends with an error saying the fit was cancelled. The ferx-core <a href="https://ferx-nlme.github.io/ferx-core/installation.html">installation page</a> describes the behaviour in detail.</p>
+<p>ferx-core labels LOQ-censored observations <strong>beta</strong>. See <a href="https://ferx-nlme.github.io/ferx-core/maturity.html">feature maturity</a>.</p>
 </div>
 </div>
-</section><section id="reference" class="level2"><h2 class="anchored" data-anchor-id="reference">Reference</h2>
+</section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<p><code>warfarin_bloq</code> is the warfarin dataset with an LLOQ of 2. The <code>CENS</code> column marks the 10 observations below it (<code>CENS = 1</code>), and their <code>DV</code> holds the limit, not the measured value:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">bloq</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_bloq"</span><span class="op">)</span></span>
+<span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<span><span class="va">censoring_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"censoring"</span><span class="op">)</span></span>
+<span><span class="va">bloq_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="va">warfarin_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="fu">count</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">bloq_data</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>, <span class="va">CENS</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   CENS   n</span></span>
+<span><span class="co">#&gt; 1    0 100</span></span>
+<span><span class="co">#&gt; 2    1  10</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">bloq_data</span>, <span class="va">CENS</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">select</span><span class="op">(</span><span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">DV</span>, <span class="va">CENS</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">mutate</span><span class="op">(</span>DV_in_warfarin_data <span class="op">=</span> <span class="va">warfarin_data</span><span class="op">$</span><span class="va">DV</span><span class="op">[</span><span class="va">bloq_data</span><span class="op">$</span><span class="va">CENS</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    ID TIME DV CENS DV_in_warfarin_data</span></span>
+<span><span class="co">#&gt; 1   1  120  2    1              1.6785</span></span>
+<span><span class="co">#&gt; 2   2  120  2    1              1.5248</span></span>
+<span><span class="co">#&gt; 3   3  120  2    1              1.9121</span></span>
+<span><span class="co">#&gt; 4   4  120  2    1              1.4205</span></span>
+<span><span class="co">#&gt; 5   6  120  2    1              1.8242</span></span>
+<span><span class="co">#&gt; 6   7   96  2    1              1.5919</span></span>
+<span><span class="co">#&gt; 7   7  120  2    1              0.9761</span></span>
+<span><span class="co">#&gt; 8   8   96  2    1              1.5117</span></span>
+<span><span class="co">#&gt; 9   8  120  2    1              0.8700</span></span>
+<span><span class="co">#&gt; 10 10  120  2    1              1.9807</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>All other rows are identical to the warfarin data, whose concentrations below 2 are therefore known. That makes it possible to check each method against the fit to the uncensored data.</p>
+</section><section id="minimal-runnable-call-the-m3-likelihood" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call-the-m3-likelihood">Minimal runnable call: the M3 likelihood</h2>
+<p>The model file sets <code>bloq_method = m3</code> in <code>[fit_options]</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="st">"fit_options"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [fit_options]</span></span>
+<span><span class="co">#&gt;   method       = focei</span></span>
+<span><span class="co">#&gt;   maxiter      = 300</span></span>
+<span><span class="co">#&gt;   covariance   = true</span></span>
+<span><span class="co">#&gt;   bloq_method  = m3</span></span>
+<span><span class="va">fit_m3</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">bloq</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_m3</span><span class="op">$</span><span class="va">bloq_method_label</span></span>
+<span><span class="co">#&gt; [1] "m3"</span></span>
+<span><span class="va">fit_m3</span><span class="op">$</span><span class="va">theta</span></span>
+<span><span class="co">#&gt;      TVCL       TVV      TVKA </span></span>
+<span><span class="co">#&gt; 0.1328141 7.7317342 0.8097268</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>With M3, a censored observation contributes the probability that the prediction, with its residual error, lies below the limit. It does not contribute a residual.</p>
+</section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
+<p><code>sdtab</code> keeps the censored rows, with the <code>CENS</code> flag. Their weighted residuals are <code>NaN</code>, because there is no observed value to compare with:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">fit_m3</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">TIME</span> <span class="op">&gt;=</span> <span class="fl">72</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">select</span><span class="op">(</span><span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">DV</span>, <span class="va">CENS</span>, <span class="va">PRED</span>, <span class="va">IPRED</span>, <span class="va">CWRES</span>, <span class="va">IWRES</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID TIME     DV CENS     PRED    IPRED       CWRES       IWRES</span></span>
+<span><span class="co">#&gt; 1  1   72 3.7373    0 3.836187 3.735040  0.07720514  0.05623816</span></span>
+<span><span class="co">#&gt; 2  1   96 2.5019    0 2.540122 2.512399 -0.34602321 -0.38835948</span></span>
+<span><span class="co">#&gt; 3  1  120 2.0000    1 1.681935 1.689982         NaN         NaN</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Residual plots (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>) should therefore leave out the censored rows. Their predictions show whether the model puts them below the limit.</p>
+<p>The alternatives to M3 are <code>bloq_method = "drop"</code>, which fits the censored rows as if the limit had been measured, and excluding the rows with <code>ignore = "CENS == 1"</code> (<a href="03-data.html" class="quarto-xref"><span>Preparing and checking the analysis dataset</span></a>). The table compares them with the fit to the uncensored warfarin data:</p>
+<div id="tbl-bloq-methods" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-bloq-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;19.1: Censoring methods on <code>warfarin_bloq</code> (LLOQ 2, 10 of 110 observations censored), and the fit to the uncensored data.
+</figcaption><div aria-describedby="tbl-bloq-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">bloq_row</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">method</span>, <span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>method <span class="op">=</span> <span class="va">method</span>, observations <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">n_obs</span>, label <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">bloq_method_label</span>, <span class="fu"><a href="https://rdrr.io/r/base/t.html">t</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>,</span>
+<span>             PROP_ERR <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">sigma</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co"># suppress the R warnings that report overriding the model file's bloq_method</span></span>
+<span><span class="va">compare_methods</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data_file</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="fu">bloq_row</span><span class="op">(</span><span class="st">"m3"</span>, <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">data_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>        <span class="fu">bloq_row</span><span class="op">(</span><span class="st">"drop (fit at the limit)"</span>,</span>
+<span>                 <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">data_file</span>, bloq_method <span class="op">=</span> <span class="st">"drop"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>        <span class="fu">bloq_row</span><span class="op">(</span><span class="st">"exclude (ignore = \"CENS == 1\")"</span>,</span>
+<span>                 <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">data_file</span>, bloq_method <span class="op">=</span> <span class="st">"drop"</span>, ignore <span class="op">=</span> <span class="st">"CENS == 1"</span>,</span>
+<span>                                           verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>        <span class="fu">bloq_row</span><span class="op">(</span><span class="st">"uncensored data"</span>, <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, bloq_method <span class="op">=</span> <span class="st">"drop"</span>,</span>
+<span>                                                              verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">compare_methods</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                           method observations label      TVCL      TVV</span></span>
+<span><span class="co">#&gt; 1                             m3          110    m3 0.1328141 7.731734</span></span>
+<span><span class="co">#&gt; 2        drop (fit at the limit)          110  drop 0.1259690 8.078759</span></span>
+<span><span class="co">#&gt; 3 exclude (ignore = "CENS == 1")          100  drop 0.1327874 7.732789</span></span>
+<span><span class="co">#&gt; 4                uncensored data          110  drop 0.1326954 7.737706</span></span>
+<span><span class="co">#&gt;        TVKA   PROP_ERR</span></span>
+<span><span class="co">#&gt; 1 0.8097268 0.01076075</span></span>
+<span><span class="co">#&gt; 2 0.8508855 0.07879913</span></span>
+<span><span class="co">#&gt; 3 0.8098811 0.01077597</span></span>
+<span><span class="co">#&gt; 4 0.8107961 0.01056510</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</figure>
+</div>
+<p>With 9% of the observations censored, fitting them at the limit already inflates the residual error several-fold and shifts the structural estimates. M3 and exclusion both stay close to the uncensored fit. The OFVs of the methods are different objectives, so the table does not compare them.</p>
+</section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead><tr class="header">
+<th>Where</th>
+<th>Setting</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Data</td>
+<td><code>CENS = 1</code></td>
+<td>Below the LLOQ; <code>DV</code> holds the LLOQ</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>CENS = -1</code></td>
+<td>Above the ULOQ; <code>DV</code> holds the ULOQ</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>CENS = 0</code></td>
+<td>An ordinary observation</td>
+</tr>
+<tr class="even">
+<td><code>[fit_options]</code></td>
+<td>
+<code>bloq_method = m3</code> or <code>drop</code> (alias <code>bloq</code>)</td>
+<td>M3 likelihood, or censored rows fitted at their <code>DV</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>ferx_fit()</code></td>
+<td><code>bloq_method =</code></td>
+<td>
+<code>"m3"</code>, <code>"drop"</code>, or <code>NULL</code> to keep the model file’s choice</td>
+</tr>
+<tr class="even">
+<td><code>ferx_fit()</code></td>
+<td><code>ignore = "CENS == 1"</code></td>
+<td>Remove the censored rows from the fit instead</td>
+</tr>
+</tbody>
+</table>
+<p><code>bloq_method = "drop"</code> does not remove rows. Each censored row is fitted at the limit in <code>DV</code>. To remove them, use <code>ignore</code>.</p>
+</section><section id="variants" class="level2"><h2 class="anchored" data-anchor-id="variants">Variants</h2>
+<section id="heavier-censoring" class="level3"><h3 class="anchored" data-anchor-id="heavier-censoring">Heavier censoring</h3>
+<p>A copy of the warfarin data with an LLOQ of 6 censors almost half of the observations:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">lloq6</span> <span class="op">&lt;-</span> <span class="va">warfarin_data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">mutate</span><span class="op">(</span>below <span class="op">=</span> <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">DV</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">DV</span> <span class="op">&lt;</span> <span class="fl">6</span>,</span>
+<span>         CENS <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">below</span><span class="op">)</span>, DV <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">below</span>, <span class="fl">6</span>, <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">select</span><span class="op">(</span><span class="op">-</span><span class="va">below</span><span class="op">)</span></span>
+<span><span class="va">lloq6_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">censoring_dir</span>, <span class="st">"warfarin_lloq6.csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">lloq6</span>, <span class="va">lloq6_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="fu">count</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">lloq6</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>, <span class="va">CENS</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   CENS  n</span></span>
+<span><span class="co">#&gt; 1    0 62</span></span>
+<span><span class="co">#&gt; 2    1 48</span></span>
+<span><span class="fu">compare_methods</span><span class="op">(</span><span class="va">lloq6_file</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                           method observations label       TVCL      TVV</span></span>
+<span><span class="co">#&gt; 1                             m3          110    m3 0.13444727 7.711495</span></span>
+<span><span class="co">#&gt; 2        drop (fit at the limit)          110  drop 0.05669192 9.464446</span></span>
+<span><span class="co">#&gt; 3 exclude (ignore = "CENS == 1")           62  drop 0.13444603 7.711511</span></span>
+<span><span class="co">#&gt; 4                uncensored data          110  drop 0.13269540 7.737706</span></span>
+<span><span class="co">#&gt;        TVKA   PROP_ERR</span></span>
+<span><span class="co">#&gt; 1 0.8082742 0.01093043</span></span>
+<span><span class="co">#&gt; 2 1.6191769 0.14694432</span></span>
+<span><span class="co">#&gt; 3 0.8082748 0.01093123</span></span>
+<span><span class="co">#&gt; 4 0.8107961 0.01056510</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>M3 still recovers the uncensored estimates. Fitting at the limit now fails badly: clearance is less than half, and the residual error absorbs the misfit. Excluding the rows matches M3 here, because the residual error of this model is about 1%. The predictions of the censored rows lie well below the limit, where the M3 probability is essentially 1 and adds almost nothing. When predictions are close to the limit, or the residual error is larger, the censored rows carry information that exclusion throws away.</p>
+</section><section id="observations-above-the-upper-limit" class="level3"><h3 class="anchored" data-anchor-id="observations-above-the-upper-limit">Observations above the upper limit</h3>
+<p><code>CENS = -1</code> marks an observation above the ULOQ. In a copy of the warfarin data, concentrations above 11 are censored at 11:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">uloq</span> <span class="op">&lt;-</span> <span class="va">warfarin_data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">mutate</span><span class="op">(</span>above <span class="op">=</span> <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">DV</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">DV</span> <span class="op">&gt;</span> <span class="fl">11</span>,</span>
+<span>         CENS <span class="op">=</span> <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">above</span><span class="op">)</span>, DV <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">above</span>, <span class="fl">11</span>, <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">select</span><span class="op">(</span><span class="op">-</span><span class="va">above</span><span class="op">)</span></span>
+<span><span class="va">uloq_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">censoring_dir</span>, <span class="st">"warfarin_uloq11.csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">uloq</span>, <span class="va">uloq_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="fu">count</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">uloq</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>, <span class="va">CENS</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   CENS  n</span></span>
+<span><span class="co">#&gt; 1   -1 19</span></span>
+<span><span class="co">#&gt; 2    0 91</span></span>
+<span><span class="fu">compare_methods</span><span class="op">(</span><span class="va">uloq_file</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;                    method observations label      TVCL      TVV      TVKA</span></span>
+<span><span class="co">#&gt; 1                      m3          110    m3 0.1327202 7.742689 0.8117852</span></span>
+<span><span class="co">#&gt; 2 drop (fit at the limit)          110  drop 0.1343149 8.033691 0.8516334</span></span>
+<span><span class="co">#&gt; 4         uncensored data          110  drop 0.1326954 7.737706 0.8107961</span></span>
+<span><span class="co">#&gt;     PROP_ERR</span></span>
+<span><span class="co">#&gt; 1 0.01122861</span></span>
+<span><span class="co">#&gt; 2 0.03397208</span></span>
+<span><span class="co">#&gt; 4 0.01056510</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="checking-the-censored-fraction" class="level3"><h3 class="anchored" data-anchor-id="checking-the-censored-fraction">Checking the censored fraction</h3>
+<p>A visual predictive check (<a href="08-vpc.html" class="quarto-xref"><span>Simulation-based evaluation: VPC</span></a>) of censored data compares the fraction below the limit. <code>ferx_simulate()</code> returns uncensored simulated values, so the fraction of simulated concentrations below the LLOQ at each time can be set against the observed fraction of censored rows:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_lloq6</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">lloq6_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">sim_lloq6</span> <span class="op">&lt;-</span> <span class="fu">ferx_simulate</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">lloq6_file</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_lloq6</span><span class="op">)</span></span>
+<span><span class="va">simulated_fraction</span> <span class="op">&lt;-</span> <span class="va">sim_lloq6</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">SIM</span>, <span class="va">TIME</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">summarise</span><span class="op">(</span>fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">DV_SIM</span> <span class="op">&lt;</span> <span class="fl">6</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">summarise</span><span class="op">(</span>lo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">fraction</span>, <span class="fl">0.05</span><span class="op">)</span>, mid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">fraction</span><span class="op">)</span>, hi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">fraction</span>, <span class="fl">0.95</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">observed_fraction</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">lloq6</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">group_by</span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">summarise</span><span class="op">(</span>fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">CENS</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">simulated_fraction</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_ribbon</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lo</span>, ymax <span class="op">=</span> <span class="va">hi</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">mid</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>data <span class="op">=</span> <span class="va">observed_fraction</span>, <span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">fraction</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Fraction below LLOQ"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-bloq-fraction" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-bloq-fraction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="19-censoring_files/figure-html/fig-bloq-fraction-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-bloq-fraction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;19.1: Fraction of observations below the LLOQ of 6: observed (points) and the 90% interval and median of 200 simulations from the M3 fit (band and line).
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="estimation-method" class="level3"><h3 class="anchored" data-anchor-id="estimation-method">Estimation method</h3>
+<p>With FOCEI, the method of this model file, the censored term is evaluated at the individual prediction. FOCE uses a linearized version and reaches a different optimum, and ferx says so:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># suppress the R warning that reports overriding the model file's method</span></span>
+<span><span class="va">fit_foce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">model</span>, <span class="va">bloq</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"foce"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>focei <span class="op">=</span> <span class="va">fit_m3</span><span class="op">$</span><span class="va">theta</span>, foce <span class="op">=</span> <span class="va">fit_foce</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="co">#&gt;            TVCL      TVV      TVKA</span></span>
+<span><span class="co">#&gt; focei 0.1328141 7.731734 0.8097268</span></span>
+<span><span class="co">#&gt; foce  0.1398923 7.690181 0.7048062</span></span>
+<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_foce</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity           category</span></span>
+<span><span class="co">#&gt; 1  warning        bloq_method</span></span>
+<span><span class="co">#&gt; 2  warning dw_autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
+<ul>
+<li>
+<strong><code>drop</code> keeps the rows.</strong> It fits censored rows at the limit, which biases the fit as censoring grows. Use M3, or remove the rows with <code>ignore</code> knowingly.</li>
+<li>
+<strong><code>DV</code> must hold the limit.</strong> For <code>CENS = 1</code> rows the value in <code>DV</code> is the LLOQ that M3 integrates up to, not a measured value, zero or half the limit.</li>
+<li>
+<strong>Residuals of censored rows are <code>NaN</code>.</strong> Filter them out of residual plots and summaries.</li>
+<li>
+<strong>Compare like with like.</strong> OFVs from M3 and from <code>drop</code> or exclusion are different objectives. Compare M3 models with M3 models.</li>
+</ul>
+<section id="warnings-you-may-see-here" class="level3"><h3 class="anchored" data-anchor-id="warnings-you-may-see-here">Warnings you may see here</h3>
+<ul>
+<li>
+<code>bloq_method</code> (warning): M3 combined with an estimation method whose censored likelihood differs from FOCEI’s. Examples are FOCE without interaction (above) and the Gauss-Newton optimizers, which approximate the M3 term. Use <code>method = "focei"</code> for the conditional M3 likelihood. See the ferx-core <a href="https://ferx-nlme.github.io/ferx-core/model-file/bloq.html">LOQ-censored observations</a> page.</li>
+</ul></section></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<ul>
+<li>Mark censored observations with <code>CENS</code> (1 below the LLOQ, −1 above the ULOQ) and put the limit in <code>DV</code>.</li>
+<li>Fit them with <code>bloq_method = "m3"</code>, preferably with FOCEI. <code>sdtab</code> keeps them with <code>NaN</code> residuals.</li>
+<li>
+<code>drop</code> fits censored rows at the limit and is biased. <code>ignore = "CENS == 1"</code> removes them.</li>
+<li>Check a censored model with the fraction below the limit in simulations.</li>
+</ul>
+<p>Next: <a href="20-pkpd.html" class="quarto-xref"><span>PK/PD and multiple endpoints</span></a> models drug effects together with concentrations.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -663,10 +905,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>ferx-r: <a href="https://github.com/FeRx-NLME/ferx-r#installation">README: installation</a>, including Windows and Docker</li>
-<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/installation.html">installation</a>
+<li>R help: <code>?ferx_fit</code> (<code>bloq_method</code>, <code>ignore</code>), <code>?ferx_simulate</code>
 </li>
-<li>R help: <code><a href="https://ferx-nlme.github.io/reference/ferx_example.html">?ferx_example</a></code>, <code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">?ferx_fit</a></code>
+<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/model-file/bloq.html">LOQ-censored observations</a>, <a href="https://ferx-nlme.github.io/ferx-core/data-format.html">data format</a>
 </li>
 </ul>
 </div>
@@ -1086,13 +1327,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
   });
   </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
-      <a href="../index.html" class="pagination-link" aria-label="Preface">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      <a href="../chapters/18-dosing.html" class="pagination-link" aria-label="Dosing regimens and exposure metrics">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Dosing regimens and exposure metrics</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../chapters/02-complete-analysis.html" class="pagination-link" aria-label="A complete analysis in one chapter">
-        <span class="nav-page-text"><span class="chapter-title">A complete analysis in one chapter</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../chapters/20-pkpd.html" class="pagination-link" aria-label="PK/PD and multiple endpoints">
+        <span class="nav-page-text"><span class="chapter-title">PK/PD and multiple endpoints</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -1100,4 +1341,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/19-censoring.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

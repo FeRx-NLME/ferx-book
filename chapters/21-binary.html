@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="generator" content="quarto-1.10.18">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>Installing ferx – FeRx NLME - R package (ferx)</title>
+<title>Binary endpoints – FeRx NLME - R package (ferx)</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -67,8 +67,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../chapters/02-complete-analysis.html" rel="next">
-<link href="../index.html" rel="prev">
+<link href="../chapters/22-time-to-event.html" rel="next">
+<link href="../chapters/20-pkpd.html" rel="prev">
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -336,7 +336,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/01-installation.html"><span class="chapter-title">Installing ferx</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/20-pkpd.html">Scenarios: endpoints beyond PK</a></li><li class="breadcrumb-item"><a href="../chapters/21-binary.html"><span class="chapter-title">Binary endpoints</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -365,7 +365,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Installing ferx</span></a>
+  <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -520,7 +520,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../chapters/21-binary.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Binary endpoints</span></a>
+  <a href="../chapters/21-binary.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Binary endpoints</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -586,15 +586,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
-<li><a href="#requirements" id="toc-requirements" class="nav-link active" data-scroll-target="#requirements">Requirements</a></li>
-  <li><a href="#installing-the-pinned-build" id="toc-installing-the-pinned-build" class="nav-link" data-scroll-target="#installing-the-pinned-build">Installing the pinned build</a></li>
-  <li><a href="#checking-the-installation" id="toc-checking-the-installation" class="nav-link" data-scroll-target="#checking-the-installation">Checking the installation</a></li>
-  <li><a href="#reference" id="toc-reference" class="nav-link" data-scroll-target="#reference">Reference</a></li>
-  </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">The data</a></li>
+  <li><a href="#minimal-runnable-call" id="toc-minimal-runnable-call" class="nav-link" data-scroll-target="#minimal-runnable-call">Minimal runnable call</a></li>
+  <li><a href="#reading-the-result" id="toc-reading-the-result" class="nav-link" data-scroll-target="#reading-the-result">Reading the result</a></li>
+  <li><a href="#options-that-matter" id="toc-options-that-matter" class="nav-link" data-scroll-target="#options-that-matter">Options that matter</a></li>
+  <li>
+<a href="#variants" id="toc-variants" class="nav-link" data-scroll-target="#variants">Variants</a>
+  <ul class="collapse">
+<li><a href="#a-random-intercept" id="toc-a-random-intercept" class="nav-link" data-scroll-target="#a-random-intercept">A random intercept</a></li>
+  <li><a href="#checking-the-model-by-simulation" id="toc-checking-the-model-by-simulation" class="nav-link" data-scroll-target="#checking-the-model-by-simulation">Checking the model by simulation</a></li>
+  <li><a href="#binary-endpoints-with-a-pk-model" id="toc-binary-endpoints-with-a-pk-model" class="nav-link" data-scroll-target="#binary-endpoints-with-a-pk-model">Binary endpoints with a PK model</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#pitfalls" id="toc-pitfalls" class="nav-link" data-scroll-target="#pitfalls">Pitfalls</a>
+  <ul class="collapse">
+<li><a href="#warnings-you-may-see-here" id="toc-warnings-you-may-see-here" class="nav-link" data-scroll-target="#warnings-you-may-see-here">Warnings you may see here</a></li>
+  </ul>
+</li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/21-binary.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/01-installation.html"><span class="chapter-title">Installing ferx</span></a></li></ol></nav><div class="quarto-title">
-<h1 class="title"><span id="sec-installation" class="quarto-section-identifier"><span class="chapter-title">Installing ferx</span></span></h1>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/20-pkpd.html">Scenarios: endpoints beyond PK</a></li><li class="breadcrumb-item"><a href="../chapters/21-binary.html"><span class="chapter-title">Binary endpoints</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-binary" class="quarto-section-identifier"><span class="chapter-title">Binary endpoints</span></span></h1>
 </div>
 
 
@@ -608,50 +624,236 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   
 
 
-</header><p>ferx is an R package with a compiled Rust engine (ferx-core) inside. Installing it compiles that engine from source, so you need a Rust toolchain and the first install takes a long time. The ferx-r README notes that later installs are faster.</p>
-<section id="requirements" class="level2"><h2 class="anchored" data-anchor-id="requirements">Requirements</h2>
-<ul>
-<li>
-<strong>R</strong> with a working build toolchain. The package’s <code>SystemRequirements</code> are GNU make, Cargo and rustc (&gt;= 1.70).</li>
-<li>
-<strong>Rust</strong>: a standard stable toolchain installed with <a href="https://www.rust-lang.org/tools/install">rustup</a>. No custom toolchain is required.</li>
-<li>
-<strong>Windows</strong>: Rtools matching your R version, plus the GNU-ABI Rust toolchain. See the Windows notes in the <a href="https://github.com/FeRx-NLME/ferx-r#windows">ferx-r README</a>.</li>
-</ul></section><section id="installing-the-pinned-build" class="level2"><h2 class="anchored" data-anchor-id="installing-the-pinned-build">Installing the pinned build</h2>
-<p>This book documents one specific ferx-r commit, <code>078e489</code> (package version 0.3.0, engine ferx-core <code>8372248</code>). Every output in the book was produced with it. To get exactly the same behaviour, install that commit:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"pak"</span><span class="op">)</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html">pak</a></span><span class="op">(</span><span class="st">"FeRx-NLME/ferx-r@078e48900bca32e41f91e39d3141c23e380e647e"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Installing without a commit gives you the latest development version. That is fine for your own work, but its output can differ from what this book shows:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html">pak</a></span><span class="op">(</span><span class="st">"FeRx-NLME/ferx-r"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section><section id="checking-the-installation" class="level2"><h2 class="anchored" data-anchor-id="checking-the-installation">Checking the installation</h2>
-<p>Load the package and confirm the version:</p>
-<div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span><span class="op">(</span><span class="st">"ferx"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] '0.3.0'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>The package ships example models and datasets, so a real fit is the quickest end-to-end check. It exercises the model parser, the data reader and the estimation engine:</p>
-<div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit</span><span class="op">$</span><span class="va">converged</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>If this prints <code>TRUE</code>, ferx is installed and working. <a href="02-complete-analysis.html" class="quarto-xref"><span>A complete analysis in one chapter</span></a> walks through the same example as a full analysis.</p>
+</header><section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
+<p>Some endpoints are yes/no outcomes: a response, an adverse event, a seizure-free day. ferx models them with a <code>[binary_model]</code> block: the log-odds of the outcome is an expression of parameters, random effects, covariates and time, and the likelihood is Bernoulli. This chapter fits the bundled logistic example, checks it against ordinary logistic regression in R, adds a random effect, and checks the model by simulation.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Stopping a long fit
+<span class="screen-reader-only">Note</span>Maturity
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">ferx_fit()</a></code> checks for R interrupts while it runs, so <strong>Ctrl-C</strong> (or RStudio’s stop button) cancels a fit. The call then ends with an error saying the fit was cancelled. The ferx-core <a href="https://ferx-nlme.github.io/ferx-core/installation.html">installation page</a> describes the behaviour in detail.</p>
+<p>Binary endpoints are the first of ferx-core’s categorical endpoints. Ordinal, count and other link functions are planned, not available. See the ferx-core <a href="https://ferx-nlme.github.io/ferx-core/model-file/categorical.html">categorical endpoints</a> page.</p>
 </div>
 </div>
-</section><section id="reference" class="level2"><h2 class="anchored" data-anchor-id="reference">Reference</h2>
+</section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<p><code>binary_logistic</code> has 60 subjects with an outcome at times 0, 1 and 2, and a subject covariate <code>X</code>. <code>DV</code> is the 0/1 outcome on <code>CMT = 3</code>. There are no dose records:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">binary</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"binary_logistic"</span><span class="op">)</span></span>
+<span><span class="va">binary_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"binary"</span><span class="op">)</span></span>
+<span><span class="va">binary_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">binary_data</span>, <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID TIME DV CMT EVID MDV       X</span></span>
+<span><span class="co">#&gt; 1  1    0  0   3    0   0  1.0692</span></span>
+<span><span class="co">#&gt; 2  1    1  0   3    0   0  1.0692</span></span>
+<span><span class="co">#&gt; 3  1    2  1   3    0   0  1.0692</span></span>
+<span><span class="co">#&gt; 4  2    0  0   3    0   0 -1.0085</span></span>
+<span><span class="co">#&gt; 5  2    1  0   3    0   0 -1.0085</span></span>
+<span><span class="co">#&gt; 6  2    2  1   3    0   0 -1.0085</span></span>
+<span><span class="va">binary_data</span> <span class="op">|&gt;</span> <span class="fu">group_by</span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">summarise</span><span class="op">(</span>subjects <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span>, fraction_1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">DV</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 3 × 3</span></span>
+<span><span class="co">#&gt;    TIME subjects fraction_1</span></span>
+<span><span class="co">#&gt;   &lt;int&gt;    &lt;int&gt;      &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1     0       60       0.35</span></span>
+<span><span class="co">#&gt; 2     1       60       0.55</span></span>
+<span><span class="co">#&gt; 3     2       60       0.7</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="minimal-runnable-call" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call">Minimal runnable call</h2>
+<p>A logistic model needs only <code>[parameters]</code>, <code>[binary_model]</code> and <code>[fit_options]</code>. <code>cmt</code> names the endpoint’s <code>CMT</code> value, and <code>logit</code> is the log-odds of <code>DV = 1</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [parameters]</span></span>
+<span><span class="co">#&gt;   theta TH0(0.0, -10.0, 10.0)</span></span>
+<span><span class="co">#&gt;   theta THX(0.0, -10.0, 10.0)</span></span>
+<span><span class="co">#&gt;   theta THT(0.0, -10.0, 10.0)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">model</span>, <span class="st">"binary_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [binary_model]</span></span>
+<span><span class="co">#&gt;   cmt   = 3</span></span>
+<span><span class="co">#&gt;   logit = TH0 + THX * X + THT * TIME</span></span>
+<span><span class="va">fit_binary</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">model</span>, <span class="va">binary</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_binary</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;       estimate        se  rse_pct</span></span>
+<span><span class="co">#&gt; TH0 -0.7748495 0.2665858 34.40485</span></span>
+<span><span class="co">#&gt; THX  0.8709007 0.2091270 24.01273</span></span>
+<span><span class="co">#&gt; THT  0.8268374 0.2107385 25.48730</span></span>
+<span><span class="va">fit_binary</span><span class="op">$</span><span class="va">ofv</span></span>
+<span><span class="co">#&gt; [1] 213.5955</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
+<p>Without random effects this is ordinary logistic regression. R’s <code><a href="https://rdrr.io/r/stats/glm.html">glm()</a></code> gives the same estimates and standard errors, and its residual deviance equals the OFV, which ferx reports on the −2 log-likelihood scale:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html">glm</a></span><span class="op">(</span><span class="va">DV</span> <span class="op">~</span> <span class="va">X</span> <span class="op">+</span> <span class="va">TIME</span>, family <span class="op">=</span> <span class="va">binomial</span>, data <span class="op">=</span> <span class="va">binary_data</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>ferx <span class="op">=</span> <span class="va">fit_binary</span><span class="op">$</span><span class="va">theta</span>, glm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coef</a></span><span class="op">(</span><span class="va">reference</span><span class="op">)</span>,</span>
+<span>           ferx_se <span class="op">=</span> <span class="va">fit_binary</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span>, glm_se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html">vcov</a></span><span class="op">(</span><span class="va">reference</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;           ferx        glm   ferx_se    glm_se</span></span>
+<span><span class="co">#&gt; TH0 -0.7748495 -0.7751720 0.2665858 0.2665817</span></span>
+<span><span class="co">#&gt; THX  0.8709007  0.8701400 0.2091270 0.2090772</span></span>
+<span><span class="co">#&gt; THT  0.8268374  0.8270292 0.2107385 0.2107273</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ferx_ofv <span class="op">=</span> <span class="va">fit_binary</span><span class="op">$</span><span class="va">ofv</span>, glm_deviance <span class="op">=</span> <span class="va">reference</span><span class="op">$</span><span class="va">deviance</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     ferx_ofv glm_deviance </span></span>
+<span><span class="co">#&gt;     213.5955     213.5955</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>In <code>sdtab</code>, <code>PRED</code> and <code>IPRED</code> are probabilities of <code>DV = 1</code> (typical and individual), <code>IWRES</code> is the Pearson residual <code>(y − p) / √(p(1 − p))</code>, and <code>CWRES</code> is not defined. There are no doses, so <code>TAD</code> and <code>TAFD</code> are empty:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_binary</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID TIME DV CMT      PRED     IPRED CWRES      IWRES  EBE_OFV N_OBS TAFD TAD</span></span>
+<span><span class="co">#&gt; 1  1    0  0   3 0.5390000 0.5390000   NaN -1.0812943 4.453797   NaN  NaN NaN</span></span>
+<span><span class="co">#&gt; 2  1    1  0   3 0.7277338 0.7277338   NaN -1.6348932 4.453797   NaN  NaN NaN</span></span>
+<span><span class="co">#&gt; 3  1    2  1   3 0.8593610 0.8593610   NaN  0.4045434 4.453797   NaN  NaN NaN</span></span>
+<span><span class="co">#&gt; 4  2    0  0   3 0.1606833 0.1606833   NaN -0.4375447 2.462139   NaN  NaN NaN</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>ferx_predict()</code> returns concentration-type predictions and has no rows for a binary endpoint. The probabilities are in <code>sdtab</code> and in simulations:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="fu">ferx_predict</span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">model</span>, <span class="va">binary</span><span class="op">$</span><span class="va">data</span>, fit <span class="op">=</span> <span class="va">fit_binary</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead><tr class="header">
+<th>Key in <code>[binary_model]</code>
+</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>cmt</code></td>
+<td>The <code>CMT</code> value of this endpoint’s observation rows</td>
+</tr>
+<tr class="even">
+<td><code>logit</code></td>
+<td>Log-odds of <code>DV = 1</code>: any expression of thetas, etas, covariates, individual parameters and <code>TIME</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>link</code></td>
+<td>Optional; <code>logit</code> is the only link available</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Observation rows carry <code>DV</code> 0 or 1 and <code>EVID = 0</code>. Any other value stops the fit.</li>
+<li>Covariates enter at their subject value; a covariate column that changes over time is not yet supported in <code>logit</code> (use <code>TIME</code> for time effects).</li>
+<li>FOCEI, SAEM and IMP are suitable estimation methods (<a href="https://ferx-nlme.github.io/ferx-core/estimation/categorical.html">categorical estimation</a>).</li>
+</ul></section><section id="variants" class="level2"><h2 class="anchored" data-anchor-id="variants">Variants</h2>
+<section id="a-random-intercept" class="level3"><h3 class="anchored" data-anchor-id="a-random-intercept">A random intercept</h3>
+<p>Subjects may differ in their tendency to respond. A random intercept <code>ETA_I</code> in the log-odds makes the model a mixed-effects logistic regression:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ri_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<span><span class="va">ri_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/append.html">append</a></span><span class="op">(</span><span class="va">ri_lines</span>, <span class="st">"  omega ETA_I ~ 0.5"</span>, after <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"theta THT"</span>, <span class="va">ri_lines</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ri_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"logit = TH0 + THX * X + THT * TIME"</span>, <span class="st">"logit = TH0 + THX * X + THT * TIME + ETA_I"</span>, <span class="va">ri_lines</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">ri_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">binary_dir</span>, <span class="st">"binary_random_intercept.ferx"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">ri_lines</span>, <span class="va">ri_model</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">ri_model</span>, <span class="st">"binary_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # [binary_model]</span></span>
+<span><span class="co">#&gt;   cmt   = 3</span></span>
+<span><span class="co">#&gt;   logit = TH0 + THX * X + THT * TIME + ETA_I</span></span>
+<span><span class="va">fit_ri</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ri_model</span>, <span class="va">binary</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_ri</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;         estimate   rse_pct</span></span>
+<span><span class="co">#&gt; TH0   -0.8501256  35.62861</span></span>
+<span><span class="co">#&gt; THX    0.9504550  26.92926</span></span>
+<span><span class="co">#&gt; THT    0.8999345  26.04293</span></span>
+<span><span class="co">#&gt; ETA_I  0.4079273 116.36197</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>without_random_effect <span class="op">=</span> <span class="va">fit_binary</span><span class="op">$</span><span class="va">ofv</span>, with_random_effect <span class="op">=</span> <span class="va">fit_ri</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
+<span><span class="co">#&gt; without_random_effect    with_random_effect </span></span>
+<span><span class="co">#&gt;              213.5955              212.4832</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>With three outcomes per subject, the variance of the random intercept is poorly determined (relative standard error above 100%), and its shrinkage is high (56%). The OFV drops by only 1.11 for one extra parameter: these data do not support between-subject variability in the response.</p>
+<p>SAEM, which avoids the Laplace approximation, is an alternative for sparse binary data. On this weakly informative model its result depends on the random seed. Seeds 1 to 3 agree with each other and with FOCEI; the run with the engine’s default seed ends elsewhere, with a regularized covariance step:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">saem_seeds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>default <span class="op">=</span> <span class="cn">NULL</span>, seed_1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, seed_2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, seed_3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">saem_seeds</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># suppress the R warning that reports overriding the model file's method</span></span>
+<span>  <span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ri_model</span>, <span class="va">binary</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"saem"</span>, settings <span class="op">=</span> <span class="va">saem_seeds</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                                 verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>run <span class="op">=</span> <span class="va">name</span>, ofv <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">ofv</span>, <span class="fu"><a href="https://rdrr.io/r/base/t.html">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>             max_rse_pct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">rse_pct</span><span class="op">)</span>,</span>
+<span>             covariance_regularized <span class="op">=</span> <span class="st">"covariance_regularized"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       run      ofv        TH0       THX       THT     ETA_I  max_rse_pct</span></span>
+<span><span class="co">#&gt; 1 default 212.8381 -0.7809784 0.8912139 0.8331141 0.1603772 2284772.9988</span></span>
+<span><span class="co">#&gt; 2  seed_1 212.5041 -0.8198987 0.9468319 0.8736665 0.3574003     132.1920</span></span>
+<span><span class="co">#&gt; 3  seed_2 212.5060 -0.8117019 0.9284252 0.8685714 0.3831907     118.0836</span></span>
+<span><span class="co">#&gt; 4  seed_3 212.5119 -0.8031152 0.9331072 0.8647746 0.3702206     127.6059</span></span>
+<span><span class="co">#&gt;   covariance_regularized</span></span>
+<span><span class="co">#&gt; 1                   TRUE</span></span>
+<span><span class="co">#&gt; 2                  FALSE</span></span>
+<span><span class="co">#&gt; 3                  FALSE</span></span>
+<span><span class="co">#&gt; 4                  FALSE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Set the seed for SAEM fits, and compare a few seeds when a variance is weakly identified (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>).</p>
+</section><section id="checking-the-model-by-simulation" class="level3"><h3 class="anchored" data-anchor-id="checking-the-model-by-simulation">Checking the model by simulation</h3>
+<p><code>ferx_simulate()</code> draws a new 0/1 outcome for each observation record from the fitted probability. Comparing the observed fraction of ones with the simulated fractions is the binary counterpart of a visual predictive check (<a href="08-vpc.html" class="quarto-xref"><span>Simulation-based evaluation: VPC</span></a>). Here it is split by time and by the sign of <code>X</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">simulated</span> <span class="op">&lt;-</span> <span class="fu">ferx_simulate</span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">model</span>, <span class="va">binary</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">500</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_binary</span><span class="op">)</span></span>
+<span><span class="va">groups</span> <span class="op">&lt;-</span> <span class="fu">distinct</span><span class="op">(</span><span class="va">binary_data</span>, <span class="va">ID</span>, <span class="va">X</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">mutate</span><span class="op">(</span>group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">X</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="st">"X &gt; 0"</span>, <span class="st">"X &lt;= 0"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">simulated_fraction</span> <span class="op">&lt;-</span> <span class="va">simulated</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">mutate</span><span class="op">(</span>ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">left_join</span><span class="op">(</span><span class="va">groups</span>, by <span class="op">=</span> <span class="st">"ID"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">SIM</span>, <span class="va">TIME</span>, <span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">summarise</span><span class="op">(</span>fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">DV_SIM</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">summarise</span><span class="op">(</span>lo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">fraction</span>, <span class="fl">0.05</span><span class="op">)</span>, hi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">fraction</span>, <span class="fl">0.95</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span></span>
+<span><span class="va">observed_fraction</span> <span class="op">&lt;-</span> <span class="va">binary_data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">left_join</span><span class="op">(</span><span class="va">groups</span>, by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"X"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">summarise</span><span class="op">(</span>fraction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">DV</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">simulated_fraction</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_errorbar</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lo</span>, ymax <span class="op">=</span> <span class="va">hi</span><span class="op">)</span>, width <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_point</span><span class="op">(</span>data <span class="op">=</span> <span class="va">observed_fraction</span>, <span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">fraction</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"steelblue"</span>, size <span class="op">=</span> <span class="fl">2.5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span> <span class="va">group</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time"</span>, y <span class="op">=</span> <span class="st">"Fraction with DV = 1"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-binary-check" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-binary-check-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="21-binary_files/figure-html/fig-binary-check-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-binary-check-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;21.1: Observed fraction of ones (points) and the 90% interval of 500 simulated fractions (bars), by time and covariate group.
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="binary-endpoints-with-a-pk-model" class="level3"><h3 class="anchored" data-anchor-id="binary-endpoints-with-a-pk-model">Binary endpoints with a PK model</h3>
+<p><code>logit</code> can use individual parameters from <code>[individual_parameters]</code>, so a binary endpoint can be combined with other model parts. No bundled example links a binary outcome to a PK model; see the ferx-core <a href="https://ferx-nlme.github.io/ferx-core/model-file/categorical.html">categorical endpoints</a> page for the namespace <code>logit</code> can read. The related <code>[markov_model]</code> block for transitions between states is listed in <a href="25-reference.html" class="quarto-xref"><span>Function, option and example index</span></a>.</p>
+</section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
+<ul>
+<li>
+<p><strong><code>DV</code> must be 0 or 1.</strong> An outcome with more categories stops the fit:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">bad_data</span> <span class="op">&lt;-</span> <span class="va">binary_data</span></span>
+<span><span class="va">bad_data</span><span class="op">$</span><span class="va">DV</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
+<span><span class="va">bad_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">binary_dir</span>, <span class="st">"binary_dv2.csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">bad_data</span>, <span class="va">bad_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">binary</span><span class="op">$</span><span class="va">model</span>, <span class="va">bad_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
+<span><span class="co">#&gt;   Fit error: [binary_model] cmt = 3: observed DV must be 0 or 1 (Bernoulli), got 2. For an ordered response with more than two categories use an ordinal endpoint (not yet supported).</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</li>
+<li><p><strong>Few outcomes per subject carry little information on random effects.</strong> Check shrinkage and the OFV change before keeping a random effect.</p></li>
+<li><p><strong>Use <code>sdtab</code> or simulations for probabilities,</strong> not <code>ferx_predict()</code>.</p></li>
+<li><p><strong><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on a binary fit</strong> summarises the model with labels meant for concentration models. Read the estimates from <code>fit$estimates</code>.</p></li>
+</ul>
+<section id="warnings-you-may-see-here" class="level3"><h3 class="anchored" data-anchor-id="warnings-you-may-see-here">Warnings you may see here</h3>
+<ul>
+<li>
+<code>data_quality</code> (warning): here it reports that the subjects use finite-difference inner gradients. That is expected for a binary endpoint, and the results are correct.</li>
+</ul></section></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<ul>
+<li>Declare a binary endpoint with <code>[binary_model]</code>: <code>cmt</code> and a <code>logit</code> expression.</li>
+<li>Without random effects the fit equals logistic regression; the OFV is the deviance.</li>
+<li>Add random effects to the log-odds for a mixed-effects model, and check whether the data support them.</li>
+<li>
+<code>sdtab</code> holds probabilities and Pearson residuals; simulations give 0/1 outcomes for predictive checks.</li>
+</ul>
+<p>Next: <a href="22-time-to-event.html" class="quarto-xref"><span>Time-to-event models</span></a> models times to events.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -663,10 +865,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>ferx-r: <a href="https://github.com/FeRx-NLME/ferx-r#installation">README: installation</a>, including Windows and Docker</li>
-<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/installation.html">installation</a>
+<li>R help: <code>?ferx_fit</code>, <code>?ferx_simulate</code>
 </li>
-<li>R help: <code><a href="https://ferx-nlme.github.io/reference/ferx_example.html">?ferx_example</a></code>, <code><a href="https://ferx-nlme.github.io/reference/ferx_fit.html">?ferx_fit</a></code>
+<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/model-file/categorical.html">categorical endpoints</a>, <a href="https://ferx-nlme.github.io/ferx-core/estimation/categorical.html">categorical estimation</a>
 </li>
 </ul>
 </div>
@@ -1086,13 +1287,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
   });
   </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
-      <a href="../index.html" class="pagination-link" aria-label="Preface">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      <a href="../chapters/20-pkpd.html" class="pagination-link" aria-label="PK/PD and multiple endpoints">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">PK/PD and multiple endpoints</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../chapters/02-complete-analysis.html" class="pagination-link" aria-label="A complete analysis in one chapter">
-        <span class="nav-page-text"><span class="chapter-title">A complete analysis in one chapter</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../chapters/22-time-to-event.html" class="pagination-link" aria-label="Time-to-event models">
+        <span class="nav-page-text"><span class="chapter-title">Time-to-event models</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -1100,4 +1301,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/21-binary.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
