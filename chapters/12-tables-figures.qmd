@@ -30,7 +30,16 @@ fit_base <- ferx_fit(base$model, base$data, verbose = FALSE)
 
 ## Minimal runnable call: the parameter table
 
-`fit$estimates` holds everything a parameter table needs. Between-subject variances are reported as coefficients of variation. For the log-normal random effects of this model, CV% = 100 × sqrt(exp(ω²) − 1), the value `print()` on the fit shows. Shrinkage comes from `fit$shrinkage_eta`:
+`fit$estimates` holds everything a parameter table needs. Between-subject variances are reported as coefficients of variation. For the log-normal random effects of this model, CV% = 100 × sqrt(exp(ω²) − 1), the value `print()` on the fit shows. Shrinkage comes from `fit$shrinkage_eta`.
+
+That formula belongs to the log-normal form, so check what the etas are before applying it to every omega row (@sec-first-fit):
+
+```{r}
+#| label: eta-forms
+table(fit$eta_param_types)
+```
+
+All of them here. A logit-normal parameter is the case to watch: its distribution is asymmetric, so a CV% computed this way would misdescribe it. Report the variance on the logit scale, or a percentile range on the natural scale, instead.
 
 ```{r}
 #| label: tbl-parameters
@@ -209,7 +218,14 @@ list.files(report_dir)
 | Periodic integral | `AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.2)` | One area per dosing window |
 | Compartment state | `C_PERIPH = peripheral`, `AUC_P = integral(compartments[2], from=0, to=48, step=0.1)` | A state of the model (differs between analytical and ODE models, @sec-derived-states) |
 
-`[output]` lists individual parameters, covariates or other names to add to `sdtab` (ferx-core [output](https://ferx-nlme.github.io/ferx-core/model-file/output.html) page).
+`[output]` lists individual parameters, covariates or `[derived]` expressions to add to `sdtab` (ferx-core [output](https://ferx-nlme.github.io/ferx-core/model-file/output.html) page). A theta is none of those, and asking for one stops the fit:
+
+```{r}
+#| label: output-rejects-theta
+theta_out <- file.path(report_dir, "output_theta.ferx")
+writeLines(c(readLines(base$model), "", "[output]", "  TVCL"), theta_out)
+try(ferx_fit(theta_out, base$data, verbose = FALSE))
+```
 
 ## Pitfalls
 

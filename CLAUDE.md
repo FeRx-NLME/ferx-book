@@ -48,7 +48,7 @@ PLAN.md              # design, decisions, progress, upstream findings
 | | 05 first fit | `ferx_inits_from_nca()`, `ferx_check_init()`, fit accessors, warnings |
 | | 06 estimation methods | all methods incl. VI via `[fit_options]`, settings, traces, run logs, async |
 | | 07 diagnostics, 08 VPC | GOF, eta diagnostics, NPDE; `ferx_simulate()` VPC |
-| | 09 model selection | LRT/BIC, covsearch, modelsearch, ruvsearch, search configs |
+| | 09 model selection | LRT/BIC, covsearch, modelsearch, ruvsearch, iivsearch, iovsearch, `ferx_amd()`, search configs |
 | | 10 uncertainty | covariance, SIR, bootstrap, Bayes |
 | | 11 simulation, 12 tables/figures, 13 reproducibility | designs, `[derived]`/`[output]`, `.fitrx` |
 | Scenarios | 14 structural models | analytical vs ODE, `[scaling]`, `[derived]` states |
@@ -75,8 +75,9 @@ Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eva
 - Render a chapter from an **empty cache**: `rm -rf chapters/<ch>_cache chapters/<ch>_files && quarto render chapters/<ch>.qmd`. Knitr does not replay side effects, so a partially cached chapter can fail (e.g. a temp dir created in a cached chunk).
 - Local renders need a UTF-8 locale (`_environment.local` sets `LANG`); `_common.R` also forces one.
 - `cache.extra` is the pinned SHA, so a pin bump invalidates all caches. CI renders without a cache.
-- Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy to `book_tempdir()` first. (`ferx_model_to_frem()` needs explicit `output_model`/`output_data` at the pinned build for the same reason.)
+- Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy to `book_tempdir()` first. For the same reason, give `ferx_model_to_frem()` an `output_dir` under `book_tempdir()`.
 - A single-chapter render warns about cross-references to other chapters; a full `quarto render` resolves them.
+- **Never run two renders in the same working tree at once.** A full `quarto render` moves each rendered page into `_book/` at the end; a concurrent single-chapter render replaces that page first, and the full render dies with `NotFound: ... rename '.../chapters/<ch>.html' -> '_book/chapters/<ch>.html'` after executing every chunk. Wait for one to finish, or render in a second worktree.
 
 ## Bumping the pin
 

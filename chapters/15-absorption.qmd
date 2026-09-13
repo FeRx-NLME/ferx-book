@@ -195,25 +195,22 @@ The small OFV difference comes from the ODE solver tolerance of the bundled mode
 head(fit_lag_analytical$individual_estimates, 3)
 ```
 
-::: {.callout-important}
-## `individual_estimates` of ODE models at this build
-For ODE models, `fit$individual_estimates` of the pinned ferx-r build does not report all individual parameters correctly. For `warfarin_ode_lagtime`, `KA` and `LAGTIME` come out as 0:
+The ODE fit reports the same individual parameters, to about four significant digits:
 
 ```{r}
 #| label: ode-individual-estimates
 head(fit_lag_ode$individual_estimates, 3)
 ```
 
-Until this is fixed, list the individual parameters of an ODE model in `[output]` (@sec-tables-figures). They then appear in `fit$sdtab` with the right values, which agree with the analytical fit above to about four significant digits:
+Listing the same parameters in `[output]` (@sec-tables-figures) puts them in `fit$sdtab` as well, next to the predictions and residuals, which is the form a table script wants:
 
 ```{r}
-#| label: ode-output-workaround
+#| label: ode-output-table
 lag_output <- file.path(comparison_dir, "warfarin_ode_lagtime_output.ferx")
 writeLines(c(readLines(lag_ode$model), "", "[output]", "  CL V KA LAGTIME"), lag_output)
 fit_lag_output <- ferx_fit(lag_output, lag_ode$data, verbose = FALSE)
 head(distinct(fit_lag_output$sdtab, ID, CL, V, KA, LAGTIME), 3)
 ```
-:::
 
 A lag time delays all routes together. `lag=` on an input-rate function delays one route only. `per_route_lag_absorption` gives the second of two first-order routes its own onset, as for an immediate-release plus delayed-release formulation:
 
@@ -356,6 +353,45 @@ for (name in c("parallel_absorption", "mixed_absorption", "biphasic_igd_absorpti
 
 `first_order(ka=)` exists for these combinations. A single first-order route is the analytical `pk ..._oral` model. On the shared data none of the two-route models is supported by the data (see the comparison table).
 
+An input-rate function reads the dose records that target **its own compartment**. Both routes above feed `central` from the same depot dose, so the pathway fractions split one dose event between them: two routes into one compartment need one dose record, not one per route. Two routes into *different* compartments are the other case, and each needs its own record. The shared dataset is the first case -- a single `EVID = 1` row into `CMT` 1 per subject, then observations:
+
+```{r}
+#| label: parallel-dose-records
+parallel_data <- read.csv(shared$parallel_absorption$data, na.strings = ".")
+head(parallel_data, 3)
+table(dose_rows_per_subject = table(parallel_data$ID[parallel_data$EVID == 1]))
+```
+
+Adding a second record to feed the second route therefore gives the subject two doses. A copy of subject 1 with the dose row duplicated doubles the peak:
+
+```{r}
+#| label: parallel-double-dose
+subject1 <- filter(parallel_data, ID == 1)
+one_dose <- file.path(comparison_dir, "parallel_one_dose.csv")
+two_doses <- file.path(comparison_dir, "parallel_two_doses.csv")
+write.csv(subject1, one_dose, row.names = FALSE, na = ".")
+write.csv(arrange(bind_rows(filter(subject1, EVID == 1), subject1), TIME, desc(EVID)),
+          two_doses, row.names = FALSE, na = ".")
+peak <- function(data) {
+  max(ferx_simulate(shared$parallel_absorption$model, data, n_sim = 1, seed = 1)$IPRED)
+}
+peaks <- c(one_dose_row = peak(one_dose), two_dose_rows = peak(two_doses))
+peaks
+```
+
+The peak is `r round(peaks[["two_dose_rows"]] / peaks[["one_dose_row"]], 2)` times higher. That is ordinary dose superposition, not something the fractions do: they normalise within each dose event and never across records, so a duplicated record doubles a single-route model just the same. Genuine repeated dosing is of course fine -- one record per dose, and the profiles superpose.
+
+When two routes into one compartment start at different times, keep the single record and give one route a `lag=`, as `per_route_lag_absorption` does above. That combination is refused under steady-state dosing, where the engine asks for the run-in to be written out instead (@sec-dosing):
+
+```{r}
+#| label: per-route-lag-ss
+ss_data <- mutate(filter(parallel_data, ID == 1), SS = ifelse(EVID == 1, 1, 0), II = ifelse(EVID == 1, 24, 0))
+ss_file <- file.path(comparison_dir, "per_route_lag_ss.csv")
+write.csv(ss_data, ss_file, row.names = FALSE, na = ".")
+lag_ss <- try(ferx_fit(shared$per_route_lag_absorption$model, ss_file, verbose = FALSE), silent = TRUE)
+sub("\\. .*", ".", conditionMessage(attr(lag_ss, "condition")))
+```
+
 ### Bioavailability
 
 `bioavailability` estimates the fraction `F` on the logit scale, so it stays between 0 and 1, with a random effect on that scale. It is passed with `f=` to the `pk` line. `bioavailability_ode` is the ODE version: an individual parameter named `F` is applied to the dose by the engine and does not appear in the equations. Both give the same fit:
@@ -370,10 +406,11 @@ fit_bio <- ferx_fit(bio$model, bio$data, verbose = FALSE)
 fit_bio_ode <- ferx_fit(bio_ode$model, bio_ode$data, verbose = FALSE)
 c(analytical = fit_bio$ofv, ode = fit_bio_ode$ofv)
 fit_bio$estimates[, c("estimate", "rse_pct")]
-round(fit_bio$cor_matrix[c("TVCL", "TVV", "THETA_F"), c("TVCL", "TVV", "THETA_F")], 2)
+bio_cor <- fit_bio$cor_matrix[c("TVCL", "TVV", "THETA_F"), c("TVCL", "TVV", "THETA_F")]
+round(bio_cor, 2)
 ```
 
-The data contain oral doses only. With oral data, clearance, volume and `F` cannot be separated, which the correlations of 0.98 to 1 show. Fix `F` at the value used in the simulation (0.70, according to the model file) with `FIX`:
+The data contain oral doses only. With oral data, clearance, volume and `F` cannot be separated, which the correlations above show: every pair is between `r round(min(abs(bio_cor[lower.tri(bio_cor)])), 2)` and `r round(max(abs(bio_cor[lower.tri(bio_cor)])), 2)` in absolute value. Fix `F` at the value used in the simulation (0.70, according to the model file) with `FIX`:
 
 ```{r}
 #| label: bioavailability-fixed
@@ -385,7 +422,7 @@ rbind(estimated_f = c(ofv = fit_bio$ofv, fit_bio$theta),
       fixed_f = c(ofv = fit_fixed_f$ofv, fit_fixed_f$theta))
 ```
 
-The R warning refers to the fixed `THETA_F`, which has no standard error. The OFV changes by only `r round(fit_fixed_f$ofv - fit_bio$ofv, 2)`. The data carry almost no information on `F`, only on `CL/F` and `V/F`. `warfarin_logit_f` shows the same problem more strongly. Its estimates end at a bound, with relative standard errors near 3000%:
+The R warning refers to the fixed `THETA_F`, which has no standard error. The OFV changes by only `r round(fit_fixed_f$ofv - fit_bio$ofv, 2)`. The data carry almost no information on `F`, only on `CL/F` and `V/F`. `warfarin_logit_f` shows the same problem more strongly. Its estimates end at a bound, with grossly inflated relative standard errors:
 
 ```{r}
 #| label: warfarin-logit-f
@@ -394,6 +431,8 @@ fit_logit_f <- ferx_fit(logit_f$model, logit_f$data, verbose = FALSE)
 fit_logit_f$estimates[, c("estimate", "rse_pct")]
 ferx_get_warnings(fit_logit_f, as_df = TRUE)[, c("severity", "category")]
 ```
+
+The worst relative standard error is `r format(round(max(fit_logit_f$estimates$rse_pct, na.rm = TRUE)), big.mark = ",")`%.
 
 Estimating absolute bioavailability needs data after doses by a route with known bioavailability, such as intravenous doses in the same subjects. Otherwise fix `F`, or leave it out and interpret `CL` and `V` as apparent values.
 

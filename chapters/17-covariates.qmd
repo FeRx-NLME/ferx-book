@@ -210,16 +210,12 @@ ferx_allometry(config = allometry_config, fit = FALSE)$scalings
 
 FREM treats each covariate as an additional observation. The covariate gets its own random effect in one large omega block, and the covariances between the parameter and covariate random effects describe the covariate relations, without a stepwise search. `ferx_model_to_frem()` builds the FREM model and dataset from a base model with a `[covariates]` block.
 
-::: {.callout-important}
-## Pass `output_model` and `output_data` at this build
-At the pinned build, `ferx_model_to_frem()` does not use `output_dir`. Without `output_model` and `output_data` it writes the files next to the model, which for a `ferx_example()` model is the installed package. Give both paths explicitly.
-:::
+By default the generated files go next to the model file, which for a `ferx_example()` model is the installed package. `output_dir` writes them to a temporary directory instead:
 
 ```{r}
 #| label: frem-build
 frem <- ferx_model_to_frem(base$model, base$data, fit = fit_base,
-                           output_model = file.path(covariate_dir, "base_frem.ferx"),
-                           output_data = file.path(covariate_dir, "base_frem.csv"))
+                           output_dir = file.path(covariate_dir, "frem"))
 frem
 ```
 
@@ -266,8 +262,7 @@ Two of the `general` warnings report that the covariate sigma and the covariate 
 ```{r}
 #| label: frem-subset
 frem_crcl <- ferx_model_to_frem(base$model, base$data, covariates = "CRCL",
-                                output_model = file.path(covariate_dir, "crcl_frem.ferx"),
-                                output_data = file.path(covariate_dir, "crcl_frem.csv"))
+                                output_dir = file.path(covariate_dir, "frem_crcl"))
 invisible(ferx_model_get_section(frem_crcl, "fit_options"))
 ```
 
@@ -319,7 +314,7 @@ filter(fit_tv$covtab, ID == 1, TIME %in% c(8, 12))
   grep("WT", readLines(double$model_path), value = TRUE)
   ```
 
-- **FREM needs a suitable method.** Check the covariate–parameter correlations with SAEM, and write the FREM files outside the package directory at this build.
+- **FREM needs a suitable method.** Check the covariate–parameter correlations with SAEM: FOCEI found almost none on these data. Give `output_dir` a writable directory of your own, or the generated files land next to the model file.
 
 ### Warnings you may see here
 

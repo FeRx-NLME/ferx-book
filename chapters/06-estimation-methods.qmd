@@ -206,7 +206,7 @@ c(converged = fit_global$converged, ofv = fit_global$ofv)
 
 ### Multi-start
 
-`n_starts > 1` runs several fits from perturbed starting values and keeps the converged result with the lowest OFV. The bundled `mm_multistart` model (Michaelis-Menten elimination) sets `n_starts = 8` in its model file:
+`n_starts > 1` runs several fits from perturbed starting values and keeps the converged result with the lowest OFV. Start 0 always uses the model file's exact values; the rest are perturbed by `start_sigma`. It is worth reaching for on the surfaces that are prone to local minima -- Michaelis-Menten elimination and its `VMAX`/`KM` ridge, a full block omega over three or more etas, or many correlated covariate parameters -- and the starts share the same thread pool as the per-subject loops, so the wall time grows with the number of starts rather than staying flat -- the timing below shows what it costs on this machine. Widen `start_sigma` when the surface is ridge-shaped rather than merely bumpy. The bundled `mm_multistart` model (Michaelis-Menten elimination) sets `n_starts = 8` in its model file:
 
 ```{r}
 #| label: tbl-settings-multistart
@@ -230,7 +230,19 @@ data.frame(fit = c("single start", "8 starts"), ofv = c(fit_single$ofv, fit_mult
 ferx_get_warnings(fit_multi, as_df = TRUE)[, c("severity", "category", "message")]
 ```
 
-On this build the single start already reaches the same OFV, so the extra starts only confirm it, and they cost time. The `multi_start` note reports which start won.
+On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary -- the alternative is not knowing whether the one start you ran was the good one. The `multi_start` note reports which start won.
+
+The two remedies for a stuck fit overlap, and ferx says how it resolves that rather than leaving you to guess. The global pre-search ignores its starting point by design, so running it on every perturbed start would overwrite the perturbation; instead it runs on start 0 only, and the remaining starts are ordinary perturbed local fits:
+
+```{r}
+#| label: global-search-with-multistart
+fit_both <- ferx_fit(warf$model, warf$data, verbose = FALSE,
+                     settings = list(global_search = TRUE, global_maxeval = 200, n_starts = 2))
+both_notes <- ferx_get_warnings(fit_both, as_df = TRUE)
+both_notes[both_notes$category == "optimizer_config", "message"]
+```
+
+So the two do combine, with the division of labour the note describes: the global search looks for the basin from the file's own values, and the perturbed starts probe around it. The note is `info`, not a refusal.
 
 ### SAEM
 

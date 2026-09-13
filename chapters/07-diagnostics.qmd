@@ -88,7 +88,14 @@ ggplot(fit$sdtab, aes(sample = CWRES)) +
   labs(x = "Theoretical quantile", y = "CWRES")
 ```
 
-The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries:
+The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries. The statistic reads in two directions, and they mean opposite things:
+
+| `dw_statistic` | Reading | Usually points at |
+|---|---|---|
+| below 1.5 | Positive autocorrelation | Missing dynamics: a delay the model does not have, an absorption phase too simple, variability between occasions |
+| 1.5 to 2.5 | No serial correlation worth acting on | -- |
+| above 2.5 | Negative autocorrelation | Over-parameterisation, or a residual error model that does not fit the data |
+
 
 ```{r}
 #| label: dw-warning
@@ -151,11 +158,12 @@ fit$eta_normality
 
 ### Random effects and covariates
 
-`fit$eta_cov` correlates each eta with each subject-level numeric covariate in the dataset. It is a quick first look for covariate relationships:
+`fit$eta_cov` correlates each eta with each subject-level numeric covariate in the dataset, sorted by descending |r|, and marks the pairs worth following up in its `flag` column at |r| >= 0.3. It is a quick first look for covariate relationships, and it is `NULL` when the model declares no etas, the dataset carries no usable numeric covariate, or the data file can no longer be read from `fit$data_path`:
 
 ```{r}
 #| label: eta-cov
 fit$eta_cov
+with(fit$eta_cov, range(abs(r)[nzchar(trimws(flag))]))
 ```
 
 ```{r}
