@@ -1,0 +1,626 @@
+# Variability: random effects, residual error and IOV {#sec-variability}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+A population model splits the spread in the data into levels:
+
+- **Between subjects:** random effects (etas) with variances `omega`.
+- **Between occasions within a subject:** inter-occasion variability, random effects (kappas) with variances in `omega_iov`.
+- **Within an occasion:** residual error, with the `sigma` parameters of the error model.
+
+This chapter shows how each level is declared in a ferx model, and how to read the estimates. It also covers two estimation options that act on the random effects: mu-referencing and parameter scaling.
+
+::: {.callout-warning}
+## Maturity: stable, beta and experimental parts
+`omega`/`block_omega`, inter-occasion variability and the additive, proportional and combined error models are **stable** in ferx-core. Individual-parameter expressions are **beta**. Error magnitudes that depend on time or covariates, residual weighting and mixture models are **experimental**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+## The data
+
+Most examples use the warfarin data (10 subjects, one oral dose each). `warfarin_block_omega`, `warfarin_additive_eta` and `warfarin_ltbs` ship their own copies of it, with the same concentrations:
+
+```{r}
+#| label: data
+w <- ferx_example("warfarin")
+variability_dir <- book_tempdir("variability")
+warfarin_dv <- read.csv(w$data, na.strings = ".")$DV
+sapply(c("warfarin_block_omega", "warfarin_additive_eta", "warfarin_ltbs"), function(name) {
+  isTRUE(all.equal(read.csv(ferx_example(name)$data, na.strings = ".")$DV, warfarin_dv))
+})
+```
+
+The IOV examples use `warfarin_iov.csv`: the same 10 subjects dosed twice, 120 hours apart, with an `OCC` column that numbers the occasions:
+
+```{r}
+#| label: iov-data
+iov <- ferx_example("warfarin_iov")
+iov_data <- read.csv(iov$data, na.strings = ".")
+filter(iov_data, ID == 1, EVID == 1)
+count(filter(iov_data, EVID == 0), OCC)
+```
+
+## Minimal runnable call: between-subject variability
+
+The warfarin model gives each individual parameter a log-normal random effect: `CL = TVCL * exp(ETA_CL)`. Each eta has a variance declared with `omega`, and the residual error is proportional:
+
+```{r}
+#| label: warfarin-model
+invisible(ferx_model_get_section(w$model, "parameters"))
+invisible(ferx_model_get_section(w$model, "individual_parameters"))
+invisible(ferx_model_get_section(w$model, "error_model"))
+fit_w <- ferx_fit(w$model, w$data, verbose = FALSE)
+```
+
+## Reading the result
+
+The variability part of the printout shows each omega as a variance with its coefficient of variation, the sigma on the standard-deviation scale, and shrinkage:
+
+```{r}
+#| label: variability-print
+printout <- capture.output(print(fit_w))
+printout[grep("^OMEGA", printout):(grep("^DIAGNOSTICS", printout) - 1)]
+```
+
+As data, the same numbers are `fit$omega` (the covariance matrix), `fit$sigma`, `fit$shrinkage_eta` and the individual random effects `fit$ebe_etas`:
+
+```{r}
+#| label: variability-objects
+fit_w$omega
+fit_w$sigma
+fit_w$shrinkage_eta
+head(fit_w$ebe_etas, 3)
+```
+
+@sec-tables-figures turns these into a report table. @sec-diagnostics covers shrinkage and eta diagnostics.
+
+## Options that matter
+
+| Level | Declaration | Meaning | Example |
+|---|---|---|---|
+| Between subjects | `omega ETA_CL ~ 0.07` | One random effect with its variance | `warfarin` |
+| | `omega ETA_CL ~ 0.2645751 (sd)` | The same variance declared as a standard deviation | (below) |
+| | `omega ETA_CL ~ 0.0 FIX` | A variance held fixed (at 0: no variability on that parameter) | (below) |
+| | `block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]` | Correlated random effects (lower triangle) | `warfarin_block_omega` |
+| Between occasions | `kappa KAPPA_CL ~ 0.04` | One IOV random effect per occasion | `warfarin_iov` |
+| | `block_kappa (KAPPA_CL, KAPPA_V) = [...]` | Correlated IOV random effects | (variant below) |
+| | `[fit_options]` `iov_column`, `iov_occasion` | Where occasions come from | `warfarin_iov` |
+| Residual | `DV ~ additive(S)`, `proportional(S)`, `combined(S1, S2)` | Standard error models | (variants below) |
+| | `DV ~ power(S, THETA)` | Proportional error raised to an estimated power | (variant below) |
+| | `log(DV) ~ additive(S)`, `DV ~ log_additive(S)` | Additive error on the log scale | `warfarin_ltbs` |
+| | `block_sigma (S1, S2) = [...]` | Correlated residual components | (variant below) |
+| | `iiv_on_ruv = ETA_RUV` | A random effect that scales each subject's residual error | (variant below) |
+| | `CMT=2: DV ~ ...` | One error model per observed compartment | @sec-pkpd |
+
+A random effect can enter an individual parameter in any expression, and the expression is what decides the parameter's domain. Which form to reach for:
+
+| The parameter is | Write it as | `transform` of the theta |
+|---|---|---|
+| Always positive, varying multiplicatively | `TVCL * exp(ETA_CL)` | `identity` |
+| Near zero, or able to go negative | `TVTLAG + ETA_TLAG` | `identity` |
+| Bounded to (0, 1), typical value on that scale | `inv_logit(logit(THETA_F) + ETA_F)` | `logit_probability` |
+| Bounded to (0, 1), typical value on the logit scale | `inv_logit(THETA_F + ETA_F)` | `logit` |
+| Typical value declared on the log scale | `exp(TVCL + ETA_CL)` | `log` |
+
+The last three change the scale the theta is estimated and reported on, which @sec-first-fit covers. The first two do not, and are the forms this chapter uses. The three transformed rows are recognised by their exact shape: wrapping one in anything else, as in `2.0 * inv_logit(logit(TVKA) + ETA_KA)`, takes the theta back to `identity` and the eta to `custom`. The log-normal row is more forgiving, and tolerates the extra factors a covariate model puts around it.
+
+Estimation options that act on these parameters:
+
+| Where | Name | Meaning |
+|---|---|---|
+| `ferx_fit()` | `mu_referencing =` | Re-centre the individual random-effect search on the population value (default from the model file, engine default `TRUE`) |
+| `ferx_fit()` | `scale_params =` | Legacy switch for `parameter_scaling = "abs"` |
+
+```{r}
+#| label: tbl-settings-variability
+book_settings_table(c("iov_column", "iov_occasion", "mu_referencing", "parameter_scaling", "scale_params"))
+```
+
+### Variance or standard deviation?
+
+An initial value for `omega`, `kappa` or `sigma` is a **variance** unless you say otherwise. Appending `(sd)` declares a standard deviation instead, which the parser squares; `(variance)` states the default explicitly. So these declare the same model, and the warfarin example's `omega ETA_CL ~ 0.07` could equally be written as an SD of `r round(sqrt(0.07), 7)`:
+
+```{r}
+#| label: sd-vs-variance
+as_sd <- file.path(variability_dir, "warfarin_omega_sd.ferx")
+writeLines(sub("  omega ETA_CL ~ 0.07", "  omega ETA_CL ~ 0.2645751 (sd)",
+               readLines(w$model), fixed = TRUE), as_sd)
+sigma_as_variance <- file.path(variability_dir, "warfarin_sigma_variance.ferx")
+writeLines(sub("  sigma PROP_ERR ~ 0.01 (sd)", "  sigma PROP_ERR ~ 0.0001",
+               readLines(w$model), fixed = TRUE), sigma_as_variance)
+explicit_variance <- file.path(variability_dir, "warfarin_omega_variance_tag.ferx")
+writeLines(sub("  omega ETA_CL ~ 0.07", "  omega ETA_CL ~ 0.07 (variance)",
+               readLines(w$model), fixed = TRUE), explicit_variance)
+fit_as_sd <- ferx_fit(as_sd, w$data, verbose = FALSE)
+fit_sigma_var <- ferx_fit(sigma_as_variance, w$data, verbose = FALSE)
+fit_explicit_var <- ferx_fit(explicit_variance, w$data, verbose = FALSE)
+c(bundled = fit_w$ofv, omega_as_sd = fit_as_sd$ofv,
+  sigma_as_variance = fit_sigma_var$ofv, omega_variance_tag = fit_explicit_var$ofv)
+```
+
+The two scales differ only in what you type. What comes back is reported on a fixed scale, whichever form you declared: an `omega` row is a variance, and a `sigma` row is a standard deviation. `print()` on a fit spells the residual error out all three ways, and records which form the file used:
+
+```{r}
+#| label: sigma-notation
+grep("PROP_ERR", capture.output(print(fit_w)), value = TRUE)
+fit_w$estimates[, c("transform", "estimate", "init_as_sd")]
+```
+
+`init_as_sd` is the declaration, not the reported scale (@sec-first-fit): it is `TRUE` for the bundled `sigma PROP_ERR ~ 0.01 (sd)` and `FALSE` for every variance-scale row.
+
+::: {.callout-important}
+## `(sd)` on a block is ignored at this build
+`block_omega`, `block_kappa` and `block_sigma` take variances and covariances only, because one tag cannot say which of the lower-triangle entries it applies to. ferx-core documents `(sd)` as not accepted there, but the pinned build neither rejects nor applies it -- the annotation is dropped and the numbers are read as variances. The tagged file even validates clean:
+
+```{r}
+#| label: block-sd-ignored
+block_sd <- file.path(variability_dir, "warfarin_block_sd.ferx")
+block_ex <- ferx_example("warfarin_block_omega")
+writeLines(sub("block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]",
+               "block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02] (sd)",
+               readLines(block_ex$model), fixed = TRUE), block_sd)
+invisible(capture.output(block_sd_valid <- ferx_model_validate(block_sd)$ok))
+block_sd_valid
+fit_block_sd <- ferx_fit(block_sd, block_ex$data, verbose = FALSE)
+fit_block_plain <- ferx_fit(block_ex$model, block_ex$data, verbose = FALSE)
+c(with_sd_tag = fit_block_sd$ofv, without = fit_block_plain$ofv)
+```
+
+All three block forms behave this way. Write block entries as variances, and convert by hand.
+:::
+
+### Fixing a parameter
+
+`FIX` after a declaration holds a parameter at its initial value. It works on a `theta`, on an `omega` or `kappa` variance, and on a `sigma`. Two reasons to reach for it: the data cannot identify the parameter, so you hold it at a value from elsewhere (@sec-absorption fixes a bioavailability that way), or you want no variability at all on a parameter.
+
+A variance of zero is the second case, and it has to be written `FIX`:
+
+```{r}
+#| label: fix-omega
+no_iiv_on_ka <- file.path(variability_dir, "warfarin_no_iiv_ka.ferx")
+writeLines(sub("  omega ETA_KA ~ 0.40", "  omega ETA_KA ~ 0.0 FIX",
+               readLines(w$model), fixed = TRUE), no_iiv_on_ka)
+fit_no_iiv_ka <- ferx_fit(no_iiv_on_ka, w$data, verbose = FALSE)
+c(all_three = fit_w$n_parameters, ka_fixed = fit_no_iiv_ka$n_parameters)
+c(all_three = fit_w$ofv, ka_fixed = fit_no_iiv_ka$ofv)
+```
+
+Fixing the `KA` variance saves one parameter and costs `r round(fit_no_iiv_ka$ofv - fit_w$ofv, 1)` OFV on these data, so that random effect is clearly worth keeping. The variability it carried does not vanish, it moves: the `CL` variance goes from `r round(fit_w$estimates["ETA_CL", "estimate"], 3)` to `r round(fit_no_iiv_ka$estimates["ETA_CL", "estimate"], 2)`, and the residual error grows `r round(fit_no_iiv_ka$estimates["PROP_ERR", "estimate"] / fit_w$estimates["PROP_ERR", "estimate"])`-fold, from `r signif(fit_w$estimates["PROP_ERR", "estimate"], 3)` to `r signif(fit_no_iiv_ka$estimates["PROP_ERR", "estimate"], 3)`. Absorption variability the model can no longer express has to come out somewhere.
+
+A fixed parameter still has a row in `fit$estimates`. It carries the value the engine stores for a declared zero, with a standard error of 0, and it no longer counts towards `n_parameters`:
+
+```{r}
+#| label: fixed-row
+fit_no_iiv_ka$estimates[c("ETA_CL", "ETA_KA"), c("estimate", "se", "rse_pct")]
+```
+
+Leaving the same zero **free** is refused rather than fitted: the optimizer would start on its lower rail and could not move off it (@sec-dosing shows the message).
+
+## Variants
+
+### Correlated random effects
+
+`warfarin_block_omega` estimates a covariance between `ETA_CL` and `ETA_V`, and keeps `ETA_KA` as a separate diagonal omega:
+
+```{r}
+#| label: block-omega
+block <- ferx_example("warfarin_block_omega")
+invisible(ferx_model_get_section(block$model, "parameters"))
+fit_block <- ferx_fit(block$model, block$data, verbose = FALSE)
+fit_block$omega
+```
+
+The printout reports each covariance with the correlation of the parameters themselves. For two log-normal random effects that is `(exp(ω_ij) − 1) / √((exp(ω_ii) − 1)(exp(ω_jj) − 1))`. `fit$omega_param_corr` holds the matrix:
+
+```{r}
+#| label: block-omega-corr
+printout <- capture.output(print(fit_block))
+grep("~", printout, value = TRUE)
+round(fit_block$omega_param_corr, 3)
+```
+
+A partial block estimates only what it declares. `ETA_KA` keeps a variance of its own, but the model gives it no covariance with the other two, so those two off-diagonal entries stay exactly 0, and so do their standard errors. `fit$se_omega` is the lower triangle read column by column — (1,1), (2,1), (3,1), (2,2), (3,2), (3,3) — so the third and fifth entries are the held covariances, while the sixth is the standard error of the estimated `ETA_KA` variance:
+
+```{r}
+#| label: block-omega-se
+fit_block$se_omega
+```
+
+Those two structural zeros are also the reason the fit prints an R warning that one or more diagonal elements of the correlation matrix are non-positive: ferx-r derives that matrix from `fit$cov_matrix`, which carries a zero variance for every held entry.
+
+To estimate those covariances, declare them. A copy of the model with one full 3 × 3 block, and no separate diagonal `omega`:
+
+```{r}
+#| label: partial-vs-full-block
+full_block <- file.path(variability_dir, "warfarin_full_block.ferx")
+full_lines <- sub("block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]",
+                  "block_omega (ETA_CL, ETA_V, ETA_KA) = [0.07, 0.02, 0.02, 0, 0, 0.40]",
+                  readLines(block$model), fixed = TRUE)
+writeLines(full_lines[!grepl("^  omega ETA_KA", full_lines)], full_block)
+fit_full_block <- ferx_fit(full_block, block$data, verbose = FALSE)
+fit_full_block$omega
+data.frame(model = c("partial block", "full block"),
+           n_parameters = c(fit_block$n_parameters, fit_full_block$n_parameters),
+           ofv = c(fit_block$ofv, fit_full_block$ofv),
+           aic = c(fit_block$aic, fit_full_block$aic),
+           bic = c(fit_block$bic, fit_full_block$bic))
+```
+
+The two extra covariances lower the OFV by `r round(fit_block$ofv - fit_full_block$ofv, 2)` for two degrees of freedom, which a likelihood ratio test does not call significant (p = `r round(pchisq(fit_block$ofv - fit_full_block$ofv, df = 2, lower.tail = FALSE), 3)`; @sec-model-selection). Both information criteria prefer the partial block. On these data `ETA_KA` is best left on its own, which is what the bundled model declares.
+
+### Additive random effects
+
+`warfarin_additive_eta` gives the lag time an additive random effect, `TLAG = TVTLAG + ETA_TLAG`, so its variance is in squared hours:
+
+```{r}
+#| label: additive-eta
+additive <- ferx_example("warfarin_additive_eta")
+invisible(ferx_model_get_section(additive$model, "individual_parameters"))
+fit_additive <- ferx_fit(additive$model, additive$data, verbose = FALSE)
+fit_additive$estimates[c("TVTLAG", "ETA_TLAG"), c("estimate", "rse_pct")]
+summary(fit_additive$individual_estimates$TLAG)
+```
+
+These data carry no lag time: the typical value goes to its lower bound near 0. The additive random effect then produces negative individual lag times. A log-normal random effect keeps a positive parameter positive.
+
+### Residual error models
+
+The residual error of the warfarin model can be written in several ways. The loop below replaces the sigma declarations and the `[error_model]` line of a copy of the model file, and fits each version:
+
+```{r}
+#| label: tbl-error-models
+#| tbl-cap: "Residual error models for the warfarin model (FOCE)."
+warfarin_lines <- readLines(w$model)
+
+# Replace the sigma lines and the [error_model] statement of the warfarin model.
+set_error_model <- function(sigmas, error, extra = NULL) {
+  lines <- warfarin_lines[!grepl("^  sigma ", warfarin_lines)]
+  lines <- append(lines, c(extra, sigmas), after = grep("^  omega ETA_KA", lines))
+  at <- grep("^\\[error_model\\]", lines)
+  append(lines[-(at + 1)], error, after = at)
+}
+error_models <- list(
+  proportional = warfarin_lines,
+  additive = set_error_model("  sigma ADD_ERR ~ 1.0 (sd)", "  DV ~ additive(ADD_ERR)"),
+  combined = set_error_model(c("  sigma PROP_ERR ~ 0.1 (sd)", "  sigma ADD_ERR ~ 0.5 (sd)"),
+                             "  DV ~ combined(PROP_ERR, ADD_ERR)"),
+  power = set_error_model("  sigma PROP_ERR ~ 0.1 (sd)", "  DV ~ power(PROP_ERR, RUV_POW)",
+                          extra = "  theta RUV_POW(1.0, 0.01, 10.0)"),
+  correlated_combined = set_error_model("  block_sigma (PROP_ERR, ADD_ERR) = [0.01, 0.0, 0.25]",
+                                        "  DV ~ combined(PROP_ERR, ADD_ERR)")
+)
+error_fits <- lapply(names(error_models), function(name) {
+  path <- file.path(variability_dir, paste0("warfarin_", name, ".ferx"))
+  writeLines(error_models[[name]], path)
+  ferx_fit(path, w$data, verbose = FALSE)
+})
+names(error_fits) <- names(error_models)
+do.call(rbind, lapply(names(error_fits), function(name) {
+  f <- error_fits[[name]]
+  lines <- error_models[[name]]
+  data.frame(model = name, error_model = trimws(lines[grep("^\\[error_model\\]", lines) + 1]),
+             parameters = f$n_parameters, ofv = f$ofv, aic = f$aic,
+             warnings = paste(ferx_get_warnings(f, as_df = TRUE)$category, collapse = ", "))
+}))
+```
+
+The additive model is clearly worse. The other forms reach nearly the same OFV as the proportional model, so their extra parameters are not supported. In the combined model the additive component collapses:
+
+```{r}
+#| label: combined-collapse
+error_fits$combined$estimates[c("PROP_ERR", "ADD_ERR"), c("estimate", "rse_pct")]
+error_fits$power$estimates["RUV_POW", c("estimate", "rse_pct")]
+```
+
+All sigmas are on the standard-deviation scale: a proportional sigma of 0.1 is a CV of 10%. The additive start of a combined model should be on the scale of the data. ferx warns before fitting when it is below 1% of the median observation, as with 0.001 here (the warning has the category `general`):
+
+```{r}
+#| label: combined-small-start
+small_start <- file.path(variability_dir, "warfarin_combined_small_start.ferx")
+writeLines(set_error_model(c("  sigma PROP_ERR ~ 0.1 (sd)", "  sigma ADD_ERR ~ 0.001 (sd)"),
+                           "  DV ~ combined(PROP_ERR, ADD_ERR)"), small_start)
+fit_small_start <- ferx_fit(small_start, w$data, verbose = FALSE)
+substr(ferx_get_warnings(fit_small_start, as_df = TRUE)$message[1], 1, 160)
+```
+
+In a single `DV ~` line, the sigmas are taken in the order they are declared in `[parameters]`, and the names in the call must match that order:
+
+```{r}
+#| label: sigma-order
+wrong_order <- file.path(variability_dir, "warfarin_sigma_order.ferx")
+writeLines(set_error_model(c("  sigma ADD_ERR ~ 0.5 (sd)", "  sigma PROP_ERR ~ 0.1 (sd)"),
+                           "  DV ~ combined(PROP_ERR, ADD_ERR)"), wrong_order)
+try(ferx_fit(wrong_order, w$data, verbose = FALSE))
+```
+
+### Log-transform-both-sides
+
+`warfarin_ltbs` fits additive error to the logarithms of the observations and predictions:
+
+```{r}
+#| label: ltbs
+ltbs <- ferx_example("warfarin_ltbs")
+invisible(ferx_model_get_section(ltbs$model, "error_model"))
+fit_ltbs <- ferx_fit(ltbs$model, ltbs$data, verbose = FALSE)
+rbind(proportional = fit_w$theta, ltbs = fit_ltbs$theta)
+c(proportional_sigma = fit_w$sigma, ltbs_sigma = fit_ltbs$sigma)
+```
+
+The structural estimates are close to the proportional model's, and the log-scale sigma is close to the proportional CV. The OFV is on the log scale, so it is not comparable with the OFVs above. Predictions, residuals and simulated values are also on the log scale. Back-transform them with `exp()`:
+
+```{r}
+#| label: ltbs-scale
+head(select(fit_ltbs$sdtab, ID, TIME, DV, PRED, IPRED, IWRES), 3)
+head(mutate(select(fit_ltbs$sdtab, ID, TIME, DV, IPRED), IPRED_natural = exp(IPRED)), 3)
+```
+
+Under LTBS only additive error is allowed:
+
+```{r}
+#| label: ltbs-proportional
+ltbs_proportional <- file.path(variability_dir, "warfarin_ltbs_proportional.ferx")
+writeLines(sub("log(DV) ~ additive(SIGMA_LOG)", "log(DV) ~ proportional(SIGMA_LOG)",
+               readLines(ltbs$model), fixed = TRUE), ltbs_proportional)
+try(ferx_fit(ltbs_proportional, ltbs$data, verbose = FALSE))
+```
+
+Use `DV ~ log_additive(...)` instead when the `DV` column already holds logarithms.
+
+### Random effects on the residual error
+
+`iiv_on_ruv` names a dedicated omega that scales the residual standard deviation of each subject by `exp(ETA_RUV)`. It needs an estimation method with interaction, such as FOCEI:
+
+```{r}
+#| label: iiv-on-ruv
+ruv_model <- file.path(variability_dir, "warfarin_iiv_on_ruv.ferx")
+writeLines(set_error_model(c("  omega ETA_RUV ~ 0.05", "  sigma PROP_ERR ~ 0.1 (sd)"),
+                           c("  DV ~ proportional(PROP_ERR)", "  iiv_on_ruv = ETA_RUV")), ruv_model)
+invisible(ferx_model_get_section(ruv_model, "error_model"))
+# the model file uses FOCE, without interaction
+sub("\\)\\..*", ")", tryCatch(ferx_fit(ruv_model, w$data, verbose = FALSE), error = conditionMessage))  # first sentence
+fit_ruv <- ferx_fit(ruv_model, w$data, method = "focei", verbose = FALSE)
+fit_ruv$estimates[c("ETA_RUV", "PROP_ERR"), c("estimate", "rse_pct")]
+ferx_get_warnings(fit_ruv, as_df = TRUE)[, c("severity", "category")]
+```
+
+With 10 subjects the variance collapses to the lower guard: these data do not show subjects with different residual error. The ferx-core [error model](https://ferx-nlme.github.io/ferx-core/model-file/error-model.html#iiv-on-residual-error-iiv_on_ruv) page suggests Monte-Carlo methods (`imp`, `impmap`, `saem`) when the estimate collapses.
+
+The error model can do more than shown here. The ferx-core [error model](https://ferx-nlme.github.io/ferx-core/model-file/error-model.html) page documents:
+
+- error models selected by a covariate with `if`/`else`;
+- magnitudes that depend on `TIME` or covariates (experimental);
+- residual weighting with `weight =` for meta-analysis data (experimental).
+
+No bundled example uses them.
+
+### Inter-occasion variability
+
+`warfarin_iov` adds a kappa to clearance: each subject gets one `KAPPA_CL` per occasion, on top of its `ETA_CL`. `iov_column = OCC` tells ferx where the occasions are:
+
+```{r}
+#| label: iov-model
+invisible(ferx_model_get_section(iov$model, "parameters"))
+invisible(ferx_model_get_section(iov$model, "individual_parameters"))
+invisible(ferx_model_get_section(iov$model, "fit_options"))
+```
+
+The bundled model uses FOCE, and `warfarin_iov_saem` is the same model estimated with SAEM. The table compares both with FOCEI and with a SAEM → FOCEI chain:
+
+```{r}
+#| label: tbl-iov-methods
+#| tbl-cap: "The warfarin IOV model with different estimation methods."
+iov_saem <- ferx_example("warfarin_iov_saem")
+iov_fits <- list(
+  foce = ferx_fit(iov$model, iov$data, verbose = FALSE),
+  focei = ferx_fit(iov$model, iov$data, method = "focei", verbose = FALSE),
+  saem = ferx_fit(iov_saem$model, iov_saem$data, verbose = FALSE),
+  saem_then_focei = ferx_fit(iov_saem$model, iov_saem$data, method = c("saem", "focei"), verbose = FALSE)
+)
+do.call(rbind, lapply(names(iov_fits), function(name) {
+  f <- iov_fits[[name]]
+  data.frame(run = name, method = f$method, ofv = f$ofv, TVCL = f$theta[["TVCL"]], TVKA = f$theta[["TVKA"]],
+             omega_CL = f$omega["ETA_CL", "ETA_CL"], kappa_CL = f$omega_iov[1, 1], sigma = f$sigma[[1]])
+}))
+```
+
+FOCEI, SAEM and the chain agree. FOCE does not: with a proportional error model, the method without interaction gives different estimates, including a clearance twice as high and a much larger between-subject variance. Its OFV is a different objective, so the numbers cannot be compared. Use an interaction method for models with proportional error (@sec-estimation-methods).
+
+The IOV results of the FOCEI fit:
+
+```{r}
+#| label: iov-results
+fit_iov <- iov_fits$focei
+fit_iov$kappa_names
+fit_iov$omega_iov
+fit_iov$shrinkage_kappa
+fit_iov$shrinkage_kappa_by_occ
+head(fit_iov$ebe_kappas, 4)
+head(select(fit_iov$sdtab, ID, TIME, OCC, DV, IPRED), 3)
+```
+
+`fit$ebe_kappas` has one row per subject and occasion. `sdtab` gains the `OCC` column. Compare with the same model without the kappa, fitted to the same data:
+
+```{r}
+#| label: iov-vs-none
+fit_no_iov <- ferx_fit(w$model, iov$data, method = "focei", verbose = FALSE)
+c(without_iov = fit_no_iov$ofv, with_iov = fit_iov$ofv)
+```
+
+The kappa lowers the OFV by `r round(fit_no_iov$ofv - fit_iov$ofv, 1)` units for one extra parameter.
+
+Simulation draws a new kappa for each occasion, so a VPC of an IOV model includes the occasion-to-occasion spread:
+
+```{r}
+#| label: iov-simulate
+sim_iov <- ferx_simulate(iov$model, iov$data, n_sim = 2, seed = 1, fit = fit_iov)
+head(sim_iov, 3)
+```
+
+#### Occasions without an `OCC` column
+
+`iov_occasion` derives the occasions from the dosing records or from time windows. `dose` starts an occasion at every dose time. `time(120)` makes one occasion before 120 hours and one from 120 hours on (interior boundaries only, no leading 0). The occasion column can also be given at call time with `settings`. All reproduce the fit with `iov_column = OCC`:
+
+```{r}
+#| label: iov-occasion
+iov_lines <- readLines(iov$model)
+occasion_variants <- list(
+  "iov_occasion = dose" = sub("iov_column = OCC", "iov_occasion = dose", iov_lines, fixed = TRUE),
+  "iov_occasion = time(120)" = sub("iov_column = OCC", "iov_occasion = time(120)", iov_lines, fixed = TRUE),
+  "settings = list(iov_column = \"OCC\")" = iov_lines[!grepl("iov_column", iov_lines)]
+)
+sapply(names(occasion_variants), function(name) {
+  path <- file.path(variability_dir, paste0(make.names(name), ".ferx"))
+  writeLines(occasion_variants[[name]], path)
+  settings <- if (grepl("^settings", name)) list(iov_column = "OCC") else NULL
+  # suppress the R warning that reports overriding the model file's method
+  suppressWarnings(ferx_fit(path, iov$data, method = "focei", settings = settings, verbose = FALSE))$ofv
+})
+```
+
+Without any occasion source, a model with kappas stops:
+
+```{r}
+#| label: iov-no-occasions
+no_occasion_source <- file.path(variability_dir, paste0(make.names(names(occasion_variants)[3]), ".ferx"))
+try(ferx_fit(no_occasion_source, iov$data, verbose = FALSE))
+```
+
+#### IOV on more parameters
+
+A kappa on the volume as well, first as two independent kappas and then as a `block_kappa`:
+
+```{r}
+#| label: tbl-iov-volume
+#| tbl-cap: "IOV on clearance and volume (FOCEI)."
+iov_v_lines <- sub("V  = TVV  * exp(ETA_V)", "V  = TVV  * exp(ETA_V + KAPPA_V)", iov_lines, fixed = TRUE)
+iov_structures <- list(
+  kappa_CL = iov_lines,
+  kappa_CL_and_V = sub("kappa KAPPA_CL ~ 0.04", "kappa KAPPA_CL ~ 0.04\n  kappa KAPPA_V ~ 0.02", iov_v_lines, fixed = TRUE),
+  block_kappa = sub("kappa KAPPA_CL ~ 0.04", "block_kappa (KAPPA_CL, KAPPA_V) = [0.04, 0.0, 0.02]", iov_v_lines, fixed = TRUE)
+)
+iov_structure_fits <- lapply(names(iov_structures), function(name) {
+  path <- file.path(variability_dir, paste0("warfarin_iov_", name, ".ferx"))
+  writeLines(iov_structures[[name]], path)
+  # suppress the R warning that reports overriding the model file's method
+  suppressWarnings(ferx_fit(path, iov$data, method = "focei", verbose = FALSE))
+})
+names(iov_structure_fits) <- names(iov_structures)
+do.call(rbind, lapply(names(iov_structure_fits), function(name) {
+  f <- iov_structure_fits[[name]]
+  data.frame(model = name, parameters = f$n_parameters, ofv = f$ofv, omega_V = f$omega["ETA_V", "ETA_V"],
+             sigma = f$sigma[[1]], warnings = paste(ferx_get_warnings(f, as_df = TRUE)$category, collapse = ", "))
+}))
+iov_structure_fits$block_kappa$omega_iov
+```
+
+Adding the kappa on the volume lowers the OFV a lot and the residual error drops. At the same time the between-subject variance of the volume collapses to the lower guard (`parameter_at_runaway_guard`). In these data the volume varies between occasions rather than between subjects, so the next model to try would drop `ETA_V`. The block adds a covariance for a small further decrease.
+
+### IOV with analytical absorption models
+
+IOV works with every structural model. `one_cpt_transit_iov` puts a kappa on clearance in the analytical transit model of @sec-absorption. ferx evaluates subjects with IOV through the equivalent ODE model. According to its model file, the data were simulated with `TVCL` 9, `TVV` 30, `TVMTT` 1, `TVN` 3 and a kappa variance of 0.04:
+
+```{r}
+#| label: transit-iov
+transit_iov <- ferx_example("one_cpt_transit_iov")
+invisible(ferx_model_get_section(transit_iov$model, "individual_parameters"))
+fit_transit_iov <- ferx_fit(transit_iov$model, transit_iov$data, verbose = FALSE)
+fit_transit_iov$theta
+fit_transit_iov$omega_iov
+```
+
+### Mu-referencing
+
+With mu-referencing, ferx recognises parameters written as `THETA * exp(ETA)` (or `THETA + ETA`, or `exp(log(THETA) + ETA)`). It uses the mapping to centre the search for the individual random effects on the current population value. No model changes are needed. It is on by default, and `mu_referencing = FALSE` switches it off. For FOCEI on the two-compartment covariate model it makes no difference; for SAEM on warfarin it does:
+
+```{r}
+#| label: tbl-mu-referencing
+#| tbl-cap: "Fits with and without mu-referencing."
+cov <- ferx_example("two_cpt_oral_cov")
+saem <- ferx_example("warfarin_saem")
+mu_runs <- expand.grid(model = c("two_cpt_oral_cov", "warfarin_saem"), mu_referencing = c(TRUE, FALSE),
+                       stringsAsFactors = FALSE)
+mu_runs$ofv <- mapply(function(model, mu) {
+  ex <- if (model == "warfarin_saem") saem else cov
+  # suppress the R warning that reports overriding the model file's covariance setting
+  suppressWarnings(ferx_fit(ex$model, ex$data, mu_referencing = mu, covariance = FALSE, verbose = FALSE))$ofv
+}, mu_runs$model, mu_runs$mu_referencing)
+arrange(mu_runs, model)
+```
+
+Mu-referencing is skipped for a parameter whose assignment sits inside an `if` block ([individual parameters](https://ferx-nlme.github.io/ferx-core/model-file/individual-parameters.html#automatic-mu-referencing)).
+
+### Parameter scaling
+
+`parameter_scaling` rescales the internal parameters for the outer optimizer: `auto` (the default), `none`, `abs` or `rescale2`. `scale_params = TRUE` is the older switch for `abs`. On the two-compartment covariate model with the gradient-based `nlopt_lbfgs` optimizer, all choices reach the same optimum:
+
+```{r}
+#| label: tbl-parameter-scaling
+#| tbl-cap: "Parameter scaling with the `nlopt_lbfgs` optimizer."
+scaling_runs <- list(auto = list(), none = list(parameter_scaling = "none"), abs = list(parameter_scaling = "abs"),
+                     rescale2 = list(parameter_scaling = "rescale2"))
+scaling_table <- data.frame(
+  parameter_scaling = names(scaling_runs),
+  ofv = sapply(scaling_runs, function(s) {
+    # suppress the R warning that reports overriding the model file's covariance setting
+    suppressWarnings(ferx_fit(cov$model, cov$data, covariance = FALSE, verbose = FALSE,
+                              settings = c(list(optimizer = "nlopt_lbfgs"), s)))$ofv
+  }), row.names = NULL)
+fit_scale_params <- suppressWarnings(ferx_fit(cov$model, cov$data, covariance = FALSE, scale_params = TRUE,
+                                              verbose = FALSE, settings = list(optimizer = "nlopt_lbfgs")))
+rbind(scaling_table, data.frame(parameter_scaling = "scale_params = TRUE", ofv = fit_scale_params$ofv))
+```
+
+The OFV at a given point does not depend on scaling, but the optimizer's path can. Try it when a gradient-based fit stops early from a poor start.
+
+### Mixture models
+
+A `[mixture]` block assigns each subject probabilistically to one of several subpopulations, each with its own typical values (selected with `MIXNUM` in `[individual_parameters]`). ferx-core marks it **experimental**, and no bundled ferx-r example uses it. See the ferx-core [mixture models](https://ferx-nlme.github.io/ferx-core/estimation/mixture.html) page.
+
+## Pitfalls
+
+- **Proportional error needs interaction.** FOCE without interaction gave clearly different IOV estimates above. Use FOCEI (or SAEM).
+- **Extra variance parameters often collapse.** An additive component, a residual random effect or a between-subject variance that goes to its lower guard is not supported by the data. Remove it rather than report it.
+- **An additive random effect can make a positive parameter negative.** Use `exp()` for parameters such as clearance, volume and lag time.
+- **Keep sigma declarations in the order of the error model call.** A single `DV ~` line takes them by position.
+- **A block estimates only the covariances it declares.** Held entries stay 0 with a standard error of 0, and the correlation matrix of the estimates is then reported as not meaningful. Widen the block if a covariance is worth estimating.
+- **LTBS reports on the log scale,** and its OFV cannot be compared with natural-scale error models.
+
+### Warnings you may see here
+
+- `omega_structure` (warning): a `block_omega` combines a log-normal and an additive random effect. The parameter-level correlation then falls back to the correlation of the random effects themselves. Here `ETA_CL` (log-normal) and `ETA_TLAG` (additive) share a block:
+
+  ```{r}
+  #| label: omega-structure
+  mixed_block <- file.path(variability_dir, "warfarin_mixed_block.ferx")
+  mixed_lines <- sub("^  omega ETA_CL   ~ 0.07.*", "  block_omega (ETA_CL, ETA_TLAG) = [0.07, 0.01, 0.04]",
+                     readLines(additive$model))
+  writeLines(mixed_lines[!grepl("^  omega ETA_TLAG", mixed_lines)], mixed_block)
+  fit_mixed_block <- ferx_fit(mixed_block, additive$data, verbose = FALSE)
+  warnings_mixed <- ferx_get_warnings(fit_mixed_block, as_df = TRUE)
+  warnings_mixed[warnings_mixed$category == "omega_structure", c("severity", "message")]
+  ```
+
+  The warning concerns the reported parameter correlation (`fit$omega_param_corr`), not the fit itself. See the ferx-core section on [parameter-level correlation](https://ferx-nlme.github.io/ferx-core/model-file/parameters.html#parameter-level-correlation-in-output).
+
+Other warnings in this chapter have their home elsewhere: `parameter_at_runaway_guard` and `inflated_rse` (@sec-uncertainty), `eta_shrinkage` and `dw_autocorrelation` (@sec-diagnostics).
+
+## Summary
+
+- Between-subject variability: `omega` and `block_omega`, entered as log-normal or additive random effects.
+- Residual error: additive, proportional, combined, power, log-scale, correlated components, and a random effect on the residual error. Sigmas are standard deviations.
+- Inter-occasion variability: `kappa` and `block_kappa`, with occasions from a column or from `iov_occasion`. Results are in `omega_iov`, `ebe_kappas` and the kappa shrinkage fields.
+- Mu-referencing is on by default and can matter for SAEM. `parameter_scaling` changes the optimizer's path, not the objective.
+
+Next: @sec-covariates explains part of the variability with covariates.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit` (`mu_referencing`, `scale_params`, `settings`), `?ferx_simulate`
+- ferx-core: [parameters](https://ferx-nlme.github.io/ferx-core/model-file/parameters.html), [individual parameters](https://ferx-nlme.github.io/ferx-core/model-file/individual-parameters.html), [error model](https://ferx-nlme.github.io/ferx-core/model-file/error-model.html), [IOV](https://ferx-nlme.github.io/ferx-core/model-file/iov.html), [mixture models](https://ferx-nlme.github.io/ferx-core/estimation/mixture.html), [packed parameter space](https://ferx-nlme.github.io/ferx-core/estimation/parameterization.html)
+:::

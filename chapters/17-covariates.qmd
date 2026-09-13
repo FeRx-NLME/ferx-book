@@ -1,0 +1,338 @@
+# Covariate modeling {#sec-covariates}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+@sec-model-selection selected the covariates of the analysis thread with a formal search. This chapter covers the rest of covariate modeling:
+
+- declaring covariates;
+- screening them against the random effects;
+- writing covariate effects by hand, as conditions, or with the allometric-scaling tool;
+- the full random effects model (FREM);
+- covariates that change over time.
+
+It starts again from the covariate-free base model.
+
+::: {.callout-warning}
+## Maturity: stable, experimental and alpha parts
+The `[covariates]` block is **stable** in ferx-core. The `[covariate_model]` block is **experimental**. GAM screening and the search tools, including allometric scaling, are **alpha**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+## The data
+
+`two_cpt_oral_base` and `two_cpt_oral_cov` share one dataset: 30 subjects with a single oral dose of 250, body weight `WT` and creatinine clearance `CRCL`. Both covariates are constant within each subject:
+
+```{r}
+#| label: data
+base <- ferx_example("two_cpt_oral_base")
+cov <- ferx_example("two_cpt_oral_cov")
+covariate_dir <- book_tempdir("covariates")
+subjects <- read.csv(base$data, na.strings = ".") |> distinct(ID, WT, CRCL)
+nrow(subjects)
+summary(subjects[, c("WT", "CRCL")])
+```
+
+## Minimal runnable call: declaring covariates
+
+The `[covariates]` block lists the dataset columns that are covariates, and whether each is `continuous` or `categorical`. Declaring a covariate does not put it in the model. `two_cpt_oral_base` declares both columns but uses neither:
+
+```{r}
+#| label: base-model
+invisible(ferx_model_get_section(base$model, "covariates"))
+invisible(ferx_model_get_section(base$model, "individual_parameters"))
+fit_base <- ferx_fit(base$model, base$data, verbose = FALSE)
+```
+
+## Reading the result: the covariate table
+
+A fit of a model with a `[covariates]` block carries the covariate table `fit$covtab`, one row per data record, and the declared types:
+
+```{r}
+#| label: covtab
+head(fit_base$covtab, 3)
+fit_base$covariate_types
+```
+
+The screening tools below read these. Categorical covariates must be coded as numbers in the data (`SEX` as 0 and 1). No bundled example has one; see the ferx-core [covariates](https://ferx-nlme.github.io/ferx-core/model-file/covariates.html) page.
+
+### Screening against the random effects
+
+`ferx_cov_screen()` correlates each covariate, per subject, with each parameter that has a random effect. It uses both the individual parameter and its eta, and reports the pairs whose association reaches `threshold`:
+
+```{r}
+#| label: cov-screen
+screen <- ferx_cov_screen(fit_base)
+ferx_cov_screen(fit_base, threshold = 0.5)
+```
+
+Clearance is associated with `CRCL` and `WT`, and the central volume with `WT`. `ferx_gam_screen()` goes one step further. For each eta and covariate it compares a regression of the eta on the covariate (linear, or a natural spline with `spline_df` degrees of freedom) with an intercept-only model, and ranks the pairs by the AIC improvement:
+
+```{r}
+#| label: gam-screen
+gam <- ferx_gam_screen(fit_base)
+```
+
+The strongest pair is again `ETA_CL` with `CRCL`, as a linear effect. The `etas` and `covariates` arguments restrict the screen, `include_linear = FALSE` keeps only the spline forms, and `shrinkage_warn` sets the shrinkage above which a warning is given:
+
+```{r}
+#| label: gam-screen-subset
+ferx_gam_screen(fit_base, etas = "ETA_CL", covariates = "CRCL", spline_df = 2L,
+                include_linear = FALSE, shrinkage_warn = 0.3)
+```
+
+Screening uses the individual random effects, so it is only informative when shrinkage is low. It is here (@sec-diagnostics):
+
+```{r}
+#| label: base-shrinkage
+setNames(round(100 * fit_base$shrinkage_eta, 1), fit_base$eta_names)
+```
+
+A screen suggests candidates. The decision needs fits: a covariate search (@sec-model-selection) or the comparison of hand-written models below.
+
+## Options that matter
+
+| Function | Argument | Meaning |
+|---|---|---|
+| `ferx_cov_screen()` | `fit` | Fit of a model with a `[covariates]` block |
+| | `threshold` | Minimum absolute association to report (default 0.2) |
+| `ferx_gam_screen()` | `fit` | As above |
+| | `etas`, `covariates` | Restrict the pairs (default: all) |
+| | `spline_df` | Spline degrees of freedom to try (default `c(2L, 3L)`) |
+| | `include_linear` | Also try the linear form (default `TRUE`) |
+| | `shrinkage_warn` | Warn for etas with shrinkage above this fraction (default 0.3) |
+| `ferx_allometry()` | `model`, `data` | The model to scale and its dataset |
+| | `config` | A `.ferxsearch` file with an `ALLOMETRY(WT, 70)` statement, instead of the arguments |
+| | `covariate`, `reference` | Size covariate and reference value (default `WT` and 70) |
+| | `parameters`, `exponents` | Parameters to scale and their exponents (default: all clearances with 0.75, all volumes with 1) |
+| | `estimate`, `lower`, `upper` | Estimate the exponents within bounds instead of fixing them |
+| | `fit` | Fit the base and scaled models (default `TRUE`), or only build the scaled model |
+| | `threads`, `retries`, `directory` | Worker threads, restarts per fit, and a directory for the run journal |
+| `ferx_model_to_frem()` | `model`, `data` | The base model (with a `[covariates]` block) and its dataset |
+| | `covariates` | A subset of the declared covariates (default: all) |
+| | `output_dir`, `output_model`, `output_data` | Where the FREM model and data are written |
+| | `fit` | A fit of the base model, whose estimates become the initial values |
+
+## Variants
+
+### Covariate effects in `[individual_parameters]`
+
+The usual way to add a covariate effect is to write it into the individual parameter. `two_cpt_oral_cov` scales clearance and central volume by weight with an estimated exponent, and clearance by creatinine clearance:
+
+```{r}
+#| label: cov-model
+invisible(ferx_model_get_section(cov$model, "individual_parameters"))
+fit_cov <- ferx_fit(cov$model, cov$data, verbose = FALSE)
+fit_cov$estimates[c("THETA_WT", "THETA_CRCL"), c("estimate", "rse_pct")]
+```
+
+### Conditional effects
+
+An `if`/`else` block in `[individual_parameters]` lets a covariate choose the expression. `warfarin_if` uses the same dataset. Subjects above 70 kg get allometric clearance and lighter subjects the typical clearance, with volume proportional to weight:
+
+```{r}
+#| label: warfarin-if
+cond <- ferx_example("warfarin_if")
+invisible(ferx_model_get_section(cond$model, "individual_parameters"))
+fit_if <- ferx_fit(cond$model, cond$data, verbose = FALSE)
+ferx_get_warnings(fit_if, as_df = TRUE)[, c("severity", "category", "message")]
+```
+
+A parameter assigned inside an `if` block loses mu-referencing (@sec-variability), and the fit says so with an `info` note. On the same data, the three models compare as follows:
+
+```{r}
+#| label: tbl-covariate-models
+#| tbl-cap: "Covariate models on the `two_cpt_oral_cov` dataset."
+data.frame(model = c("two_cpt_oral_base", "warfarin_if", "two_cpt_oral_cov"),
+           covariate_effects = c("none", "WT (conditional, fixed exponents)", "WT and CRCL (estimated exponents)"),
+           parameters = c(fit_base$n_parameters, fit_if$n_parameters, fit_cov$n_parameters),
+           ofv = c(fit_base$ofv, fit_if$ofv, fit_cov$ofv))
+```
+
+### Allometric scaling
+
+`ferx_allometry()` adds body-size scaling to a model: `(WT/70)^0.75` on every clearance and `(WT/70)^1` on every volume of the `pk` line. With `fit = FALSE` it only builds the scaled model. The scaling is written as a `[covariate_model]` block:
+
+```{r}
+#| label: allometry-transform
+scaled <- ferx_allometry(base$model, base$data, fit = FALSE)
+scaled$scalings
+invisible(ferx_model_get_section(scaled$model_path, "covariate_model"))
+```
+
+Each `[covariate_model]` line states a relation (`PARAM ~ COV form(...)`), and ferx rewrites it into the expression you would otherwise write by hand. The ferx-core [covariate model](https://ferx-nlme.github.io/ferx-core/model-file/covariate-model.html) page lists the forms (`linear`, `power`, `exponential`, `hockey`, `categorical`, …). No bundled ferx-r example writes the block by hand.
+
+With `fit = TRUE`, the default, the base and the scaled model are both fitted. `print()` on the `ferx_allometry` result shows the relations and both fits (its `digits` argument sets the precision):
+
+```{r}
+#| label: allometry-fit
+allometry <- ferx_allometry(base$model, base$data)
+allometry
+allometry$dofv
+```
+
+Fixed allometric exponents make this model worse. With `estimate = TRUE` the exponents are estimated between `lower` and `upper`, and `parameters` limits the scaling to clearance and central volume. `directory` keeps a journal of the run:
+
+```{r}
+#| label: allometry-estimate
+allometry_dir <- file.path(covariate_dir, "allometry")
+estimated <- ferx_allometry(base$model, base$data, parameters = c("CL", "V1"), exponents = c(0.75, 1),
+                            estimate = TRUE, lower = 0, upper = 2, directory = allometry_dir)
+estimated$comparison
+estimated$fit$estimates[c("THETA_CL_WT", "THETA_V1_WT"), c("estimate", "rse_pct")]
+list.files(allometry_dir)
+```
+
+With estimated exponents the scaled model improves on the base by `r round(estimated$dofv, 1)` OFV units. Both exponents are poorly determined by these 30 subjects.
+
+The same scaling can come from a `.ferxsearch` file with an `ALLOMETRY` statement. The bundled `two_cpt_oral_base.ferxsearch` holds a covariate search, so a copy with the statement is written here:
+
+```{r}
+#| label: allometry-config
+config_lines <- readLines(base$search)
+config_lines <- sub("^base = .*", sprintf('base = "%s"', base$model), config_lines)
+config_lines <- sub("^data = .*", sprintf('data = "%s"', base$data), config_lines)
+config_lines <- sub("^mfl = .*", 'mfl = "ALLOMETRY(WT, 70)"', config_lines)
+config_lines <- config_lines[!grepl("^\\[covsearch\\]|^algorithm|^p_forward|^p_backward", config_lines)]
+allometry_config <- file.path(covariate_dir, "allometry.ferxsearch")
+writeLines(config_lines, allometry_config)
+ferx_allometry(config = allometry_config, fit = FALSE)$scalings
+```
+
+`threads` and `retries` control the fits as in the other search tools (@sec-model-selection).
+
+### Full random effects modeling (FREM)
+
+FREM treats each covariate as an additional observation. The covariate gets its own random effect in one large omega block, and the covariances between the parameter and covariate random effects describe the covariate relations, without a stepwise search. `ferx_model_to_frem()` builds the FREM model and dataset from a base model with a `[covariates]` block.
+
+By default the generated files go next to the model file, which for a `ferx_example()` model is the installed package. `output_dir` writes them to a temporary directory instead:
+
+```{r}
+#| label: frem-build
+frem <- ferx_model_to_frem(base$model, base$data, fit = fit_base,
+                           output_dir = file.path(covariate_dir, "frem"))
+frem
+```
+
+The dataset gains one row per subject and covariate. Their `FREMTYPE` codes the covariate (100 for `WT`, 200 for `CRCL`), and `DV` holds the covariate value:
+
+```{r}
+#| label: frem-data
+frem_data <- read.csv(frem$data, na.strings = ".")
+count(frem_data, FREMTYPE)
+head(filter(frem_data, FREMTYPE > 0), 4)
+```
+
+The model gains a fixed typical value and a random effect for each covariate, one omega block, and a small fixed covariate sigma. `fit = fit_base` put the base estimates in as initial values. The `[fit_options]` entries `frem_predictions` and `frem_sigma` tell the engine which rows belong to which covariate and which sigma they use:
+
+```{r}
+#| label: frem-model
+invisible(ferx_model_get_section(frem, "parameters"))
+invisible(ferx_model_get_section(frem, "individual_parameters"))
+invisible(ferx_model_get_section(frem, "fit_options"))
+```
+
+A `ferx_model` object fits directly. The ferx-core [FREM](https://ferx-nlme.github.io/ferx-core/estimation/frem.html) page recommends SAEM for FREM models, as the large omega block is hard for gradient-based methods. The covariance step is skipped here to save time:
+
+```{r}
+#| label: frem-fit
+# suppress the R warnings that report overriding the model file's method and covariance setting
+fit_frem_focei <- suppressWarnings(ferx_fit(frem, covariance = FALSE, verbose = FALSE))
+fit_frem_saem <- suppressWarnings(ferx_fit(frem, method = "saem", covariance = FALSE, verbose = FALSE))
+frem_correlations <- function(f) round(cov2cor(f$omega)[c("ETA_CL", "ETA_V1"), c("ETA_WT_FREM", "ETA_CRCL_FREM")], 2)
+list(focei = frem_correlations(fit_frem_focei), saem = frem_correlations(fit_frem_saem))
+```
+
+With SAEM the correlations show what the covariate model found: clearance goes with creatinine clearance and weight, and central volume with weight. FOCEI leaves them near zero on this model. The FREM fits carry several warnings that belong to the construction:
+
+```{r}
+#| label: frem-warnings
+count(ferx_get_warnings(fit_frem_saem, as_df = TRUE), severity, category)
+```
+
+Two of the `general` warnings report that the covariate sigma and the covariate expressions are not used by the error or structural model, which is intended here. The third reports that the model file's `maxiter` does not apply to SAEM (@sec-estimation-methods). The `omega_structure` warnings concern the reported parameter correlations (@sec-variability).
+
+`covariates` builds a FREM model for a subset of the declared covariates:
+
+```{r}
+#| label: frem-subset
+frem_crcl <- ferx_model_to_frem(base$model, base$data, covariates = "CRCL",
+                                output_dir = file.path(covariate_dir, "frem_crcl"))
+invisible(ferx_model_get_section(frem_crcl, "fit_options"))
+```
+
+FREM options:
+
+```{r}
+#| label: tbl-settings-frem
+book_settings_table(c("frem_rao_blackwell", "frem_predictions", "frem_sigma"))
+```
+
+`frem_rao_blackwell` applies to importance sampling (`method = "imp"`). On this model an IMP fit takes several minutes, so it is not run here.
+
+### Time-varying covariates
+
+A covariate may change within a subject. ferx carries the last value forward from each record, and the model uses the value in force at each time. In a copy of the data, subject 1's weight rises by 50% from 12 hours. Only that subject's predictions change, and only from 12 hours on:
+
+```{r}
+#| label: time-varying
+tv_data <- read.csv(cov$data, na.strings = ".")
+heavier <- tv_data$ID == 1 & tv_data$TIME >= 12
+tv_data$WT[heavier] <- 1.5 * tv_data$WT[heavier]
+tv_file <- file.path(covariate_dir, "two_cpt_oral_cov_tv.csv")
+write.csv(tv_data, tv_file, row.names = FALSE, na = ".")
+constant_pred <- ferx_predict(cov$model, cov$data, fit = fit_cov)
+tv_pred <- ferx_predict(cov$model, tv_file, fit = fit_cov)
+filter(constant_pred, ID == 1) |> select(TIME, PRED) |>
+  mutate(PRED_time_varying = tv_pred$PRED[tv_pred$ID == 1])
+isTRUE(all.equal(constant_pred$PRED[constant_pred$ID != 1], tv_pred$PRED[tv_pred$ID != 1]))
+```
+
+A fit uses the same records. Its covariate table shows the change:
+
+```{r}
+#| label: time-varying-fit
+fit_tv <- ferx_fit(cov$model, tv_file, verbose = FALSE)
+filter(fit_tv$covtab, ID == 1, TIME %in% c(8, 12))
+```
+
+## Pitfalls
+
+- **Declaring is not using.** A covariate in `[covariates]` has no effect until an individual parameter or a `[covariate_model]` relation uses it.
+- **Screens are not tests.** Correlations and GAM results on individual random effects suggest candidates, and they weaken as shrinkage grows. Confirm with fits.
+- **Allometry does not see effects written by hand.** It leaves a parameter alone only when a `[covariate_model]` relation already uses the size covariate. On `two_cpt_oral_cov`, which writes `(WT / 70)^THETA_WT` into `[individual_parameters]`, it adds weight a second time:
+
+  ```{r}
+  #| label: allometry-double
+  double <- ferx_allometry(cov$model, cov$data, fit = FALSE)
+  double$notes
+  grep("WT", readLines(double$model_path), value = TRUE)
+  ```
+
+- **FREM needs a suitable method.** Check the covariate–parameter correlations with SAEM: FOCEI found almost none on these data. Give `output_dir` a writable directory of your own, or the generated files land next to the model file.
+
+### Warnings you may see here
+
+- `mu_referencing` (info): a conditional assignment switched off mu-referencing for a parameter, as for `warfarin_if` above.
+- `general` (warning) on FREM models: a sigma declared but not used in `[error_model]`, or individual parameters that are computed but not used. For the generated covariate sigma and covariate expressions this is expected.
+
+## Summary
+
+- Declare covariates in `[covariates]`; the fit returns `covtab` and `covariate_types`.
+- Screen with `ferx_cov_screen()` and `ferx_gam_screen()` while shrinkage is low, then confirm with fits.
+- Write effects in `[individual_parameters]`, as `if`/`else` conditions, or as `[covariate_model]` relations. `ferx_allometry()` adds body-size scaling, fixed or estimated.
+- `ferx_model_to_frem()` builds a FREM model from the declared covariates; fit it with SAEM.
+- Covariates that change within a subject are carried forward from each record.
+
+Next: @sec-dosing covers dosing records and regimens.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_cov_screen`, `?ferx_gam_screen`, `?ferx_allometry`, `?ferx_model_to_frem`
+- ferx-core: [covariates](https://ferx-nlme.github.io/ferx-core/model-file/covariates.html), [covariate model](https://ferx-nlme.github.io/ferx-core/model-file/covariate-model.html), [individual parameters](https://ferx-nlme.github.io/ferx-core/model-file/individual-parameters.html), [FREM](https://ferx-nlme.github.io/ferx-core/estimation/frem.html), [GAM screening](https://ferx-nlme.github.io/ferx-core/tools/gam-screening.html)
+:::

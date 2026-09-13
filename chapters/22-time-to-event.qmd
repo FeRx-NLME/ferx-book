@@ -1,0 +1,285 @@
+# Time-to-event models {#sec-time-to-event}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+Time-to-event (TTE) endpoints record when an event happens, such as dropout, a clinical event or death, or that it had not happened by the end of follow-up. ferx models them with an `[event_model]` block: a parametric hazard, with random effects and covariates in its parameters, fitted with a survival likelihood. This chapter fits the bundled examples: exponential, Weibull and Gompertz hazards, competing risks, and a hazard driven by the drug concentration. It then predicts survival curves and checks the models by simulation.
+
+::: {.callout-warning}
+## Maturity: beta
+ferx-core labels time-to-event endpoints **beta**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+## The data
+
+A TTE row is an observation (`EVID = 0`) on the event model's `CMT`. `TIME` is the event or censoring time and `DV` says which: 1 for an event, 0 for right censoring. `tte_weibull` has one row for each of 30 subjects, with follow-up to 60 hours:
+
+```{r}
+#| label: data
+weibull <- ferx_example("tte_weibull")
+tte_dir <- book_tempdir("tte")
+weibull_data <- read.csv(weibull$data, na.strings = ".")
+head(weibull_data, 4)
+count(weibull_data, DV)
+```
+
+## Minimal runnable call
+
+A TTE-only model needs `[parameters]`, `[event_model]` and `[fit_options]`. The block names the endpoint's `cmt`, the hazard `family`, and the family's parameters as expressions of thetas, etas and covariates:
+
+```{r}
+#| label: weibull-model
+invisible(ferx_model_get_section(weibull$model, "parameters"))
+invisible(ferx_model_get_section(weibull$model, "event_model"))
+fit_weibull <- ferx_fit(weibull$model, weibull$data, verbose = FALSE)
+fit_weibull$estimates[, c("estimate", "rse_pct")]
+```
+
+According to the model file, the data were simulated with `TVSCALE` 20, `TVSHAPE` 1.5 and a variance of 0.04. With 30 subjects the shape is poorly determined.
+
+## Reading the result: survival curves
+
+`ferx_predict_survival()` evaluates the survival function S(t), the cumulative hazard H(t) and the hazard h(t) at the requested `times`, for each subject and TTE compartment. With `fit`, it uses the fitted thetas (random effects at 0); without, the model file's initial values. Each subject also gets a median and mean survival time:
+
+```{r}
+#| label: predict-survival
+survival_curve <- ferx_predict_survival(weibull$model, weibull$data, times = seq(0, 60, by = 1), fit = fit_weibull)
+filter(survival_curve, ID == 1, TIME %in% c(0, 10, 20, 30, 40)) |>
+  select(TIME, survival, cum_hazard, hazard, median_survival, mean_survival)
+```
+
+The Kaplan–Meier estimate of the observed data, from the survival package, is the natural comparison:
+
+```{r}
+#| label: fig-km-typical
+#| fig-cap: "Kaplan–Meier estimate of the observed data (step) and the model's survival curve for a typical subject (line)."
+library(survival)
+km <- survfit(Surv(TIME, DV) ~ 1, data = weibull_data)
+km_data <- data.frame(TIME = c(0, km$time), survival = c(1, km$surv))
+ggplot() +
+  geom_step(data = km_data, aes(TIME, survival)) +
+  geom_line(data = filter(survival_curve, ID == 1), aes(TIME, survival), colour = "steelblue") +
+  labs(x = "Time (h)", y = "Survival")
+```
+
+The model curve is for a subject with random effect 0. With between-subject variability, the population survival curve is flatter than that, which is why a simulation-based check (below) is the better comparison.
+
+`sdtab` has no rows for a TTE-only model: there are no concentration-type predictions or residuals.
+
+```{r}
+#| label: tte-sdtab
+nrow(fit_weibull$sdtab)
+```
+
+## Options that matter
+
+| Key in `[event_model]` | Meaning |
+|---|---|
+| `cmt` | The `CMT` value of the event rows |
+| `family` | `exponential`, `weibull` or `gompertz` |
+| `scale` (alias `rate` for exponential) | Rate (exponential) or characteristic time (Weibull) |
+| `shape` | Weibull shape |
+| `alpha`, `gamma` | Gompertz baseline hazard and growth rate |
+| `loghr` | A proportional-hazards term that multiplies the hazard by `exp(loghr)` |
+| `hazard` | A hazard expression of ODE states and individual parameters (instead of `family`), for a drug-driven hazard |
+| `type`, `clock` | `tte` (default) or repeated events (`rtte`), with a `forward` or `reset` clock |
+
+| Data | Meaning |
+|---|---|
+| `DV = 1` / `DV = 0` | Event / right-censored at `TIME` |
+| `DV = 2` | Right bound of an interval-censored event (after a `DV = 0` row with the left bound) |
+| `TENTRY` | Entry time for left truncation (delayed entry) |
+
+| Function | Argument | Meaning |
+|---|---|---|
+| `ferx_predict_survival()` | `model`, `data` | Model with at least one `[event_model]`, and its dataset |
+| | `times` | Times at which to evaluate S(t), H(t) and h(t) |
+| | `fit` | Use the fitted thetas instead of the model file's |
+| `ferx_simulate()` | `horizon` | End of follow-up (administrative censoring) for simulated event times |
+
+Named blocks, `[event_model NAME]`, declare several endpoints. The ferx-core [event model](https://ferx-nlme.github.io/ferx-core/model-file/event-model.html) and [TTE estimation](https://ferx-nlme.github.io/ferx-core/estimation/tte.html) pages document the families, interval censoring and repeated events.
+
+## Variants
+
+### Exponential and Gompertz hazards
+
+`tte_exponential` has a constant hazard. It still carries the placeholder PK, error and individual-parameter blocks that older TTE models needed. `tte_gompertz` has a hazard that grows exponentially with time:
+
+```{r}
+#| label: exponential-gompertz
+exponential <- ferx_example("tte_exponential")
+gompertz <- ferx_example("tte_gompertz")
+invisible(ferx_model_get_section(exponential$model, "event_model"))
+invisible(ferx_model_get_section(gompertz$model, "event_model"))
+fit_exponential <- ferx_fit(exponential$model, exponential$data, verbose = FALSE)
+fit_gompertz <- ferx_fit(gompertz$model, gompertz$data, verbose = FALSE)
+fit_exponential$estimates[c("TVLAMBDA", "ETA_LAMBDA"), c("estimate", "rse_pct")]
+fit_gompertz$estimates[, c("estimate", "rse_pct")]
+```
+
+The model files give the simulation values: an exponential rate of 0.05 with variance 0.09, and Gompertz `TVALPHA` 0.002, `TVGAMMA` 0.05 with variance 0.04. The typical parameters are in range, but the between-subject variances of these single-event datasets are poorly determined. With one event per subject, frailty is hard to separate from the hazard's shape.
+
+### A simulation-based check
+
+`ferx_simulate()` draws an event time for each subject from the fitted model. `OBSERVED` is 1 for an event and 0 for censoring at `horizon`. The Kaplan–Meier curves of 200 simulated datasets give an interval to compare with the observed curve:
+
+```{r}
+#| label: fig-km-vpc
+#| fig-cap: "Observed Kaplan–Meier curve (step) with the median and 90% interval of the Kaplan–Meier curves of 200 datasets simulated from the Weibull fit."
+simulated <- ferx_simulate(weibull$model, weibull$data, n_sim = 200, seed = 1, fit = fit_weibull, horizon = 60)
+head(simulated, 3)
+grid <- seq(0, 60, by = 1)
+km_on_grid <- function(time, status) {
+  summary(survfit(Surv(time, status) ~ 1), times = grid, extend = TRUE)$surv
+}
+simulated_km <- simulated |>
+  group_by(SIM) |>
+  group_modify(~ data.frame(TIME = grid, survival = km_on_grid(.x$TIME, .x$OBSERVED))) |>
+  group_by(TIME) |>
+  summarise(lo = quantile(survival, 0.05), mid = median(survival), hi = quantile(survival, 0.95))
+ggplot(simulated_km, aes(TIME)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.3) +
+  geom_line(aes(y = mid), linetype = "dashed") +
+  geom_step(data = km_data, aes(TIME, survival)) +
+  labs(x = "Time (h)", y = "Survival")
+```
+
+Without `horizon`, simulated event times are not censored at the end of follow-up, and some lie far beyond it:
+
+```{r}
+#| label: horizon
+fit_exp_sim <- ferx_simulate(exponential$model, exponential$data, n_sim = 1, seed = 1, fit = fit_exponential)
+range(fit_exp_sim$TIME)
+range(ferx_simulate(exponential$model, exponential$data, n_sim = 1, seed = 1, fit = fit_exponential,
+                    horizon = 30)$TIME)
+```
+
+### Competing risks
+
+`tte_competing_risks` has two causes, each with its own named event block and compartment, and a shared frailty `ETA_F`. Each subject has one row per cause at the same time: `DV = 1` for the cause that happened, `DV = 0` for the other:
+
+```{r}
+#| label: competing
+competing <- ferx_example("tte_competing_risks")
+head(read.csv(competing$data, na.strings = "."), 4)
+invisible(ferx_model_get_section(competing$model, "parameters"))
+fit_competing <- ferx_fit(competing$model, competing$data, verbose = FALSE)
+fit_competing$estimates[, c("estimate", "rse_pct")]
+```
+
+The two rates recover the simulation values of the model file (0.10 and 0.06), while the frailty variance collapses. The model file notes that it is weakly identified with FOCEI. For several causes, `ferx_predict_survival()` adds the cumulative incidence of each cause (`cif`) and the all-cause survival (`survival_all`); the incidences and the all-cause survival add up to 1:
+
+```{r}
+#| label: fig-competing
+#| fig-cap: "Cumulative incidence of the two causes and all-cause survival for a typical subject."
+competing_curve <- ferx_predict_survival(competing$model, competing$data, times = seq(0, 14, by = 0.5), fit = fit_competing)
+subject <- filter(competing_curve, ID == first(ID))
+subject |>
+  group_by(TIME) |>
+  summarise(total = sum(cif) + first(survival_all)) |>
+  summarise(min_total = min(total), max_total = max(total))
+bind_rows(mutate(subject, curve = paste("incidence, CMT", CMT), value = cif),
+          distinct(subject, TIME, survival_all) |> mutate(curve = "all-cause survival", value = survival_all)) |>
+  ggplot(aes(TIME, value, colour = curve)) +
+  geom_line() +
+  labs(x = "Time (h)", y = NULL, colour = NULL)
+```
+
+### A drug-driven hazard: joint PK and TTE
+
+In `pktte_joint` the hazard depends on the drug concentration. `hazard =` is written with ODE states and individual parameters; ferx adds the cumulative hazard as an ODE state and fits it together with the concentrations:
+
+```{r}
+#| label: joint
+joint <- ferx_example("pktte_joint")
+invisible(ferx_model_get_section(joint$model, "individual_parameters"))
+invisible(ferx_model_get_section(joint$model, "event_model"))
+filter(read.csv(joint$data, na.strings = "."), ID == 1)
+fit_joint <- ferx_fit(joint$model, joint$data, verbose = FALSE)
+fit_joint$estimates[, c("estimate", "rse_pct")]
+```
+
+With 6 subjects, clearance, volume and the concentration effect `TVBETA` are not determined (relative standard errors near 300%). The example shows the syntax; a real analysis needs more data. `sdtab` holds the concentration rows. Simulating a drug-driven hazard needs `horizon`:
+
+```{r}
+#| label: joint-simulate
+try(ferx_simulate(joint$model, joint$data, n_sim = 1, seed = 1, fit = fit_joint))
+joint_sim <- ferx_simulate(joint$model, joint$data, n_sim = 1, seed = 1, fit = fit_joint, horizon = 24)
+filter(joint_sim, ID == 1)
+```
+
+The simulation returns the concentration rows and, per subject, one event row on `CMT` 3 with the event or censoring time.
+
+### Delayed entry
+
+When subjects are known to be event-free until they enter the study, the likelihood should condition on that. A `TENTRY` column gives the entry time. In a copy of the Weibull data every subject enters at 4 hours (before the first event, at `r min(weibull_data$TIME)` hours):
+
+```{r}
+#| label: tentry
+entry_data <- mutate(weibull_data, TENTRY = 4)
+entry_file <- file.path(tte_dir, "tte_weibull_entry.csv")
+write.csv(entry_data, entry_file, row.names = FALSE)
+fit_entry <- ferx_fit(weibull$model, entry_file, verbose = FALSE)
+rbind(from_time_0 = fit_weibull$theta, entry_at_4 = fit_entry$theta)
+```
+
+The shape estimate changes, because the time from 0 to 4 hours no longer counts as survival evidence.
+
+### Repeated events
+
+`type = rtte` models events that can happen more than once per subject, with the `clock` key choosing total time or time since the last event. Fits from R work, but no bundled ferx-r example uses repeated events. See the ferx-core [repeated events](https://ferx-nlme.github.io/ferx-core/model-file/event-model.html#rtte) section, which also recommends SAEM or IMP for their frailty variance.
+
+## Pitfalls
+
+- **`ferx_model_validate()` rejects compact TTE models at this build.** Models without `[structural_model]`, `[error_model]` and `[individual_parameters]` are reported as invalid, although they fit:
+
+  ```{r}
+  #| label: validate-tte
+  weibull_check <- ferx_model_validate(weibull$model, weibull$data)
+  weibull_check$ok
+  ```
+
+  `tte_exponential`, which keeps the placeholder blocks, validates.
+- **Set `horizon` when simulating.** Without it, analytical hazards are not censored at the end of follow-up, and a drug-driven hazard cannot be simulated.
+- **A typical-subject curve is not the population curve.** Compare observed Kaplan–Meier curves with simulations, not with `ferx_predict_survival()` at random effect 0.
+- **Covariates in a hazard must be constant within a subject.** A time-varying covariate in the hazard stops the fit.
+- **Frailty variances are weakly identified with one event per subject.** Check their standard errors, and consider SAEM or IMP.
+
+### Warnings you may see here
+
+- `simulation` (warning): a problem in individual simulated subjects, such as a non-positive hazard, which ferx turns into censoring at the horizon. The messages are attached to the result as `attr(sim, "simulation_warnings")`. Here a copy of the Weibull model subtracts 25 from the scale, which makes it negative for most subjects:
+
+  ```{r}
+  #| label: simulation-warning
+  degenerate_model <- file.path(tte_dir, "tte_weibull_negative_scale.ferx")
+  writeLines(sub("scale  = TVSCALE * exp(ETA_SCALE)", "scale  = TVSCALE * exp(ETA_SCALE) - 25",
+                 readLines(weibull$model), fixed = TRUE), degenerate_model)
+  degenerate <- suppressWarnings(ferx_simulate(degenerate_model, weibull$data, n_sim = 1, seed = 1, horizon = 60))
+  length(attr(degenerate, "simulation_warnings"))
+  substr(attr(degenerate, "simulation_warnings")[1], 1, 120)
+  count(degenerate, OBSERVED)
+  ```
+
+  The same diagnostics are raised as one R warning unless suppressed.
+
+## Summary
+
+- Event rows carry `TIME` and `DV` (1 event, 0 censored) on the `[event_model]`'s `cmt`.
+- Choose a hazard `family` (exponential, Weibull, Gompertz), or write a drug-driven `hazard` in an ODE model.
+- `ferx_predict_survival()` gives S(t), H(t), h(t) and, for competing risks, cumulative incidences.
+- Check TTE models with Kaplan–Meier curves of simulations, using `horizon` for follow-up.
+- `TENTRY` handles delayed entry, `DV = 2` interval censoring, and `type = rtte` repeated events.
+
+Next: @sec-adaptive-dosing simulates dosing that responds to measurements.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_predict_survival`, `?ferx_simulate` (`horizon`), `?ferx_fit`
+- ferx-core: [event model](https://ferx-nlme.github.io/ferx-core/model-file/event-model.html), [TTE estimation](https://ferx-nlme.github.io/ferx-core/estimation/tte.html)
+:::

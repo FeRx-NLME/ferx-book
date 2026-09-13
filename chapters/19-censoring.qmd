@@ -1,0 +1,195 @@
+# Censored observations (BLOQ) {#sec-censoring}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+Assays have limits. A concentration below the lower limit of quantification (LLOQ) is reported only as "below the limit", and one above the upper limit (ULOQ) as "above". These observations still carry information: the true value lies outside the quantified range. This chapter shows how to mark them in the data and fit them with the M3 likelihood, and what goes wrong with the alternatives.
+
+::: {.callout-warning}
+## Maturity: beta
+ferx-core labels LOQ-censored observations **beta**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+## The data
+
+`warfarin_bloq` is the warfarin dataset with an LLOQ of 2. The `CENS` column marks the 10 observations below it (`CENS = 1`), and their `DV` holds the limit, not the measured value:
+
+```{r}
+#| label: data
+bloq <- ferx_example("warfarin_bloq")
+w <- ferx_example("warfarin")
+censoring_dir <- book_tempdir("censoring")
+bloq_data <- read.csv(bloq$data, na.strings = ".")
+warfarin_data <- read.csv(w$data, na.strings = ".")
+count(filter(bloq_data, EVID == 0), CENS)
+filter(bloq_data, CENS == 1) |>
+  select(ID, TIME, DV, CENS) |>
+  mutate(DV_in_warfarin_data = warfarin_data$DV[bloq_data$CENS == 1])
+```
+
+All other rows are identical to the warfarin data, whose concentrations below 2 are therefore known. That makes it possible to check each method against the fit to the uncensored data.
+
+## Minimal runnable call: the M3 likelihood
+
+The model file sets `bloq_method = m3` in `[fit_options]`:
+
+```{r}
+#| label: m3-fit
+invisible(ferx_model_get_section(bloq$model, "fit_options"))
+fit_m3 <- ferx_fit(bloq$model, bloq$data, verbose = FALSE)
+fit_m3$bloq_method_label
+fit_m3$theta
+```
+
+With M3, a censored observation contributes the probability that the prediction, with its residual error, lies below the limit. It does not contribute a residual.
+
+## Reading the result
+
+`sdtab` keeps the censored rows, with the `CENS` flag. Their weighted residuals are `NaN`, because there is no observed value to compare with:
+
+```{r}
+#| label: m3-sdtab
+filter(fit_m3$sdtab, ID == 1, TIME >= 72) |> select(ID, TIME, DV, CENS, PRED, IPRED, CWRES, IWRES)
+```
+
+Residual plots (@sec-diagnostics) should therefore leave out the censored rows. Their predictions show whether the model puts them below the limit.
+
+The alternatives to M3 are `bloq_method = "drop"`, which fits the censored rows as if the limit had been measured, and excluding the rows with `ignore = "CENS == 1"` (@sec-data). The table compares them with the fit to the uncensored warfarin data:
+
+```{r}
+#| label: tbl-bloq-methods
+#| tbl-cap: "Censoring methods on `warfarin_bloq` (LLOQ 2, 10 of 110 observations censored), and the fit to the uncensored data."
+bloq_row <- function(method, f) {
+  data.frame(method = method, observations = f$n_obs, label = f$bloq_method_label, t(f$theta),
+             PROP_ERR = f$sigma[[1]])
+}
+# suppress the R warnings that report overriding the model file's bloq_method
+compare_methods <- function(data_file) {
+  rbind(bloq_row("m3", ferx_fit(bloq$model, data_file, verbose = FALSE)),
+        bloq_row("drop (fit at the limit)",
+                 suppressWarnings(ferx_fit(bloq$model, data_file, bloq_method = "drop", verbose = FALSE))),
+        bloq_row("exclude (ignore = \"CENS == 1\")",
+                 suppressWarnings(ferx_fit(bloq$model, data_file, bloq_method = "drop", ignore = "CENS == 1",
+                                           verbose = FALSE))),
+        bloq_row("uncensored data", suppressWarnings(ferx_fit(bloq$model, w$data, bloq_method = "drop",
+                                                              verbose = FALSE))))
+}
+compare_methods(bloq$data)
+```
+
+With 9% of the observations censored, fitting them at the limit already inflates the residual error several-fold and shifts the structural estimates. M3 and exclusion both stay close to the uncensored fit. The OFVs of the methods are different objectives, so the table does not compare them.
+
+## Options that matter
+
+| Where | Setting | Meaning |
+|---|---|---|
+| Data | `CENS = 1` | Below the LLOQ; `DV` holds the LLOQ |
+| | `CENS = -1` | Above the ULOQ; `DV` holds the ULOQ |
+| | `CENS = 0` | An ordinary observation |
+| `[fit_options]` | `bloq_method = m3` or `drop` (alias `bloq`) | M3 likelihood, or censored rows fitted at their `DV` |
+| `ferx_fit()` | `bloq_method =` | `"m3"`, `"drop"`, or `NULL` to keep the model file's choice |
+| `ferx_fit()` | `ignore = "CENS == 1"` | Remove the censored rows from the fit instead |
+
+`bloq_method = "drop"` does not remove rows. Each censored row is fitted at the limit in `DV`. To remove them, use `ignore`.
+
+## Variants
+
+### Heavier censoring
+
+A copy of the warfarin data with an LLOQ of 6 censors almost half of the observations:
+
+```{r}
+#| label: lloq-6
+lloq6 <- warfarin_data |>
+  mutate(below = EVID == 0 & !is.na(DV) & DV < 6,
+         CENS = as.integer(below), DV = ifelse(below, 6, DV)) |>
+  select(-below)
+lloq6_file <- file.path(censoring_dir, "warfarin_lloq6.csv")
+write.csv(lloq6, lloq6_file, row.names = FALSE, na = ".")
+count(filter(lloq6, EVID == 0), CENS)
+compare_methods(lloq6_file)
+```
+
+M3 still recovers the uncensored estimates. Fitting at the limit now fails badly: clearance is less than half, and the residual error absorbs the misfit. Excluding the rows matches M3 here, because the residual error of this model is about 1%. The predictions of the censored rows lie well below the limit, where the M3 probability is essentially 1 and adds almost nothing. When predictions are close to the limit, or the residual error is larger, the censored rows carry information that exclusion throws away.
+
+### Observations above the upper limit
+
+`CENS = -1` marks an observation above the ULOQ. In a copy of the warfarin data, concentrations above 11 are censored at 11:
+
+```{r}
+#| label: uloq
+uloq <- warfarin_data |>
+  mutate(above = EVID == 0 & !is.na(DV) & DV > 11,
+         CENS = -as.integer(above), DV = ifelse(above, 11, DV)) |>
+  select(-above)
+uloq_file <- file.path(censoring_dir, "warfarin_uloq11.csv")
+write.csv(uloq, uloq_file, row.names = FALSE, na = ".")
+count(filter(uloq, EVID == 0), CENS)
+compare_methods(uloq_file)[c(1, 2, 4), ]
+```
+
+### Checking the censored fraction
+
+A visual predictive check (@sec-vpc) of censored data compares the fraction below the limit. `ferx_simulate()` returns uncensored simulated values, so the fraction of simulated concentrations below the LLOQ at each time can be set against the observed fraction of censored rows:
+
+```{r}
+#| label: fig-bloq-fraction
+#| fig-cap: "Fraction of observations below the LLOQ of 6: observed (points) and the 90% interval and median of 200 simulations from the M3 fit (band and line)."
+fit_lloq6 <- ferx_fit(bloq$model, lloq6_file, verbose = FALSE)
+sim_lloq6 <- ferx_simulate(bloq$model, lloq6_file, n_sim = 200, seed = 1, fit = fit_lloq6)
+simulated_fraction <- sim_lloq6 |>
+  group_by(SIM, TIME) |>
+  summarise(fraction = mean(DV_SIM < 6), .groups = "drop") |>
+  group_by(TIME) |>
+  summarise(lo = quantile(fraction, 0.05), mid = median(fraction), hi = quantile(fraction, 0.95))
+observed_fraction <- filter(lloq6, EVID == 0) |> group_by(TIME) |> summarise(fraction = mean(CENS == 1))
+ggplot(simulated_fraction, aes(TIME)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.3) +
+  geom_line(aes(y = mid)) +
+  geom_point(data = observed_fraction, aes(y = fraction)) +
+  labs(x = "Time (h)", y = "Fraction below LLOQ")
+```
+
+### Estimation method
+
+With FOCEI, the method of this model file, the censored term is evaluated at the individual prediction. FOCE uses a linearized version and reaches a different optimum, and ferx says so:
+
+```{r}
+#| label: m3-foce
+# suppress the R warning that reports overriding the model file's method
+fit_foce <- suppressWarnings(ferx_fit(bloq$model, bloq$data, method = "foce", verbose = FALSE))
+rbind(focei = fit_m3$theta, foce = fit_foce$theta)
+ferx_get_warnings(fit_foce, as_df = TRUE)[, c("severity", "category")]
+```
+
+## Pitfalls
+
+- **`drop` keeps the rows.** It fits censored rows at the limit, which biases the fit as censoring grows. Use M3, or remove the rows with `ignore` knowingly.
+- **`DV` must hold the limit.** For `CENS = 1` rows the value in `DV` is the LLOQ that M3 integrates up to, not a measured value, zero or half the limit.
+- **Residuals of censored rows are `NaN`.** Filter them out of residual plots and summaries.
+- **Compare like with like.** OFVs from M3 and from `drop` or exclusion are different objectives. Compare M3 models with M3 models.
+
+### Warnings you may see here
+
+- `bloq_method` (warning): M3 combined with an estimation method whose censored likelihood differs from FOCEI's. Examples are FOCE without interaction (above) and the Gauss-Newton optimizers, which approximate the M3 term. Use `method = "focei"` for the conditional M3 likelihood. See the ferx-core [LOQ-censored observations](https://ferx-nlme.github.io/ferx-core/model-file/bloq.html) page.
+
+## Summary
+
+- Mark censored observations with `CENS` (1 below the LLOQ, −1 above the ULOQ) and put the limit in `DV`.
+- Fit them with `bloq_method = "m3"`, preferably with FOCEI. `sdtab` keeps them with `NaN` residuals.
+- `drop` fits censored rows at the limit and is biased. `ignore = "CENS == 1"` removes them.
+- Check a censored model with the fraction below the limit in simulations.
+
+Next: @sec-pkpd models drug effects together with concentrations.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit` (`bloq_method`, `ignore`), `?ferx_simulate`
+- ferx-core: [LOQ-censored observations](https://ferx-nlme.github.io/ferx-core/model-file/bloq.html), [data format](https://ferx-nlme.github.io/ferx-core/data-format.html)
+:::

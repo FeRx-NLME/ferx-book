@@ -1,0 +1,189 @@
+# Reproducibility and sharing {#sec-reproducibility}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+```{r}
+#| label: stage-banner
+#| echo: false
+#| output: asis
+book_stage_banner("REPORT")
+```
+
+## Where you are
+
+The last step of the workflow makes the analysis durable. Results should be saved in a form colleagues and tools can open. Every number in the report should be traceable to a model file, a dataset and a software version. Re-running the analysis should give the same answer. This chapter covers ferx's portable fit files and the provenance a fit records.
+
+## The data
+
+```{r}
+#| label: example
+cov <- ferx_example("two_cpt_oral_cov")
+run_dir <- book_tempdir("runs")
+```
+
+## Minimal runnable call: saving a fit
+
+`ferx_fit()` can save the fit while it runs: `output` is the file path, and `include_data = TRUE` also embeds the dataset. A path without an extension gets `.fitrx`:
+
+```{r}
+#| label: fit-output
+fit <- ferx_fit(cov$model, cov$data, output = file.path(run_dir, "run1"), verbose = FALSE)
+list.files(run_dir)
+```
+
+`ferx_save_fit()` does the same for an existing fit, with the arguments `fit`, `output` and `include_data`. It returns the fit invisibly, so it can sit in a pipe:
+
+```{r}
+#| label: save-fit
+ferx_save_fit(fit, output = file.path(run_dir, "run1_with_data"), include_data = TRUE)
+```
+
+A `.fitrx` file is a zip archive of JSON and CSV files, readable from any language with zip, JSON and CSV support:
+
+```{r}
+#| label: bundle-contents
+unzip(file.path(run_dir, "run1_with_data.fitrx"), list = TRUE)[, c("Name", "Length")]
+```
+
+It contains the model source (`model.ferx`), the estimates and run information (`fit.json`), per-subject random effects, per-observation predictions, the covariate table, the warnings, and with `include_data = TRUE` the dataset. The ferx-core [.fitrx format](https://ferx-nlme.github.io/ferx-core/file-formats/fitrx.html) page documents the schema.
+
+## Reading the result: loading a fit
+
+`ferx_load_fit()` reads a `.fitrx` file back as a `ferx_fit` object. Its `path` may omit the extension:
+
+```{r}
+#| label: load-fit
+loaded <- ferx_load_fit(file.path(run_dir, "run1"))
+class(loaded)
+all.equal(fit$estimates, loaded$estimates)
+all.equal(fit$sdtab, loaded$sdtab)
+```
+
+The loaded fit can be used like the original. It can be simulated from, or given a SIR step (here the model and data files are unchanged, so the integrity check passes):
+
+```{r}
+#| label: use-loaded
+sim <- ferx_simulate(cov$model, cov$data, n_sim = 2, seed = 1, fit = loaded)
+nrow(sim)
+ferx_sir(loaded, sir_seed = 1)$sir_ess
+```
+
+With `include_data = TRUE`, the loaded fit points to a copy of the embedded dataset, so the bundle is self-contained:
+
+```{r}
+#| label: load-with-data
+loaded_data <- ferx_load_fit(file.path(run_dir, "run1_with_data.fitrx"))
+file.exists(loaded_data$data_path)
+```
+
+### What a `.fitrx` file does not keep
+
+The file stores the fields of the cross-language schema, not every element of the R fit object:
+
+```{r}
+#| label: not-kept
+setdiff(names(fit), names(loaded))
+```
+
+Warning categories are an example. After loading, the warnings are still there, but their category is `general`:
+
+```{r}
+#| label: warnings-loaded
+ferx_get_warnings(fit, as_df = TRUE)$category
+ferx_get_warnings(loaded, as_df = TRUE)$category
+```
+
+Keep what you need from the missing fields (for example `individual_estimates` or `condition_number`) in your own tables. Or save the R object as well, with `saveRDS()`.
+
+## Recording provenance
+
+A fit records where it came from:
+
+```{r}
+#| label: provenance
+data.frame(
+  item = c("model file", "data file", "model SHA-256", "data SHA-256", "engine version", "ferx-r version"),
+  value = c(basename(fit$model_path), basename(fit$data_path), substr(fit$model_hash, 1, 16),
+            substr(fit$data_hash, 1, 16), fit$ferx_version, as.character(packageVersion("ferx")))
+)
+```
+
+`fit$model_text` holds the model source. The hashes are what `ferx_sir()` and `ferx_covariance()` check before reusing a fit: if the model or data file has changed, they stop.
+
+Package versions alone do not identify a development build. This book records the ferx-r commit it was built with (`{{< var ferx_r_sha_short >}}`, see @sec-installation). Do the same in your reports, together with the R session information:
+
+```{r}
+#| label: session
+sessionInfo()$running
+c(R = R.version.string, ferx = as.character(packageVersion("ferx")))
+```
+
+A run log (@sec-estimation-methods) is a readable record to keep next to the `.fitrx` file:
+
+```{r}
+#| label: runlog-file
+writeLines(ferx_runlog(fit, verbose = FALSE), file.path(run_dir, "run1_runlog.txt"))
+list.files(run_dir)
+```
+
+## Options that matter
+
+| Function | Argument | Meaning |
+|---|---|---|
+| `ferx_fit()` | `output` | Save the fit to this `.fitrx` path when fitting |
+| | `include_data` | Embed the dataset in the file (only with `output`) |
+| `ferx_save_fit()` | `fit` | The fit to save |
+| | `output` | File path (`.fitrx` appended when there is no extension) |
+| | `include_data` | Embed the dataset |
+| `ferx_load_fit()` | `path` | `.fitrx` file, with or without extension |
+
+Every stochastic step in the book takes a seed. Set it explicitly so results are reproducible:
+
+| Where | Seed |
+|---|---|
+| `ferx_simulate()`, `ferx_simulate_with_uncertainty()`, `ferx_simulate_adaptive()`, `ferx_calc_npde()` | `seed` argument |
+| `ferx_bootstrap()` | `seed` argument (results independent of `threads`) |
+| `ferx_sir()` | `sir_seed` argument |
+| SAEM, IMP, IMPMAP, Bayes, multi-start fits | `seed`, `imp_seed`, `impmap_seed`, `bayes_seed`, `multi_start_seed` settings (@sec-estimation-methods) |
+
+## Variants
+
+### A project layout
+
+ferx does not require a particular layout. One that keeps runs traceable:
+
+```
+project/
+├── data/            # analysis datasets, as used by the fits
+├── models/          # run1.ferx, run2.ferx, ... (versioned model files)
+├── runs/            # run1.fitrx, run1_runlog.txt, search and bootstrap directories
+├── scripts/         # R scripts or Quarto documents that run the analysis
+└── report/          # tables, figures and the report source
+```
+
+Keep search directories (@sec-model-selection) and bootstrap directories (@sec-uncertainty) under `runs/`: they contain every candidate model and can be resumed. A Quarto document that fits, evaluates and reports, like the chapters of this book, is itself a reproducible record of the analysis.
+
+## Pitfalls
+
+- **Reloaded fits are not complete R fit objects.** Check that the fields you need survive `ferx_save_fit()`/`ferx_load_fit()`, and do not rely on warning categories after loading.
+- **Changing a model or data file invalidates follow-up steps.** `ferx_sir()` and `ferx_covariance()` stop when the hashes no longer match. Version model files (`run2.ferx`) instead of editing them in place.
+- **Record the build.** Output can change between ferx builds. Record the ferx-r commit or release with every run.
+
+## Summary
+
+- Save fits with `ferx_fit(output = ...)` or `ferx_save_fit()`, load them with `ferx_load_fit()`. Use `include_data = TRUE` for self-contained files.
+- A fit records its model text, file hashes and engine version. Add the ferx-r commit and session information to reports.
+- Set seeds for every stochastic step, and keep model files, run files, logs and search directories together.
+
+This completes *The analysis workflow*. The scenario Parts that follow apply it to specific modeling problems, starting with @sec-structural-models.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_save_fit`, `?ferx_load_fit`, `?ferx_fit` (`output`, `include_data`)
+- ferx-core: [.fitrx file format](https://ferx-nlme.github.io/ferx-core/file-formats/fitrx.html)
+:::

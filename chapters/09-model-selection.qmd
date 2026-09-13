@@ -1,0 +1,489 @@
+---
+aliases:
+  - /chapters/15-model-search.html
+---
+
+# Model development and selection {#sec-model-selection}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+```{r}
+#| label: stage-banner
+#| echo: false
+#| output: asis
+book_stage_banner("EVALUATE")
+```
+
+## Where you are
+
+The base model is fitted (@sec-first-fit) and evaluated (@sec-diagnostics, @sec-vpc). The diagnostics hinted at covariate relationships (`ETA_CL` correlated with `CRCL` and `WT`) and flagged autocorrelated residuals. Model development means fitting alternatives and choosing between them. You can do that by hand: write a candidate, fit it and compare. Or let ferx's search tools generate, fit, gate and rank candidates from a search space. This chapter shows both.
+
+## The data
+
+```{r}
+#| label: examples
+base <- ferx_example("two_cpt_oral_base")
+cov <- ferx_example("two_cpt_oral_cov")
+```
+
+## Comparing fitted models
+
+`two_cpt_oral_cov` is a prespecified covariate model for the same data. Body weight scales `CL` and `V1` through a shared exponent `THETA_WT`, and creatinine clearance scales `CL`:
+
+```{r}
+#| label: cov-model
+invisible(ferx_model_get_section(cov$model, "individual_parameters"))
+```
+
+```{r}
+#| label: fits
+fit_base <- ferx_fit(base$model, base$data, verbose = FALSE)
+fit_cov <- ferx_fit(cov$model, cov$data, verbose = FALSE)
+```
+
+### Likelihood ratio test and information criteria
+
+Both are FOCEI fits to the same data, and the base model is nested in the covariate model (fix both exponents at 0). The difference in OFV is therefore a likelihood ratio statistic, with degrees of freedom equal to the number of added parameters:
+
+```{r}
+#| label: lrt
+d_ofv <- fit_base$ofv - fit_cov$ofv
+df <- fit_cov$n_parameters - fit_base$n_parameters
+c(d_ofv = d_ofv, df = df, p_value = pchisq(d_ofv, df, lower.tail = FALSE))
+```
+
+For non-nested models, use information criteria. `fit$aic` and `fit$bic` are the classical AIC and BIC. `ferx_bic()` computes four BIC variants that differ in how parameters are penalised:
+
+| `type` | Penalty added to the OFV |
+|---|---|
+| `"mixed"` (default) | random-effect parameters × log(subjects) + fixed-effect parameters × log(observations) |
+| `"fixed"` | all parameters × log(observations); equals `fit$bic` |
+| `"iiv"` | variance parameters × log(subjects), for comparing variability structures |
+| `"random"` | all parameters × log(subjects) |
+
+```{r}
+#| label: tbl-criteria
+#| tbl-cap: "Base and covariate model compared on OFV and information criteria (lower is better)."
+criteria <- function(f) {
+  c(ofv = f$ofv, parameters = f$n_parameters, aic = f$aic, bic = f$bic,
+    bic_mixed = ferx_bic(f, "mixed"), bic_iiv = ferx_bic(f, type = "iiv"),
+    bic_random = ferx_bic(f, "random"))
+}
+round(rbind(base = criteria(fit_base), covariate = criteria(fit_cov)), 2)
+```
+
+Here the covariate model is better on every criterion.
+
+### Is the fit eligible at all?
+
+A converged fit can still be unfit for comparison: it may never have left its initial estimates, have a parameter at a bound, or have an ill-conditioned covariance matrix. `check_strictness()` applies such gates and returns the reasons for failure:
+
+```{r}
+#| label: strictness
+check_strictness(fit_cov, require_covariance = TRUE)
+```
+
+The fit from NCA-based starting values in @sec-first-fit converged to a much worse OFV. The gates reject it:
+
+```{r}
+#| label: strictness-fail
+fit_nca <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, verbose = FALSE)
+check_strictness(fit_nca)
+```
+
+The gates and their defaults: `require_converged = TRUE`, `require_covariance = FALSE`, `max_condition_number = 1000`, `max_correlation = 0.95`, `reject_on_boundary = TRUE` and `reject_init_stall = TRUE`. Set a threshold to `NULL`, or a flag to `FALSE`, to disable that gate. `reject_init_stall` assumes a cold start from the model file's initial values, so turn it off when candidates start from a previous model's estimates.
+
+## Search configurations
+
+::: {.callout-warning}
+## Maturity: alpha
+The ferx-core pages for the search tools carry the maturity label *alpha*. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+The search tools read a **`.ferxsearch`** configuration file (TOML) that names the base model and data and states the search. Four bundled examples carry one as `$search`:
+
+| Example | Search file for |
+|---|---|
+| `two_cpt_oral_base` | covariate search (`[covsearch]`), plus an `[allometry]` section (@sec-covariates) |
+| `two_cpt_oral_cov` | a configuration with a BIC ranking, used here to show loading |
+| `warfarin` | structural search (`[modelsearch]`) |
+| `one_cpt_transit` | residual error search (`[ruvsearch]`) |
+
+`ferx_search_config()` loads a file with the engine's own strict loader, so an invalid space or a misspelt section fails before anything is fitted:
+
+```{r}
+#| label: config
+cfg <- ferx_search_config(base$search)
+cfg
+```
+
+The file's sections, as shown in the printout: `base` and `data` (paths relative to the file); `[space]` with the search space as `mfl`; `[rank]` with the ranking criterion; `[strictness]` with the gates from above; `[run]` with `threads`, `retries` and `resume`; and a section per tool. The object returned holds the same information as a list:
+
+```{r}
+#| label: config-rank
+cfg_cov <- ferx_search_config(ferx_example("two_cpt_oral_cov")$search)
+cfg_cov$rank$type
+cfg$tools
+```
+
+### The search space
+
+The space is written in the Model Feature Language (MFL). `COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])` means: every parameter with a random effect, crossed with every continuous covariate, as a power or linear effect, each optional (`?`). The `?` is accepted on four keywords only -- `COVARIATE`, `IIV`, `IOV` and `COVARIANCE` -- and marks that statement as something the search may decline; written without it, every candidate carries the feature. The other keywords, `ABSORPTION` and `PERIPHERALS` among them, enumerate the alternatives to try instead. The `@` symbols resolve against the model's `[covariates]` block and its random effects, so one space travels between models: `@CATEGORICAL` selects the categorical covariates as `@CONTINUOUS` selects the continuous ones. `ferx_search_space()` parses MFL text and, given a model and data, expands the symbols into the concrete candidates:
+
+```{r}
+#| label: space
+ferx_search_space("COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])")
+space <- ferx_search_space(cfg$mfl, model = base$model, data = base$data)
+nrow(attr(space, "covariate_effects"))
+head(attr(space, "covariate_effects"))
+```
+
+`ferx_search_coverage()` reports, without fitting, whether the engine can build candidates for each feature of a space:
+
+```{r}
+#| label: coverage
+ferx_search_coverage(space)
+ferx_search_coverage("ABSORPTION(SEQ-ZO-FO)")
+```
+
+Sequential zero- then first-order absorption is not generated by the search. @sec-absorption shows the bundled model for it, which you can use as a base model instead.
+
+An uncovered feature is not quietly dropped. Asking for one in a configuration file is an error at load, before anything is fitted, because a search that silently narrowed its space would answer a different question than the one you posed:
+
+```{r}
+#| label: coverage-is-an-error
+uncovered <- file.path(book_tempdir("search-space"), "uncovered.ferxsearch")
+writeLines(sub('mfl = .*', 'mfl = "ABSORPTION([FO,SEQ-ZO-FO])"', readLines(base$search)), uncovered)
+tryCatch(ferx_search_config(uncovered), error = function(e) sub(".*mfl: ", "", conditionMessage(e)))
+```
+
+That is what `ferx_search_coverage()` is for: check a space before you file it.
+
+## Covariate search
+
+`ferx_covsearch()` runs a stepwise covariate search. In each forward step it fits every remaining candidate effect and adds the one with the largest significant OFV drop at `p_forward`. The backward phase then removes effects whose removal is not significant at the stricter `p_backward`. The bundled configuration uses `p_forward = 0.01` and `p_backward = 0.001`:
+
+```{r}
+#| label: covsearch
+cs_dir <- book_tempdir("covsearch")
+cs <- ferx_covsearch(config = base$search, directory = cs_dir, progress = FALSE)
+cs
+```
+
+The forward phase added `CL ~ CRCL` (linear) at p = `r signif(cs$steps$p_value[cs$steps$selected & cs$steps$phase == "forward"][1], 2)`, below `p_forward`. That p-value is above `p_backward`, so the backward phase removed the effect again. The search returns the base model. Candidates excluded by the strictness gate are kept in the step table with their reason:
+
+```{r}
+#| label: covsearch-excluded
+cs$steps[!cs$steps$passed, c("step", "parameter", "covariate", "form", "failures")]
+```
+
+`print()` shows the selected step of each phase. `summary()` on the result adds every candidate of every step; the same table is `cs$steps`. The run directory holds the per-step journals, `steps.csv` and `final.ferx`. `ferx_search_results()` reads the step table back from disk:
+
+```{r}
+#| label: covsearch-results
+list.files(cs_dir)
+steps <- ferx_search_results(cs_dir, type = "steps")
+attr(steps, "tool")
+```
+
+The search can also be stated inline. Here it is restricted to `CL`, with a less strict backward level:
+
+```{r}
+#| label: covsearch-inline
+cs_cl <- ferx_covsearch(model = base$model, data = base$data,
+                        search_space = "COVARIATE?(CL, [WT, CRCL], [pow, lin])",
+                        p_forward = 0.01, p_backward = 0.01,
+                        directory = book_tempdir("covsearch-cl"), progress = FALSE)
+cs_cl$included
+c(base_ofv = cs_cl$base_ofv, final_ofv = cs_cl$final_ofv)
+```
+
+The selected covariate model depends on the search space and the significance levels. A search result is evidence, not a decision. The rest of *The analysis workflow* continues with the prespecified `two_cpt_oral_cov` model, which the comparison above supports.
+
+## Structural search
+
+`ferx_modelsearch()` searches structural features: absorption, elimination, peripheral and transit compartments, and lag time. It ranks the candidates on a criterion, the mixed BIC by default. The warfarin configuration searches a peripheral compartment and a lag time:
+
+```{r}
+#| label: modelsearch
+ms_dir <- book_tempdir("modelsearch")
+warf <- ferx_example("warfarin")
+ms <- ferx_modelsearch(config = warf$search, directory = ms_dir, progress = FALSE)
+ms
+```
+
+The base structure ranks best on the mixed BIC. The lag-time model has a lower OFV, but not by enough to pay for its extra parameters. Every candidate's model text is kept, so the runner-up can be inspected or refitted:
+
+```{r}
+#| label: modelsearch-runner-up
+runner_up <- file.path(ms_dir, "runner_up.ferx")
+writeLines(ms$model_text[["run1"]], runner_up)
+invisible(ferx_model_get_section(runner_up, "structural_model"))
+```
+
+With `resume = TRUE` and the same `directory`, a search reuses the fits it already journalled:
+
+```{r}
+#| label: modelsearch-resume
+ms_again <- ferx_modelsearch(config = warf$search, directory = ms_dir, resume = TRUE, progress = FALSE)
+ms_again$models[, c("id", "structure", "reused")]
+nrow(ferx_search_results(ms_dir, type = "models"))
+```
+
+## Residual error search
+
+`ferx_ruvsearch()` tests four families of residual error extensions against the current error model, using the likelihood ratio test at `p_value`:
+
+- `IIV_on_RUV`: a random effect on the residual error magnitude. It needs an estimation method with interaction.
+- `power`: a proportional error raised to an estimated power.
+- `combined`: an additive component added to the proportional one.
+- `time_varying`: a residual error magnitude that differs below a time-after-dose cutoff, set at quantiles given by `groups`.
+
+Up to `max_iter` accepted features are stacked. The bundled configuration searches the analytic transit model `one_cpt_transit`:
+
+```{r}
+#| label: ruvsearch
+transit <- ferx_example("one_cpt_transit")
+rs <- ferx_ruvsearch(config = transit$search, directory = book_tempdir("ruvsearch"), progress = FALSE)
+rs
+rs$final_features
+```
+`cwres_prescreen` changes what those numbers are. With it on, candidates are screened against the parent's CWRES rather than fitted to the data, which is cheaper but puts the criterion on a different scale. Two runs that differ only in that flag, everything else held equal:
+
+```{r}
+#| label: ruvsearch-prescreen
+ruv <- function(prescreen) {
+  ferx_ruvsearch(model = transit$model, data = transit$data, p_value = 0.05, max_iter = 1,
+                 retries = 0, cwres_prescreen = prescreen,
+                 directory = book_tempdir(paste0("ruvsearch-", prescreen)), progress = FALSE)
+}
+rs_data <- ruv(FALSE)
+rs_screen <- ruv(TRUE)
+screened <- startsWith(rs_screen$candidates$id, "cwres")
+rbind(fitted_to_data = range(rs_data$candidates$criterion[rs_data$candidates$id != "input"]),
+      screened_on_cwres = range(rs_screen$candidates$criterion[screened]))
+c(selected_data = length(rs_data$final_features), selected_screened = length(rs_screen$final_features))
+```
+
+The two sets of numbers are not comparable, and the screening rows are the ones whose `id` starts with `cwres`. Note that the cheaper pass also selected differently here, so treat prescreening as a different search rather than a faster one. The engine default is `cwres_prescreen = FALSE`, which is what the configuration run above used.
+
+
+The search accepted a time-varying residual error in the first iteration, and nothing further in the second. The base model of this workflow, which carried a residual autocorrelation warning in @sec-diagnostics, can be searched the same way with the inline arguments (`model`, `data`, `p_value`, `max_iter`, …).
+
+## Variability search
+
+`ferx_iivsearch()` decides the random-effect structure: which parameters carry an eta, and which etas share a covariance block. The space is written with `IIV` and `COVARIANCE` statements, and `?` marks what the search may decide. The bundled `warfarin_block_omega` configuration makes every PK parameter's eta exploratory and offers a block over whichever survive:
+
+```{r}
+#| label: iivsearch
+bo <- ferx_example("warfarin_block_omega")
+iiv <- ferx_iivsearch(config = bo$search, directory = book_tempdir("iivsearch"), progress = FALSE)
+iiv
+```
+
+The printed output has three steps. The eta-count stage removes etas from the input structure -- `top_down_exhaustive` tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. The third step, `compare_to_input`, puts the winner of the block stage back against the input structure, and it is there that the selection is made. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool.
+
+Read the printed output carefully. The input model is a candidate in its own right: the step tables rank it, and in the eta-count stage it ranks first. The strictness gate is separate from that ranking. It rejected `r sum(!iiv$models$passed)` of the fitted models, and one of them reached a better criterion than the winner did:
+
+```{r}
+#| label: iivsearch-gate
+iiv$models[, c("id", "structure", "criterion", "rank", "passed")]
+```
+
+`run8` scores `r round(min(iiv$models$criterion[!iiv$models$passed]), 2)` against the selected `r round(iiv$final_criterion, 2)`, and is out because it did not pass. Note where that verdict lives: `converged` and `passed` are columns of the tables that report on fitted candidates -- `$models` here, `$candidates` and `$steps` elsewhere -- and not of the per-stage ranking summary, which ranks models those rows already judged:
+
+```{r}
+#| label: steps-vs-models
+names(iiv$steps)
+intersect(c("converged", "passed"), names(iiv$steps))
+```
+
+The input carries no rank in the combined table above because it is the parent each stage starts from. A search result is a ranking of what passed, not proof that the winner is the best model fitted.
+
+```{r}
+#| label: iivsearch-final
+iiv$final_structure
+iiv$final_etas
+```
+
+With `algorithm = "skip"` the eta-count stage is left out and only the block stage runs, which is the cheap way to ask one question: should `CL` and `V` share a covariance block? Skipping the eta-count stage means naming the block stage explicitly -- asking for neither is an error rather than a search with nothing left to do. The statements name parameters, not etas:
+
+```{r}
+#| label: iivsearch-blocks
+iiv_block <- ferx_iivsearch(model = bo$model, data = bo$data,
+                            search_space = "COVARIANCE?(IIV, [CL, V])",
+                            algorithm = "skip",
+                            correlation_algorithm = "top_down_exhaustive",
+                            block_retries = 1,
+                            directory = book_tempdir("iivsearch-block"), progress = FALSE)
+c(input = iiv_block$input_structure, final = iiv_block$final_structure)
+iiv_block$models[, c("id", "structure", "criterion", "rank", "passed")]
+```
+
+Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The input is kept -- but read why. The diagonal candidate reaches the better criterion of the two, and it is out because it fails the strictness gate. The `failures` column gives the reason:
+
+```{r}
+#| label: iivsearch-blocks-reason
+with(iiv_block$models, failures[!is.na(failures)])
+```
+
+No free parameter moved more than 1% of its initial value, so `reject_init_stall` refused the fit. Whether that is the right call here depends on where the candidate started, which the printed output does not say: a candidate handed its parent's optimum can sit still because it is already converged, which is why `ferx_amd()` turns this gate off inside its steps (below). Read a gated-out candidate as unjudged rather than as rejected on merit, and refit it yourself if it matters. A selection is only as meaningful as the gate that produced it.
+
+## Inter-occasion variability search
+
+`ferx_iovsearch()` decides which parameters carry an occasion random effect. It reads the occasion column from the base model's `iov_column`, so a model without one has nothing to search. The bundled `warfarin_iov` configuration offers a kappa on every parameter that has an eta:
+
+```{r}
+#| label: iovsearch
+iov_ex <- ferx_example("warfarin_iov")
+iov <- ferx_iovsearch(config = iov_ex$search, directory = book_tempdir("iovsearch"), progress = FALSE)
+iov
+```
+
+`distribution = "same-as-iiv"`, the default, declares each added kappa the way its eta is declared. The first step added kappas on `KA` and `V`; the second then found that dropping `ETA_V` improved the BIC(random) further: an IOV search can change the IIV structure, because the two are fitted together. `CL` already carries a kappa in the base model and is left as it is.
+
+```{r}
+#| label: iovsearch-final
+iov$final_kappas
+iov$final_structure
+```
+
+## The whole pipeline at once
+
+`ferx_amd()` runs the tools above in order as one automatic model-development pipeline: structural, IIV, residual, IOV, allometry, covariates. One search space describes the whole pipeline, and the engine hands each step only the statements its tool can read. A step the space says nothing about is skipped, and says so.
+
+`ferx_amd_plan()` shows that plan without fitting anything, which is the cheap way to check a configuration before spending the run:
+
+```{r}
+#| label: amd-plan
+amd_ex <- ferx_example("warfarin_amd")
+plan <- ferx_amd_plan(config = amd_ex$search)
+plan
+```
+
+`r sum(!is.na(plan$skipped))` of the `r nrow(plan)` steps are already ruled out by the model and the space, and the `skipped` column says why: the model declares no `iov_column`, and the space carries no `ALLOMETRY` or `COVARIATE` statement because `warfarin.csv` has no covariate column. Running it fits the rest:
+
+```{r}
+#| label: amd
+amd <- ferx_amd(config = amd_ex$search, directory = book_tempdir("amd"), progress = FALSE)
+amd
+```
+
+The pipeline improved nothing: `warfarin_amd.ferx` is already the model these three steps would choose, so each step re-selected its own input and the final OFV equals the starting one. That is a useful result to see printed rather than hidden -- the step table carries each step's criterion before and after, its candidate count, the strictness verdict and its wall clock, so a step that "won" by having its siblings rejected looks different from one that found something. `summary()` adds every candidate of every step, and the same two tables are written to the run directory as `steps.csv` and `candidates.csv`.
+
+Getting the result out of an AMD run takes a little care, because two fields both look final and are not the same thing. `$final_model` is the model *text* the pipeline ended on, written to `$final_model_path`; the fitted object is `$fit`. `$final_ofv` and `$d_ofv` give the end point and the change from the start, negative being an improvement:
+
+```{r}
+#| label: amd-result
+c(final_model = class(amd$final_model), fit = class(amd$fit))
+c(input_ofv = amd$input_ofv, final_ofv = amd$final_ofv, d_ofv = amd$d_ofv)
+basename(amd$final_model_path)
+```
+
+Each step that ran also has an entry under `$tools`, named by its position and pipeline step. Watch the naming: the entry is keyed on the pipeline step, while its `$directory` is the tool that implemented it, and the two need not agree -- `01-structural` was run by `modelsearch`:
+
+```{r}
+#| label: amd-tools
+names(amd$tools)
+vapply(amd$tools, function(step) step$directory, "")
+names(amd$tools[["01-structural"]])
+```
+
+An entry is a plain list, not the object the tool would return on its own: it carries what the step decided (`status`, `reason`, `criterion`, `selected`, `seconds`), its slice of the candidates, and the engine's own table read back from the run directory. Run a tool directly when you want its fit and its own options.
+
+The pipeline can also be stated inline, with a shorter order and steps left out. `strategy` chooses which steps run and in what order, and `ferx_amd_plan()` will show you each without fitting anything:
+
+```{r}
+#| label: amd-strategies
+strategies <- c("default", "reevaluation", "SIR", "SRI", "RSI")
+data.frame(strategy = strategies, order = vapply(strategies, function(s) {
+  paste(ferx_amd_plan(model = amd_ex$model, data = amd_ex$data,
+                      search_space = "PERIPHERALS(0..1); IIV?(@PK, exp)",
+                      strategy = s)$step, collapse = " -> ")
+}, ""), row.names = NULL)
+```
+
+`reevaluation` is the default order with a second iivsearch and residual pass at the end. The three-letter names are shorter pipelines, not reorderings of the same six: they run the three steps their initials spell and leave out iovsearch, allometry and covariates entirely. `skip` drops a step from whichever order was chosen; `retries_on` says when the extra perturbed-restart pass runs:
+
+```{r}
+#| label: amd-inline
+amd_sir <- ferx_amd(model = amd_ex$model, data = amd_ex$data,
+                    search_space = "PERIPHERALS(0..1); IIV?(@PK, exp)",
+                    strategy = "SIR", skip = "residual", retries_on = "final",
+                    retries = 0, directory = book_tempdir("amd-sir"), progress = FALSE)
+amd_sir$steps[, c("step", "status", "criterion", "candidates", "seconds")]
+```
+
+## Tools not available from R
+
+ferx-core also has a global search. It runs from the ferx command line and has no R function in the pinned ferx-r build. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages.
+
+A `.ferxsearch` file may still carry a section for such a tool. The loader validates section names against a fixed vocabulary, which runs ahead of what this package binds and, in the case of `[structsearch]`, ahead of the engine itself; a name outside that list is an error. The file loads, and ferx warns rather than running a search that quietly ignores part of its own configuration. Where the section can be run somewhere, the warning says where:
+
+```{r}
+#| label: unconsumed-sections
+sections_dir <- book_tempdir("search-sections")
+unconsumed <- function(section, body) {
+  path <- file.path(sections_dir, paste0(gsub("\\[|\\]", "", section), ".ferxsearch"))
+  writeLines(c(readLines(base$search), "", section, body), path)
+  tryCatch(ferx_search_config(path), warning = conditionMessage)
+}
+unconsumed("[globalsearch]", '  algorithm = "exhaustive"')
+unconsumed("[structsearch]", "  x = 1")
+```
+
+`[globalsearch]` has an engine tool behind it, so the message names `ferx globalsearch`. `[structsearch]` is accepted vocabulary with no engine module yet, so it is reported without a remediation that would name a command nobody can run.
+
+## Options that matter
+
+| Function | Arguments |
+|---|---|
+| `ferx_bic()` | `fit`, `type` (`"mixed"`, `"fixed"`, `"iiv"`, `"random"`) |
+| `check_strictness()` | `fit`, `require_converged`, `require_covariance`, `max_condition_number`, `max_correlation`, `reject_on_boundary`, `reject_init_stall` |
+| `ferx_search_config()` | `path` |
+| `ferx_search_space()` | `mfl` (text, config or space), `model`, `data` |
+| `ferx_search_coverage()` | `space` (space, config or MFL text) |
+| `ferx_search_results()` | `directory`, `partial` (`NULL` prefers the complete table), `type` (`"candidates"`, `"models"`, `"steps"`) |
+
+The search functions share the entry arguments `model`, `data` and `config`; the run arguments `threads`, `retries`, `directory`, `resume` and `progress`; and, wherever candidates are ranked rather than tested, `search_space`, `rank` and `cutoff`. A search is stated either by `config` or by the inline arguments, not both:
+
+| Function | Search arguments |
+|---|---|
+| `ferx_covsearch()` | `algorithm` (`"scm-forward-then-backward"` or `"scm-forward"`), `p_forward`, `p_backward`, `max_steps`, `adaptive_scope_reduction` |
+| `ferx_modelsearch()` | `algorithm` (`"reduced_stepwise"`, `"exhaustive_stepwise"`, `"exhaustive"`), `iiv_strategy` (`"absorption_delay"`, `"add_diagonal"`, `"no_add"`) |
+| `ferx_ruvsearch()` | `groups`, `p_value`, `skip` (families not to test), `max_iter` (1 to 3), `cwres_prescreen` (screen candidates on the parent's CWRES before refitting) |
+| `ferx_iivsearch()` | `algorithm` (`"top_down_exhaustive"`, `"bottom_up_stepwise"`, `"simultaneous_stepwise"`, `"skip"`), `correlation_algorithm` (the block stage: `"top_down_exhaustive"` or `"skip"`), `as_fullblock` (a bottom-up candidate blocks every eta it carries), `block_retries` (extra starts per eta in the largest block) |
+| `ferx_iovsearch()` | `column` (the occasion column; defaults to the model's `iov_column`, and disagreeing with it is an error), `distribution` (`"same-as-iiv"`, `"disjoint"`, `"joint"`, `"explicit"`), `groups` (the blocks `"explicit"` names), `block_retries` |
+| `ferx_amd()`, `ferx_amd_plan()` | `strategy` (`"default"`, `"reevaluation"`, `"SIR"`, `"SRI"`, `"RSI"`), `skip` (steps to leave out), `retries_on` (`"all_final"`, `"final"`, `"skip"`) |
+
+Only a `.ferxsearch` file can carry a per-tool section (`[modelsearch]`, `[iivsearch]`, `[covsearch]`, …); the inline form runs each step at its own defaults.
+
+`print()` and `summary()` exist for the results of all of them: `ferx_covsearch`, `ferx_modelsearch`, `ferx_ruvsearch`, `ferx_iivsearch`, `ferx_iovsearch` and `ferx_amd` objects. `ferx_search_config` and `ferx_search_space` objects have `print()` methods.
+
+## Pitfalls
+
+- **Keep search directories.** The book writes them to a temporary directory. In a project, write them next to the analysis: they hold every candidate model, the tables and `final.ferx`, and they make `resume` possible.
+- **`ferx_search_results()` needs the right `type`.** The covariate and residual error searches write `steps.csv`, the structural search `models.csv`. Neither wrote a `candidates.csv` here, so the default `type = "candidates"` finds no table for these runs.
+- **Compare like with like.** OFV differences and likelihood ratio tests need the same data, the same estimation method and nested models.
+- **Thresholds change the answer.** Record the space, the significance levels and the criterion together with the selected model. The `.ferxsearch` file is that record.
+
+## Summary
+
+- Compare fitted models by likelihood ratio test (nested) or with `fit$aic`, `fit$bic` and `ferx_bic()`. Gate candidates with `check_strictness()`.
+- Describe searches in `.ferxsearch` files; check them with `ferx_search_config()`, `ferx_search_space()` and `ferx_search_coverage()`.
+- Run covariate, structural and residual error searches with `ferx_covsearch()`, `ferx_modelsearch()` and `ferx_ruvsearch()`, and read their tables with `ferx_search_results()`.
+- Search the random-effect structure with `ferx_iivsearch()` and the occasion structure with `ferx_iovsearch()`; both can change the IIV structure, so read what they selected rather than only the criterion.
+- Run the whole order as one pipeline with `ferx_amd()`, after checking it with `ferx_amd_plan()`. A step the space says nothing about is skipped, and the step table says why.
+
+Next: @sec-uncertainty quantifies the uncertainty of the selected covariate model.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_bic`, `?check_strictness`, `?ferx_search_config`, `?ferx_search_space`, `?ferx_search_coverage`, `?ferx_search_results`, `?ferx_covsearch`, `?ferx_modelsearch`, `?ferx_ruvsearch`, `?ferx_iivsearch`, `?ferx_iovsearch`, `?ferx_amd`, `?ferx_amd_plan`
+- ferx-core: [search configuration](https://ferx-nlme.github.io/ferx-core/tools/search.html), [covsearch](https://ferx-nlme.github.io/ferx-core/tools/covsearch.html), [modelsearch](https://ferx-nlme.github.io/ferx-core/tools/modelsearch.html), [ruvsearch](https://ferx-nlme.github.io/ferx-core/tools/ruvsearch.html), [iivsearch](https://ferx-nlme.github.io/ferx-core/tools/iivsearch.html), [iovsearch](https://ferx-nlme.github.io/ferx-core/tools/iovsearch.html), [amd](https://ferx-nlme.github.io/ferx-core/tools/amd.html), [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html)
+:::

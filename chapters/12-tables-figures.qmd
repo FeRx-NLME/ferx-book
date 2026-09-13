@@ -1,0 +1,248 @@
+# Tables and figures {#sec-tables-figures}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+```{r}
+#| label: stage-banner
+#| echo: false
+#| output: asis
+book_stage_banner("REPORT")
+```
+
+## Where you are
+
+The analysis is done: the final covariate model is fitted, evaluated and its uncertainty known. A report needs a parameter table, a record of the models compared, exposure metrics for the subjects, and a small set of figures. ferx returns all results as ordinary R data frames and lists, so reporting is plain R (dplyr, gt, ggplot2). The one ferx-specific tool is the model file's `[derived]` and `[output]` blocks, which let the engine compute per-subject exposure metrics.
+
+## The data
+
+```{r}
+#| label: fits
+cov <- ferx_example("two_cpt_oral_cov")
+base <- ferx_example("two_cpt_oral_base")
+fit <- ferx_fit(cov$model, cov$data, verbose = FALSE)
+fit_base <- ferx_fit(base$model, base$data, verbose = FALSE)
+```
+
+## Minimal runnable call: the parameter table
+
+`fit$estimates` holds everything a parameter table needs. Between-subject variances are reported as coefficients of variation. For the log-normal random effects of this model, CV% = 100 × sqrt(exp(ω²) − 1), the value `print()` on the fit shows. Shrinkage comes from `fit$shrinkage_eta`.
+
+That formula belongs to the log-normal form, so check what the etas are before applying it to every omega row (@sec-first-fit):
+
+```{r}
+#| label: eta-forms
+table(fit$eta_param_types)
+```
+
+All of them here. A logit-normal parameter is the case to watch: its distribution is asymmetric, so a CV% computed this way would misdescribe it. Report the variance on the logit scale, or a percentile range on the natural scale, instead.
+
+```{r}
+#| label: tbl-parameters
+#| tbl-cap: "Parameter estimates of the final covariate model."
+est <- fit$estimates
+omega_rows <- est$transform == "variance"
+shrinkage <- setNames(100 * fit$shrinkage_eta, fit$eta_names)
+
+param_table <- est |>
+  mutate(
+    type = case_when(omega_rows ~ "Between-subject variability (CV%)",
+                     transform == "identity" ~ "Fixed effects",
+                     TRUE ~ "Residual error"),
+    value = ifelse(omega_rows, 100 * sqrt(exp(estimate) - 1), estimate),
+    ci = ifelse(omega_rows, NA,
+                sprintf("%s – %s", signif(lower_95, 3), signif(upper_95, 3))),
+    shrinkage = ifelse(omega_rows, shrinkage[param], NA)
+  ) |>
+  select(type, param, value, rse_pct, ci, shrinkage)
+
+param_table |>
+  gt::gt(groupname_col = "type", rowname_col = "param") |>
+  gt::fmt_number(columns = value, n_sigfig = 3) |>
+  gt::fmt_number(columns = c(rse_pct, shrinkage), decimals = 1) |>
+  gt::sub_missing(missing_text = "") |>
+  gt::cols_label(value = "Estimate", rse_pct = "RSE (%)", ci = "95% CI", shrinkage = "Shrinkage (%)")
+```
+
+Check the CV% column against the printout of the fit, which reports the same values:
+
+```{r}
+#| label: cv-check
+round(param_table$value[omega_rows], 1)
+grep("CV%", capture.output(print(fit)), value = TRUE)[1:2]
+```
+
+## Reading the result: a model comparison table
+
+A report also records the models that led to the final one. The fit objects carry all the numbers:
+
+```{r}
+#| label: tbl-runs
+#| tbl-cap: "Models compared during development."
+run_row <- function(f, description) {
+  data.frame(model = f$model_name, description = description, method = f$method,
+             converged = f$converged, parameters = f$n_parameters, ofv = f$ofv,
+             aic = f$aic, bic_mixed = ferx_bic(f, "mixed"))
+}
+runs <- rbind(run_row(fit_base, "two-compartment, no covariates"),
+              run_row(fit, "WT on CL and V1, CRCL on CL"))
+runs$d_ofv <- runs$ofv - runs$ofv[1]
+gt::gt(runs) |> gt::fmt_number(columns = c(ofv, aic, bic_mixed, d_ofv), decimals = 1)
+```
+
+## Exposure metrics with `[derived]` and `[output]`
+
+::: {.callout-warning}
+## Maturity: beta
+ferx-core labels `[derived]` and `[output]` **beta**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+A `[derived]` block defines extra columns that the engine computes from each subject's fitted profile and writes to `fit$sdtab`. `[output]` adds individual parameters or covariates to `sdtab`. The bundled `two_cpt_oral_derived` example shows the kinds of expression: per-row values (rate constants), per-subject aggregates (`max`, `tmax`) and integrals, including a periodic AUC per dosing window:
+
+```{r}
+#| label: derived-example
+drv <- ferx_example("two_cpt_oral_derived")
+invisible(ferx_model_get_section(drv$model, "derived"))
+invisible(ferx_model_get_section(drv$model, "output"))
+fit_drv <- ferx_fit(drv$model, drv$data, verbose = FALSE)
+setdiff(names(fit_drv$sdtab), names(fit$sdtab))
+fit_drv$sdtab |> filter(ID == 1) |> select(TIME, K10, CMAX, TMAX, AUC_TAU)
+```
+
+`CMAX` and `TMAX` have one value per subject, repeated on every row. `AUC_TAU` has one value per 24-hour window.
+
+The same blocks can be added to the final model. `ferx_model_set_section()` only replaces existing blocks, so append them to a copy of the model file:
+
+```{r}
+#| label: final-exposure
+report_dir <- book_tempdir("report")
+exposure_model <- file.path(report_dir, "final_with_exposure.ferx")
+writeLines(c(readLines(cov$model), "",
+             "[derived]",
+             "  CMAX = max(IPRED)",
+             "  TMAX = tmax(IPRED)",
+             "  AUC_0_48 = integral(IPRED, from=0, to=48, step=0.1)",
+             "",
+             "[output]",
+             "  CL V1 WT CRCL"), exposure_model)
+fit_exposure <- ferx_fit(exposure_model, cov$data, verbose = FALSE)
+all.equal(fit_exposure$ofv, fit$ofv)
+```
+
+Derived columns do not change the estimation. The OFV is identical. One row per subject gives the exposure table:
+
+```{r}
+#| label: tbl-exposure
+#| tbl-cap: "Individual exposure after a single 250 mg dose, summarised by body weight group."
+exposure <- fit_exposure$sdtab |>
+  distinct(ID, CL, V1, WT, CRCL, CMAX, TMAX, AUC_0_48)
+head(exposure)
+
+exposure |>
+  mutate(weight_group = cut(WT, c(0, 60, 80, Inf), labels = c("< 60 kg", "60–80 kg", "> 80 kg"))) |>
+  group_by(weight_group) |>
+  summarise(n = n(), across(c(CMAX, AUC_0_48), list(median = median, min = min, max = max))) |>
+  gt::gt() |>
+  gt::fmt_number(columns = -c(weight_group, n), n_sigfig = 3)
+```
+
+## Figures for a report
+
+Plot figures with one consistent style. A four-panel goodness-of-fit figure:
+
+```{r}
+#| label: fig-gof-report
+#| fig-cap: "Goodness of fit of the final model."
+#| fig-width: 8
+#| fig-height: 6.5
+library(patchwork)
+sd <- fit$sdtab
+identity_panel <- function(x, xlab) {
+  ggplot(sd, aes({{ x }}, DV)) +
+    geom_abline(linetype = "dashed") + geom_point(alpha = 0.4, size = 1) +
+    geom_smooth(method = "loess", formula = y ~ x, se = FALSE, linewidth = 0.6) +
+    scale_x_log10() + scale_y_log10() + labs(x = xlab, y = "Observed")
+}
+residual_panel <- function(x, xlab) {
+  ggplot(sd, aes({{ x }}, CWRES)) +
+    geom_hline(yintercept = c(-2, 0, 2), linetype = c("dotted", "dashed", "dotted")) +
+    geom_point(alpha = 0.4, size = 1) +
+    geom_smooth(method = "loess", formula = y ~ x, se = FALSE, linewidth = 0.6) + labs(x = xlab)
+}
+gof <- (identity_panel(PRED, "Population prediction") | identity_panel(IPRED, "Individual prediction")) /
+  (residual_panel(TIME, "Time (h)") | residual_panel(PRED, "Population prediction")) +
+  plot_annotation(tag_levels = "A")
+gof
+```
+
+And the covariate relationship the final model contains, with individual clearances against creatinine clearance and the typical curve for a 70 kg subject from the estimates:
+
+```{r}
+#| label: fig-cl-crcl
+#| fig-cap: "Individual clearance against creatinine clearance, with the typical relationship for a 70 kg subject."
+theta <- fit$theta
+typical_cl <- data.frame(CRCL = seq(40, 160, length.out = 100)) |>
+  mutate(CL = theta[["TVCL"]] * (CRCL / 100)^theta[["THETA_CRCL"]])
+cl_plot <- ggplot(exposure, aes(CRCL, CL)) +
+  geom_point(aes(size = WT), alpha = 0.6) +
+  geom_line(data = typical_cl) +
+  labs(x = "Creatinine clearance", y = "Clearance (individual)", size = "Weight (kg)")
+cl_plot
+```
+
+The typical curve uses the model's `CL = TVCL * (WT / 70)^THETA_WT * (CRCL / 100)^THETA_CRCL` at WT = 70 (see `ferx_model_get_section(cov$model, "individual_parameters")`).
+
+Save figures and tables in the formats your report needs:
+
+```{r}
+#| label: save-outputs
+ggsave(file.path(report_dir, "gof.png"), gof, width = 8, height = 6.5, dpi = 300)
+ggsave(file.path(report_dir, "cl_crcl.pdf"), cl_plot, width = 6, height = 4)
+write.csv(exposure, file.path(report_dir, "exposure.csv"), row.names = FALSE)
+list.files(report_dir)
+```
+
+## Options that matter
+
+`[derived]` expressions (full syntax on the ferx-core [derived](https://ferx-nlme.github.io/ferx-core/model-file/derived.html) page):
+
+| Kind | Example | Result |
+|---|---|---|
+| Per row | `K10 = CL / V1` | One value per observation row |
+| Aggregate | `CMAX = max(IPRED)`, `TMAX = tmax(IPRED)`, `CTROUGH = min(IPRED, TAD < 1e-10)` | One value per subject, optionally over a filter |
+| Integral | `AUC = integral(IPRED, from=0, to=24, step=0.1)` | Area over an interval |
+| Periodic integral | `AUC_TAU = integral(IPRED, window=24, anchor=0, step=0.2)` | One area per dosing window |
+| Compartment state | `C_PERIPH = peripheral`, `AUC_P = integral(compartments[2], from=0, to=48, step=0.1)` | A state of the model (differs between analytical and ODE models, @sec-derived-states) |
+
+`[output]` lists individual parameters, covariates or `[derived]` expressions to add to `sdtab` (ferx-core [output](https://ferx-nlme.github.io/ferx-core/model-file/output.html) page). A theta is none of those, and asking for one stops the fit:
+
+```{r}
+#| label: output-rejects-theta
+theta_out <- file.path(report_dir, "output_theta.ferx")
+writeLines(c(readLines(base$model), "", "[output]", "  TVCL"), theta_out)
+try(ferx_fit(theta_out, base$data, verbose = FALSE))
+```
+
+## Pitfalls
+
+- **Integrals and sampling.** Without `step`, an `IPRED` integral uses only observation times. With `step`, `IPRED` on the grid is approximated by the nearest observation-time value. Choose intervals covered by your sampling. `AUC_0_48` matches the 48-hour sampling here; the bundled example's `AUC_0_168` extends beyond it.
+- **Report variances on a clear scale.** `fit$estimates` holds omega as variances and sigma as given by `transform`. State the scale or transformation in the table, as done here for CV%.
+- **Derived names must not clash** with built-in `sdtab` columns or with model parameter names.
+
+## Summary
+
+- Build parameter and model comparison tables from `fit$estimates` and the fit's scalars with gt.
+- Let the engine compute exposure metrics with `[derived]`, and add individual parameters and covariates to `sdtab` with `[output]`.
+- Draw report figures from `fit$sdtab` and derived data frames, and save them with `ggsave()`.
+
+Next: @sec-reproducibility saves the fit and makes the analysis reproducible.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit` (`estimates`, `sdtab`, `shrinkage_eta`), `?ferx_bic`
+- ferx-core: [`[derived]`](https://ferx-nlme.github.io/ferx-core/model-file/derived.html), [`[output]`](https://ferx-nlme.github.io/ferx-core/model-file/output.html)
+:::

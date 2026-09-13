@@ -1,0 +1,211 @@
+# A complete analysis in one chapter {#sec-complete-analysis}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+This chapter runs one small population PK analysis from start to finish. It uses the bundled warfarin example (a one-compartment oral model) and moves through every stage of the workflow the book is built around:
+
+**data → model → estimate → evaluate → simulate → report**
+
+Each section is deliberately short. It shows the one call you need and ends with a pointer to the chapter that covers that stage in depth. Every result below was produced by the code shown, on the pinned ferx-r build (`{{< var ferx_r_sha_short >}}`).
+
+## The data
+
+ferx ships example models and datasets with the package. `ferx_example()` takes one argument, `name`. Given a name, it returns the file paths for that example; called without `name`, it lists what is available:
+
+```{r}
+#| label: examples
+length(ferx_example())
+head(ferx_example())
+```
+
+```{r}
+#| label: warfarin-paths
+ex <- ferx_example("warfarin")
+names(ex)
+```
+
+`ex$model` is the model file, `ex$data` the dataset, and `ex$search` a model-search configuration used later in @sec-model-selection. The dataset is a plain CSV with one row per dose or observation. `.` marks an empty cell, so read it with `na.strings = "."`:
+
+```{r}
+#| label: read-data
+obs <- read.csv(ex$data, na.strings = ".")
+head(obs)
+```
+
+The first row of each subject is the dose (`EVID = 1`, `AMT = 100`). The rows after it are concentrations (`EVID = 0`, `DV`). The dataset holds `r n_distinct(obs$ID)` subjects and `r sum(obs$EVID == 0)` observations. Always look at the data before modeling:
+
+```{r}
+#| label: fig-spaghetti
+#| fig-cap: "Observed warfarin concentrations, one line per subject."
+obs |>
+  filter(EVID == 0) |>
+  ggplot(aes(TIME, DV, group = ID)) +
+  geom_line(alpha = 0.5) +
+  geom_point(size = 1) +
+  labs(x = "Time (h)", y = "Concentration")
+```
+
+➜ Column meanings, data checks and record selection: @sec-data.
+
+## The model
+
+A ferx model is a text file with one section per concern. `ferx_model_show()` prints it:
+
+```{r}
+#| label: show-model
+ferx_model_show(ex$model)
+```
+
+Reading it top to bottom:
+
+- `[parameters]` declares fixed effects as `theta NAME(initial, lower, upper)` and between-subject variances as `omega`. `sigma` is the residual error; `(sd)` marks its initial value as a standard deviation.
+- `[individual_parameters]` builds each subject's `CL`, `V` and `KA` from the thetas and log-normal random effects.
+- `[structural_model]` selects the built-in one-compartment oral model.
+- `[error_model]` makes the residual error proportional.
+- `[fit_options]` sets the estimation method (`foce`), the iteration limit and the covariance step.
+
+➜ Writing, inspecting, validating and editing model files: @sec-model-files.
+
+## Estimating
+
+`ferx_fit()` takes the model and the data. The options in `[fit_options]` apply unless you override them in the call:
+
+```{r}
+#| label: fit
+fit <- ferx_fit(ex$model, ex$data, verbose = FALSE)
+fit
+```
+
+The fit converged (`fit$converged` is `r fit$converged`) with an objective function value of `r round(fit$ofv, 2)`. The printout also reports shrinkage, a diagnostics line, the settings that were used, and a count of warnings. The estimates are also available as a data frame, ready for your own tables:
+
+```{r}
+#| label: estimates
+fit$estimates[, c("param", "transform", "estimate", "se", "rse_pct", "lower_95", "upper_95")]
+```
+
+➜ Initial estimates and reading a fit: @sec-first-fit. Choosing and tuning estimation methods: @sec-estimation-methods.
+
+## Evaluating
+
+`fit$sdtab` holds one row per observation with population (`PRED`) and individual (`IPRED`) predictions and residuals:
+
+```{r}
+#| label: sdtab
+head(fit$sdtab)
+```
+
+Two standard goodness-of-fit views:
+
+```{r}
+#| label: fig-gof
+#| fig-cap: "Observations against population and individual predictions (left); conditional weighted residuals over time (right)."
+#| fig-width: 9
+library(patchwork)
+p_pred <- fit$sdtab |>
+  tidyr::pivot_longer(c(PRED, IPRED), names_to = "prediction") |>
+  ggplot(aes(value, DV)) +
+  geom_abline(linetype = "dashed") +
+  geom_point(alpha = 0.6) +
+  facet_wrap(~prediction) +
+  labs(x = "Prediction", y = "Observation")
+p_cwres <- ggplot(fit$sdtab, aes(TIME, CWRES)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_point(alpha = 0.6) +
+  labs(x = "Time (h)", y = "CWRES")
+p_pred + p_cwres + plot_layout(widths = c(2, 1))
+```
+
+The printout above ends with a warning count. `ferx_get_warnings()` shows what those warnings say:
+
+```{r}
+#| label: warnings
+ferx_get_warnings(fit)
+```
+
+➜ Goodness of fit, shrinkage, NPDE and warnings: @sec-diagnostics.
+
+## Simulating
+
+`ferx_simulate()` replicates the study design with the fitted parameters. Here it draws new random effects and residual errors 200 times:
+
+```{r}
+#| label: simulate
+sim <- ferx_simulate(ex$model, ex$data, n_sim = 200, seed = 42, fit = fit)
+head(sim)
+```
+
+Comparing percentiles of the observed data with the spread of the same percentiles across simulated replicates gives a visual predictive check. ferx supplies the simulations, and the plot is a few lines of dplyr and ggplot2. The warfarin samples fall on shared nominal times, so no binning is needed here:
+
+```{r}
+#| label: fig-vpc
+#| fig-cap: "Visual predictive check: observed 10th, 50th and 90th percentiles (lines) against 90% intervals of the simulated percentiles (bands)."
+pct <- function(df, value) {
+  df |>
+    summarise(
+      p10 = quantile({{ value }}, 0.10),
+      p50 = quantile({{ value }}, 0.50),
+      p90 = quantile({{ value }}, 0.90),
+      .groups = "drop"
+    ) |>
+    tidyr::pivot_longer(c(p10, p50, p90), names_to = "percentile")
+}
+sim_bands <- sim |>
+  group_by(SIM, TIME) |>
+  pct(DV_SIM) |>
+  group_by(TIME, percentile) |>
+  summarise(lo = quantile(value, 0.05), hi = quantile(value, 0.95), .groups = "drop")
+obs_lines <- obs |>
+  filter(EVID == 0) |>
+  group_by(TIME) |>
+  pct(DV)
+
+ggplot() +
+  geom_ribbon(data = sim_bands, aes(TIME, ymin = lo, ymax = hi, fill = percentile), alpha = 0.3) +
+  geom_point(data = filter(obs, EVID == 0), aes(TIME, DV), size = 0.8, alpha = 0.4) +
+  geom_line(data = obs_lines, aes(TIME, value, linetype = percentile), linewidth = 0.7) +
+  labs(x = "Time (h)", y = "Concentration", fill = "Simulated", linetype = "Observed")
+```
+
+➜ VPCs, including binning and matched simulation: @sec-vpc. Simulating new scenarios: @sec-simulation.
+
+## Reporting
+
+A parameter table comes straight from `fit$estimates`:
+
+```{r}
+#| label: tbl-parameters
+#| tbl-cap: "Warfarin parameter estimates."
+fit$estimates |>
+  select(param, estimate, se, rse_pct, lower_95, upper_95) |>
+  gt::gt() |>
+  gt::fmt_number(columns = c(estimate, se, lower_95, upper_95), n_sigfig = 3) |>
+  gt::fmt_number(columns = rse_pct, decimals = 1) |>
+  gt::cols_label(param = "Parameter", estimate = "Estimate", se = "SE",
+                 rse_pct = "RSE (%)", lower_95 = "95% CI lower", upper_95 = "95% CI upper")
+```
+
+`ferx_save_fit()` writes the whole fit (estimates, per-subject values, predictions and the model source) to a single `.fitrx` file. A path without an extension gets `.fitrx` appended:
+
+```{r}
+#| label: save
+run_dir <- book_tempdir("complete-analysis")
+ferx_save_fit(fit, file.path(run_dir, "warfarin-run1"))
+list.files(run_dir)
+```
+
+➜ Report tables and figures: @sec-tables-figures. Saving, reloading and reproducibility: @sec-reproducibility.
+
+## Where to go next
+
+The rest of the book repeats this loop in depth. Part II walks through each workflow stage on a larger dataset with covariates. The scenario Parts apply the loop to specific problems: absorption, covariates, dosing, censored data, PK/PD, binary and time-to-event endpoints, adaptive dosing, and experimental features.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_example`, `?ferx_model_show`, `?ferx_fit`, `?ferx_get_warnings`, `?ferx_simulate`, `?ferx_save_fit`
+- ferx-core: [model file reference](https://ferx-nlme.github.io/ferx-core/model-file/index.html), [data format](https://ferx-nlme.github.io/ferx-core/data-format.html)
+:::

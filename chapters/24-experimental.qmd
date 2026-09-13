@@ -1,0 +1,192 @@
+# Experimental features {#sec-experimental}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+Two model extensions in ferx are explicitly experimental: stochastic differential equations, which add random noise to the model states between observations, and neural networks for the covariate model, known as deep compartment models. Both fit from R with the bundled examples. This chapter runs them, compares them with their conventional counterparts, and shows what the fits report.
+
+::: {.callout-warning}
+## Maturity: experimental
+ferx-core labels `[diffusion]` (SDE) and `[covariate_nn]` (neural networks) **experimental**: validated on a small set of examples, with syntax that may still change. Every fit that uses them carries an `experimental` warning. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+:::
+
+## The data
+
+`warfarin_sde` uses the warfarin concentrations (10 subjects). `warfarin_dcm` uses the 30-subject dataset of the covariate thread, with weight and creatinine clearance:
+
+```{r}
+#| label: data
+sde <- ferx_example("warfarin_sde")
+dcm <- ferx_example("warfarin_dcm")
+experimental_dir <- book_tempdir("experimental")
+c(sde_subjects = n_distinct(read.csv(sde$data)$ID), dcm_subjects = n_distinct(read.csv(dcm$data)$ID))
+```
+
+## Minimal runnable call: an SDE model
+
+An SDE model is an ODE model with a `[diffusion]` block. Each line gives a state a diffusion variance, estimated as the parameter `DIFF_<STATE>`. ferx evaluates the likelihood with an extended Kalman filter, which adds the propagated state uncertainty to the residual variance at each observation:
+
+```{r}
+#| label: sde-model
+invisible(ferx_model_get_section(sde$model, "odes"))
+invisible(ferx_model_get_section(sde$model, "diffusion"))
+fit_sde <- ferx_fit(sde$model, sde$data, verbose = FALSE)
+fit_sde$uses_sde
+fit_sde$estimates[, c("estimate", "rse_pct")]
+```
+
+## Reading the result
+
+The fit carries the experimental notice with its other warnings:
+
+```{r}
+#| label: sde-warnings
+ferx_get_warnings(fit_sde, as_df = TRUE)[, c("severity", "category")]
+substr(ferx_get_warnings(fit_sde, as_df = TRUE)$message[1], 1, 150)
+```
+
+The diffusion variance is small with a relative standard error above 100%. Removing the `[diffusion]` block gives the ordinary ODE model, which reaches a similar OFV:
+
+```{r}
+#| label: sde-vs-ode
+sde_lines <- readLines(sde$model)
+start <- grep("^\\[diffusion\\]", sde_lines)
+ode_model <- file.path(experimental_dir, "warfarin_ode_without_diffusion.ferx")
+writeLines(sde_lines[-(start:(start + 2))], ode_model)
+fit_ode <- ferx_fit(ode_model, sde$data, verbose = FALSE)
+data.frame(model = c("with [diffusion]", "without"), ofv = c(fit_sde$ofv, fit_ode$ofv),
+           durbin_watson = c(fit_sde$dw_statistic, fit_ode$dw_statistic))
+```
+
+These data show no system noise. System noise is meant for residuals that are correlated in time within a subject (@sec-diagnostics); the IWRES autocorrelation here is negative, not positive, and the diffusion term does not change it.
+
+## Options that matter
+
+| Block or setting | Meaning |
+|---|---|
+| `[diffusion]` `STATE ~ variance` | Diffusion variance for an ODE state, estimated as `DIFF_STATE` (`FIX` to hold it) |
+| `[covariate_nn NAME]` | A neural network with `inputs` (covariates), `outputs` (parameter names), hidden `layers`, `activation` and `output` activation |
+| `NAME.OUTPUT` in `[individual_parameters]` | A network output, used like any other quantity |
+
+```{r}
+#| label: tbl-settings-nn
+book_settings_table(c("nn_l2", "nn_smooth"))
+```
+
+Constraints from the ferx-core [diffusion](https://ferx-nlme.github.io/ferx-core/model-file/diffusion.html) page: `[diffusion]` needs an ODE model, cannot be combined with SAEM or `[scaling]` (@sec-scaling), and uses finite-difference gradients.
+
+## Variants
+
+### Estimation method for the SDE model
+
+The bundled model uses FOCE. With FOCEI the diffusion variance is even smaller. The OFVs of the two methods are different objectives:
+
+```{r}
+#| label: sde-focei
+# suppress the R warning that reports overriding the model file's method
+fit_sde_focei <- suppressWarnings(ferx_fit(sde$model, sde$data, method = "focei", verbose = FALSE))
+rbind(foce = c(ofv = fit_sde$ofv, fit_sde$theta), focei = c(ofv = fit_sde_focei$ofv, fit_sde_focei$theta))
+```
+
+Simulation from an SDE fit works like any other simulation (@sec-simulation):
+
+```{r}
+#| label: sde-simulate
+head(ferx_simulate(sde$model, sde$data, n_sim = 1, seed = 1, fit = fit_sde), 3)
+```
+
+### A neural-network covariate model
+
+`warfarin_dcm` replaces the covariate expressions of `two_cpt_oral_cov` with a network. The network reads `WT` and `CRCL` and outputs a multiplier for each PK parameter. The multipliers start at 1, so the thetas carry the typical values:
+
+```{r}
+#| label: dcm-model
+# print the two blocks without their comment lines
+section_lines <- function(block) {
+  capture.output(lines <- ferx_model_get_section(dcm$model, block, strip = TRUE))
+  trimws(lines[nzchar(trimws(lines)) & !grepl("^\\s*#", lines)])
+}
+section_lines("covariate_nn TYPICAL_PK")
+section_lines("individual_parameters")
+```
+
+The network has 2 inputs, two hidden layers of 8 and 5 outputs: 141 weights, estimated as thetas. The covariance step is skipped here:
+
+```{r}
+#| label: dcm-fit
+# suppress the R warning that reports overriding the model file's covariance setting
+fit_dcm <- suppressWarnings(ferx_fit(dcm$model, dcm$data, covariance = FALSE, verbose = FALSE))
+network <- fit_dcm$neural_networks$TYPICAL_PK
+network[c("shape", "hidden_activation", "output_activation", "n_weights", "input_names", "output_names")]
+ferx_get_warnings(fit_dcm, as_df = TRUE)[, c("severity", "category")]
+```
+
+The same data with the base model and with the explicit covariate model:
+
+```{r}
+#| label: tbl-dcm-comparison
+#| tbl-cap: "Neural-network covariate model compared with the base and the explicit covariate model on the same data (covariance step skipped)."
+base <- ferx_example("two_cpt_oral_base")
+cov <- ferx_example("two_cpt_oral_cov")
+fit_base <- suppressWarnings(ferx_fit(base$model, base$data, covariance = FALSE, verbose = FALSE))
+fit_cov <- suppressWarnings(ferx_fit(cov$model, cov$data, covariance = FALSE, verbose = FALSE))
+data.frame(model = c("two_cpt_oral_base (no covariates)", "two_cpt_oral_cov (WT, CRCL)", "warfarin_dcm (network)"),
+           parameters = c(fit_base$n_parameters, fit_cov$n_parameters, fit_dcm$n_parameters),
+           ofv = c(fit_base$ofv, fit_cov$ofv, fit_dcm$ofv),
+           aic = c(fit_base$aic, fit_cov$aic, fit_dcm$aic))
+```
+
+With 30 subjects the network does not improve on the model without covariates, and its 141 weights make the AIC far worse than either alternative. The explicit covariate model captures the covariate effects with two parameters.
+
+How much the network departs from multipliers of 1 can be read from the individual parameters. For clearance, `CL / (TVCL * exp(ETA_CL))` is the network's multiplier for each subject:
+
+```{r}
+#| label: dcm-multiplier
+subjects <- read.csv(dcm$data) |> distinct(ID, WT, CRCL)
+multipliers <- mutate(fit_dcm$individual_estimates, ID = as.integer(ID)) |>
+  select(ID, CL) |>
+  left_join(mutate(fit_dcm$ebe_etas, ID = as.integer(ID)) |> select(ID, ETA_CL), by = "ID") |>
+  left_join(subjects, by = "ID") |>
+  mutate(multiplier = CL / (fit_dcm$theta[["TVCL"]] * exp(ETA_CL)))
+summary(multipliers$multiplier)
+range(subjects$WT)
+range(subjects$CRCL)
+```
+
+The multiplier is the same for every subject to seven significant digits, across the whole range of weight and creatinine clearance: the fitted network learned no covariate dependence at all, and only rescaled the typical clearance.
+
+### Regularizing the network
+
+`nn_l2` (weight decay) and `nn_smooth` (a penalty on curvature) keep a network from fitting spurious covariate effects. They are set in `[fit_options]` or with `settings`, apply to the FOCE-family methods, and the reported OFV stays the unpenalized one, so regularized and unregularized fits remain comparable ([regularization](https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html#regularization-nn_l2-nn_smooth)). On this example a fit with `settings = list(nn_l2 = 0.01)` did not finish within 10 minutes, with either the model's `lbfgs` or the `bobyqa` optimizer, against about half a minute without the penalty. It is therefore not run in this book.
+
+## Pitfalls
+
+- **Experimental means validate yourself.** Compare an SDE or network model with its conventional counterpart, as above, before relying on it.
+- **Extra flexibility is not extra information.** A diffusion variance or a network with many weights needs data that support it; check standard errors, the OFV change and information criteria.
+- **Standard errors of network weights are not reliable,** and the covariance step with many weights is slow. Skip it with `covariance = FALSE` while exploring.
+- **SDE fits are slow.** The extended Kalman filter uses finite differences; the warfarin SDE fit takes many times longer than the ODE fit.
+
+### Warnings you may see here
+
+- `experimental` (warning): the model uses an experimental component (`[diffusion]` or `[covariate_nn]`). The message states what has and has not been validated. It appears on every such fit.
+
+## Summary
+
+- `[diffusion]` adds system noise to ODE states, estimated with an extended Kalman filter; compare with the model without it.
+- `[covariate_nn]` lets a neural network produce covariate multipliers; compare its OFV and AIC with an explicit covariate model.
+- `nn_l2` and `nn_smooth` regularize a network.
+- Both features are experimental: fits carry an `experimental` warning.
+
+Next: @sec-reference lists every function, option and example with the chapter that covers it.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit`
+- ferx-core: [SDE and diffusion](https://ferx-nlme.github.io/ferx-core/model-file/diffusion.html), [covariate neural networks](https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html), [neural networks overview](https://ferx-nlme.github.io/ferx-core/model-file/neural-networks.html)
+:::

@@ -1,0 +1,186 @@
+# Binary endpoints {#sec-binary}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+Some endpoints are yes/no outcomes: a response, an adverse event, a seizure-free day. ferx models them with a `[binary_model]` block: the log-odds of the outcome is an expression of parameters, random effects, covariates and time, and the likelihood is Bernoulli. This chapter fits the bundled logistic example, checks it against ordinary logistic regression in R, adds a random effect, and checks the model by simulation.
+
+::: {.callout-note}
+## Maturity
+Binary endpoints are the first of ferx-core's categorical endpoints. Ordinal, count and other link functions are planned, not available. See the ferx-core [categorical endpoints](https://ferx-nlme.github.io/ferx-core/model-file/categorical.html) page.
+:::
+
+## The data
+
+`binary_logistic` has 60 subjects with an outcome at times 0, 1 and 2, and a subject covariate `X`. `DV` is the 0/1 outcome on `CMT = 3`. There are no dose records:
+
+```{r}
+#| label: data
+binary <- ferx_example("binary_logistic")
+binary_dir <- book_tempdir("binary")
+binary_data <- read.csv(binary$data, na.strings = ".")
+head(binary_data, 6)
+binary_data |> group_by(TIME) |> summarise(subjects = n(), fraction_1 = mean(DV))
+```
+
+## Minimal runnable call
+
+A logistic model needs only `[parameters]`, `[binary_model]` and `[fit_options]`. `cmt` names the endpoint's `CMT` value, and `logit` is the log-odds of `DV = 1`:
+
+```{r}
+#| label: binary-model
+invisible(ferx_model_get_section(binary$model, "parameters"))
+invisible(ferx_model_get_section(binary$model, "binary_model"))
+fit_binary <- ferx_fit(binary$model, binary$data, verbose = FALSE)
+fit_binary$estimates[, c("estimate", "se", "rse_pct")]
+fit_binary$ofv
+```
+
+## Reading the result
+
+Without random effects this is ordinary logistic regression. R's `glm()` gives the same estimates and standard errors, and its residual deviance equals the OFV, which ferx reports on the −2 log-likelihood scale:
+
+```{r}
+#| label: glm-check
+reference <- glm(DV ~ X + TIME, family = binomial, data = binary_data)
+data.frame(ferx = fit_binary$theta, glm = coef(reference),
+           ferx_se = fit_binary$estimates$se, glm_se = sqrt(diag(vcov(reference))))
+c(ferx_ofv = fit_binary$ofv, glm_deviance = reference$deviance)
+```
+
+In `sdtab`, `PRED` and `IPRED` are probabilities of `DV = 1` (typical and individual), `IWRES` is the Pearson residual `(y − p) / √(p(1 − p))`, and `CWRES` is not defined. There are no doses, so `TAD` and `TAFD` are empty:
+
+```{r}
+#| label: binary-sdtab
+head(fit_binary$sdtab, 4)
+```
+
+`ferx_predict()` returns concentration-type predictions and has no rows for a binary endpoint. The probabilities are in `sdtab` and in simulations:
+
+```{r}
+#| label: binary-predict
+nrow(ferx_predict(binary$model, binary$data, fit = fit_binary))
+```
+
+## Options that matter
+
+| Key in `[binary_model]` | Meaning |
+|---|---|
+| `cmt` | The `CMT` value of this endpoint's observation rows |
+| `logit` | Log-odds of `DV = 1`: any expression of thetas, etas, covariates, individual parameters and `TIME` |
+| `link` | Optional; `logit` is the only link available |
+
+- Observation rows carry `DV` 0 or 1 and `EVID = 0`. Any other value stops the fit.
+- Covariates enter at their subject value; a covariate column that changes over time is not yet supported in `logit` (use `TIME` for time effects).
+- FOCEI, SAEM and IMP are suitable estimation methods ([categorical estimation](https://ferx-nlme.github.io/ferx-core/estimation/categorical.html)).
+
+## Variants
+
+### A random intercept
+
+Subjects may differ in their tendency to respond. A random intercept `ETA_I` in the log-odds makes the model a mixed-effects logistic regression:
+
+```{r}
+#| label: random-intercept
+ri_lines <- readLines(binary$model)
+ri_lines <- append(ri_lines, "  omega ETA_I ~ 0.5", after = grep("theta THT", ri_lines))
+ri_lines <- sub("logit = TH0 + THX * X + THT * TIME", "logit = TH0 + THX * X + THT * TIME + ETA_I", ri_lines, fixed = TRUE)
+ri_model <- file.path(binary_dir, "binary_random_intercept.ferx")
+writeLines(ri_lines, ri_model)
+invisible(ferx_model_get_section(ri_model, "binary_model"))
+fit_ri <- ferx_fit(ri_model, binary$data, verbose = FALSE)
+fit_ri$estimates[, c("estimate", "rse_pct")]
+c(without_random_effect = fit_binary$ofv, with_random_effect = fit_ri$ofv)
+```
+
+With three outcomes per subject, the variance of the random intercept is poorly determined (relative standard error above 100%), and its shrinkage is high (`r round(100 * fit_ri$shrinkage_eta, 0)`%). The OFV drops by only `r round(fit_binary$ofv - fit_ri$ofv, 2)` for one extra parameter: these data do not support between-subject variability in the response.
+
+SAEM, which avoids the Laplace approximation, is an alternative for sparse binary data. On this weakly informative model its result depends on the random seed. Seeds 1 to 3 agree with each other and with FOCEI; the run with the engine's default seed ends elsewhere, with a regularized covariance step:
+
+```{r}
+#| label: random-intercept-saem
+saem_seeds <- list(default = NULL, seed_1 = list(seed = 1), seed_2 = list(seed = 2), seed_3 = list(seed = 3))
+do.call(rbind, lapply(names(saem_seeds), function(name) {
+  # suppress the R warning that reports overriding the model file's method
+  f <- suppressWarnings(ferx_fit(ri_model, binary$data, method = "saem", settings = saem_seeds[[name]],
+                                 verbose = FALSE))
+  data.frame(run = name, ofv = f$ofv, t(setNames(f$estimates$estimate, rownames(f$estimates))),
+             max_rse_pct = max(f$estimates$rse_pct),
+             covariance_regularized = "covariance_regularized" %in% ferx_get_warnings(f, as_df = TRUE)$category)
+}))
+```
+
+Set the seed for SAEM fits, and compare a few seeds when a variance is weakly identified (@sec-estimation-methods).
+
+### Checking the model by simulation
+
+`ferx_simulate()` draws a new 0/1 outcome for each observation record from the fitted probability. Comparing the observed fraction of ones with the simulated fractions is the binary counterpart of a visual predictive check (@sec-vpc). Here it is split by time and by the sign of `X`:
+
+```{r}
+#| label: fig-binary-check
+#| fig-cap: "Observed fraction of ones (points) and the 90% interval of 500 simulated fractions (bars), by time and covariate group."
+simulated <- ferx_simulate(binary$model, binary$data, n_sim = 500, seed = 1, fit = fit_binary)
+groups <- distinct(binary_data, ID, X) |> mutate(group = ifelse(X > 0, "X > 0", "X <= 0"))
+simulated_fraction <- simulated |>
+  mutate(ID = as.integer(ID)) |>
+  left_join(groups, by = "ID") |>
+  group_by(SIM, TIME, group) |>
+  summarise(fraction = mean(DV_SIM), .groups = "drop") |>
+  group_by(TIME, group) |>
+  summarise(lo = quantile(fraction, 0.05), hi = quantile(fraction, 0.95), .groups = "drop")
+observed_fraction <- binary_data |>
+  left_join(groups, by = c("ID", "X")) |>
+  group_by(TIME, group) |>
+  summarise(fraction = mean(DV), .groups = "drop")
+ggplot(simulated_fraction, aes(TIME)) +
+  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.1) +
+  geom_point(data = observed_fraction, aes(y = fraction), colour = "steelblue", size = 2.5) +
+  facet_wrap(~ group) +
+  labs(x = "Time", y = "Fraction with DV = 1")
+```
+
+### Binary endpoints with a PK model
+
+`logit` can use individual parameters from `[individual_parameters]`, so a binary endpoint can be combined with other model parts. No bundled example links a binary outcome to a PK model; see the ferx-core [categorical endpoints](https://ferx-nlme.github.io/ferx-core/model-file/categorical.html) page for the namespace `logit` can read. The related `[markov_model]` block for transitions between states is listed in @sec-reference.
+
+## Pitfalls
+
+- **`DV` must be 0 or 1.** An outcome with more categories stops the fit:
+
+  ```{r}
+  #| label: binary-dv-2
+  bad_data <- binary_data
+  bad_data$DV[1] <- 2
+  bad_file <- file.path(binary_dir, "binary_dv2.csv")
+  write.csv(bad_data, bad_file, row.names = FALSE)
+  try(ferx_fit(binary$model, bad_file, verbose = FALSE))
+  ```
+
+- **Few outcomes per subject carry little information on random effects.** Check shrinkage and the OFV change before keeping a random effect.
+- **Use `sdtab` or simulations for probabilities,** not `ferx_predict()`.
+- **`print()` on a binary fit** summarises the model with labels meant for concentration models. Read the estimates from `fit$estimates`.
+
+### Warnings you may see here
+
+- `data_quality` (warning): here it reports that the subjects use finite-difference inner gradients. That is expected for a binary endpoint, and the results are correct.
+
+## Summary
+
+- Declare a binary endpoint with `[binary_model]`: `cmt` and a `logit` expression.
+- Without random effects the fit equals logistic regression; the OFV is the deviance.
+- Add random effects to the log-odds for a mixed-effects model, and check whether the data support them.
+- `sdtab` holds probabilities and Pearson residuals; simulations give 0/1 outcomes for predictive checks.
+
+Next: @sec-time-to-event models times to events.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit`, `?ferx_simulate`
+- ferx-core: [categorical endpoints](https://ferx-nlme.github.io/ferx-core/model-file/categorical.html), [categorical estimation](https://ferx-nlme.github.io/ferx-core/estimation/categorical.html)
+:::

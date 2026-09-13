@@ -1,0 +1,329 @@
+---
+aliases:
+  - /chapters/07-parameter-transforms.html
+---
+
+# Initial estimates and a first fit {#sec-first-fit}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+```{r}
+#| label: stage-banner
+#| echo: false
+#| output: asis
+book_stage_banner("ESTIMATE")
+```
+
+## Where you are
+
+The dataset is checked (@sec-data) and the base model is written and validated (@sec-model-files). This chapter produces the first fit. It covers where starting values come from, how to fit, what the fit object contains, and how to read the warnings ferx attaches to it. Choosing and tuning estimation methods follows in @sec-estimation-methods.
+
+## The data
+
+The base model and its dataset from the previous chapters:
+
+```{r}
+#| label: example
+base <- ferx_example("two_cpt_oral_base")
+```
+
+## Starting values
+
+### From the model file
+
+Every `theta`, `omega` and `sigma` in `[parameters]` carries an initial value. For thetas it is the first number in `theta NAME(initial, lower, upper)`:
+
+```{r}
+#| label: model-inits
+init_lines <- ferx_model_get_section(base$model, "parameters")
+```
+
+### From the data: NCA-based starting values
+
+`ferx_inits_from_nca()` derives starting values from the data using non-compartmental analysis (NCA). It returns them for inspection without fitting. The `method` is `"nca_sweep"` (default), `"nca"` or `"nca_ebe"`. They differ in how much refinement runs on top of the NCA estimates; `?ferx_inits_from_nca` describes each.
+
+```{r}
+#| label: nca-inits
+nca <- ferx_inits_from_nca(base$model, base$data)
+nca
+```
+
+The result is a `ferx_inits` object, and `print()` shows the suggested thetas, the omega matrix and any notes. On this dataset all three methods return the same thetas:
+
+```{r}
+#| label: nca-methods
+identical(nca$theta, ferx_inits_from_nca(base$model, base$data, method = "nca")$theta) &&
+  identical(nca$theta, ferx_inits_from_nca(base$model, base$data, method = "nca_ebe")$theta)
+```
+
+To fit from these values directly, pass `inits_from_nca` to `ferx_fit()`: `TRUE`, or one of the method names. The same option exists as the `inits_from_nca` key in `[fit_options]` or `settings`. The *Variants* section below shows that this is not always an improvement.
+
+### A pilot run
+
+`ferx_check_init()` runs a short pilot fit with the optimizer trace switched on. It returns the `fit`, the `trace` (one row per objective evaluation) and a one-row `summary`:
+
+```{r}
+#| label: check-init
+pilot <- ferx_check_init(base$model, base$data)
+pilot$summary
+```
+
+The two R warnings come from `ferx_check_init()` itself. It overrides `covariance` and `maxiter` from the model file, and ferx reports every such override. A falling objective function value (OFV) shows that the optimizer moves away from the starting values in a useful direction. On this model the pilot already reached convergence. The trace shows the path:
+
+```{r}
+#| label: fig-pilot-trace
+#| fig-cap: "OFV at each objective evaluation of the pilot run."
+ggplot(pilot$trace, aes(iter, ofv)) +
+  geom_line() +
+  coord_cartesian(ylim = range(pilot$trace$ofv[pilot$trace$iter > 10])) +
+  labs(x = "Objective evaluation", y = "OFV")
+```
+
+## Minimal runnable call
+
+```{r}
+#| label: fit
+fit <- ferx_fit(base$model, base$data, verbose = FALSE)
+fit
+```
+
+`print()` on the fit gives one screen with everything you need to judge it:
+
+- **Header**: method, gradient, number of subjects and observations, convergence status and OFV/AIC/BIC.
+- **Model structure**, as ferx derived it from the file.
+- **THETA**, **OMEGA** and **SIGMA** estimates with standard errors. Omegas are variances; for log-normal etas the CV% is shown alongside.
+- **Shrinkage**, the **diagnostics** line (covariance step, condition number, Durbin-Watson statistic of the residuals) and run information.
+- **Settings**: every setting, and whether it came from the model file or the call.
+- A **warning count**.
+
+The fit used `method = focei` and `gradient = fd` from the model's `[fit_options]`, marked `[model only]`.
+
+## Reading the result
+
+### `summary()`
+
+`summary()` returns a `ferx_summary` object. Its print method shows run metadata and all warnings in one compact block, without the parameter tables:
+
+```{r}
+#| label: summary
+summary(fit)
+```
+
+The last warning line, the number of EBE fallbacks, comes from `fit$total_ebe_fallbacks` (`r fit$total_ebe_fallbacks` here). It is a run statistic rather than a structured fit warning, so `ferx_get_warnings()` below does not list it.
+
+### Parameter estimates
+
+`fit$estimates` is the tidy table of all estimated parameters. The row names are the parameter names:
+
+```{r}
+#| label: estimates
+fit$estimates[, c("transform", "estimate", "se", "rse_pct", "lower_95", "upper_95")]
+```
+
+`ferx_coef()` and `ferx_se()` pull values by `param` name. Unlike indexing the table, a misspelt name is an error that suggests the closest match:
+
+```{r}
+#| label: coef-se
+ferx_coef(fit, c("TVCL", "TVV1"))
+ferx_se(fit, c("TVCL", "TVV1"))
+try(ferx_coef(fit, "TVCLL"))
+```
+
+### Parameter transformations and the `transform` column
+
+A parameter is not always estimated on the scale you want to read. The `transform` column of `fit$estimates` names the scale the row was **estimated** on, which is what you need in order to know whether `estimate` is the number you want:
+
+| `transform` | `estimate` holds | Which parameters |
+|---|---|---|
+| `identity` | the value itself | a `theta` written as `TVCL * exp(ETA_CL)` |
+| `log` | the log of the value | a `theta` written as `exp(TVCL + ETA_CL)` |
+| `logit` | the logit of the value | a `theta` written as `inv_logit(THETA_F + ETA_F)` |
+| `logit_probability` | the logit of the value | a `theta` declared on the (0, 1) scale and used as `inv_logit(logit(THETA_F) + ETA_F)` |
+| `variance` | a variance | `omega` and `kappa` diagonals |
+| `proportional` | a coefficient of variation on the fraction scale | a proportional `sigma` |
+| `additive` | a standard deviation, in the units the error model sees | an additive `sigma` |
+
+The first four are the transforms a fixed effect can carry, and `fit$theta_transforms` lists them for the thetas alone. Bounds do not appear here: this column reflects how the parameter is written in `[individual_parameters]`, not the internal scale the optimizer packs it onto, and every bounded theta of this model reads `identity`:
+
+```{r}
+#| label: theta-transforms
+fit$theta_transforms
+```
+
+For the three transformed cases, `estimate` is on the transformed scale and the interpretable value is in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it. Those columns are `NA` for every untransformed row, which is how you tell the two apart. The `bioavailability` example (@sec-absorption) estimates a fraction this way:
+
+```{r}
+#| label: natural-scale
+fit_logit <- ferx_fit(ferx_example("bioavailability")$model,
+                      ferx_example("bioavailability")$data, verbose = FALSE)
+fit_logit$estimates[, c("transform", "estimate", "lower_95", "estimate_natural", "lower_95_natural")]
+```
+
+`THETA_F` reads above 0 on the logit scale and `r round(fit_logit$estimates["THETA_F", "estimate_natural"], 3)` as a fraction; its lower confidence bound is negative as a logit and a probability only in the natural column. Reading `estimate` as the fraction would be wrong.
+
+For the random effects, `fit$eta_param_types` says how each eta enters the model -- `log_normal`, `additive`, `logit`, `logit_probability` or `custom`:
+
+```{r}
+#| label: eta-param-types
+setNames(fit$eta_param_types, rownames(fit$omega))
+```
+
+`fit$eta_log_transformed` is a narrower flag and not a substitute: it is `TRUE` only for the `TVCL * exp(ETA_CL)` form, so an eta written `exp(TVCL + ETA_CL)` is log-normal and still reads `FALSE`.
+
+Nothing here converts for you. An omega row is a variance, so a between-subject CV% is yours to compute (@sec-tables-figures), and a log-transform-both-sides model reports an `additive` sigma on the log scale rather than in the units of `DV` (@sec-variability).
+
+### The fit object
+
+A fit is a named list with `r length(fit)` elements. These are the ones you will use most:
+
+| What you want | Where |
+|---|---|
+| Parameter table | `fit$estimates` |
+| Residuals, `PRED`, `IPRED` per observation | `fit$sdtab` (@sec-diagnostics) |
+| Individual parameters per subject | `fit$individual_estimates` |
+| Random effects per subject | `fit$ebe_etas` |
+| OFV, AIC, BIC, convergence | `fit$ofv`, `fit$aic`, `fit$bic`, `fit$converged` |
+| Shrinkage | `fit$shrinkage_eta`, `fit$shrinkage_eps` |
+| Parameter correlations | `fit$cor_matrix` |
+
+```{r}
+#| label: individual
+head(fit$individual_estimates)
+```
+
+`?ferx_fit` documents every element. @sec-reference lists them all with the chapter that uses each one.
+
+### Warnings
+
+ferx classifies everything it notices during a fit. Each warning has a **severity** and a stable **category** token:
+
+| Severity | Meaning |
+|---|---|
+| critical | The result cannot be trusted as it is (for example no convergence or an ill-conditioned covariance) |
+| warning | The result stands, but a caveat applies |
+| info | A note; no action needed |
+
+`ferx_get_warnings()` prints them grouped by severity. With `as_df = TRUE` it returns a data frame you can filter:
+
+```{r}
+#| label: warnings
+ferx_get_warnings(fit)
+ferx_get_warnings(fit, as_df = TRUE)[, c("severity", "category")]
+```
+
+`fit$warnings` holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. For example, reject any fit with a critical warning. `check_diagnostics()` returns the residual autocorrelation and shrinkage behind two common warnings as data frames:
+
+```{r}
+#| label: check-diagnostics
+check_diagnostics(fit)
+```
+
+What these diagnostics mean and how to act on them is the subject of @sec-diagnostics.
+
+## Options that matter
+
+Arguments of `ferx_fit()` introduced here. A call-time value always overrides the model file's `[fit_options]`, and ferx reports the override:
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `model` | — | Model file or `ferx_model` object |
+| `data` | `NULL` | Dataset; `NULL` uses the `ferx_model` object's data or the model's `[data]` block |
+| `method` | `NULL` | Estimation method(s); `NULL` uses the model file, otherwise `"focei"` (@sec-estimation-methods) |
+| `covariance` | `NULL` | Run the covariance step (standard errors); `NULL` uses the model file, which defaults to `TRUE` |
+| `verbose` | `NULL` | Print progress; `NULL` uses the model file, which defaults to `TRUE` |
+| `inits_from_nca` | `FALSE` | Replace starting values with NCA-based ones (`TRUE` or a method name) |
+
+The other `ferx_fit()` arguments are covered where they matter: `threads`, `gradient`, `optimizer_trace` and `settings` in @sec-estimation-methods; `ignore`, `accept` and `ignore_ids` in @sec-data; `bloq_method` in @sec-censoring; `mu_referencing` and `scale_params` in @sec-variability; `sir` and `fd_hessian_step` in @sec-uncertainty; `output` and `include_data` in @sec-reproducibility.
+
+For example, skipping the covariance step:
+
+```{r}
+#| label: no-covariance
+fit_nocov <- ferx_fit(base$model, base$data, covariance = FALSE, verbose = FALSE)
+fit_nocov$covariance_status
+head(fit_nocov$estimates[, c("estimate", "se")], 3)
+```
+
+| Function | Arguments |
+|---|---|
+| `ferx_inits_from_nca()` | `model`, `data`, `method` (`"nca_sweep"`, `"nca"`, `"nca_ebe"`) |
+| `ferx_check_init()` | `model`, `data`, `method` (default `"focei"`), `maxiter` (pilot iteration limit), further arguments passed to `ferx_fit()` |
+| `ferx_coef()`, `ferx_se()` | `fit`, `param` (names; `NULL` for all) |
+| `ferx_get_warnings()` | `fit`, `as_df` |
+| `check_diagnostics()` | `fit` |
+
+## Variants
+
+### Starting from NCA-based values
+
+Fit the base model three ways: from the model file's starting values, from NCA-based starting values, and from NCA-based values with `gradient = "auto"` instead of the model file's finite differences:
+
+```{r}
+#| label: tbl-nca-fits
+#| tbl-cap: "The same model from different starting values."
+fit_nca <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, verbose = FALSE)
+fit_nca_auto <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, gradient = "auto",
+                         verbose = FALSE)
+
+worst <- function(f) {
+  sev <- ferx_get_warnings(f, as_df = TRUE)$severity
+  if ("critical" %in% sev) "critical" else if ("warning" %in% sev) "warning" else "none"
+}
+data.frame(
+  start = c("model file", "NCA", "NCA, gradient = auto"),
+  converged = c(fit$converged, fit_nca$converged, fit_nca_auto$converged),
+  ofv = c(fit$ofv, fit_nca$ofv, fit_nca_auto$ofv),
+  worst_warning = c(worst(fit), worst(fit_nca), worst(fit_nca_auto))
+)
+```
+
+All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient). The NCA start with finite differences, however, ended at an OFV about `r round(fit_nca$ofv - fit$ofv)` points higher than the other two, with a critical warning. Its warnings show why the result cannot be trusted:
+
+```{r}
+#| label: nca-warnings
+ferx_get_warnings(fit_nca, as_df = TRUE)[, c("severity", "category")]
+```
+
+The NCA-based absorption rate constant (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the estimate of the successful fits (`r round(ferx_coef(fit, "TVKA"), 3)`). Convergence only means the optimizer stopped. Always compare the OFV and read the warnings before accepting a fit.
+
+## Pitfalls
+
+**A fit stopped by its iteration limit.** `maxiter` limits the outer optimizer iterations. A fit that hits the limit is marked unconverged with a critical `convergence` warning. For the warfarin example with `method = "focei"`:
+
+```{r}
+#| label: maxiter-stop
+warf <- ferx_example("warfarin")
+fit_short <- ferx_fit(warf$model, warf$data, method = "focei",
+                      settings = list(maxiter = 5), verbose = FALSE)
+fit_short$converged
+ferx_get_warnings(fit_short, as_df = TRUE)[, c("severity", "category", "message")]
+```
+
+**Other points**:
+
+- `n_iterations` and the rows of the optimizer trace count objective evaluations, not outer iterations, so they can be much larger than `maxiter`.
+- Reading `fit$estimates["NAME", ]` with a misspelt name silently returns `NA`. `ferx_coef()` and `ferx_se()` stop with an error instead.
+
+### Warnings you may see here
+
+- `convergence` (critical): the optimizer did not converge. Reject the fit, then change starting values, method or bounds and refit. See [convergence and covariance warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-convergence).
+- `general` (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, and a misspelt data-selection column (@sec-data). Read the message. See [solver, numerics and unclassified warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-solver).
+
+## Summary
+
+- Starting values come from `[parameters]`. `ferx_inits_from_nca()` proposes data-based ones, and `ferx_check_init()` runs a pilot.
+- `ferx_fit(model, data)` fits. `print()` and `summary()` show the result, and `fit$estimates`, `ferx_coef()` and `ferx_se()` give the numbers.
+- Judge a fit by convergence, OFV **and** warnings. `ferx_get_warnings(as_df = TRUE)` makes them scriptable.
+
+Next: @sec-estimation-methods chooses and tunes the estimation method.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_fit`, `?summary.ferx_fit`, `?ferx_inits_from_nca`, `?ferx_check_init`, `?ferx_coef`, `?ferx_get_warnings`, `?check_diagnostics`
+- ferx-core: [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html), [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html)
+:::

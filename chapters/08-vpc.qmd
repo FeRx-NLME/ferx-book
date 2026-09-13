@@ -1,0 +1,183 @@
+# Simulation-based evaluation: VPC {#sec-vpc}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+```{r}
+#| label: stage-banner
+#| echo: false
+#| output: asis
+book_stage_banner("EVALUATE")
+```
+
+## Where you are
+
+Residual plots (@sec-diagnostics) check the fit one observation at a time. A **visual predictive check (VPC)** asks a different question: if the study were repeated under the fitted model, would the simulated data look like the observed data? This chapter simulates the study with `ferx_simulate()` and builds a VPC with dplyr and ggplot2. ferx provides the simulations; it has no VPC plotting function, so the book builds the plot itself.
+
+## The data
+
+```{r}
+#| label: fit
+base <- ferx_example("two_cpt_oral_base")
+fit <- ferx_fit(base$model, base$data, verbose = FALSE)
+obs <- read.csv(base$data, na.strings = ".") |> filter(EVID == 0, MDV == 0)
+```
+
+## Minimal runnable call
+
+`ferx_simulate()` replicates the dataset's design: the same subjects, doses and sampling times. In each replicate it draws new random effects and residual errors. With `fit`, it uses the fitted parameters:
+
+```{r}
+#| label: simulate
+sim <- ferx_simulate(base$model, base$data, n_sim = 500, seed = 1, fit = fit)
+head(sim)
+nrow(sim) == 500 * nrow(obs)
+```
+
+Each row is one simulated observation:
+
+| Column | Meaning |
+|---|---|
+| `SIM` | Replicate number |
+| `ID`, `TIME`, `CMT` | Subject, time and compartment from the dataset |
+| `IPRED` | Individual prediction for the simulated random effects |
+| `DV_SIM` | Simulated observation (`IPRED` plus residual error) |
+| `DRAW` | Parameter draw (always 1 here; see @sec-simulation for simulation with parameter uncertainty) |
+| `OBSERVED` | Event indicator for time-to-event rows; `NA` for continuous observations |
+
+The data frame also carries a `simulation_warnings` attribute, which is empty for a clean run.
+
+## Reading the result: building a VPC
+
+A VPC compares percentiles of the observed data with the distribution of the same percentiles across the simulated replicates. The steps are:
+
+1. Assign each observation to a time bin.
+2. Compute the 10th, 50th and 90th percentiles of the observed data per bin.
+3. Compute the same percentiles in each simulated replicate per bin.
+4. Summarise the simulated percentiles by a 90% interval across replicates.
+
+```{r}
+#| label: vpc-function
+vpc_summary <- function(obs, sim, breaks, probs = c(0.1, 0.5, 0.9)) {
+  bin_of <- function(t) cut(t, breaks, include.lowest = TRUE)
+  pct <- function(df, value) {
+    df |>
+      reframe(value = quantile({{ value }}, probs), prob = probs)
+  }
+  observed <- obs |>
+    mutate(bin = bin_of(TIME)) |>
+    group_by(bin) |>
+    mutate(time = median(TIME)) |>
+    group_by(bin, time) |>
+    pct(DV)
+  simulated <- sim |>
+    mutate(bin = bin_of(TIME)) |>
+    group_by(SIM, bin) |>
+    pct(DV_SIM) |>
+    group_by(bin, prob) |>
+    summarise(lo = quantile(value, 0.05), med = median(value), hi = quantile(value, 0.95),
+              .groups = "drop")
+  left_join(observed, simulated, by = c("bin", "prob"))
+}
+```
+
+In this dataset every subject is sampled at the same nominal times:
+
+```{r}
+#| label: sampling-times
+table(obs$TIME)
+```
+
+so bin edges between the nominal times give one bin per sampling time. With irregular sampling, choose bins that follow the density of observations, for example at quantiles of `TIME`.
+
+```{r}
+#| label: vpc
+times <- sort(unique(obs$TIME))
+breaks <- c(0, head(times, -1) + diff(times) / 2, Inf)
+vpc <- vpc_summary(obs, sim, breaks)
+head(vpc)
+```
+
+```{r}
+#| label: fig-vpc
+#| fig-cap: "VPC of the base model: observed 10th, 50th and 90th percentiles (lines) with 90% intervals of the simulated percentiles (bands). Observations as points."
+vpc_plot <- function(vpc, obs) {
+  ggplot(vpc, aes(time)) +
+    geom_ribbon(aes(ymin = lo, ymax = hi, group = prob,
+                    fill = ifelse(prob == 0.5, "median", "10th / 90th")), alpha = 0.3) +
+    geom_point(data = obs, aes(TIME, DV), size = 0.6, alpha = 0.3) +
+    geom_line(aes(y = value, group = prob, linetype = ifelse(prob == 0.5, "median", "10th / 90th"))) +
+    scale_y_log10() +
+    labs(x = "Time (h)", y = "Concentration", fill = "Simulated", linetype = "Observed")
+}
+vpc_plot(vpc, obs)
+```
+
+Read a VPC by checking whether each observed percentile line stays inside its simulated band. A line that leaves its band over a range of times points to a misspecification there: in structure, in variability (the outer percentiles) or in residual error.
+
+## Options that matter
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `model` | — | Model file |
+| `data` | `NULL` | Dataset providing subjects, doses and sampling times; `NULL` uses the model's `[data]` block |
+| `n_sim` | `1` | Number of replicates |
+| `seed` | `42` | Random seed; the same seed gives identical results |
+| `fit` | `NULL` | Fitted model whose `theta`, `omega` and `sigma` are used; `NULL` uses the model file's initial values |
+
+`match` (propensity-score matching of the random effects to the observed design) and `horizon` (censoring time for time-to-event simulation) are covered in @sec-simulation and @sec-time-to-event.
+
+With a fixed `seed`, a simulation is reproducible:
+
+```{r}
+#| label: seed
+identical(ferx_simulate(base$model, base$data, n_sim = 5, seed = 1, fit = fit),
+          ferx_simulate(base$model, base$data, n_sim = 5, seed = 1, fit = fit))
+```
+
+## Variants
+
+### Forgetting `fit`
+
+Without `fit`, `ferx_simulate()` simulates from the model file's **initial** values, not the estimates. A VPC then evaluates the starting values, not the model:
+
+```{r}
+#| label: fig-vpc-no-fit
+#| fig-cap: "The same VPC simulated from the model file's initial values instead of the fitted parameters."
+sim_inits <- ferx_simulate(base$model, base$data, n_sim = 500, seed = 1)
+vpc_inits <- vpc_summary(obs, sim_inits, breaks)
+vpc_plot(vpc_inits, obs)
+```
+
+Counting the bins in which the observed median lies outside its simulated band makes the difference concrete:
+
+```{r}
+#| label: median-outside
+median_outside <- function(v) with(v[v$prob == 0.5, ], sum(value < lo | value > hi))
+c(fitted = median_outside(vpc), initial_values = median_outside(vpc_inits), bins = length(breaks) - 1)
+```
+
+## Pitfalls
+
+- **Always pass `fit`** when the simulation should reflect the estimates.
+- **Simulated rows must match observed rows.** Rows with `MDV = 1` are never simulated. If the dataset has observation rows with an empty `DV`, `ferx_simulate()` simulates them (an empty `DV` means "simulate here") but a fit skips them. `ferx_simulate()` reports this in `simulation_warnings`, and such rows have no counterpart in the observed data.
+- **Binning drives the picture.** Too few bins hide misfit and too many make the percentiles noisy. Check the number of observations per bin.
+- **Doses and design differ between subjects.** If they vary widely, stratify the VPC (for example by dose group) or use prediction-corrected percentiles, so that the design does not dominate the spread.
+
+## Summary
+
+- `ferx_simulate(model, data, n_sim, seed, fit)` replicates the study under the fitted model.
+- A VPC compares observed percentiles with intervals of simulated percentiles per time bin; a few lines of dplyr and ggplot2 build it.
+- Pass `fit`, set `seed`, and choose bins that follow the sampling design.
+
+Next: @sec-model-selection compares and searches candidate models.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_simulate`
+- ferx-core: [simulation](https://ferx-nlme.github.io/ferx-core/model-file/simulation.html)
+:::

@@ -1,149 +1,66 @@
----
-title: "Installation"
----
+# Installing ferx {#sec-installation}
 
-## Prerequisites {#sec-installation}
-
-ferx requires R >= 4.2, Rust (stable toolchain), and cmake.
-
-| Dependency | Required | Notes |
-|---|---|---|
-| R >= 4.2 | Yes | Package interface |
-| Rust / Cargo | Yes | Compiles the ferx-core backend; the stable toolchain is sufficient |
-| cmake | Yes | Used by the Rust build (Linux/macOS; bundled with Rtools45 on Windows) |
-
-The first install compiles the Rust backend. Build time depends heavily on CPU
-speed: about 15-30 minutes on a fast modern machine, and up to 1-2 hours on an
-older laptop. Subsequent installs are much faster because Cargo reuses cached
-artifacts.
-
-## Quick install by platform {#sec-quick-install}
-
-### macOS {#sec-macos}
-
-cmake is the only non-standard system dependency. A stable Rust toolchain is
-sufficient.
-
-**Step 1 - Install Homebrew** (skip if already installed)
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 ```
 
-**Step 2 - Install cmake**
+ferx is an R package with a compiled Rust engine (ferx-core) inside. Installing it compiles that engine from source, so you need a Rust toolchain and the first install takes a long time. The ferx-r README notes that later installs are faster.
 
-```bash
-brew install cmake
-```
+## Requirements
 
-**Step 3 - Install Rust**
+- **R** with a working build toolchain. The package's `SystemRequirements` are GNU make, Cargo and rustc (>= 1.70).
+- **Rust**: a standard stable toolchain installed with [rustup](https://www.rust-lang.org/tools/install). No custom toolchain is required.
+- **Windows**: Rtools matching your R version, plus the GNU-ABI Rust toolchain. See the Windows notes in the [ferx-r README](https://github.com/FeRx-NLME/ferx-r#windows).
 
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
+## Installing the pinned build
 
-Follow the on-screen instructions to add Rust to your PATH, usually
-`source "$HOME/.cargo/env"` or restarting the terminal.
-
-**Step 4 - Install ferx from R**
-
-RStudio on macOS launches with a restricted PATH that does not include the
-Homebrew cmake bin directory, even when the shell profile is configured
-correctly. Add it explicitly before installing:
+This book documents one specific ferx-r commit, `{{< var ferx_r_sha_short >}}` (package version {{< var ferx_r_version >}}, engine ferx-core `{{< var ferx_core_sha_short >}}`). Every output in the book was produced with it. To get exactly the same behaviour, install that commit:
 
 ```r
-# Apple Silicon (M1/M2/M3):
-Sys.setenv(PATH = paste("/opt/homebrew/opt/cmake/bin", Sys.getenv("PATH"), sep = ":"))
-# Intel Mac - use this line instead:
-# Sys.setenv(PATH = paste("/usr/local/opt/cmake/bin", Sys.getenv("PATH"), sep = ":"))
-
-pak::pak("FeRx-NLME/ferx-r")
-# or: devtools::install_github("FeRx-NLME/ferx-r")
+install.packages("pak")
+pak::pak("FeRx-NLME/ferx-r@{{< var ferx_r_sha >}}")
 ```
 
-Without the `Sys.setenv(PATH = ...)` line, the Rust build fails with a
-`cmake not found` error when launched from RStudio.
-
-### Windows {#sec-windows}
-
-Native Windows installs are supported.
-
-**Step 1 - Install Rtools45**
-
-[Rtools45](https://cran.r-project.org/bin/windows/RTools/rtools45/rtools.html)
-ships cmake and the MinGW gcc that R uses to link the package, so no separate
-cmake install is needed.
-
-**Step 2 - Install rustup with the GNU-ABI toolchain**
-
-Download from <https://www.rust-lang.org/tools/install>, then in PowerShell:
-
-```powershell
-rustup toolchain install stable-x86_64-pc-windows-gnu
-```
-
-You do **not** need to `rustup default` it: the package build pins this
-toolchain automatically on Windows. The rustup default on Windows is the MSVC
-ABI, which is not link-compatible with Rtools' MinGW linker.
-
-**Step 3 - Install ferx from R**
+Installing without a commit gives you the latest development version. That is fine for your own work, but its output can differ from what this book shows:
 
 ```r
 pak::pak("FeRx-NLME/ferx-r")
-# or: devtools::install_github("FeRx-NLME/ferx-r")
 ```
 
-### Linux {#sec-linux}
+## Checking the installation
 
-Install cmake and Rust via your system package manager plus rustup. RStudio on
-Linux inherits the system PATH, so no PATH workaround is needed.
+Load the package and confirm the version:
 
-```bash
-# Debian / Ubuntu
-sudo apt-get install -y cmake build-essential curl git
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-```
-
-```r
-pak::pak("FeRx-NLME/ferx-r")
-# or: devtools::install_github("FeRx-NLME/ferx-r")
-```
-
-## Verify the installation
-
-```r
+```{r}
+#| label: version
 library(ferx)
-ferx_example()          # lists all bundled examples
+packageVersion("ferx")
+```
+
+The package ships example models and datasets, so a real fit is the quickest end-to-end check. It exercises the model parser, the data reader and the estimation engine:
+
+```{r}
+#| label: smoke-fit
 ex <- ferx_example("warfarin")
-fit <- ferx_fit(ex$model, ex$data)
-print(fit)
+fit <- ferx_fit(ex$model, ex$data, verbose = FALSE)
+fit$converged
 ```
 
-`print(fit)` leads with a `STATUS: CONVERGED` line and bold section headers.
-`ferx_get_warnings(fit)` shows any warnings grouped by severity with remediation
-guidance.
+If this prints `TRUE`, ferx is installed and working. @sec-complete-analysis walks through the same example as a full analysis.
 
-## Docker / reproducible environments {#sec-docker}
+::: {.callout-note}
+## Stopping a long fit
+`ferx_fit()` checks for R interrupts while it runs, so **Ctrl-C** (or RStudio's stop button) cancels a fit. The call then ends with an error saying the fit was cancelled. The ferx-core [installation page](https://ferx-nlme.github.io/ferx-core/installation.html) describes the behaviour in detail.
+:::
 
-The `ferx-r` repo ships a `Dockerfile` for reproducible local or CI
-environments:
+## Reference
 
-```bash
-git clone https://github.com/FeRx-NLME/ferx-r
-cd ferx-r
-
-# Build
-docker build -t ferx:latest .
-
-# Run RStudio Server
-docker run --rm -p 8787:8787 -e PASSWORD=ferx ferx:latest
-# -> open http://localhost:8787   user: rstudio   password: ferx
-```
-
-For a minimal CI image:
-
-```dockerfile
-FROM rocker/r-ver:4.4.0
-RUN Rscript -e "pak::pak('FeRx-NLME/ferx-r')"
-```
+::: {.callout-tip}
+## Reference
+- ferx-r: [README: installation](https://github.com/FeRx-NLME/ferx-r#installation), including Windows and Docker
+- ferx-core: [installation](https://ferx-nlme.github.io/ferx-core/installation.html)
+- R help: `?ferx_example`, `?ferx_fit`
+:::
