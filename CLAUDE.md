@@ -77,6 +77,7 @@ Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eva
 - `cache.extra` is the pinned SHA, so a pin bump invalidates all caches. CI renders without a cache.
 - Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy to `book_tempdir()` first. For the same reason, give `ferx_model_to_frem()` an `output_dir` under `book_tempdir()`.
 - A single-chapter render warns about cross-references to other chapters; a full `quarto render` resolves them.
+- **Never run two renders in the same working tree at once.** A full `quarto render` moves each rendered page into `_book/` at the end; a concurrent single-chapter render replaces that page first, and the full render dies with `NotFound: ... rename '.../chapters/<ch>.html' -> '_book/chapters/<ch>.html'` after executing every chunk. Wait for one to finish, or render in a second worktree.
 
 ## Bumping the pin
 

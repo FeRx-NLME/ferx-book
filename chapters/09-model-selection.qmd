@@ -1,3 +1,8 @@
+---
+aliases:
+  - /chapters/15-model-search.html
+---
+
 # Model development and selection {#sec-model-selection}
 
 ```{r}
@@ -128,7 +133,7 @@ cfg$tools
 
 ### The search space
 
-The space is written in the Model Feature Language (MFL). `COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])` means: every parameter with a random effect, crossed with every continuous covariate, as a power or linear effect, each optional (`?`). A statement **without** `?` is structural instead: every candidate carries it. The symbols resolve against your model and your dataset, so one space travels between them -- `@CATEGORICAL` selects the categorical covariates as `@CONTINUOUS` selects the continuous ones. `ferx_search_space()` parses MFL text and, given a model and data, expands the symbols into the concrete candidates:
+The space is written in the Model Feature Language (MFL). `COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])` means: every parameter with a random effect, crossed with every continuous covariate, as a power or linear effect, each optional (`?`). The `?` is accepted on four keywords only -- `COVARIATE`, `IIV`, `IOV` and `COVARIANCE` -- and marks that statement as something the search may decline; written without it, every candidate carries the feature. The other keywords, `ABSORPTION` and `PERIPHERALS` among them, enumerate the alternatives to try instead. The `@` symbols resolve against the model's `[covariates]` block and its random effects, so one space travels between models: `@CATEGORICAL` selects the categorical covariates as `@CONTINUOUS` selects the continuous ones. `ferx_search_space()` parses MFL text and, given a model and data, expands the symbols into the concrete candidates:
 
 ```{r}
 #| label: space
@@ -248,17 +253,24 @@ rs <- ferx_ruvsearch(config = transit$search, directory = book_tempdir("ruvsearc
 rs
 rs$final_features
 ```
-`cwres_prescreen` changes what those numbers are. With it on, candidates are screened against the parent's CWRES and only the winner is refitted to the data, which is cheaper but puts the criterion on a different scale:
+`cwres_prescreen` changes what those numbers are. With it on, candidates are screened against the parent's CWRES rather than fitted to the data, which is cheaper but puts the criterion on a different scale. Two runs that differ only in that flag, everything else held equal:
 
 ```{r}
 #| label: ruvsearch-prescreen
-rs_prescreen <- ferx_ruvsearch(model = transit$model, data = transit$data, cwres_prescreen = TRUE,
-                               directory = book_tempdir("ruvsearch-prescreen"), progress = FALSE)
-range(rs$candidates$criterion)
-range(rs_prescreen$candidates$criterion)
+ruv <- function(prescreen) {
+  ferx_ruvsearch(model = transit$model, data = transit$data, p_value = 0.05, max_iter = 1,
+                 retries = 0, cwres_prescreen = prescreen,
+                 directory = book_tempdir(paste0("ruvsearch-", prescreen)), progress = FALSE)
+}
+rs_data <- ruv(FALSE)
+rs_screen <- ruv(TRUE)
+screened <- startsWith(rs_screen$candidates$id, "cwres")
+rbind(fitted_to_data = range(rs_data$candidates$criterion[rs_data$candidates$id != "input"]),
+      screened_on_cwres = range(rs_screen$candidates$criterion[screened]))
+c(selected_data = length(rs_data$final_features), selected_screened = length(rs_screen$final_features))
 ```
 
-The two sets of numbers are not comparable: the screened candidates sit around `r round(max(rs_prescreen$candidates$criterion))` where the data OFVs are near `r round(min(rs$candidates$criterion))`. The engine default is `cwres_prescreen = FALSE`, which is what the run above used.
+The two sets of numbers are not comparable, and the screening rows are the ones whose `id` starts with `cwres`. Note that the cheaper pass also selected differently here, so treat prescreening as a different search rather than a faster one. The engine default is `cwres_prescreen = FALSE`, which is what the configuration run above used.
 
 
 The search accepted a time-varying residual error in the first iteration, and nothing further in the second. The base model of this workflow, which carried a residual autocorrelation warning in @sec-diagnostics, can be searched the same way with the inline arguments (`model`, `data`, `p_value`, `max_iter`, …).
@@ -373,7 +385,7 @@ c(input_ofv = amd$input_ofv, final_ofv = amd$final_ofv, d_ofv = amd$d_ofv)
 basename(amd$final_model_path)
 ```
 
-Each step that ran also has an entry under `$tools`, named by its position and pipeline step. Watch the naming: the entry is keyed on the step, while its `$directory` is the tool that implemented it, and the two do not match:
+Each step that ran also has an entry under `$tools`, named by its position and pipeline step. Watch the naming: the entry is keyed on the pipeline step, while its `$directory` is the tool that implemented it, and the two need not agree -- `01-structural` was run by `modelsearch`:
 
 ```{r}
 #| label: amd-tools
@@ -384,7 +396,19 @@ names(amd$tools[["01-structural"]])
 
 An entry is a plain list, not the object the tool would return on its own: it carries what the step decided (`status`, `reason`, `criterion`, `selected`, `seconds`), its slice of the candidates, and the engine's own table read back from the run directory. Run a tool directly when you want its fit and its own options.
 
-The pipeline can also be stated inline, with a shorter order and steps left out. `strategy` reorders the same components rather than changing them: `"reevaluation"` is the default order followed by iivsearch and residual a second time, and `"SIR"`, `"SRI"` and `"RSI"` run three steps in the order their initials spell (structural, IIV, residual; structural, residual, IIV; residual, structural, IIV). `skip` drops a step from whichever order was chosen; `retries_on` says when the extra perturbed-restart pass runs:
+The pipeline can also be stated inline, with a shorter order and steps left out. `strategy` chooses which steps run and in what order, and `ferx_amd_plan()` will show you each without fitting anything:
+
+```{r}
+#| label: amd-strategies
+strategies <- c("default", "reevaluation", "SIR", "SRI", "RSI")
+data.frame(strategy = strategies, order = vapply(strategies, function(s) {
+  paste(ferx_amd_plan(model = amd_ex$model, data = amd_ex$data,
+                      search_space = "PERIPHERALS(0..1); IIV?(@PK, exp)",
+                      strategy = s)$step, collapse = " -> ")
+}, ""), row.names = NULL)
+```
+
+`reevaluation` is the default order with a second iivsearch and residual pass at the end. The three-letter names are shorter pipelines, not reorderings of the same six: they run the three steps their initials spell and leave out iovsearch, allometry and covariates entirely. `skip` drops a step from whichever order was chosen; `retries_on` says when the extra perturbed-restart pass runs:
 
 ```{r}
 #| label: amd-inline
@@ -399,7 +423,7 @@ amd_sir$steps[, c("step", "status", "criterion", "candidates", "seconds")]
 
 ferx-core also has a global search. It runs from the ferx command line and has no R function in the pinned ferx-r build. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages.
 
-A `.ferxsearch` file may still carry a section for such a tool, because the engine accepts a section for every tool *it* knows. The file loads, and ferx warns rather than running a search that quietly ignores part of its own configuration. Where the section can be run somewhere, the warning says where:
+A `.ferxsearch` file may still carry a section for such a tool. The loader validates section names against a fixed vocabulary, which runs ahead of what this package binds and, in the case of `[structsearch]`, ahead of the engine itself; a name outside that list is an error. The file loads, and ferx warns rather than running a search that quietly ignores part of its own configuration. Where the section can be run somewhere, the warning says where:
 
 ```{r}
 #| label: unconsumed-sections
