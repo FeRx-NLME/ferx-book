@@ -591,8 +591,9 @@ Per-chapter loop:
     `print()` tags the row `[logit scale]` with a `(typical)` line forty times the real
     value. `lower_95`/`upper_95` are the symmetric Wald and are not affected.
   - ferx-core is correct and correctly labelled; the same model parameterised as `logit`
-    gives the same typical F (0.79236) and a correct natural column.
-  - Fixed upstream in [ferx-r #372](https://github.com/FeRx-NLME/ferx-r/pull/372), which
+    gives the same typical F (0.7923, both ways, from two independent fits) and a correct
+    natural column.
+  - Fix in [ferx-r #372](https://github.com/FeRx-NLME/ferx-r/pull/372), which
     also gives such a theta a natural-scale CI formed on the logit scale, so the two
     parameterisations agree on every natural column. ch05 has an "at this build" callout
     and ch16 a qualifying clause; **both come out at the next pin bump**, along with the

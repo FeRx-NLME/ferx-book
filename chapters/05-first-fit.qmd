@@ -136,7 +136,7 @@ try(ferx_coef(fit, "TVCLL"))
 
 ### Parameter transformations and the `transform` column
 
-A parameter is not always estimated on the scale you want to read. The `transform` column of `fit$estimates` names the scale the row was **estimated** on, which is what you need in order to know whether `estimate` is the number you want:
+A parameter is not always reported on the scale you want to read. The `transform` column of `fit$estimates` names the **parameterisation** the row came from, which is what you need in order to know whether `estimate` is the number you want:
 
 | `transform` | `estimate` holds | Which parameters |
 |---|---|---|
@@ -155,7 +155,7 @@ The first four are the transforms a fixed effect can carry, and `fit$theta_trans
 fit$theta_transforms
 ```
 
-`log` and `logit` put `estimate` on the transformed scale and the interpretable value in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it; those columns are `NA` for the rows that need no back-transform. `logit_probability` is the exception: the theta is declared on (0, 1) and the engine returns it there, so `estimate` is already the number you want. The `bioavailability` example (@sec-absorption) uses that form:
+`log` and `logit` put `estimate` on the transformed scale and the interpretable value in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it. Those columns are `NA` for `identity`, `variance`, `proportional` and `additive` rows, which need no back-transform. `logit_probability` needs none either -- the theta is declared on (0, 1) and the engine returns it there, so `estimate` is already the number you want -- but at this build it carries the natural columns anyway, and they are wrong; the callout below shows it. The `bioavailability` example (@sec-absorption) uses that form:
 
 ```{r}
 #| label: natural-scale
@@ -174,11 +174,26 @@ reconstructed <- 1 / (1 + exp(-(log(typical_f / (1 - typical_f)) + eta_f)))
 max(abs(reconstructed - fit_logit$individual_estimates$F))
 ```
 
-For a `log` theta the back-transform is real and `estimate_natural` holds it: `exp(estimate)` equals it to full precision.
+For a `log` theta the back-transform is real, and `estimate_natural` is exactly `exp(estimate)`:
+
+```{r}
+#| label: log-back-transform
+log_model <- file.path(book_tempdir("first-fit"), "log_theta.ferx")
+writeLines(sub("  CL = TVCL * exp(ETA_CL)", "  CL = exp(TVCL + ETA_CL)",
+               sub("  theta TVCL(0.134, 0.001, 10.0)", "  theta TVCL(-2.0, -7.0, 2.3)",
+                   readLines(ferx_example("warfarin")$model), fixed = TRUE),
+               fixed = TRUE), log_model)
+fit_log <- ferx_fit(log_model, ferx_example("warfarin")$data, verbose = FALSE)
+log_row <- fit_log$estimates["TVCL", ]
+c(transform = log_row$transform,
+  difference = log_row$estimate_natural - exp(log_row$estimate))
+```
 
 ::: {.callout-important}
 ## `logit_probability` is back-transformed twice at this build
-For this transform, ferx-r applies `inv_logit()` to a value that is already on (0, 1), so `estimate_natural`, `lower_95_natural` and `upper_95_natural` are wrong, as are the `[logit scale]` tag and the `(typical)` line `print()` shows. Read `estimate`; `lower_95` and `upper_95` are unaffected. `warfarin_logit_f` makes the size of it visible -- the individual bioavailabilities bracket `estimate` and not the natural column:
+For this transform, ferx-r applies `inv_logit()` to a value that is already on (0, 1), so `estimate_natural`, `lower_95_natural` and `upper_95_natural` are wrong, as are the `[logit scale]` tag and the `(typical)` line `print()` shows. Read `estimate`. `lower_95` and `upper_95` escape the double transform, but they are a symmetric Wald interval on a bounded parameter and can fall outside (0, 1) -- read them as a precision indicator, not as bounds on a probability.
+
+`warfarin_logit_f` makes the size of it visible. That fit is not identifiable -- without intravenous data `F`, `CL` and `V` are confounded (@sec-absorption), which is why `F` lands so low and the %RSE so high -- and that is exactly what makes the gap easy to see: the individual bioavailabilities bracket `estimate` and not the natural column.
 
 ```{r}
 #| label: logit-probability-bug

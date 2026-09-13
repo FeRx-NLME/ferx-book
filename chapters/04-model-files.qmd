@@ -56,10 +56,14 @@ The expressions in `[individual_parameters]` and `[odes]` take a fixed set of fu
 ```{r}
 #| label: expression-functions
 fn_probe <- file.path(book_tempdir("model-files"), "unknown_function.ferx")
-writeLines(sub("  CL = TVCL * exp(ETA_CL)", "  CL = TVCL * tanh(ETA_CL)",
-               readLines(ferx_example("warfarin")$model), fixed = TRUE), fn_probe)
-tryCatch(ferx_fit(fn_probe, ferx_example("warfarin")$data, verbose = FALSE),
-         error = function(e) sub("^Error parsing model: ", "", conditionMessage(e)))
+original <- readLines(ferx_example("warfarin")$model)
+probed <- sub("  CL = TVCL * exp(ETA_CL)", "  CL = TVCL * tanh(ETA_CL)",
+              original, fixed = TRUE)
+stopifnot(!identical(probed, original))   # the line must actually have been replaced
+writeLines(probed, fn_probe)
+cat(tryCatch(ferx_fit(fn_probe, ferx_example("warfarin")$data, verbose = FALSE),
+             error = function(e) sub("^Error parsing model: ", "", conditionMessage(e))),
+    fill = TRUE)
 ```
 
 `logit()` and `inv_logit()` are how a parameter is kept inside (0, 1) -- @sec-variability gives the forms and @sec-first-fit shows how they are reported. Names match case-insensitively, so `EXP(...)` works as well as `exp(...)`.
