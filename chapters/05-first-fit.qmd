@@ -155,7 +155,7 @@ The first four are the transforms a fixed effect can carry, and `fit$theta_trans
 fit$theta_transforms
 ```
 
-`log` and `logit` put `estimate` on the transformed scale and the interpretable value in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it. Those columns are `NA` for `identity`, `variance`, `proportional` and `additive` rows, which need no back-transform. `logit_probability` needs none either -- the theta is declared on (0, 1) and the engine returns it there, so `estimate` is already the number you want -- but at this build it carries the natural columns anyway, and they are wrong; the callout below shows it. The `bioavailability` example (@sec-absorption) uses that form:
+`log` and `logit` put `estimate` on the transformed scale and the interpretable value in `estimate_natural`, with `lower_95_natural` and `upper_95_natural` beside it. Those columns are `NA` for `identity`, `variance`, `proportional` and `additive` rows, which need no back-transform. `logit_probability` needs none either -- the theta is declared on (0, 1) and the engine returns it there, so `estimate` is already the number you want and `estimate_natural` repeats it. The `bioavailability` example (@sec-absorption) uses that form:
 
 ```{r}
 #| label: natural-scale
@@ -189,22 +189,45 @@ c(transform = log_row$transform,
   difference = log_row$estimate_natural - exp(log_row$estimate))
 ```
 
-::: {.callout-important}
-## `logit_probability` is back-transformed twice at this build
-For this transform, ferx-r applies `inv_logit()` to a value that is already on (0, 1), so `estimate_natural`, `lower_95_natural` and `upper_95_natural` are wrong, as are the `[logit scale]` tag and the `(typical)` line `print()` shows. Read `estimate`. `lower_95` and `upper_95` escape the double transform, but they are a symmetric Wald interval on a bounded parameter and can fall outside (0, 1) -- read them as a precision indicator, not as bounds on a probability.
-
-`warfarin_logit_f` makes the size of it visible. That fit is not identifiable -- without intravenous data `F`, `CL` and `V` are confounded (@sec-absorption), which is why `F` lands so low and the %RSE so high -- and that is exactly what makes the gap easy to see: the individual bioavailabilities bracket `estimate` and not the natural column.
+The two confidence intervals on a row are built differently. `lower_95` and `upper_95` are always the symmetric interval `estimate ± 1.96 × se` on the scale `estimate` is reported on. On a bounded parameter that interval is not held inside the bounds, so for a probability read it as a measure of precision rather than as limits. For a `logit_probability` theta, `lower_95_natural` and `upper_95_natural` are formed on the logit scale instead -- the standard error is carried there by the delta method, `se / (p (1 - p))`, and the interval brought back with `inv_logit()` -- so they cannot leave [0, 1], and reach its edge only for an estimate close to a bound with a large standard error:
 
 ```{r}
-#| label: logit-probability-bug
-logit_f_fit <- ferx_fit(ferx_example("warfarin_logit_f")$model,
-                        ferx_example("warfarin_logit_f")$data, verbose = FALSE)
-logit_f_fit$estimates["THETA_F", c("estimate", "lower_95", "upper_95", "estimate_natural")]
-range(logit_f_fit$individual_estimates$F)
+#| label: logit-probability-interval
+fit_logit$estimates["THETA_F", c("estimate", "lower_95", "upper_95",
+                                 "lower_95_natural", "upper_95_natural")]
 ```
 
-`log` and `logit` are unaffected. Reported as [ferx-r #371](https://github.com/FeRx-NLME/ferx-r/issues/371).
-:::
+Here `upper_95` is `r round(fit_logit$estimates["THETA_F", "upper_95"], 3)`, a bioavailability above 1, while the natural-scale interval runs from `r round(fit_logit$estimates["THETA_F", "lower_95_natural"], 3)` to `r round(fit_logit$estimates["THETA_F", "upper_95_natural"], 3)`; for a probability, quote that one. `print()` shows it on a `(95% CI)` line under the theta.
+
+That interval is wide for a reason unrelated to how it is built: with oral data only, `F`, `CL` and `V` cannot be separated (@sec-absorption), and the fit says so:
+
+```{r}
+#| label: logit-probability-warnings
+ferx_get_warnings(fit_logit, as_df = TRUE)[, c("category", "severity")]
+```
+
+Declaring the same bioavailability on a `logit` theta instead, in a separate fit, gives nearly the same natural-scale columns. The agreement is approximate -- the delta method is a first-order approximation, and two fits stop at slightly different optima -- and only the natural-scale columns are comparable: `estimate`, `lower_95` and `upper_95` are on different scales in the two rows.
+
+```{r}
+#| label: logit-twin
+logit_model <- file.path(book_tempdir("first-fit"), "bioavailability_logit.ferx")
+bio_lines <- readLines(ferx_example("bioavailability")$model)
+twin_lines <- sub("theta THETA_F(0.70, 0.001, 0.999)  # typical bioavailability, directly on (0,1) scale",
+                  "theta THETA_F(0.847, -5.0, 5.0)  # typical bioavailability on the logit scale",
+                  bio_lines, fixed = TRUE)
+twin_lines <- sub("inv_logit(logit(THETA_F) + ETA_F)", "inv_logit(THETA_F + ETA_F)",
+                  twin_lines, fixed = TRUE)
+stopifnot(sum(twin_lines != bio_lines) == 2)   # both lines really were rewritten
+writeLines(twin_lines, logit_model)
+fit_twin <- ferx_fit(logit_model, ferx_example("bioavailability")$data, verbose = FALSE)
+natural <- c("transform", "estimate_natural", "lower_95_natural", "upper_95_natural")
+natural_gap <- max(abs(unlist(fit_logit$estimates["THETA_F", natural[-1]]) -
+                       unlist(fit_twin$estimates["THETA_F", natural[-1]])))
+rbind(declared_on_0_1 = fit_logit$estimates["THETA_F", natural],
+      declared_as_logit = fit_twin$estimates["THETA_F", natural])
+```
+
+The largest difference between the two rows' natural-scale columns is `r signif(natural_gap, 2)`.
 
 For the random effects, `fit$eta_param_types` says how each eta enters the model -- `log_normal`, `additive`, `logit`, `logit_probability` or `custom`:
 

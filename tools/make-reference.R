@@ -32,7 +32,10 @@ settings_docs[] <- lapply(settings_docs, function(x) if (is.character(x)) gsub("
 # ---- chapter links ------------------------------------------------------------------
 chapter_ids <- list()
 for (f in list.files("chapters", pattern = "^[0-9]{2}-.*\\.qmd$", full.names = TRUE)) {
-  heading <- grep("^# .*\\{#sec-[a-z-]+\\}", readLines(f, n = 5), value = TRUE)[1]
+  # Search the whole file, not its first few lines: front matter (e.g. `aliases:` for a
+  # redirected page) pushes the heading down, and a missed id renders as `@NA`.
+  heading <- grep("^# .*\\{#sec-[a-z-]+\\}", readLines(f), value = TRUE)[1]
+  if (is.na(heading)) stop("no `# Title {#sec-...}` heading in ", f)
   chapter_ids[[sub("\\.qmd$", "", basename(f))]] <- sub(".*\\{#(sec-[a-z-]+)\\}.*", "\\1", heading)
 }
 chapter_link <- function(home) {

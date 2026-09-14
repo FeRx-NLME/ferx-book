@@ -581,8 +581,13 @@ Per-chapter loop:
     `omega ETA_CL ~ 0.07` and `~ 0.2645751 (sd)` both give OFV −280.364, as do
     `sigma PROP_ERR ~ 0.01 (sd)` and `~ 0.0001`.
   - ch16 shows it in a callout; remove that after the pin bump that fixes it.
-- **ferx-r bug (found reviewing PR #26), important:** a `logit_probability` theta is
-  back-transformed twice. `.ferx_est_row()` handles `logit` and `logit_probability` in one
+- ~~**ferx-r bug (found reviewing PR #26), important:** a `logit_probability` theta is
+  back-transformed twice.~~ **Fixed** by [ferx-r #372](https://github.com/FeRx-NLME/ferx-r/pull/372),
+  in the pin from `c08673d`. The ch05 callout and its `logit-probability-bug` chunk are
+  replaced by a section on the two intervals (`logit-probability-interval`) and a runnable
+  comparison with the same model declared on a `logit` theta (`logit-twin`). The ch16
+  clause stays: it describes which scale each transform is reported on, which the fix
+  does not change. Original finding: `.ferx_est_row()` handles `logit` and `logit_probability` in one
   branch and applies `inv_logit()` to both, but the engine returns a `logit_probability`
   theta already on (0, 1).
   - Measured: on `warfarin_logit_f`, reconstructing each subject's `F` from `estimate`
@@ -595,10 +600,10 @@ Per-chapter loop:
     natural column.
   - Fix in [ferx-r #372](https://github.com/FeRx-NLME/ferx-r/pull/372), which
     also gives such a theta a natural-scale CI formed on the logit scale, so the two
-    parameterisations agree on every natural column. ch05 has an "at this build" callout
-    and ch16 a qualifying clause; **both come out at the next pin bump**, along with the
-    `logit-probability-bug` chunk, and the ch05 table row and `logit-probability-check`
-    chunk stay as they are -- they describe the transform, not the defect.
+    parameterisations agree on every natural column (to first order: the two fits differ
+    by under 0.001). At the `c08673d` bump the ch05 callout and `logit-probability-bug`
+    chunk came out; the ch05 table row, `logit-probability-check` and the ch16 clause stayed,
+    since they describe the transform, not the defect.
 - **ferx-r usability gap (found reviewing the ch25 lookup tables):** a refused `ferx_fit()`
   drops the stable check-report code. `ferx_model_validate()` returns `E_UNKNOWN_BLOCK` in
   `$diagnostics$code`, but fitting the same file raises only
@@ -745,7 +750,7 @@ Per-chapter loop:
 
 | # | Decision | Outcome |
 |---|---|---|
-| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` (ferx-core `8372248c`); re-pin to next release tag when cut |
+| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` (ferx-core `8372248c`); re-pin to next release tag when cut |
 | D2 | xpose | **Decided:** mention only; `ferx_xpose` eval-reason |
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |
