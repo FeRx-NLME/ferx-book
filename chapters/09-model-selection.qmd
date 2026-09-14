@@ -353,6 +353,75 @@ iov$final_kappas
 iov$final_structure
 ```
 
+## All axes at once
+
+Every tool so far walks one axis with the others held fixed: `ferx_modelsearch()` decides the structure with the covariate model fixed, `ferx_covsearch()` the covariates with the structure fixed. That is what keeps them cheap, and it is blind to one thing -- an effect that only earns its place after another decision has gone the other way. A clearance covariate that pays off only once the distribution phase has a compartment of its own is invisible to a forward step taken on the one-compartment model.
+
+`ferx_globalsearch()` lays both kinds of decision out as one **grid** and searches it whole. Each structural category in the space becomes an axis with its values as alleles; each optional `COVARIATE?` pair becomes an axis whose alleles are `none` and each of its forms. `algorithm = "exhaustive"` fits every point; `algorithm = "ga"`, the default, runs pyDarwin's genetic algorithm and fits a fraction of them.
+
+The bundled `two_cpt_oral_global` example is built to have something to find: a *one*-compartment, covariate-free model on data carrying `WT` and `CRCL` that were simulated from two compartments, so all four axes are live.
+
+```{r}
+#| label: globalsearch
+gs_ex <- ferx_example("two_cpt_oral_global")
+gs <- ferx_globalsearch(config = gs_ex$search,
+                        directory = book_tempdir("globalsearch"), progress = FALSE)
+gs
+```
+
+Read the top two rows before anything else. The runner-up has the *better* OFV and still ranks second, because it carries one more covariate relation and the criterion charges it for the parameter. A table showing only the OFV would name the wrong winner, which is why the criterion and the OFV are separate columns:
+
+```{r}
+#| label: globalsearch-ofv-vs-criterion
+head(gs$models[order(gs$models$fitness), c("id", "genome", "ofv", "criterion", "fitness")], 3)
+```
+
+### The criterion is not the whole of the ranking
+
+`[rank] type` defaults to `"penalized"` here -- pyDarwin's fitness, the objective function plus a charge per estimated parameter and per unhealthy fit -- where every other tool defaults to a BIC. Whatever criterion you name, the global search then charges three things the criterion cannot see, and ranks on the sum:
+
+| Charge | Paid by |
+|---|---|
+| `charge_non_influential` | a gene that changed nothing in the rendered model, such as a covariate on a parameter the structural choice removed. A tie-break towards the simpler genotype among models that are otherwise identical. |
+| `charge_gate` | a fit the `[strictness]` gate refused. It can never be selected, but it still steers the genetic algorithm away from the region that produced it. |
+| `charge_crash` | a candidate that produced no fit at all. Large, and finite, so the algorithm can still rank it. |
+
+They are columns beside the `criterion` and the `fitness` they add up to, which is the "never a silent drop" rule of the other tools taken one step further: a gated genome does not merely appear in the table, it says what the gate cost it.
+
+```{r}
+#| label: globalsearch-charges
+charged <- gs$models[gs$models$charge_gate > 0, ]
+charged[, c("id", "genome", "criterion", "charge_gate", "fitness", "passed")]
+gs$penalties[c("non_influential", "gate", "crash")]
+```
+
+Without that column the first of those rows reads as a model that simply fitted worse than the winner, rather than one the gate refused and that sits `r gs$penalties[["gate"]]` units away because of it.
+
+### The genetic algorithm
+
+Sixteen points is small enough to enumerate, which is what makes the bundled file a reference: on a grid this size the algorithm has to find the same winner. On a grid of thousands, enumerating is not an option and finding it at all is the point.
+
+```{r}
+#| label: globalsearch-ga
+gs_ga <- ferx_globalsearch(model = gs_ex$model, data = gs_ex$data,
+                           search_space = c("PERIPHERALS(0..1); LAGTIME([OFF,ON])",
+                                            "COVARIATE?(CL, WT, pow); COVARIATE?(CL, CRCL, pow)"),
+                           algorithm = "ga",
+                           ga = list(population_size = 8, generations = 3, seed = 20250914),
+                           retries = 0, directory = book_tempdir("globalsearch-ga"),
+                           progress = FALSE)
+gs_ga$generations
+c(exhaustive = gs$final_fitness, ga = gs_ga$final_fitness)
+```
+
+`ga` takes a named list checked against the engine's own key list, so a mistyped knob is refused by name before anything is fitted. The `seed` is what makes `resume = TRUE` reuse a journal: the same seed on the same grid proposes the same genomes. `algorithm` is matched exactly rather than by prefix -- `algorithm = "e"` is an error naming the value, not a silent decision to enumerate a grid nobody has sized -- and an exhaustive grid above `[globalsearch] max_models` is an error naming the size, never a truncated search.
+
+::: {.callout-warning}
+## `ferx_globalsearch()` is not `ferx_fit(settings = list(global_search = TRUE))`
+
+That setting is a global *optimizer* phase inside the estimation of one model: a wider search for the parameter values of a fixed model. `ferx_globalsearch()` is a global search over *models*. The name here is the engine's, the `.ferxsearch` file's (`[globalsearch]`), the `ferx globalsearch` command's and Pharmpy/pyDarwin's, so a search stays portable between them.
+:::
+
 ## The whole pipeline at once
 
 `ferx_amd()` runs the tools above in order as one automatic model-development pipeline: structural, IIV, residual, IOV, allometry, covariates. One search space describes the whole pipeline, and the engine hands each step only the statements its tool can read. A step the space says nothing about is skipped, and says so.
@@ -419,11 +488,9 @@ amd_sir <- ferx_amd(model = amd_ex$model, data = amd_ex$data,
 amd_sir$steps[, c("step", "status", "criterion", "candidates", "seconds")]
 ```
 
-## Tools not available from R
+## Configuration sections with no R tool
 
-ferx-core also has a global search. It runs from the ferx command line and has no R function in the pinned ferx-r build. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages.
-
-A `.ferxsearch` file may still carry a section for such a tool. The loader validates section names against a fixed vocabulary, which runs ahead of what this package binds and, in the case of `[structsearch]`, ahead of the engine itself; a name outside that list is an error. The file loads, and ferx warns rather than running a search that quietly ignores part of its own configuration. Where the section can be run somewhere, the warning says where:
+A `.ferxsearch` file may carry a section addressed to a tool this package does not bind. The loader validates section names against a fixed vocabulary, which runs ahead of what ferx-r binds and, in the case of `[structsearch]`, ahead of the engine itself; a name outside that list is an error. The file loads, and ferx warns rather than running a search that quietly ignores part of its own configuration:
 
 ```{r}
 #| label: unconsumed-sections
@@ -433,11 +500,12 @@ unconsumed <- function(section, body) {
   writeLines(c(readLines(base$search), "", section, body), path)
   tryCatch(ferx_search_config(path), warning = conditionMessage)
 }
-unconsumed("[globalsearch]", '  algorithm = "exhaustive"')
 unconsumed("[structsearch]", "  x = 1")
 ```
 
-`[globalsearch]` has an engine tool behind it, so the message names `ferx globalsearch`. `[structsearch]` is accepted vocabulary with no engine module yet, so it is reported without a remediation that would name a command nobody can run.
+`[structsearch]` is accepted vocabulary with no engine module yet, so it is reported without a remediation that would name a command nobody can run.
+
+What the warning reports is the *complement* of the sections ferx-r has a tool for, not a list of known-bad names. So a section a later ferx-core adds is named from the day a file can carry it, and stops being named on the day a binding lands -- which is what happened to `[globalsearch]`, warned about until `ferx_globalsearch()` shipped and silent since. See the ferx-core [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html) pages for what the engine knows.
 
 ## Options that matter
 
@@ -459,11 +527,12 @@ The search functions share the entry arguments `model`, `data` and `config`; the
 | `ferx_ruvsearch()` | `groups`, `p_value`, `skip` (families not to test), `max_iter` (1 to 3), `cwres_prescreen` (screen candidates on the parent's CWRES before refitting) |
 | `ferx_iivsearch()` | `algorithm` (`"top_down_exhaustive"`, `"bottom_up_stepwise"`, `"simultaneous_stepwise"`, `"skip"`), `correlation_algorithm` (the block stage: `"top_down_exhaustive"` or `"skip"`), `as_fullblock` (a bottom-up candidate blocks every eta it carries), `block_retries` (extra starts per eta in the largest block) |
 | `ferx_iovsearch()` | `column` (the occasion column; defaults to the model's `iov_column`, and disagreeing with it is an error), `distribution` (`"same-as-iiv"`, `"disjoint"`, `"joint"`, `"explicit"`), `groups` (the blocks `"explicit"` names), `block_retries` |
+| `ferx_globalsearch()` | `algorithm` (`"ga"` or `"exhaustive"`, matched exactly), `iiv_strategy`, `max_models` (the cap on an exhaustive grid), `ga` (a named list of `[globalsearch.ga]` knobs), `penalties` (a named list of `[rank.penalties]` charges) |
 | `ferx_amd()`, `ferx_amd_plan()` | `strategy` (`"default"`, `"reevaluation"`, `"SIR"`, `"SRI"`, `"RSI"`), `skip` (steps to leave out), `retries_on` (`"all_final"`, `"final"`, `"skip"`) |
 
 Only a `.ferxsearch` file can carry a per-tool section (`[modelsearch]`, `[iivsearch]`, `[covsearch]`, …); the inline form runs each step at its own defaults.
 
-`print()` and `summary()` exist for the results of all of them: `ferx_covsearch`, `ferx_modelsearch`, `ferx_ruvsearch`, `ferx_iivsearch`, `ferx_iovsearch` and `ferx_amd` objects. `ferx_search_config` and `ferx_search_space` objects have `print()` methods.
+`print()` and `summary()` exist for the results of all of them: `ferx_covsearch`, `ferx_modelsearch`, `ferx_ruvsearch`, `ferx_iivsearch`, `ferx_iovsearch`, `ferx_globalsearch` and `ferx_amd` objects. `ferx_search_config` and `ferx_search_space` objects have `print()` methods.
 
 ## Pitfalls
 
@@ -478,12 +547,13 @@ Only a `.ferxsearch` file can carry a per-tool section (`[modelsearch]`, `[iivse
 - Describe searches in `.ferxsearch` files; check them with `ferx_search_config()`, `ferx_search_space()` and `ferx_search_coverage()`.
 - Run covariate, structural and residual error searches with `ferx_covsearch()`, `ferx_modelsearch()` and `ferx_ruvsearch()`, and read their tables with `ferx_search_results()`.
 - Search the random-effect structure with `ferx_iivsearch()` and the occasion structure with `ferx_iovsearch()`; both can change the IIV structure, so read what they selected rather than only the criterion.
+- Decide structure and covariates *together* with `ferx_globalsearch()`, which searches them as one grid rather than one axis at a time. It ranks on penalized fitness by default, and the charges it adds to the criterion are columns beside it.
 - Run the whole order as one pipeline with `ferx_amd()`, after checking it with `ferx_amd_plan()`. A step the space says nothing about is skipped, and the step table says why.
 
 Next: @sec-uncertainty quantifies the uncertainty of the selected covariate model.
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_bic`, `?check_strictness`, `?ferx_search_config`, `?ferx_search_space`, `?ferx_search_coverage`, `?ferx_search_results`, `?ferx_covsearch`, `?ferx_modelsearch`, `?ferx_ruvsearch`, `?ferx_iivsearch`, `?ferx_iovsearch`, `?ferx_amd`, `?ferx_amd_plan`
-- ferx-core: [search configuration](https://ferx-nlme.github.io/ferx-core/tools/search.html), [covsearch](https://ferx-nlme.github.io/ferx-core/tools/covsearch.html), [modelsearch](https://ferx-nlme.github.io/ferx-core/tools/modelsearch.html), [ruvsearch](https://ferx-nlme.github.io/ferx-core/tools/ruvsearch.html), [iivsearch](https://ferx-nlme.github.io/ferx-core/tools/iivsearch.html), [iovsearch](https://ferx-nlme.github.io/ferx-core/tools/iovsearch.html), [amd](https://ferx-nlme.github.io/ferx-core/tools/amd.html), [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html)
+- R help: `?ferx_bic`, `?check_strictness`, `?ferx_search_config`, `?ferx_search_space`, `?ferx_search_coverage`, `?ferx_search_results`, `?ferx_covsearch`, `?ferx_modelsearch`, `?ferx_ruvsearch`, `?ferx_iivsearch`, `?ferx_iovsearch`, `?ferx_globalsearch`, `?ferx_amd`, `?ferx_amd_plan`
+- ferx-core: [search configuration](https://ferx-nlme.github.io/ferx-core/tools/search.html), [covsearch](https://ferx-nlme.github.io/ferx-core/tools/covsearch.html), [modelsearch](https://ferx-nlme.github.io/ferx-core/tools/modelsearch.html), [ruvsearch](https://ferx-nlme.github.io/ferx-core/tools/ruvsearch.html), [iivsearch](https://ferx-nlme.github.io/ferx-core/tools/iivsearch.html), [iovsearch](https://ferx-nlme.github.io/ferx-core/tools/iovsearch.html), [global search](https://ferx-nlme.github.io/ferx-core/tools/global-search.html), [amd](https://ferx-nlme.github.io/ferx-core/tools/amd.html), [tools](https://ferx-nlme.github.io/ferx-core/tools/index.html)
 :::

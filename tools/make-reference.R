@@ -351,7 +351,6 @@ out <- c(out, "## Fit object slots", "",
 na_tab <- data.frame(
   Feature = c("Variational inference as `ferx_fit(method = \"vi\")`",
               "`[markov_model]` (continuous-time Markov endpoints)",
-              "Global search (`globalsearch`)",
               "`[simulation]` block",
               "`[dynamics_nn]` (neural-network ODE terms)",
               "Hand-written `[covariate_model]` relations, repeated time-to-event, fixed-rate infusions into the central compartment",
@@ -360,7 +359,6 @@ na_tab <- data.frame(
   `Status at the pinned build` = c(
     "The `method` argument rejects it; `method = vi` in `[fit_options]` runs",
     "Rejected at parse time: ferx-r does not build the engine's `markov` feature",
-    "ferx-core command line only",
     "Read by the ferx-core command line only; ferx-r's simulation functions need a dataset",
     "Not implemented (design only)",
     "Fit from R, but no bundled ferx-r example",
@@ -368,7 +366,6 @@ na_tab <- data.frame(
     "Not on the R fit object"),
   `Where to look` = c("@sec-estimation-methods",
                       "[Markov models](https://ferx-nlme.github.io/ferx-core/model-file/markov-model.html)",
-                      "@sec-model-selection",
                       "@sec-simulation",
                       "[Neural networks](https://ferx-nlme.github.io/ferx-core/model-file/neural-networks.html)",
                       "@sec-covariates, @sec-time-to-event, @sec-dosing",
