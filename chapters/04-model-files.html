@@ -588,7 +588,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
 <li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
   <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">The data</a></li>
-  <li><a href="#reading-a-model-file" id="toc-reading-a-model-file" class="nav-link" data-scroll-target="#reading-a-model-file">Reading a model file</a></li>
+  <li>
+<a href="#reading-a-model-file" id="toc-reading-a-model-file" class="nav-link" data-scroll-target="#reading-a-model-file">Reading a model file</a>
+  <ul class="collapse">
+<li><a href="#what-an-expression-may-contain" id="toc-what-an-expression-may-contain" class="nav-link" data-scroll-target="#what-an-expression-may-contain">What an expression may contain</a></li>
+  </ul>
+</li>
   <li><a href="#checking-a-model-before-fitting" id="toc-checking-a-model-before-fitting" class="nav-link" data-scroll-target="#checking-a-model-before-fitting">Checking a model before fitting</a></li>
   <li><a href="#starting-a-new-model-from-a-template" id="toc-starting-a-new-model-from-a-template" class="nav-link" data-scroll-target="#starting-a-new-model-from-a-template">Starting a new model from a template</a></li>
   <li>
@@ -745,6 +750,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
+<section id="what-an-expression-may-contain" class="level3"><h3 class="anchored" data-anchor-id="what-an-expression-may-contain">What an expression may contain</h3>
+<p>The expressions in <code>[individual_parameters]</code> and <code>[odes]</code> take a fixed set of functions. Rather than reproduce the list, ask the engine: an unrecognised name is a parse error that names the whole supported set, so this stays true at whatever build you are on.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fn_probe</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"model-files"</span><span class="op">)</span>, <span class="st">"unknown_function.ferx"</span><span class="op">)</span></span>
+<span><span class="va">original</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<span><span class="va">probed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"  CL = TVCL * exp(ETA_CL)"</span>, <span class="st">"  CL = TVCL * tanh(ETA_CL)"</span>,</span>
+<span>              <span class="va">original</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">probed</span>, <span class="va">original</span><span class="op">)</span><span class="op">)</span>   <span class="co"># the line must actually have been replaced</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">probed</span>, <span class="va">fn_probe</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">fn_probe</span>, <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>             error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^Error parsing model: "</span>, <span class="st">""</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    fill <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; unknown function `tanh`. Supported: exp, log, ln, sqrt, abs, floor, ceil, round, logit, inv_logit, expit, min(a, b), max(a, b), clamp(x, lo, hi), present(x) (conditions only)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>logit()</code> and <code>inv_logit()</code> are how a parameter is kept inside (0, 1) – <a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a> gives the forms and <a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a> shows how they are reported. Names match case-insensitively, so <code>EXP(...)</code> works as well as <code>exp(...)</code>.</p>
 <p>This model also has a <code>[covariates]</code> block, which declares <code>WT</code> and <code>CRCL</code>. The other blocks are introduced in the chapters where they are used:</p>
 <table class="caption-top table">
 <colgroup>
@@ -811,10 +831,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>not available in ferx-r (<a href="25-reference.html" class="quarto-xref"><span>Function, option and example index</span></a>)</td>
 </tr>
 </tbody>
-</table></section><section id="checking-a-model-before-fitting" class="level2"><h2 class="anchored" data-anchor-id="checking-a-model-before-fitting">Checking a model before fitting</h2>
+</table></section></section><section id="checking-a-model-before-fitting" class="level2"><h2 class="anchored" data-anchor-id="checking-a-model-before-fitting">Checking a model before fitting</h2>
 <p><code>ferx_model_inspect()</code> parses the file without fitting and reports how ferx interprets it:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">structure_info</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_inspect</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">structure_info</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_inspect</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Model structure (two_cpt_oral_base.ferx)</span></span>
 <span><span class="co">#&gt;   Structural:  2-cpt oral  (TVCL, TVV1, TVQ, TVV2, TVKA)</span></span>
 <span><span class="co">#&gt;   IIV:         ETA_CL, ETA_V1, ETA_Q, ETA_V2, ETA_KA</span></span>
@@ -825,7 +845,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>ferx_model_validate()</code> runs the engine’s parser and structural checks. With <code>data</code>, it also runs the checks that need the dataset, such as whether declared covariates are present:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating: two_cpt_oral_base.ferx </span></span>
 <span><span class="co">#&gt;        data: two_cpt_oral_cov.csv </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -843,7 +863,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>The report is printed, and the invisible return value holds <code>ok</code>, the <code>model</code> and <code>data</code> names, and a <code>diagnostics</code> data frame. To see a failing check, misspell a block name in a copy of the model:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">model_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"model-files"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">model_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"model-files"</span><span class="op">)</span></span>
 <span><span class="va">typo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">model_dir</span>, <span class="st">"typo.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^\\[fit_options\\]"</span>, <span class="st">"[fit_option]"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span>, <span class="va">typo</span><span class="op">)</span></span>
 <span></span>
@@ -871,7 +891,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section><section id="starting-a-new-model-from-a-template" class="level2"><h2 class="anchored" data-anchor-id="starting-a-new-model-from-a-template">Starting a new model from a template</h2>
 <p><code>ferx_model()</code> can scaffold a new model file from a built-in template. The templates are <code>"1cpt_oral"</code>, <code>"1cpt_iv"</code>, <code>"2cpt_oral"</code>, <code>"2cpt_iv"</code> and <code>"ode"</code>. With <code>print = TRUE</code> it only prints the skeleton:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_model</span><span class="op">(</span>template <span class="op">=</span> <span class="st">"2cpt_oral"</span>, print <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_model</span><span class="op">(</span>template <span class="op">=</span> <span class="st">"2cpt_oral"</span>, print <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # Two-compartment oral PK model</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [parameters]</span></span>
@@ -909,12 +929,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>With a <code>path</code> it writes the file and returns a <code>ferx_model</code> object. Use <code>edit = FALSE</code> to skip opening an editor, and <code>overwrite = TRUE</code> to replace an existing file:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">scaffold</span> <span class="op">&lt;-</span> <span class="fu">ferx_model</span><span class="op">(</span>template <span class="op">=</span> <span class="st">"2cpt_oral"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">model_dir</span>, <span class="st">"run1.ferx"</span><span class="op">)</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">scaffold</span> <span class="op">&lt;-</span> <span class="fu">ferx_model</span><span class="op">(</span>template <span class="op">=</span> <span class="st">"2cpt_oral"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">model_dir</span>, <span class="st">"run1.ferx"</span><span class="op">)</span>,</span>
 <span>                       edit <span class="op">=</span> <span class="cn">FALSE</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Created /tmp/Rtmp7PnP26/model-files/run1.ferx</span></span>
+<span><span class="co">#&gt; Created /tmp/RtmpedJQX5/model-files/run1.ferx</span></span>
 <span><span class="va">scaffold</span></span>
 <span><span class="co">#&gt; ferx_model</span></span>
-<span><span class="co">#&gt;   Model: /tmp/Rtmp7PnP26/model-files/run1.ferx</span></span>
+<span><span class="co">#&gt;   Model: /tmp/RtmpedJQX5/model-files/run1.ferx</span></span>
 <span><span class="co">#&gt;   Data:  &lt;none&gt;</span></span>
 <span><span class="co">#&gt;   ---</span></span>
 <span><span class="co">#&gt;   Structural:  2-cpt oral  (TVCL, TVV1, TVQ, TVV2, TVKA)</span></span>
@@ -939,7 +959,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section><section id="the-ferx_model-object" class="level2"><h2 class="anchored" data-anchor-id="the-ferx_model-object">The <code>ferx_model</code> object</h2>
 <p><code>ferx_model(data, model)</code> bundles a model file with a dataset. <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on a <code>ferx_model</code> shows both paths and the parsed structure:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">ferx_model</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">data</span>, <span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">ferx_model</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">data</span>, <span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
 <span><span class="va">m</span></span>
 <span><span class="co">#&gt; ferx_model</span></span>
 <span><span class="co">#&gt;   Model: /home/runner/work/_temp/Library/ferx/examples/models/two_cpt_oral_base.ferx</span></span>
@@ -952,7 +972,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>data</code> comes first so that a dataset can be piped in. <code>ferx_fit()</code> accepts the object directly and takes the data from it:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span> <span class="fu">ferx_model</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">ferx_fit</span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span> <span class="fu">ferx_model</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">ferx_fit</span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">converged</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -960,7 +980,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="piping-through-an-analysis" class="level3"><h3 class="anchored" data-anchor-id="piping-through-an-analysis">Piping through an analysis</h3>
 <p>The argument order across the package is chosen so that a whole step reads as one pipeline: <code>ferx_model()</code> takes the data first, and the accessors that summarise a fit take the fit first. So a dataset can go to a fitted model and on to its warnings without naming an intermediate object:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">ferx_model</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">ferx_fit</span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">ferx_get_warnings</span><span class="op">(</span>as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -970,7 +990,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>The same holds for the other fit accessors, and for simulation and prediction, where the model comes first and a fit is passed by name:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">|&gt;</span> <span class="fu">check_diagnostics</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Extract.html">getElement</a></span><span class="op">(</span><span class="st">"shrinkage"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">|&gt;</span> <span class="fu">check_diagnostics</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Extract.html">getElement</a></span><span class="op">(</span><span class="st">"shrinkage"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    param type    shrinkage shrinkage_pct</span></span>
 <span><span class="co">#&gt; 1 ETA_CL  eta -0.001744168    -0.1744168</span></span>
 <span><span class="co">#&gt; 2 ETA_V1  eta  0.036475626     3.6475626</span></span>
@@ -983,7 +1003,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Which object pipes in is decided by the name of each function’s first argument, as the argument table at the end of this chapter records. The four <code>ferx_model_*</code> helpers whose first argument is <code>path</code> – <code>ferx_model_show()</code>, <code>ferx_model_inspect()</code>, <code>ferx_model_validate()</code> and <code>ferx_model_edit()</code> – read a model <em>file</em>, so a path pipes into them but a <code>ferx_model</code> object does not. The two whose first argument is <code>x</code>, <code>ferx_model_get_section()</code> and <code>ferx_model_set_section()</code>, take either.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="va">m</span> <span class="op">|&gt;</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="va">m</span> <span class="op">|&gt;</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in file.exists(path) : invalid 'file' argument</span></span>
 <span><span class="va">m</span> <span class="op">|&gt;</span> <span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="st">"error_model"</span>, strip <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [error_model]</span></span>
@@ -993,7 +1013,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="reading-and-replacing-a-block" class="level3"><h3 class="anchored" data-anchor-id="reading-and-replacing-a-block">Reading and replacing a block</h3>
 <p><code>ferx_model_get_section()</code> returns the lines of one block. It prints them and returns them invisibly; <code>strip = TRUE</code> trims leading whitespace:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">param_lines</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">m</span>, <span class="st">"parameters"</span>, strip <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">param_lines</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">m</span>, <span class="st">"parameters"</span>, strip <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [parameters]</span></span>
 <span><span class="co">#&gt; theta TVCL(5.0, 0.1, 100.0)</span></span>
 <span><span class="co">#&gt; theta TVV1(50.0, 1.0, 500.0)</span></span>
@@ -1015,12 +1035,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>ferx_model_set_section()</code> replaces the body of a block with new <code>lines</code>. Given a <code>ferx_model</code> that points to a bundled example, it first copies the file to a temporary directory and edits the copy. The installed example stays unchanged:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">m_focei</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_set_section</span><span class="op">(</span><span class="va">m</span>, <span class="st">"fit_options"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">m_focei</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_set_section</span><span class="op">(</span><span class="va">m</span>, <span class="st">"fit_options"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"  method     = focei"</span>,</span>
 <span>  <span class="st">"  maxiter    = 300"</span>,</span>
 <span>  <span class="st">"  covariance = true"</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ferx_model_set_section: copying read-only package model to /tmp/Rtmp7PnP26/two_cpt_oral_base_491e7aded60.ferx before editing.</span></span>
+<span><span class="co">#&gt; ferx_model_set_section: copying read-only package model to /tmp/RtmpedJQX5/two_cpt_oral_base_48c0653faf88.ferx before editing.</span></span>
 <span><span class="va">m_focei</span><span class="op">$</span><span class="va">model</span> <span class="op">==</span> <span class="va">m</span><span class="op">$</span><span class="va">model</span></span>
 <span><span class="co">#&gt; [1] FALSE</span></span>
 <span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">m_focei</span>, <span class="st">"fit_options"</span><span class="op">)</span></span>
@@ -1032,11 +1052,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section><section id="opening-a-model-in-an-editor" class="level3"><h3 class="anchored" data-anchor-id="opening-a-model-in-an-editor">Opening a model in an editor</h3>
 <p><code>ferx_model_edit()</code> opens a model file in your editor. A bundled example is copied to <code>dest</code> first (default: the working directory), and <code>overwrite</code> controls whether an existing copy may be replaced. <code>save_as</code> copies the file after editing, which is a simple way to keep numbered versions of a model (<code>run1.ferx</code>, <code>run2.ferx</code>, …). The <code>.editor</code> argument replaces the editor function. The book passes a function that does nothing, so the example can run while the book is built:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">no_editor</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">...</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">no_editor</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">...</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="va">my_copy</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_edit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, dest <span class="op">=</span> <span class="va">model_dir</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, .editor <span class="op">=</span> <span class="va">no_editor</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Copied to /tmp/Rtmp7PnP26/model-files/two_cpt_oral_base.ferx; editing your copy.</span></span>
+<span><span class="co">#&gt; Copied to /tmp/RtmpedJQX5/model-files/two_cpt_oral_base.ferx; editing your copy.</span></span>
 <span><span class="va">run2</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_edit</span><span class="op">(</span><span class="va">my_copy</span>, save_as <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">model_dir</span>, <span class="st">"run2.ferx"</span><span class="op">)</span>, .editor <span class="op">=</span> <span class="va">no_editor</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Saved copy to /tmp/Rtmp7PnP26/model-files/run2.ferx</span></span>
+<span><span class="co">#&gt; Saved copy to /tmp/RtmpedJQX5/model-files/run2.ferx</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/basename.html">basename</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">my_copy</span>, <span class="va">run2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "two_cpt_oral_base.ferx" "run2.ferx"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
