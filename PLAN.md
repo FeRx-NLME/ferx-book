@@ -600,10 +600,10 @@ Per-chapter loop:
     natural column.
   - Fix in [ferx-r #372](https://github.com/FeRx-NLME/ferx-r/pull/372), which
     also gives such a theta a natural-scale CI formed on the logit scale, so the two
-    parameterisations agree on every natural column. ch05 has an "at this build" callout
-    and ch16 a qualifying clause; **both come out at the next pin bump**, along with the
-    `logit-probability-bug` chunk, and the ch05 table row and `logit-probability-check`
-    chunk stay as they are -- they describe the transform, not the defect.
+    parameterisations agree on every natural column (to first order: the two fits differ
+    by under 0.001). At the `c08673d` bump the ch05 callout and `logit-probability-bug`
+    chunk came out; the ch05 table row, `logit-probability-check` and the ch16 clause stayed,
+    since they describe the transform, not the defect.
 - **ferx-r usability gap (found reviewing the ch25 lookup tables):** a refused `ferx_fit()`
   drops the stable check-report code. `ferx_model_validate()` returns `E_UNKNOWN_BLOCK` in
   `$diagnostics$code`, but fitting the same file raises only

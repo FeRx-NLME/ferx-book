@@ -189,7 +189,7 @@ c(transform = log_row$transform,
   difference = log_row$estimate_natural - exp(log_row$estimate))
 ```
 
-The two confidence intervals on a row are built differently. `lower_95` and `upper_95` are always the symmetric interval `estimate ± 1.96 × se` on the scale `estimate` is reported on. On a bounded parameter that interval is not held inside the bounds, so for a probability read it as a measure of precision rather than as limits. For a `logit_probability` theta, `lower_95_natural` and `upper_95_natural` are formed on the logit scale instead -- the standard error is carried there by the delta method, `se / (p (1 - p))`, and the interval brought back with `inv_logit()` -- so they stay inside (0, 1):
+The two confidence intervals on a row are built differently. `lower_95` and `upper_95` are always the symmetric interval `estimate ± 1.96 × se` on the scale `estimate` is reported on. On a bounded parameter that interval is not held inside the bounds, so for a probability read it as a measure of precision rather than as limits. For a `logit_probability` theta, `lower_95_natural` and `upper_95_natural` are formed on the logit scale instead -- the standard error is carried there by the delta method, `se / (p (1 - p))`, and the interval brought back with `inv_logit()` -- so they cannot leave [0, 1], and reach its edge only for an estimate close to a bound with a large standard error:
 
 ```{r}
 #| label: logit-probability-interval
@@ -197,13 +197,23 @@ fit_logit$estimates["THETA_F", c("estimate", "lower_95", "upper_95",
                                  "lower_95_natural", "upper_95_natural")]
 ```
 
-Here `upper_95` is `r round(fit_logit$estimates["THETA_F", "upper_95"], 3)`, a bioavailability above 1, while the natural-scale interval runs from `r round(fit_logit$estimates["THETA_F", "lower_95_natural"], 3)` to `r round(fit_logit$estimates["THETA_F", "upper_95_natural"], 3)`; quote that one for a probability. `print()` shows it on a `(95% CI)` line under the theta. It does not depend on how the model was written -- declaring the same bioavailability on a `logit` theta gives the same natural-scale columns to three decimal places, from a separate fit that converges independently:
+Here `upper_95` is `r round(fit_logit$estimates["THETA_F", "upper_95"], 3)`, a bioavailability above 1, while the natural-scale interval runs from `r round(fit_logit$estimates["THETA_F", "lower_95_natural"], 3)` to `r round(fit_logit$estimates["THETA_F", "upper_95_natural"], 3)`; for a probability, quote that one. `print()` shows it on a `(95% CI)` line under the theta.
+
+That interval is wide for a reason unrelated to how it is built: with oral data only, `F`, `CL` and `V` cannot be separated (@sec-absorption), and the fit says so:
+
+```{r}
+#| label: logit-probability-warnings
+ferx_get_warnings(fit_logit, as_df = TRUE)[, c("category", "severity")]
+```
+
+Declaring the same bioavailability on a `logit` theta instead, in a separate fit, gives nearly the same natural-scale columns. The agreement is approximate -- the delta method is a first-order approximation, and two fits stop at slightly different optima -- and only the natural-scale columns are comparable: `estimate`, `lower_95` and `upper_95` are on different scales in the two rows.
 
 ```{r}
 #| label: logit-twin
 logit_model <- file.path(book_tempdir("first-fit"), "bioavailability_logit.ferx")
 bio_lines <- readLines(ferx_example("bioavailability")$model)
-twin_lines <- sub("theta THETA_F(0.70, 0.001, 0.999)", "theta THETA_F(0.847, -5.0, 5.0)",
+twin_lines <- sub("theta THETA_F(0.70, 0.001, 0.999)  # typical bioavailability, directly on (0,1) scale",
+                  "theta THETA_F(0.847, -5.0, 5.0)  # typical bioavailability on the logit scale",
                   bio_lines, fixed = TRUE)
 twin_lines <- sub("inv_logit(logit(THETA_F) + ETA_F)", "inv_logit(THETA_F + ETA_F)",
                   twin_lines, fixed = TRUE)
@@ -211,9 +221,13 @@ stopifnot(sum(twin_lines != bio_lines) == 2)   # both lines really were rewritte
 writeLines(twin_lines, logit_model)
 fit_twin <- ferx_fit(logit_model, ferx_example("bioavailability")$data, verbose = FALSE)
 natural <- c("transform", "estimate_natural", "lower_95_natural", "upper_95_natural")
+natural_gap <- max(abs(unlist(fit_logit$estimates["THETA_F", natural[-1]]) -
+                       unlist(fit_twin$estimates["THETA_F", natural[-1]])))
 rbind(declared_on_0_1 = fit_logit$estimates["THETA_F", natural],
       declared_as_logit = fit_twin$estimates["THETA_F", natural])
 ```
+
+The largest difference between the two rows' natural-scale columns is `r signif(natural_gap, 2)`.
 
 For the random effects, `fit$eta_param_types` says how each eta enters the model -- `log_normal`, `additive`, `logit`, `logit_probability` or `custom`:
 
