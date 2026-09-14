@@ -49,6 +49,25 @@ A model file is a sequence of `[blocks]`. These five appear in almost every mode
 | `[error_model]` | The residual error model for `DV` | [error model](https://ferx-nlme.github.io/ferx-core/model-file/error-model.html) |
 | `[fit_options]` | Default estimation settings; arguments to `ferx_fit()` override them | [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) |
 
+### What an expression may contain
+
+The expressions in `[individual_parameters]` and `[odes]` take a fixed set of functions. Rather than reproduce the list, ask the engine: an unrecognised name is a parse error that names the whole supported set, so this stays true at whatever build you are on.
+
+```{r}
+#| label: expression-functions
+fn_probe <- file.path(book_tempdir("model-files"), "unknown_function.ferx")
+original <- readLines(ferx_example("warfarin")$model)
+probed <- sub("  CL = TVCL * exp(ETA_CL)", "  CL = TVCL * tanh(ETA_CL)",
+              original, fixed = TRUE)
+stopifnot(!identical(probed, original))   # the line must actually have been replaced
+writeLines(probed, fn_probe)
+cat(tryCatch(ferx_fit(fn_probe, ferx_example("warfarin")$data, verbose = FALSE),
+             error = function(e) sub("^Error parsing model: ", "", conditionMessage(e))),
+    fill = TRUE)
+```
+
+`logit()` and `inv_logit()` are how a parameter is kept inside (0, 1) -- @sec-variability gives the forms and @sec-first-fit shows how they are reported. Names match case-insensitively, so `EXP(...)` works as well as `exp(...)`.
+
 This model also has a `[covariates]` block, which declares `WT` and `CRCL`. The other blocks are introduced in the chapters where they are used:
 
 | Block | Chapter |
