@@ -31,7 +31,7 @@ export_home <- c(
   ferx_simulate = 8,
   ferx_bic = 9, check_strictness = 9, ferx_search_config = 9, ferx_search_space = 9,
   ferx_search_coverage = 9, ferx_search_results = 9, ferx_modelsearch = 9,
-  ferx_covsearch = 9, ferx_ruvsearch = 9,
+  ferx_covsearch = 9, ferx_ruvsearch = 9, ferx_globalsearch = 9,
   ferx_covariance = 10, ferx_sir = 10, ferx_bootstrap = 10, ferx_bootstrap_summarize = 10,
   ferx_predict = 11, ferx_simulate_with_uncertainty = 11,
   ferx_save_fit = 13, ferx_load_fit = 13,
@@ -53,7 +53,8 @@ argument_home <- c(
 s3_class_home <- c(
   ferx_job = 6, ferx_bootstrap = 10, ferx_allometry = 17, ferx_conddist = 6,
   ferx_covsearch = 9, ferx_modelsearch = 9, ferx_ruvsearch = 9, ferx_data = 3,
-  ferx_inits = 5, ferx_model = 4, ferx_search_config = 9, ferx_search_space = 9,
+  ferx_globalsearch = 9, ferx_inits = 5, ferx_model = 4,
+  ferx_search_config = 9, ferx_search_space = 9,
   ferx_summary = 5
 )
 
@@ -93,7 +94,7 @@ example_home <- c(
     "bioavailability_ode", "warfarin_logit_f")),
   setNames(rep(16, 6), c("warfarin_block_omega", "warfarin_additive_eta", "warfarin_ltbs",
     "warfarin_iov", "warfarin_iov_saem", "one_cpt_transit_iov")),
-  warfarin_if = 17,
+  warfarin_if = 17, two_cpt_oral_global = 9,
   setNames(rep(18, 5), c("warfarin_ss", "warfarin_addl", "ss_absorption", "infusion_absorption",
     "warfarin_derived")),
   warfarin_bloq = 19,
