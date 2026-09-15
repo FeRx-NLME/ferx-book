@@ -666,24 +666,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="va">fit_sde</span><span class="op">$</span><span class="va">uses_sde</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">fit_sde</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                    estimate    rse_pct</span></span>
-<span><span class="co">#&gt; TVCL         0.133873633335   5.125286</span></span>
-<span><span class="co">#&gt; TVV          7.691216818048   3.138482</span></span>
-<span><span class="co">#&gt; TVKA         0.750750685464  23.967874</span></span>
-<span><span class="co">#&gt; DIFF_CENTRAL 0.000009780178 108.957983</span></span>
-<span><span class="co">#&gt; ETA_CL       0.027957754198  41.737109</span></span>
-<span><span class="co">#&gt; ETA_V        0.010017519062  45.768159</span></span>
-<span><span class="co">#&gt; ETA_KA       0.351002137347  34.746300</span></span>
-<span><span class="co">#&gt; PROP_ERR     0.010378602160   9.796108</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                   estimate    rse_pct</span></span>
+<span><span class="co">#&gt; TVCL         0.13406927696  40780.260</span></span>
+<span><span class="co">#&gt; TVV          7.67239278287   1636.661</span></span>
+<span><span class="co">#&gt; TVKA         0.74065619542 272022.128</span></span>
+<span><span class="co">#&gt; DIFF_CENTRAL 0.00003101962 246142.085</span></span>
+<span><span class="co">#&gt; ETA_CL       0.02758213931  89501.362</span></span>
+<span><span class="co">#&gt; ETA_V        0.00993763038 275367.023</span></span>
+<span><span class="co">#&gt; ETA_KA       0.29894993012 115017.715</span></span>
+<span><span class="co">#&gt; PROP_ERR     0.00993620496  38136.534</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
 <p>The fit carries the experimental notice with its other warnings:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_sde</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   severity           category</span></span>
-<span><span class="co">#&gt; 1  warning       experimental</span></span>
-<span><span class="co">#&gt; 2  warning       inflated_rse</span></span>
-<span><span class="co">#&gt; 3  warning dw_autocorrelation</span></span>
+<span><span class="co">#&gt;   severity               category</span></span>
+<span><span class="co">#&gt; 1  warning           experimental</span></span>
+<span><span class="co">#&gt; 2  warning covariance_regularized</span></span>
+<span><span class="co">#&gt; 3  warning           inflated_rse</span></span>
+<span><span class="co">#&gt; 4     info             ode_solver</span></span>
+<span><span class="co">#&gt; 5  warning     dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 6  warning       high_correlation</span></span>
+<span><span class="co">#&gt; 7 critical       condition_number</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span><span class="op">(</span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_sde</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">message</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span>, <span class="fl">150</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Stochastic differential equations ([diffusion] / Extended Kalman Filter) are an EXPERIMENTAL feature: validated only on a small set of toy examples, w"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -697,8 +701,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"with [diffusion]"</span>, <span class="st">"without"</span><span class="op">)</span>, ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_sde</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_ode</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span>,</span>
 <span>           durbin_watson <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_sde</span><span class="op">$</span><span class="va">dw_statistic</span>, <span class="va">fit_ode</span><span class="op">$</span><span class="va">dw_statistic</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              model       ofv durbin_watson</span></span>
-<span><span class="co">#&gt; 1 with [diffusion] -279.3424      2.595746</span></span>
-<span><span class="co">#&gt; 2          without -280.2953      2.608755</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1 with [diffusion] -276.3050      2.569116</span></span>
+<span><span class="co">#&gt; 2          without -279.7188      2.609525</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>These data show no system noise. System noise is meant for residuals that are correlated in time within a subject (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>); the IWRES autocorrelation here is negative, not positive, and the diffusion term does not change it.</p>
 </section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
@@ -737,23 +741,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Table&nbsp;24.1
 </figcaption><div aria-describedby="tbl-settings-nn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="hybvbbkfci" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#hybvbbkfci table {
+<div id="ieywwwxbuj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ieywwwxbuj table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#hybvbbkfci thead, #hybvbbkfci tbody, #hybvbbkfci tfoot, #hybvbbkfci tr, #hybvbbkfci td, #hybvbbkfci th {
+#ieywwwxbuj thead, #ieywwwxbuj tbody, #ieywwwxbuj tfoot, #ieywwwxbuj tr, #ieywwwxbuj td, #ieywwwxbuj th {
   border-style: none;
 }
 
-#hybvbbkfci p {
+#ieywwwxbuj p {
   margin: 0;
   padding: 0;
 }
 
-#hybvbbkfci .gt_table {
+#ieywwwxbuj .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -779,12 +783,12 @@ Table&nbsp;24.1
   border-left-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_caption {
+#ieywwwxbuj .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#hybvbbkfci .gt_title {
+#ieywwwxbuj .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -796,7 +800,7 @@ Table&nbsp;24.1
   border-bottom-width: 0;
 }
 
-#hybvbbkfci .gt_subtitle {
+#ieywwwxbuj .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -808,7 +812,7 @@ Table&nbsp;24.1
   border-top-width: 0;
 }
 
-#hybvbbkfci .gt_heading {
+#ieywwwxbuj .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -820,13 +824,13 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_bottom_border {
+#ieywwwxbuj .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_col_headings {
+#ieywwwxbuj .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -841,7 +845,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_col_heading {
+#ieywwwxbuj .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -861,7 +865,7 @@ Table&nbsp;24.1
   overflow-x: hidden;
 }
 
-#hybvbbkfci .gt_column_spanner_outer {
+#ieywwwxbuj .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -873,15 +877,15 @@ Table&nbsp;24.1
   padding-right: 4px;
 }
 
-#hybvbbkfci .gt_column_spanner_outer:first-child {
+#ieywwwxbuj .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#hybvbbkfci .gt_column_spanner_outer:last-child {
+#ieywwwxbuj .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#hybvbbkfci .gt_column_spanner {
+#ieywwwxbuj .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -893,11 +897,11 @@ Table&nbsp;24.1
   width: 100%;
 }
 
-#hybvbbkfci .gt_spanner_row {
+#ieywwwxbuj .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#hybvbbkfci .gt_group_heading {
+#ieywwwxbuj .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -923,7 +927,7 @@ Table&nbsp;24.1
   text-align: left;
 }
 
-#hybvbbkfci .gt_empty_group_heading {
+#ieywwwxbuj .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -938,15 +942,15 @@ Table&nbsp;24.1
   vertical-align: middle;
 }
 
-#hybvbbkfci .gt_from_md > :first-child {
+#ieywwwxbuj .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#hybvbbkfci .gt_from_md > :last-child {
+#ieywwwxbuj .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#hybvbbkfci .gt_row {
+#ieywwwxbuj .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -965,7 +969,7 @@ Table&nbsp;24.1
   overflow-x: hidden;
 }
 
-#hybvbbkfci .gt_stub {
+#ieywwwxbuj .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -978,7 +982,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#hybvbbkfci .gt_stub_row_group {
+#ieywwwxbuj .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -992,15 +996,15 @@ Table&nbsp;24.1
   vertical-align: top;
 }
 
-#hybvbbkfci .gt_row_group_first td {
+#ieywwwxbuj .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#hybvbbkfci .gt_row_group_first th {
+#ieywwwxbuj .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#hybvbbkfci .gt_summary_row {
+#ieywwwxbuj .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1010,16 +1014,16 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#hybvbbkfci .gt_first_summary_row {
+#ieywwwxbuj .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_first_summary_row.thick {
+#ieywwwxbuj .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#hybvbbkfci .gt_last_summary_row {
+#ieywwwxbuj .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1029,7 +1033,7 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_grand_summary_row {
+#ieywwwxbuj .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1039,7 +1043,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#hybvbbkfci .gt_first_grand_summary_row {
+#ieywwwxbuj .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1049,7 +1053,7 @@ Table&nbsp;24.1
   border-top-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_last_grand_summary_row_top {
+#ieywwwxbuj .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1059,11 +1063,11 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_striped {
+#ieywwwxbuj .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#hybvbbkfci .gt_table_body {
+#ieywwwxbuj .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1072,7 +1076,7 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_footnotes {
+#ieywwwxbuj .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1086,7 +1090,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_footnote {
+#ieywwwxbuj .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1095,7 +1099,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#hybvbbkfci .gt_sourcenotes {
+#ieywwwxbuj .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1109,7 +1113,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#hybvbbkfci .gt_sourcenote {
+#ieywwwxbuj .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1117,72 +1121,72 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#hybvbbkfci .gt_left {
+#ieywwwxbuj .gt_left {
   text-align: left;
 }
 
-#hybvbbkfci .gt_center {
+#ieywwwxbuj .gt_center {
   text-align: center;
 }
 
-#hybvbbkfci .gt_right {
+#ieywwwxbuj .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#hybvbbkfci .gt_font_normal {
+#ieywwwxbuj .gt_font_normal {
   font-weight: normal;
 }
 
-#hybvbbkfci .gt_font_bold {
+#ieywwwxbuj .gt_font_bold {
   font-weight: bold;
 }
 
-#hybvbbkfci .gt_font_italic {
+#ieywwwxbuj .gt_font_italic {
   font-style: italic;
 }
 
-#hybvbbkfci .gt_super {
+#ieywwwxbuj .gt_super {
   font-size: 65%;
 }
 
-#hybvbbkfci .gt_footnote_marks {
+#ieywwwxbuj .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#hybvbbkfci .gt_asterisk {
+#ieywwwxbuj .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#hybvbbkfci .gt_indent_1 {
+#ieywwwxbuj .gt_indent_1 {
   text-indent: 5px;
 }
 
-#hybvbbkfci .gt_indent_2 {
+#ieywwwxbuj .gt_indent_2 {
   text-indent: 10px;
 }
 
-#hybvbbkfci .gt_indent_3 {
+#ieywwwxbuj .gt_indent_3 {
   text-indent: 15px;
 }
 
-#hybvbbkfci .gt_indent_4 {
+#ieywwwxbuj .gt_indent_4 {
   text-indent: 20px;
 }
 
-#hybvbbkfci .gt_indent_5 {
+#ieywwwxbuj .gt_indent_5 {
   text-indent: 25px;
 }
 
-#hybvbbkfci .katex-display {
+#ieywwwxbuj .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#hybvbbkfci div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ieywwwxbuj div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1228,17 +1232,17 @@ Table&nbsp;24.1
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># suppress the R warning that reports overriding the model file's method</span></span>
 <span><span class="va">fit_sde_focei</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">sde</span><span class="op">$</span><span class="va">model</span>, <span class="va">sde</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>foce <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_sde</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_sde</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>, focei <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_sde_focei</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_sde_focei</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;             ofv      TVCL      TVV      TVKA   DIFF_CENTRAL</span></span>
-<span><span class="co">#&gt; foce  -279.3424 0.1338736 7.691217 0.7507507 0.000009780178</span></span>
-<span><span class="co">#&gt; focei -284.9926 0.1327987 7.735783 0.7856670 0.000006038292</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;             ofv      TVCL      TVV      TVKA  DIFF_CENTRAL</span></span>
+<span><span class="co">#&gt; foce  -276.3050 0.1340693 7.672393 0.7406562 0.00003101962</span></span>
+<span><span class="co">#&gt; focei -272.2985 0.1333708 7.757245 0.8115071 0.00005155504</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Simulation from an SDE fit works like any other simulation (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>):</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">ferx_simulate</span><span class="op">(</span><span class="va">sde</span><span class="op">$</span><span class="va">model</span>, <span class="va">sde</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_sde</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   DRAW SIM ID TIME CMT    IPRED   DV_SIM OBSERVED</span></span>
-<span><span class="co">#&gt; 1    1   1  1  0.5   1 3.529440 3.506979      NaN</span></span>
-<span><span class="co">#&gt; 2    1   1  1  1.0   1 5.983756 5.927234      NaN</span></span>
-<span><span class="co">#&gt; 3    1   1  1  2.0   1 8.839859 9.015867      NaN</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1    1   1  1  0.5   1 3.516303 3.494879      NaN</span></span>
+<span><span class="co">#&gt; 2    1   1  1  1.0   1 5.968058 5.914088      NaN</span></span>
+<span><span class="co">#&gt; 3    1   1  1  2.0   1 8.832364 9.000727      NaN</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="a-neural-network-covariate-model" class="level3"><h3 class="anchored" data-anchor-id="a-neural-network-covariate-model">A neural-network covariate model</h3>
 <p><code>warfarin_dcm</code> replaces the covariate expressions of <code>two_cpt_oral_cov</code> with a network. The network reads <code>WT</code> and <code>CRCL</code> and outputs a multiplier for each PK parameter. The multipliers start at 1, so the thetas carry the typical values:</p>
