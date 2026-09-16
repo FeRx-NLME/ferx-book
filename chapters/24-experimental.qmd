@@ -9,11 +9,11 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 
 ## Where you are
 
-Two model extensions in ferx are explicitly experimental: stochastic differential equations, which add random noise to the model states between observations, and neural networks for the covariate model, known as deep compartment models. Both fit from R with the bundled examples. This chapter runs them, compares them with their conventional counterparts, and shows what the fits report.
+Two model extensions in ferx are explicitly experimental: stochastic differential equations, which add random noise to the model states between observations, and neural networks for the covariate model, known as deep compartment models. Both fit from R with the bundled examples. This chapter runs them, compares them with their conventional counterparts, and shows what the fits report. It closes with parameter priors, which carry the same label without being a model extension.
 
 ::: {.callout-warning}
 ## Maturity: experimental
-ferx-core labels `[diffusion]` (SDE) and `[covariate_nn]` (neural networks) **experimental**: validated on a small set of examples, with syntax that may still change. Every fit that uses them carries an `experimental` warning. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+ferx-core labels `[diffusion]` (SDE) and `[covariate_nn]` (neural networks) **experimental**: validated on a small set of examples, with syntax that may still change. Every fit that uses them carries an `experimental` warning. The [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html) table's third experimental entry is the Vern7 ODE stepper (@sec-structural-models). Parameter priors, at the end of this chapter, are labelled experimental on their [own page](https://ferx-nlme.github.io/ferx-core/estimation/priors.html) but are absent from that table, and a priored fit raises no `experimental` warning.
 :::
 
 ## The data
@@ -165,9 +165,56 @@ The multiplier is the same for every subject to seven significant digits, across
 
 `nn_l2` (weight decay) and `nn_smooth` (a penalty on curvature) keep a network from fitting spurious covariate effects. They are set in `[fit_options]` or with `settings`, apply to the FOCE-family methods, and the reported OFV stays the unpenalized one, so regularized and unregularized fits remain comparable ([regularization](https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html#regularization-nn_l2-nn_smooth)). On this example a fit with `settings = list(nn_l2 = 0.01)` did not finish within 10 minutes, with either the model's `lbfgs` or the `bobyqa` optimizer, against about half a minute without the penalty. It is therefore not run in this book.
 
+### Parameter priors
+
+A prior pins a parameter near a value you already believe and lets the data move it only as far as the data can pay for -- penalized maximum likelihood, the mechanism behind updating a published model on local data. It is written inline on the `[parameters]` row it belongs to, as a central value and a relative standard error, both on the scale the parameter was declared on:
+
+```{r}
+#| label: prior-inline
+warf <- ferx_example("warfarin")
+priored <- file.path(experimental_dir, "warfarin_prior.ferx")
+writeLines(sub("theta TVCL(0.134, 0.001, 10.0)",
+               "theta TVCL(0.134, 0.001, 10.0) prior(0.25, rse = 10%)",
+               readLines(warf$model), fixed = TRUE), priored)
+fit_plain <- ferx_fit(warf$model, warf$data, verbose = FALSE)
+fit_prior <- ferx_fit(priored, warf$data, verbose = FALSE)
+c(no_prior = fit_plain$theta[["TVCL"]], with_prior = fit_prior$theta[["TVCL"]])
+```
+
+These data want a `TVCL` near `r signif(fit_plain$theta[["TVCL"]], 4)`; a prior centred at 0.25 with a 10% relative standard error pulls the estimate to `r signif(fit_prior$theta[["TVCL"]], 4)`. The penalty is added to the objective, so `fit$ofv` is the penalized total and does not compare with the unpenalized fit. The information criteria are built from the data half alone, which is why `fit$aic` is not `fit$ofv + 2 * fit$n_parameters` once a prior is in the model:
+
+```{r}
+#| label: prior-objective
+data.frame(fit = c("no prior", "prior on TVCL"),
+           ofv = c(fit_plain$ofv, fit_prior$ofv),
+           aic = c(fit_plain$aic, fit_prior$aic),
+           ofv_plus_2k = c(fit_plain$ofv + 2 * fit_plain$n_parameters,
+                           fit_prior$ofv + 2 * fit_prior$n_parameters))
+```
+
+The split of the objective into its data and prior halves is not on the R fit object at this build, so the size of the penalty has to be read off that difference. Compare priored models by a ΔOFV against a null twin, not against an unpenalized fit.
+
+A `[priors]` block takes the priors from a previous fit instead of writing them out by hand. It has exactly one key, `from_fit`, naming a saved fit. That path does not work from R at this build: the only fit file ferx-r writes is the `.fitrx` bundle of `ferx_save_fit()`, and the engine's reader rejects it.
+
+```{r}
+#| label: priors-from-fit
+saved <- file.path(experimental_dir, "warfarin.fitrx")
+ferx_save_fit(fit_plain, saved)
+from_fit_model <- file.path(experimental_dir, "warfarin_from_fit.ferx")
+# normalizePath(): `//` starts a comment in a .ferx file, and R's tempdir()
+# contains one on macOS, which would truncate the path before the engine saw it.
+writeLines(c(readLines(warf$model), "", "[priors]",
+             paste0("  from_fit = ", normalizePath(saved))),
+           from_fit_model)
+try(ferx_fit(from_fit_model, warf$data, verbose = FALSE))
+```
+
+The bundle stores every one-element array as a plain value, so the first such field the reader meets -- here the method chain, which it expects as a list of methods -- ends the import. That one field is not the whole of it: a chained fit writes a correct list and then stops at the next single-element field instead ([ferx-r #379](https://github.com/FeRx-NLME/ferx-r/issues/379)). Until the writer and the format agree, write priors inline.
+
 ## Pitfalls
 
 - **Experimental means validate yourself.** Compare an SDE or network model with its conventional counterpart, as above, before relying on it.
+- **`[priors] from_fit` does not work from R at this build.** The `.fitrx` bundle `ferx_save_fit()` writes is rejected by the engine's reader ([ferx-r #379](https://github.com/FeRx-NLME/ferx-r/issues/379)). Write the prior inline on the `[parameters]` row instead, as above.
 - **Extra flexibility is not extra information.** A diffusion variance or a network with many weights needs data that support it; check standard errors, the OFV change and information criteria.
 - **Standard errors of network weights are not reliable,** and the covariance step with many weights is slow. Skip it with `covariance = FALSE` while exploring.
 - **SDE fits are slow.** The extended Kalman filter uses finite differences; the warfarin SDE fit takes many times longer than the ODE fit.
@@ -181,12 +228,13 @@ The multiplier is the same for every subject to seven significant digits, across
 - `[diffusion]` adds system noise to ODE states, estimated with an extended Kalman filter; compare with the model without it.
 - `[covariate_nn]` lets a neural network produce covariate multipliers; compare its OFV and AIC with an explicit covariate model.
 - `nn_l2` and `nn_smooth` regularize a network.
-- Both features are experimental: fits carry an `experimental` warning.
+- An inline `prior(value, rse = …)` regularizes a parameter towards a value you already believe; the reported OFV is then penalized, and the `[priors]` block's `from_fit` import is not reachable from R at this build.
+- `[diffusion]` and `[covariate_nn]` fits carry an `experimental` warning.
 
 Next: @sec-reference lists every function, option and example with the chapter that covers it.
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_fit`
-- ferx-core: [SDE and diffusion](https://ferx-nlme.github.io/ferx-core/model-file/diffusion.html), [covariate neural networks](https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html), [neural networks overview](https://ferx-nlme.github.io/ferx-core/model-file/neural-networks.html)
+- R help: `?ferx_fit`, `?ferx_save_fit`
+- ferx-core: [SDE and diffusion](https://ferx-nlme.github.io/ferx-core/model-file/diffusion.html), [covariate neural networks](https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html), [neural networks overview](https://ferx-nlme.github.io/ferx-core/model-file/neural-networks.html), [parameter priors](https://ferx-nlme.github.io/ferx-core/estimation/priors.html)
 :::
