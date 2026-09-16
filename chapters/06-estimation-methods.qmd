@@ -217,35 +217,61 @@ Both loops can end up reporting a number that describes their starting point rat
 ```{r}
 #| label: stalled-at-init
 fit_warf <- ferx_fit(warf$model, warf$data, verbose = FALSE)
-est <- fit_warf$estimates
 restart_dir <- book_tempdir("estimation-restart")
+
+# Rewrite the [parameters] block with a fit's own estimates. Each stopifnot() is
+# there so a renamed or reformatted declaration stops the render: without it a
+# missed match writes the file back unchanged, and the fit below would have
+# nothing to stall on while the text still claimed it did.
+rewrite_inits <- function(fit, path) {
+  est <- fit$estimates
+  lines <- readLines(warf$model)
+  for (nm in c("TVCL", "TVV", "TVKA")) {
+    i <- grep(paste0("theta ", nm, "\\("), lines)
+    stopifnot(length(i) == 1L)
+    lines[i] <- sub(paste0("theta ", nm, "\\(([^,]+),"),
+                    paste0("theta ", nm, "(", format(est[nm, "estimate"], digits = 12), ","),
+                    lines[i])
+  }
+  for (nm in c("ETA_CL", "ETA_V", "ETA_KA")) {
+    i <- grep(paste0("omega ", nm, "\\s*~"), lines)
+    stopifnot(length(i) == 1L)
+    lines[i] <- sub("~.*$", paste0("~ ", format(est[nm, "estimate"], digits = 12)), lines[i])
+  }
+  i <- grep("sigma PROP_ERR\\s*~", lines)
+  stopifnot(length(i) == 1L)
+  lines[i] <- sub("~.*$", paste0("~ ", format(est["PROP_ERR", "estimate"], digits = 12), " (sd)"),
+                  lines[i])
+  writeLines(lines, path)
+  lines
+}
+
 restart <- file.path(restart_dir, "warfarin_restart.ferx")
-restart_lines <- readLines(warf$model)
-for (nm in c("TVCL", "TVV", "TVKA")) {
-  i <- grep(paste0("theta ", nm, "\\("), restart_lines)
-  restart_lines[i] <- sub(paste0("theta ", nm, "\\(([^,]+),"),
-                          paste0("theta ", nm, "(", format(est[nm, "estimate"], digits = 12), ","),
-                          restart_lines[i])
-}
-for (nm in c("ETA_CL", "ETA_V", "ETA_KA")) {
-  i <- grep(paste0("omega ", nm, "\\s*~"), restart_lines)
-  restart_lines[i] <- sub("~.*$", paste0("~ ", format(est[nm, "estimate"], digits = 12)),
-                          restart_lines[i])
-}
-i <- grep("sigma PROP_ERR\\s*~", restart_lines)
-restart_lines[i] <- sub("~.*$", paste0("~ ", format(est["PROP_ERR", "estimate"], digits = 12),
-                                       " (sd)"), restart_lines[i])
-writeLines(restart_lines, restart)
-grep("theta |omega |sigma ", restart_lines, value = TRUE)
+grep("theta |omega |sigma ", rewrite_inits(fit_warf, restart), value = TRUE)
 fit_restart <- ferx_fit(restart, warf$data, settings = list(optimizer = "bobyqa"), verbose = FALSE)
 data.frame(ofv = fit_restart$ofv, converged = fit_restart$converged,
            stalled_at_init = fit_restart$stalled_at_init)
-ferx_get_warnings(fit_restart, as_df = TRUE)[, c("severity", "category")]
+restart_warnings <- ferx_get_warnings(fit_restart, as_df = TRUE)
+restart_warnings[, c("severity", "category")]
+# The section is about this warning, so its absence has to fail the render
+# rather than quietly leave a shorter table under unchanged prose.
+stopifnot("stalled_at_init" %in% restart_warnings$category)
 ```
 
 Here the start really was the optimum, so the warning is expected and harmless, and it arrives with `converged = TRUE` -- which is the point. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
 
-The seed has to come from a run that actually reached the optimum. Restarting from the `bobyqa` fit above does *not* stall, because that fit stopped `r round(fit_bobyqa$ofv - fit_warf$ofv, 4)` OFV units short of it (@tbl-optimizers) and the optimizer still has somewhere to go.
+The seed has to come from a run that actually reached the optimum. The same rewrite applied to the `bobyqa` fit of the previous section does not stall, because that fit stopped short of the optimum (@tbl-optimizers) and the optimizer still has somewhere to go:
+
+```{r}
+#| label: stalled-at-init-seed
+from_bobyqa <- file.path(restart_dir, "warfarin_restart_bobyqa.ferx")
+invisible(rewrite_inits(fit_bobyqa, from_bobyqa))
+fit_from_bobyqa <- ferx_fit(from_bobyqa, warf$data, settings = list(optimizer = "bobyqa"),
+                            verbose = FALSE)
+data.frame(seed = c("converged fit", "bobyqa fit"),
+           seed_ofv = c(fit_warf$ofv, fit_bobyqa$ofv),
+           stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
+```
 
 `ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. Squeezing that budget produces it on warfarin:
 
@@ -256,7 +282,9 @@ fit_tight_inner <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter
 data.frame(ofv = fit_tight_inner$ofv, converged = fit_tight_inner$converged)
 tight_warnings <- ferx_get_warnings(fit_tight_inner, as_df = TRUE)
 tight_warnings[, c("severity", "category")]
-cat(strwrap(tight_warnings$message[tight_warnings$category == "ebe_start_dependent"], 90)[1:4],
+stopifnot("ebe_start_dependent" %in% tight_warnings$category)
+# head(), not [1:4]: a shorter message would pad with NA and print it as output.
+cat(head(strwrap(tight_warnings$message[tight_warnings$category == "ebe_start_dependent"], 90), 4),
     sep = "\n")
 ```
 

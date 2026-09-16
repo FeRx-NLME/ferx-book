@@ -9,11 +9,11 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 
 ## Where you are
 
-Three parts of ferx are explicitly experimental: stochastic differential equations, which add random noise to the model states between observations; neural networks for the covariate model, known as deep compartment models; and parameter priors, which regularize a fit towards values you already believe. The first two fit from R with the bundled examples. This chapter runs them, compares them with their conventional counterparts, and shows what the fits report.
+Two model extensions in ferx are explicitly experimental: stochastic differential equations, which add random noise to the model states between observations, and neural networks for the covariate model, known as deep compartment models. Both fit from R with the bundled examples. This chapter runs them, compares them with their conventional counterparts, and shows what the fits report. It closes with parameter priors, which carry the same label without being a model extension.
 
 ::: {.callout-warning}
 ## Maturity: experimental
-ferx-core labels `[diffusion]` (SDE), `[covariate_nn]` (neural networks) and parameter priors **experimental**: validated on a small set of examples, with syntax that may still change. Every fit that uses `[diffusion]` or `[covariate_nn]` carries an `experimental` warning. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+ferx-core labels `[diffusion]` (SDE) and `[covariate_nn]` (neural networks) **experimental**: validated on a small set of examples, with syntax that may still change. Every fit that uses them carries an `experimental` warning. The [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html) table's third experimental entry is the Vern7 ODE stepper (@sec-structural-models). Parameter priors, at the end of this chapter, are labelled experimental on their [own page](https://ferx-nlme.github.io/ferx-core/estimation/priors.html) but are absent from that table, and a priored fit raises no `experimental` warning.
 :::
 
 ## The data
@@ -209,11 +209,12 @@ writeLines(c(readLines(warf$model), "", "[priors]",
 try(ferx_fit(from_fit_model, warf$data, verbose = FALSE))
 ```
 
-The bundle records the method chain as a single string where the reader expects a list of methods, so the import stops there. Until that is reconciled, write priors inline.
+The bundle stores every one-element array as a plain value, so the first such field the reader meets -- here the method chain, which it expects as a list of methods -- ends the import. That one field is not the whole of it: a chained fit writes a correct list and then stops at the next single-element field instead ([ferx-r #379](https://github.com/FeRx-NLME/ferx-r/issues/379)). Until the writer and the format agree, write priors inline.
 
 ## Pitfalls
 
 - **Experimental means validate yourself.** Compare an SDE or network model with its conventional counterpart, as above, before relying on it.
+- **`[priors] from_fit` does not work from R at this build.** The `.fitrx` bundle `ferx_save_fit()` writes is rejected by the engine's reader ([ferx-r #379](https://github.com/FeRx-NLME/ferx-r/issues/379)). Write the prior inline on the `[parameters]` row instead, as above.
 - **Extra flexibility is not extra information.** A diffusion variance or a network with many weights needs data that support it; check standard errors, the OFV change and information criteria.
 - **Standard errors of network weights are not reliable,** and the covariance step with many weights is slow. Skip it with `covariance = FALSE` while exploring.
 - **SDE fits are slow.** The extended Kalman filter uses finite differences; the warfarin SDE fit takes many times longer than the ODE fit.
