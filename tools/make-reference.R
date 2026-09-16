@@ -254,7 +254,7 @@ block_pages <- c(
   markov_model = "model-file/markov-model", adaptive_dosing = "model-file/adaptive-dosing",
   data = "model-file/data", data_selection = "model-file/data-selection",
   simulation = "model-file/simulation", initial_conditions = "model-file/initial-conditions",
-  mixture = "estimation/mixture")
+  mixture = "estimation/mixture", priors = "estimation/priors")
 core_files <- system2("git", c("-C", core_dir, "ls-tree", "-r", "--name-only", pin$ferx_core_sha, "docs"),
                       stdout = TRUE, stderr = TRUE)
 if (!is.null(attr(core_files, "status"))) {
@@ -263,6 +263,14 @@ if (!is.null(attr(core_files, "status"))) {
 }
 bl <- inv[inv$kind == "dsl_block", ]
 bl <- bl[order(bl$name), ]
+# A block with no `block_pages` entry indexes to NA and used to be reported as the
+# unhelpful `docs/NA.qmd`; name the block instead, since the fix is always an entry above.
+unmapped <- bl$name[is.na(block_pages[bl$name])]
+if (length(unmapped)) {
+  stop("no block_pages entry for DSL block(s): ", paste(unmapped, collapse = ", "),
+       " - add one, pointing at the ferx-core docs page that documents the block",
+       call. = FALSE)
+}
 missing_pages <- setdiff(paste0("docs/", block_pages[bl$name], ".qmd"), core_files)
 if (length(missing_pages)) stop("ferx-core pages not found at the pin: ", paste(missing_pages, collapse = ", "))
 block_tabs <- core_tables(core_doc("model-file/index.qmd"))

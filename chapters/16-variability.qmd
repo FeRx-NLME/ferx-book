@@ -154,26 +154,42 @@ fit_w$estimates[, c("transform", "estimate", "init_as_sd")]
 
 `init_as_sd` is the declaration, not the reported scale (@sec-first-fit): it is `TRUE` for the bundled `sigma PROP_ERR ~ 0.01 (sd)` and `FALSE` for every variance-scale row.
 
-::: {.callout-important}
-## `(sd)` on a block is ignored at this build
-`block_omega`, `block_kappa` and `block_sigma` take variances and covariances only, because one tag cannot say which of the lower-triangle entries it applies to. ferx-core documents `(sd)` as not accepted there, but the pinned build neither rejects nor applies it -- the annotation is dropped and the numbers are read as variances. The tagged file even validates clean:
+### A scale tag on a block is rejected
+
+`block_omega`, `block_kappa` and `block_sigma` have no scale to choose: every entry of the lower triangle is a variance or a covariance, always. A single `(sd)` cannot say which of those entries it applies to, so a scale tag on a block is refused rather than interpreted. `ferx_model_validate()` reports the file invalid, with a code and the repair:
 
 ```{r}
-#| label: block-sd-ignored
+#| label: block-sd-rejected
 block_sd <- file.path(variability_dir, "warfarin_block_sd.ferx")
 block_ex <- ferx_example("warfarin_block_omega")
 writeLines(sub("block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]",
                "block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02] (sd)",
                readLines(block_ex$model), fixed = TRUE), block_sd)
-invisible(capture.output(block_sd_valid <- ferx_model_validate(block_sd)$ok))
-block_sd_valid
-fit_block_sd <- ferx_fit(block_sd, block_ex$data, verbose = FALSE)
-fit_block_plain <- ferx_fit(block_ex$model, block_ex$data, verbose = FALSE)
-c(with_sd_tag = fit_block_sd$ofv, without = fit_block_plain$ofv)
+block_sd_check <- ferx_model_validate(block_sd)
+block_sd_check$ok
+block_sd_check$diagnostics[, c("code", "suggestion")]
 ```
 
-All three block forms behave this way. Write block entries as variances, and convert by hand.
-:::
+`ferx_fit()` refuses the same file, with the message but not the code (@sec-model-files):
+
+```{r}
+#| label: block-sd-fit
+try(ferx_fit(block_sd, block_ex$data, verbose = FALSE))
+```
+
+The `suggestion` depends on which tag you wrote, because the two repairs are not the same edit. After `(sd)` the numbers are wrong and have to change: square each SD into a variance, and write the off-diagonals as covariances rather than as correlations or SD products. After `(variance)` or `(var)` only the tag is wrong -- the lower triangle was already on that scale, so deleting the tag leaves the same model:
+
+```{r}
+#| label: block-variance-tag
+block_variance <- file.path(variability_dir, "warfarin_block_variance.ferx")
+writeLines(sub("block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]",
+               "block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02] (variance)",
+               readLines(block_ex$model), fixed = TRUE), block_variance)
+invisible(capture.output(block_variance_check <- ferx_model_validate(block_variance)))
+block_variance_check$diagnostics[, c("code", "suggestion")]
+```
+
+`E_BLOCK_VARIANCE_ONLY` is raised only when deleting the tag leaves a line that parses, so the suggestion is always sufficient on its own; a tag sitting next to other stray text is an ordinary parse error instead. The rule is the same for `block_kappa` and `block_sigma`, which are variance-only for the same reason -- see the ferx-core [parameters](https://ferx-nlme.github.io/ferx-core/model-file/parameters.html) page. The diagonal `omega`, `kappa` and `sigma` forms above are the ones that take a scale tag.
 
 ### Fixing a parameter
 
