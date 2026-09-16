@@ -595,6 +595,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
 <li><a href="#following-the-optimizer" id="toc-following-the-optimizer" class="nav-link" data-scroll-target="#following-the-optimizer">Following the optimizer</a></li>
   <li><a href="#run-logs" id="toc-run-logs" class="nav-link" data-scroll-target="#run-logs">Run logs</a></li>
+  <li><a href="#the-gradient-at-the-reported-estimates" id="toc-the-gradient-at-the-reported-estimates" class="nav-link" data-scroll-target="#the-gradient-at-the-reported-estimates">The gradient at the reported estimates</a></li>
   </ul>
 </li>
   <li>
@@ -733,13 +734,13 @@ Table&nbsp;6.1: Warfarin fitted with every estimation method.
 <span><span class="co">#&gt;      method converged     ofv   TVCL seconds</span></span>
 <span><span class="co">#&gt; 1      foce      TRUE -280.36 0.1330     0.2</span></span>
 <span><span class="co">#&gt; 2     focei      TRUE -286.00 0.1327     0.1</span></span>
-<span><span class="co">#&gt; 3   laplace      TRUE -285.97 0.1327     0.6</span></span>
+<span><span class="co">#&gt; 3   laplace      TRUE -285.97 0.1327     0.4</span></span>
 <span><span class="co">#&gt; 4        gn      TRUE -280.36 0.1329     0.0</span></span>
-<span><span class="co">#&gt; 5 gn_hybrid      TRUE -280.36 0.1330     0.3</span></span>
+<span><span class="co">#&gt; 5 gn_hybrid      TRUE -280.36 0.1330     0.2</span></span>
 <span><span class="co">#&gt; 6      saem      TRUE -279.93 0.1327     0.1</span></span>
-<span><span class="co">#&gt; 7       imp      TRUE -279.93 0.1327    75.2</span></span>
-<span><span class="co">#&gt; 8    impmap      TRUE -279.93 0.1327     2.7</span></span>
-<span><span class="co">#&gt; 9     bayes      TRUE -593.69 0.1329     1.5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 7       imp      TRUE -279.93 0.1327    58.6</span></span>
+<span><span class="co">#&gt; 8    impmap      TRUE -279.93 0.1327     2.2</span></span>
+<span><span class="co">#&gt; 9     bayes      TRUE -593.69 0.1329     0.6</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>
@@ -766,12 +767,12 @@ Table&nbsp;6.1: Warfarin fitted with every estimation method.
 <span><span class="co">#&gt; [1] 98 39</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">trace</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"iter"</span>, <span class="st">"method"</span>, <span class="st">"ofv"</span>, <span class="st">"wall_ms"</span>, <span class="st">"grad_norm"</span>, <span class="st">"step_norm"</span>, <span class="st">"optimizer"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   iter method         ofv wall_ms grad_norm step_norm optimizer</span></span>
-<span><span class="co">#&gt; 1    1  focei -1171.88242       8        NA        NA    bobyqa</span></span>
-<span><span class="co">#&gt; 2    2  focei -1060.52606      15        NA  0.500000    bobyqa</span></span>
-<span><span class="co">#&gt; 3    3  focei   -68.00626      24        NA  0.707107    bobyqa</span></span>
-<span><span class="co">#&gt; 4    4  focei -1005.78590      27        NA  0.707107    bobyqa</span></span>
-<span><span class="co">#&gt; 5    5  focei  -991.99282      34        NA  0.707107    bobyqa</span></span>
-<span><span class="co">#&gt; 6    6  focei -1132.81660      37        NA  0.707107    bobyqa</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1    1  focei -1171.88242       6        NA        NA    bobyqa</span></span>
+<span><span class="co">#&gt; 2    2  focei -1060.52606      11        NA  0.500000    bobyqa</span></span>
+<span><span class="co">#&gt; 3    3  focei   -68.00626      18        NA  0.707107    bobyqa</span></span>
+<span><span class="co">#&gt; 4    4  focei -1005.78590      20        NA  0.707107    bobyqa</span></span>
+<span><span class="co">#&gt; 5    5  focei  -991.99282      26        NA  0.707107    bobyqa</span></span>
+<span><span class="co">#&gt; 6    6  focei -1132.81660      28        NA  0.707107    bobyqa</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://rdrr.io/r/graphics/plot.default.html">plot()</a></code> on a fit draws the trace. By default (<code>monotonic = TRUE</code>) the OFV panel shows the running minimum for FOCE/FOCEI, because their traces include rejected line-search trial points. <code>log_ofv = TRUE</code> shifts the OFV by its minimum; despite the name, it is not a log transform:</p>
 <div class="cell" data-layout-align="center">
@@ -826,6 +827,28 @@ Figure&nbsp;6.1: Optimizer trace of the base model fit.
 <span><span class="co">#&gt;      4       -1005.79        -937.78       0.7071</span></span>
 <span><span class="co">#&gt;      5       -991.993       +13.7931       0.7071</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+</section><section id="the-gradient-at-the-reported-estimates" class="level3"><h3 class="anchored" data-anchor-id="the-gradient-at-the-reported-estimates">The gradient at the reported estimates</h3>
+<p>The run log’s convergence checks read <code>fit$final_gradient</code>, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (<a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a>). Gradient-based optimizers report the gradient they already used. The derivative-free <code>bobyqa</code> has none of its own, so ferx computes a central finite-difference gradient after the fit instead, which is what lets you check a <code>converged = TRUE</code> where it is least supported:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_bobyqa</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="st">"bobyqa"</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="va">fit_bobyqa</span><span class="op">$</span><span class="va">optimizer_label</span>, converged <span class="op">=</span> <span class="va">fit_bobyqa</span><span class="op">$</span><span class="va">converged</span>,</span>
+<span>           n_gradient <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">fit_bobyqa</span><span class="op">$</span><span class="va">final_gradient</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   optimizer converged n_gradient</span></span>
+<span><span class="co">#&gt; 1    bobyqa      TRUE          7</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">fit_bobyqa</span><span class="op">$</span><span class="va">final_gradient</span>, <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] -0.7790 -0.2865  0.2489  0.2078 -0.2732  0.4960 -0.0404</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>That costs one gradient’s worth of extra objective evaluations – two per free parameter – after the fit, and never feeds the optimizer, so the estimates are the same either way. <code>report_final_gradient = FALSE</code> turns it off when those evaluations are expensive, as in a large ODE model:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_no_grad</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>,</span>
+<span>                        settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="st">"bobyqa"</span>, report_final_gradient <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>                        verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>same_ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Logic.html">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">fit_no_grad</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_bobyqa</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  gradient_is_null <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">fit_no_grad</span><span class="op">$</span><span class="va">final_gradient</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         same_ofv gradient_is_null </span></span>
+<span><span class="co">#&gt;             TRUE             TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>It stays <code>NULL</code> for the built-in BFGS and for SAEM, which report no gradient at all.</p>
 </section></section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
 <section id="arguments-of-ferx_fit" class="level3"><h3 class="anchored" data-anchor-id="arguments-of-ferx_fit">Arguments of <code>ferx_fit()</code>
 </h3>
@@ -870,7 +893,7 @@ Figure&nbsp;6.1: Optimizer trace of the base model fit.
 </table>
 <p>The base model’s file requests finite differences (<code>gradient = fd</code>). With <code>"auto"</code> the analytic gradient is used and the fit takes fewer objective evaluations. Pinning <code>threads</code> changes speed, not results:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_auto</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, gradient <span class="op">=</span> <span class="st">"auto"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_auto</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, gradient <span class="op">=</span> <span class="st">"auto"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `gradient = fd` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `auto`. The call-time value will be used.</span></span>
 <span><span class="va">fit_1thread</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, threads <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -939,29 +962,29 @@ Figure&nbsp;6.1: Optimizer trace of the base model fit.
 <p>Everything else is set through <code>settings = list(key = value)</code>, or with the same key in the model’s <code>[fit_options]</code>. The tables below are generated from the ferx-core <a href="https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html">fit options</a> documentation and <code>?ferx_fit</code> for the pinned build.</p>
 <p><strong>Run control</strong></p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"maxiter"</span>, <span class="st">"optimizer_trace"</span>, <span class="st">"checkpoint"</span>, <span class="st">"checkpoint_interval_secs"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"maxiter"</span>, <span class="st">"optimizer_trace"</span>, <span class="st">"checkpoint"</span>, <span class="st">"checkpoint_interval_secs"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-run" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-run-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.2
 </figcaption><div aria-describedby="tbl-settings-run-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="gusempncuw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#gusempncuw table {
+<div id="ywocrulatz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ywocrulatz table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#gusempncuw thead, #gusempncuw tbody, #gusempncuw tfoot, #gusempncuw tr, #gusempncuw td, #gusempncuw th {
+#ywocrulatz thead, #ywocrulatz tbody, #ywocrulatz tfoot, #ywocrulatz tr, #ywocrulatz td, #ywocrulatz th {
   border-style: none;
 }
 
-#gusempncuw p {
+#ywocrulatz p {
   margin: 0;
   padding: 0;
 }
 
-#gusempncuw .gt_table {
+#ywocrulatz .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -987,12 +1010,12 @@ Table&nbsp;6.2
   border-left-color: #D3D3D3;
 }
 
-#gusempncuw .gt_caption {
+#ywocrulatz .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#gusempncuw .gt_title {
+#ywocrulatz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1004,7 +1027,7 @@ Table&nbsp;6.2
   border-bottom-width: 0;
 }
 
-#gusempncuw .gt_subtitle {
+#ywocrulatz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1016,7 +1039,7 @@ Table&nbsp;6.2
   border-top-width: 0;
 }
 
-#gusempncuw .gt_heading {
+#ywocrulatz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1028,13 +1051,13 @@ Table&nbsp;6.2
   border-right-color: #D3D3D3;
 }
 
-#gusempncuw .gt_bottom_border {
+#ywocrulatz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#gusempncuw .gt_col_headings {
+#ywocrulatz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1049,7 +1072,7 @@ Table&nbsp;6.2
   border-right-color: #D3D3D3;
 }
 
-#gusempncuw .gt_col_heading {
+#ywocrulatz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1069,7 +1092,7 @@ Table&nbsp;6.2
   overflow-x: hidden;
 }
 
-#gusempncuw .gt_column_spanner_outer {
+#ywocrulatz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1081,15 +1104,15 @@ Table&nbsp;6.2
   padding-right: 4px;
 }
 
-#gusempncuw .gt_column_spanner_outer:first-child {
+#ywocrulatz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#gusempncuw .gt_column_spanner_outer:last-child {
+#ywocrulatz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#gusempncuw .gt_column_spanner {
+#ywocrulatz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1101,11 +1124,11 @@ Table&nbsp;6.2
   width: 100%;
 }
 
-#gusempncuw .gt_spanner_row {
+#ywocrulatz .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#gusempncuw .gt_group_heading {
+#ywocrulatz .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1131,7 +1154,7 @@ Table&nbsp;6.2
   text-align: left;
 }
 
-#gusempncuw .gt_empty_group_heading {
+#ywocrulatz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1146,15 +1169,15 @@ Table&nbsp;6.2
   vertical-align: middle;
 }
 
-#gusempncuw .gt_from_md > :first-child {
+#ywocrulatz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#gusempncuw .gt_from_md > :last-child {
+#ywocrulatz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#gusempncuw .gt_row {
+#ywocrulatz .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1173,7 +1196,7 @@ Table&nbsp;6.2
   overflow-x: hidden;
 }
 
-#gusempncuw .gt_stub {
+#ywocrulatz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1186,7 +1209,7 @@ Table&nbsp;6.2
   padding-right: 5px;
 }
 
-#gusempncuw .gt_stub_row_group {
+#ywocrulatz .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1200,15 +1223,15 @@ Table&nbsp;6.2
   vertical-align: top;
 }
 
-#gusempncuw .gt_row_group_first td {
+#ywocrulatz .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#gusempncuw .gt_row_group_first th {
+#ywocrulatz .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#gusempncuw .gt_summary_row {
+#ywocrulatz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1218,16 +1241,16 @@ Table&nbsp;6.2
   padding-right: 5px;
 }
 
-#gusempncuw .gt_first_summary_row {
+#ywocrulatz .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#gusempncuw .gt_first_summary_row.thick {
+#ywocrulatz .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#gusempncuw .gt_last_summary_row {
+#ywocrulatz .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1237,7 +1260,7 @@ Table&nbsp;6.2
   border-bottom-color: #D3D3D3;
 }
 
-#gusempncuw .gt_grand_summary_row {
+#ywocrulatz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1247,7 +1270,7 @@ Table&nbsp;6.2
   padding-right: 5px;
 }
 
-#gusempncuw .gt_first_grand_summary_row {
+#ywocrulatz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1257,7 +1280,7 @@ Table&nbsp;6.2
   border-top-color: #D3D3D3;
 }
 
-#gusempncuw .gt_last_grand_summary_row_top {
+#ywocrulatz .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1267,11 +1290,11 @@ Table&nbsp;6.2
   border-bottom-color: #D3D3D3;
 }
 
-#gusempncuw .gt_striped {
+#ywocrulatz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#gusempncuw .gt_table_body {
+#ywocrulatz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1280,7 +1303,7 @@ Table&nbsp;6.2
   border-bottom-color: #D3D3D3;
 }
 
-#gusempncuw .gt_footnotes {
+#ywocrulatz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1294,7 +1317,7 @@ Table&nbsp;6.2
   border-right-color: #D3D3D3;
 }
 
-#gusempncuw .gt_footnote {
+#ywocrulatz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1303,7 +1326,7 @@ Table&nbsp;6.2
   padding-right: 5px;
 }
 
-#gusempncuw .gt_sourcenotes {
+#ywocrulatz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1317,7 +1340,7 @@ Table&nbsp;6.2
   border-right-color: #D3D3D3;
 }
 
-#gusempncuw .gt_sourcenote {
+#ywocrulatz .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1325,72 +1348,72 @@ Table&nbsp;6.2
   padding-right: 5px;
 }
 
-#gusempncuw .gt_left {
+#ywocrulatz .gt_left {
   text-align: left;
 }
 
-#gusempncuw .gt_center {
+#ywocrulatz .gt_center {
   text-align: center;
 }
 
-#gusempncuw .gt_right {
+#ywocrulatz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#gusempncuw .gt_font_normal {
+#ywocrulatz .gt_font_normal {
   font-weight: normal;
 }
 
-#gusempncuw .gt_font_bold {
+#ywocrulatz .gt_font_bold {
   font-weight: bold;
 }
 
-#gusempncuw .gt_font_italic {
+#ywocrulatz .gt_font_italic {
   font-style: italic;
 }
 
-#gusempncuw .gt_super {
+#ywocrulatz .gt_super {
   font-size: 65%;
 }
 
-#gusempncuw .gt_footnote_marks {
+#ywocrulatz .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#gusempncuw .gt_asterisk {
+#ywocrulatz .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#gusempncuw .gt_indent_1 {
+#ywocrulatz .gt_indent_1 {
   text-indent: 5px;
 }
 
-#gusempncuw .gt_indent_2 {
+#ywocrulatz .gt_indent_2 {
   text-indent: 10px;
 }
 
-#gusempncuw .gt_indent_3 {
+#ywocrulatz .gt_indent_3 {
   text-indent: 15px;
 }
 
-#gusempncuw .gt_indent_4 {
+#ywocrulatz .gt_indent_4 {
   text-indent: 20px;
 }
 
-#gusempncuw .gt_indent_5 {
+#ywocrulatz .gt_indent_5 {
   text-indent: 25px;
 }
 
-#gusempncuw .katex-display {
+#ywocrulatz .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#gusempncuw div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ywocrulatz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1446,31 +1469,31 @@ Table&nbsp;6.2
 </div>
 <p><strong>Outer optimizer</strong></p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"optimizer"</span>, <span class="st">"outer_xtol"</span>, <span class="st">"outer_ftol"</span>, <span class="st">"stagnation_guard"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"optimizer"</span>, <span class="st">"outer_xtol"</span>, <span class="st">"outer_ftol"</span>, <span class="st">"stagnation_guard"</span>,</span>
 <span>                      <span class="st">"reconverge_gradient_interval"</span>, <span class="st">"steihaug_max_iters"</span>,</span>
-<span>                      <span class="st">"global_search"</span>, <span class="st">"global_maxeval"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>                      <span class="st">"report_final_gradient"</span>, <span class="st">"global_search"</span>, <span class="st">"global_maxeval"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-outer" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-outer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.3
 </figcaption><div aria-describedby="tbl-settings-outer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="mrfjuifakg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#mrfjuifakg table {
+<div id="qyrfofvrmd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#qyrfofvrmd table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#mrfjuifakg thead, #mrfjuifakg tbody, #mrfjuifakg tfoot, #mrfjuifakg tr, #mrfjuifakg td, #mrfjuifakg th {
+#qyrfofvrmd thead, #qyrfofvrmd tbody, #qyrfofvrmd tfoot, #qyrfofvrmd tr, #qyrfofvrmd td, #qyrfofvrmd th {
   border-style: none;
 }
 
-#mrfjuifakg p {
+#qyrfofvrmd p {
   margin: 0;
   padding: 0;
 }
 
-#mrfjuifakg .gt_table {
+#qyrfofvrmd .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1496,12 +1519,12 @@ Table&nbsp;6.3
   border-left-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_caption {
+#qyrfofvrmd .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#mrfjuifakg .gt_title {
+#qyrfofvrmd .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1513,7 +1536,7 @@ Table&nbsp;6.3
   border-bottom-width: 0;
 }
 
-#mrfjuifakg .gt_subtitle {
+#qyrfofvrmd .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1525,7 +1548,7 @@ Table&nbsp;6.3
   border-top-width: 0;
 }
 
-#mrfjuifakg .gt_heading {
+#qyrfofvrmd .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1537,13 +1560,13 @@ Table&nbsp;6.3
   border-right-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_bottom_border {
+#qyrfofvrmd .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_col_headings {
+#qyrfofvrmd .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1558,7 +1581,7 @@ Table&nbsp;6.3
   border-right-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_col_heading {
+#qyrfofvrmd .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1578,7 +1601,7 @@ Table&nbsp;6.3
   overflow-x: hidden;
 }
 
-#mrfjuifakg .gt_column_spanner_outer {
+#qyrfofvrmd .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1590,15 +1613,15 @@ Table&nbsp;6.3
   padding-right: 4px;
 }
 
-#mrfjuifakg .gt_column_spanner_outer:first-child {
+#qyrfofvrmd .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#mrfjuifakg .gt_column_spanner_outer:last-child {
+#qyrfofvrmd .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#mrfjuifakg .gt_column_spanner {
+#qyrfofvrmd .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1610,11 +1633,11 @@ Table&nbsp;6.3
   width: 100%;
 }
 
-#mrfjuifakg .gt_spanner_row {
+#qyrfofvrmd .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#mrfjuifakg .gt_group_heading {
+#qyrfofvrmd .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1640,7 +1663,7 @@ Table&nbsp;6.3
   text-align: left;
 }
 
-#mrfjuifakg .gt_empty_group_heading {
+#qyrfofvrmd .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1655,15 +1678,15 @@ Table&nbsp;6.3
   vertical-align: middle;
 }
 
-#mrfjuifakg .gt_from_md > :first-child {
+#qyrfofvrmd .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#mrfjuifakg .gt_from_md > :last-child {
+#qyrfofvrmd .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#mrfjuifakg .gt_row {
+#qyrfofvrmd .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1682,7 +1705,7 @@ Table&nbsp;6.3
   overflow-x: hidden;
 }
 
-#mrfjuifakg .gt_stub {
+#qyrfofvrmd .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1695,7 +1718,7 @@ Table&nbsp;6.3
   padding-right: 5px;
 }
 
-#mrfjuifakg .gt_stub_row_group {
+#qyrfofvrmd .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1709,15 +1732,15 @@ Table&nbsp;6.3
   vertical-align: top;
 }
 
-#mrfjuifakg .gt_row_group_first td {
+#qyrfofvrmd .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#mrfjuifakg .gt_row_group_first th {
+#qyrfofvrmd .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#mrfjuifakg .gt_summary_row {
+#qyrfofvrmd .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1727,16 +1750,16 @@ Table&nbsp;6.3
   padding-right: 5px;
 }
 
-#mrfjuifakg .gt_first_summary_row {
+#qyrfofvrmd .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_first_summary_row.thick {
+#qyrfofvrmd .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#mrfjuifakg .gt_last_summary_row {
+#qyrfofvrmd .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1746,7 +1769,7 @@ Table&nbsp;6.3
   border-bottom-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_grand_summary_row {
+#qyrfofvrmd .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1756,7 +1779,7 @@ Table&nbsp;6.3
   padding-right: 5px;
 }
 
-#mrfjuifakg .gt_first_grand_summary_row {
+#qyrfofvrmd .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1766,7 +1789,7 @@ Table&nbsp;6.3
   border-top-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_last_grand_summary_row_top {
+#qyrfofvrmd .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1776,11 +1799,11 @@ Table&nbsp;6.3
   border-bottom-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_striped {
+#qyrfofvrmd .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#mrfjuifakg .gt_table_body {
+#qyrfofvrmd .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1789,7 +1812,7 @@ Table&nbsp;6.3
   border-bottom-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_footnotes {
+#qyrfofvrmd .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1803,7 +1826,7 @@ Table&nbsp;6.3
   border-right-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_footnote {
+#qyrfofvrmd .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1812,7 +1835,7 @@ Table&nbsp;6.3
   padding-right: 5px;
 }
 
-#mrfjuifakg .gt_sourcenotes {
+#qyrfofvrmd .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1826,7 +1849,7 @@ Table&nbsp;6.3
   border-right-color: #D3D3D3;
 }
 
-#mrfjuifakg .gt_sourcenote {
+#qyrfofvrmd .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1834,72 +1857,72 @@ Table&nbsp;6.3
   padding-right: 5px;
 }
 
-#mrfjuifakg .gt_left {
+#qyrfofvrmd .gt_left {
   text-align: left;
 }
 
-#mrfjuifakg .gt_center {
+#qyrfofvrmd .gt_center {
   text-align: center;
 }
 
-#mrfjuifakg .gt_right {
+#qyrfofvrmd .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#mrfjuifakg .gt_font_normal {
+#qyrfofvrmd .gt_font_normal {
   font-weight: normal;
 }
 
-#mrfjuifakg .gt_font_bold {
+#qyrfofvrmd .gt_font_bold {
   font-weight: bold;
 }
 
-#mrfjuifakg .gt_font_italic {
+#qyrfofvrmd .gt_font_italic {
   font-style: italic;
 }
 
-#mrfjuifakg .gt_super {
+#qyrfofvrmd .gt_super {
   font-size: 65%;
 }
 
-#mrfjuifakg .gt_footnote_marks {
+#qyrfofvrmd .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#mrfjuifakg .gt_asterisk {
+#qyrfofvrmd .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#mrfjuifakg .gt_indent_1 {
+#qyrfofvrmd .gt_indent_1 {
   text-indent: 5px;
 }
 
-#mrfjuifakg .gt_indent_2 {
+#qyrfofvrmd .gt_indent_2 {
   text-indent: 10px;
 }
 
-#mrfjuifakg .gt_indent_3 {
+#qyrfofvrmd .gt_indent_3 {
   text-indent: 15px;
 }
 
-#mrfjuifakg .gt_indent_4 {
+#qyrfofvrmd .gt_indent_4 {
   text-indent: 20px;
 }
 
-#mrfjuifakg .gt_indent_5 {
+#qyrfofvrmd .gt_indent_5 {
   text-indent: 25px;
 }
 
-#mrfjuifakg .katex-display {
+#qyrfofvrmd .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#mrfjuifakg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#qyrfofvrmd div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1955,6 +1978,14 @@ Table&nbsp;6.3
 <td class="gt_row gt_left" headers="Description">Max CG iterations for the Steihaug subproblem (only used when <code>optimizer = trust_region</code>).</td>
 </tr>
 <tr class="odd">
+<td class="gt_row gt_left" headers="Setting"><code>report_final_gradient</code></td>
+<td class="gt_row gt_left" headers="Values">
+<code>true</code>, <code>false</code>
+</td>
+<td class="gt_row gt_left" headers="Default"><code>true</code></td>
+<td class="gt_row gt_left" headers="Description">Compute a finite-difference gradient at the reported estimates when the optimizer supplied none of its own, and report it as <code>final_gradient</code> with <code>final_gradient_source = "finite_difference"</code>.</td>
+</tr>
+<tr class="even">
 <td class="gt_row gt_left" headers="Setting"><code>global_search</code></td>
 <td class="gt_row gt_left" headers="Values">
 <code>true</code>, <code>false</code>
@@ -1962,7 +1993,7 @@ Table&nbsp;6.3
 <td class="gt_row gt_left" headers="Default"><code>false</code></td>
 <td class="gt_row gt_left" headers="Description">Run NLopt CRS2-LM (Controlled Random Search with Local Mutation) as a gradient-free global pre-search before the local optimizer.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td class="gt_row gt_left" headers="Setting"><code>global_maxeval</code></td>
 <td class="gt_row gt_left" headers="Values">integer</td>
 <td class="gt_row gt_left" headers="Default">
@@ -1979,30 +2010,30 @@ Table&nbsp;6.3
 </div>
 <p><strong>Inner loop (individual random effects)</strong></p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"inner_optimizer"</span>, <span class="st">"inner_maxiter"</span>, <span class="st">"inner_tol"</span>, <span class="st">"inner_restarts"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"inner_optimizer"</span>, <span class="st">"inner_maxiter"</span>, <span class="st">"inner_tol"</span>, <span class="st">"inner_restarts"</span>,</span>
 <span>                      <span class="st">"ebe_warm_start"</span>, <span class="st">"max_unconverged_frac"</span>, <span class="st">"min_obs_for_convergence_check"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-inner" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-inner-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.4
 </figcaption><div aria-describedby="tbl-settings-inner-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="kmvxjiunmg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#kmvxjiunmg table {
+<div id="ghzabealhg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ghzabealhg table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#kmvxjiunmg thead, #kmvxjiunmg tbody, #kmvxjiunmg tfoot, #kmvxjiunmg tr, #kmvxjiunmg td, #kmvxjiunmg th {
+#ghzabealhg thead, #ghzabealhg tbody, #ghzabealhg tfoot, #ghzabealhg tr, #ghzabealhg td, #ghzabealhg th {
   border-style: none;
 }
 
-#kmvxjiunmg p {
+#ghzabealhg p {
   margin: 0;
   padding: 0;
 }
 
-#kmvxjiunmg .gt_table {
+#ghzabealhg .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2028,12 +2059,12 @@ Table&nbsp;6.4
   border-left-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_caption {
+#ghzabealhg .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#kmvxjiunmg .gt_title {
+#ghzabealhg .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2045,7 +2076,7 @@ Table&nbsp;6.4
   border-bottom-width: 0;
 }
 
-#kmvxjiunmg .gt_subtitle {
+#ghzabealhg .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2057,7 +2088,7 @@ Table&nbsp;6.4
   border-top-width: 0;
 }
 
-#kmvxjiunmg .gt_heading {
+#ghzabealhg .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2069,13 +2100,13 @@ Table&nbsp;6.4
   border-right-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_bottom_border {
+#ghzabealhg .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_col_headings {
+#ghzabealhg .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2090,7 +2121,7 @@ Table&nbsp;6.4
   border-right-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_col_heading {
+#ghzabealhg .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2110,7 +2141,7 @@ Table&nbsp;6.4
   overflow-x: hidden;
 }
 
-#kmvxjiunmg .gt_column_spanner_outer {
+#ghzabealhg .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2122,15 +2153,15 @@ Table&nbsp;6.4
   padding-right: 4px;
 }
 
-#kmvxjiunmg .gt_column_spanner_outer:first-child {
+#ghzabealhg .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#kmvxjiunmg .gt_column_spanner_outer:last-child {
+#ghzabealhg .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#kmvxjiunmg .gt_column_spanner {
+#ghzabealhg .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2142,11 +2173,11 @@ Table&nbsp;6.4
   width: 100%;
 }
 
-#kmvxjiunmg .gt_spanner_row {
+#ghzabealhg .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#kmvxjiunmg .gt_group_heading {
+#ghzabealhg .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2172,7 +2203,7 @@ Table&nbsp;6.4
   text-align: left;
 }
 
-#kmvxjiunmg .gt_empty_group_heading {
+#ghzabealhg .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2187,15 +2218,15 @@ Table&nbsp;6.4
   vertical-align: middle;
 }
 
-#kmvxjiunmg .gt_from_md > :first-child {
+#ghzabealhg .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#kmvxjiunmg .gt_from_md > :last-child {
+#ghzabealhg .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#kmvxjiunmg .gt_row {
+#ghzabealhg .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2214,7 +2245,7 @@ Table&nbsp;6.4
   overflow-x: hidden;
 }
 
-#kmvxjiunmg .gt_stub {
+#ghzabealhg .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2227,7 +2258,7 @@ Table&nbsp;6.4
   padding-right: 5px;
 }
 
-#kmvxjiunmg .gt_stub_row_group {
+#ghzabealhg .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2241,15 +2272,15 @@ Table&nbsp;6.4
   vertical-align: top;
 }
 
-#kmvxjiunmg .gt_row_group_first td {
+#ghzabealhg .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#kmvxjiunmg .gt_row_group_first th {
+#ghzabealhg .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#kmvxjiunmg .gt_summary_row {
+#ghzabealhg .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2259,16 +2290,16 @@ Table&nbsp;6.4
   padding-right: 5px;
 }
 
-#kmvxjiunmg .gt_first_summary_row {
+#ghzabealhg .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_first_summary_row.thick {
+#ghzabealhg .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#kmvxjiunmg .gt_last_summary_row {
+#ghzabealhg .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2278,7 +2309,7 @@ Table&nbsp;6.4
   border-bottom-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_grand_summary_row {
+#ghzabealhg .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2288,7 +2319,7 @@ Table&nbsp;6.4
   padding-right: 5px;
 }
 
-#kmvxjiunmg .gt_first_grand_summary_row {
+#ghzabealhg .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2298,7 +2329,7 @@ Table&nbsp;6.4
   border-top-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_last_grand_summary_row_top {
+#ghzabealhg .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2308,11 +2339,11 @@ Table&nbsp;6.4
   border-bottom-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_striped {
+#ghzabealhg .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#kmvxjiunmg .gt_table_body {
+#ghzabealhg .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2321,7 +2352,7 @@ Table&nbsp;6.4
   border-bottom-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_footnotes {
+#ghzabealhg .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2335,7 +2366,7 @@ Table&nbsp;6.4
   border-right-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_footnote {
+#ghzabealhg .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2344,7 +2375,7 @@ Table&nbsp;6.4
   padding-right: 5px;
 }
 
-#kmvxjiunmg .gt_sourcenotes {
+#ghzabealhg .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2358,7 +2389,7 @@ Table&nbsp;6.4
   border-right-color: #D3D3D3;
 }
 
-#kmvxjiunmg .gt_sourcenote {
+#ghzabealhg .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2366,72 +2397,72 @@ Table&nbsp;6.4
   padding-right: 5px;
 }
 
-#kmvxjiunmg .gt_left {
+#ghzabealhg .gt_left {
   text-align: left;
 }
 
-#kmvxjiunmg .gt_center {
+#ghzabealhg .gt_center {
   text-align: center;
 }
 
-#kmvxjiunmg .gt_right {
+#ghzabealhg .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#kmvxjiunmg .gt_font_normal {
+#ghzabealhg .gt_font_normal {
   font-weight: normal;
 }
 
-#kmvxjiunmg .gt_font_bold {
+#ghzabealhg .gt_font_bold {
   font-weight: bold;
 }
 
-#kmvxjiunmg .gt_font_italic {
+#ghzabealhg .gt_font_italic {
   font-style: italic;
 }
 
-#kmvxjiunmg .gt_super {
+#ghzabealhg .gt_super {
   font-size: 65%;
 }
 
-#kmvxjiunmg .gt_footnote_marks {
+#ghzabealhg .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#kmvxjiunmg .gt_asterisk {
+#ghzabealhg .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#kmvxjiunmg .gt_indent_1 {
+#ghzabealhg .gt_indent_1 {
   text-indent: 5px;
 }
 
-#kmvxjiunmg .gt_indent_2 {
+#ghzabealhg .gt_indent_2 {
   text-indent: 10px;
 }
 
-#kmvxjiunmg .gt_indent_3 {
+#ghzabealhg .gt_indent_3 {
   text-indent: 15px;
 }
 
-#kmvxjiunmg .gt_indent_4 {
+#ghzabealhg .gt_indent_4 {
   text-indent: 20px;
 }
 
-#kmvxjiunmg .gt_indent_5 {
+#ghzabealhg .gt_indent_5 {
   text-indent: 25px;
 }
 
-#kmvxjiunmg .katex-display {
+#ghzabealhg .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#kmvxjiunmg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ghzabealhg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2501,12 +2532,106 @@ Table&nbsp;6.4
 </figure>
 </div>
 </div>
+<section id="two-warnings-about-where-a-fit-started" class="level4"><h4 class="anchored" data-anchor-id="two-warnings-about-where-a-fit-started">Two warnings about where a fit started</h4>
+<p>Both loops can end up reporting a number that describes their starting point rather than the model, and each has its own warning.</p>
+<p><code>stalled_at_init</code> says the outer loop never left its initial estimates: no free theta, omega or sigma moved. The OFV is then the objective <em>of the initial values</em>, and <code>converged</code> does not contradict it – a fit that never moved has a flat trace to plateau on. The honest way to see it is the case where it is expected: refit a model whose <code>[parameters]</code> block has been rewritten with the estimates of a converged run.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_warf</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">restart_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"estimation-restart"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Rewrite the [parameters] block with a fit's own estimates. Each stopifnot() is</span></span>
+<span><span class="co"># there so a renamed or reformatted declaration stops the render: without it a</span></span>
+<span><span class="co"># missed match writes the file back unchanged, and the fit below would have</span></span>
+<span><span class="co"># nothing to stall on while the text still claimed it did.</span></span>
+<span><span class="va">rewrite_inits</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span>, <span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">est</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">estimates</span></span>
+<span>  <span class="va">lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">nm</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV"</span>, <span class="st">"TVKA"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">i</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"theta "</span>, <span class="va">nm</span>, <span class="st">"\\("</span><span class="op">)</span>, <span class="va">lines</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span>    <span class="va">lines</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"theta "</span>, <span class="va">nm</span>, <span class="st">"\\(([^,]+),"</span><span class="op">)</span>,</span>
+<span>                    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"theta "</span>, <span class="va">nm</span>, <span class="st">"("</span>, <span class="fu"><a href="https://rdrr.io/r/base/format.html">format</a></span><span class="op">(</span><span class="va">est</span><span class="op">[</span><span class="va">nm</span>, <span class="st">"estimate"</span><span class="op">]</span>, digits <span class="op">=</span> <span class="fl">12</span><span class="op">)</span>, <span class="st">","</span><span class="op">)</span>,</span>
+<span>                    <span class="va">lines</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">nm</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ETA_CL"</span>, <span class="st">"ETA_V"</span>, <span class="st">"ETA_KA"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">i</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"omega "</span>, <span class="va">nm</span>, <span class="st">"\\s*~"</span><span class="op">)</span>, <span class="va">lines</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span>    <span class="va">lines</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"~.*$"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"~ "</span>, <span class="fu"><a href="https://rdrr.io/r/base/format.html">format</a></span><span class="op">(</span><span class="va">est</span><span class="op">[</span><span class="va">nm</span>, <span class="st">"estimate"</span><span class="op">]</span>, digits <span class="op">=</span> <span class="fl">12</span><span class="op">)</span><span class="op">)</span>, <span class="va">lines</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">i</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"sigma PROP_ERR\\s*~"</span>, <span class="va">lines</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span>  <span class="va">lines</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"~.*$"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"~ "</span>, <span class="fu"><a href="https://rdrr.io/r/base/format.html">format</a></span><span class="op">(</span><span class="va">est</span><span class="op">[</span><span class="st">"PROP_ERR"</span>, <span class="st">"estimate"</span><span class="op">]</span>, digits <span class="op">=</span> <span class="fl">12</span><span class="op">)</span>, <span class="st">" (sd)"</span><span class="op">)</span>,</span>
+<span>                  <span class="va">lines</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">lines</span>, <span class="va">path</span><span class="op">)</span></span>
+<span>  <span class="va">lines</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">restart</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">restart_dir</span>, <span class="st">"warfarin_restart.ferx"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"theta |omega |sigma "</span>, <span class="fu">rewrite_inits</span><span class="op">(</span><span class="va">fit_warf</span>, <span class="va">restart</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "  theta TVCL(0.132969030142, 0.001, 10.0)"</span></span>
+<span><span class="co">#&gt; [2] "  theta TVV(7.73069988758, 0.1, 500.0)"   </span></span>
+<span><span class="co">#&gt; [3] "  theta TVKA(0.725207008873, 0.01, 50.0)" </span></span>
+<span><span class="co">#&gt; [4] "  omega ETA_CL ~ 0.0285949545043"         </span></span>
+<span><span class="co">#&gt; [5] "  omega ETA_V  ~ 0.00957692399363"        </span></span>
+<span><span class="co">#&gt; [6] "  omega ETA_KA ~ 0.348964239823"          </span></span>
+<span><span class="co">#&gt; [7] "  sigma PROP_ERR ~ 0.0107485280083 (sd)"</span></span>
+<span><span class="va">fit_restart</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">restart</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="st">"bobyqa"</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_restart</span><span class="op">$</span><span class="va">ofv</span>, converged <span class="op">=</span> <span class="va">fit_restart</span><span class="op">$</span><span class="va">converged</span>,</span>
+<span>           stalled_at_init <span class="op">=</span> <span class="va">fit_restart</span><span class="op">$</span><span class="va">stalled_at_init</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        ofv converged stalled_at_init</span></span>
+<span><span class="co">#&gt; 1 -280.364      TRUE            TRUE</span></span>
+<span><span class="va">restart_warnings</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_restart</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">restart_warnings</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity           category</span></span>
+<span><span class="co">#&gt; 1  warning dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 2  warning    stalled_at_init</span></span>
+<span><span class="co"># The section is about this warning, so its absence has to fail the render</span></span>
+<span><span class="co"># rather than quietly leave a shorter table under unchanged prose.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="st">"stalled_at_init"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">restart_warnings</span><span class="op">$</span><span class="va">category</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here the start really was the optimum, so the warning is expected and harmless, and it arrives with <code>converged = TRUE</code> – which is the point. On a first fit from a model file’s own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based <code>optimizer</code>, or a look at <code>final_gradient</code>. <a href="09-model-selection.html" class="quarto-xref"><span>Model development and selection</span></a> gates candidates on the same verdict through <code>reject_init_stall</code>.</p>
+<p>The seed has to come from a run that actually reached the optimum. The same rewrite applied to the <code>bobyqa</code> fit of the previous section does not stall, because that fit stopped short of the optimum (<a href="#tbl-optimizers" class="quarto-xref">Table&nbsp;<span>6.5</span></a>) and the optimizer still has somewhere to go:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">from_bobyqa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">restart_dir</span>, <span class="st">"warfarin_restart_bobyqa.ferx"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">rewrite_inits</span><span class="op">(</span><span class="va">fit_bobyqa</span>, <span class="va">from_bobyqa</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fit_from_bobyqa</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">from_bobyqa</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="st">"bobyqa"</span><span class="op">)</span>,</span>
+<span>                            verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"converged fit"</span>, <span class="st">"bobyqa fit"</span><span class="op">)</span>,</span>
+<span>           seed_ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_warf</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_bobyqa</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span>,</span>
+<span>           stalled_at_init <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_restart</span><span class="op">$</span><span class="va">stalled_at_init</span>, <span class="va">fit_from_bobyqa</span><span class="op">$</span><span class="va">stalled_at_init</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;            seed  seed_ofv stalled_at_init</span></span>
+<span><span class="co">#&gt; 1 converged fit -280.3640            TRUE</span></span>
+<span><span class="co">#&gt; 2    bobyqa fit -280.3588           FALSE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>ebe_start_dependent</code> is the inner loop’s version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against – either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within <code>inner_maxiter</code>. Squeezing that budget produces it on warfarin:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_tight_inner</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>inner_maxiter <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span>
+<span>                            verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_tight_inner</span><span class="op">$</span><span class="va">ofv</span>, converged <span class="op">=</span> <span class="va">fit_tight_inner</span><span class="op">$</span><span class="va">converged</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        ofv converged</span></span>
+<span><span class="co">#&gt; 1 -280.364     FALSE</span></span>
+<span><span class="va">tight_warnings</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_tight_inner</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">tight_warnings</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity            category</span></span>
+<span><span class="co">#&gt; 1  warning ebe_start_dependent</span></span>
+<span><span class="co">#&gt; 2 critical         convergence</span></span>
+<span><span class="co">#&gt; 3  warning  dw_autocorrelation</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="st">"ebe_start_dependent"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">tight_warnings</span><span class="op">$</span><span class="va">category</span><span class="op">)</span></span>
+<span><span class="co"># head(), not [1:4]: a shorter message would pad with NA and print it as output.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strwrap.html">strwrap</a></span><span class="op">(</span><span class="va">tight_warnings</span><span class="op">$</span><span class="va">message</span><span class="op">[</span><span class="va">tight_warnings</span><span class="op">$</span><span class="va">category</span> <span class="op">==</span> <span class="st">"ebe_start_dependent"</span><span class="op">]</span>, <span class="fl">90</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span>
+<span>    sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; W_EBE_START_DEPENDENT: empirical Bayes estimates at the final parameters depend on the</span></span>
+<span><span class="co">#&gt; inner loop's starting point — re-solving them cold scores 0.9287 OFV units worse than the</span></span>
+<span><span class="co">#&gt; EBEs the optimizer minimised against (-279.4352 vs the reported -280.3640). The reported</span></span>
+<span><span class="co">#&gt; fit uses the best of the candidates. Either the individual objective has more than one</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Two things are wrong at once here, and they have separate warnings: starving the inner loop also stops the outer one from converging, hence the critical <code>convergence</code> warning beside it. The reported OFV is the <em>better</em> of the two EBE sets – the message names both – so the estimates are usable. What the warning limits is everything <em>derived</em> from the EBEs: <code>IPRED</code>, <code>IWRES</code>, <code>CWRES</code>, shrinkage and the covariance step (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>). Raise <code>inner_maxiter</code> to rule out the budget, and <code>inner_restarts</code> for a suspected second mode, then compare.</p>
 <p>Choosing the outer <code>optimizer</code> on warfarin:</p>
 <div id="tbl-optimizers" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-optimizers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.5
 </figcaption><div aria-describedby="tbl-optimizers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">optimizers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"bobyqa"</span>, <span class="st">"slsqp"</span>, <span class="st">"nlopt_lbfgs"</span>, <span class="st">"mma"</span>, <span class="st">"trust_region"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">optimizers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"bobyqa"</span>, <span class="st">"slsqp"</span>, <span class="st">"nlopt_lbfgs"</span>, <span class="st">"mma"</span>, <span class="st">"trust_region"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="va">optimizers</span>, <span class="kw">function</span><span class="op">(</span><span class="va">o</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">f</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="va">o</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">optimizer_label</span>, converged <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">converged</span>, ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">ofv</span>, <span class="fl">4</span><span class="op">)</span>,</span>
@@ -2523,38 +2648,38 @@ Table&nbsp;6.5
 </div>
 <p>The optimizers agree to within a small tolerance on this model. A clearly higher OFV for one optimizer would point to a convergence problem with it on your model. <code>global_search = TRUE</code> runs a global search before the local optimizer:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_global</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_global</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>                       settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>global_search <span class="op">=</span> <span class="cn">TRUE</span>, global_maxeval <span class="op">=</span> <span class="fl">500</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>converged <span class="op">=</span> <span class="va">fit_global</span><span class="op">$</span><span class="va">converged</span>, ofv <span class="op">=</span> <span class="va">fit_global</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
 <span><span class="co">#&gt; converged       ofv </span></span>
 <span><span class="co">#&gt;     1.000  -280.364</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</section><section id="multi-start" class="level3"><h3 class="anchored" data-anchor-id="multi-start">Multi-start</h3>
+</section></section><section id="multi-start" class="level3"><h3 class="anchored" data-anchor-id="multi-start">Multi-start</h3>
 <p><code>n_starts &gt; 1</code> runs several fits from perturbed starting values and keeps the converged result with the lowest OFV. Start 0 always uses the model file’s exact values; the rest are perturbed by <code>start_sigma</code>. It is worth reaching for on the surfaces that are prone to local minima – Michaelis-Menten elimination and its <code>VMAX</code>/<code>KM</code> ridge, a full block omega over three or more etas, or many correlated covariate parameters – and the starts share the same thread pool as the per-subject loops, so the wall time grows with the number of starts rather than staying flat – the timing below shows what it costs on this machine. Widen <code>start_sigma</code> when the surface is ridge-shaped rather than merely bumpy. The bundled <code>mm_multistart</code> model (Michaelis-Menten elimination) sets <code>n_starts = 8</code> in its model file:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"n_starts"</span>, <span class="st">"start_sigma"</span>, <span class="st">"multi_start_seed"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"n_starts"</span>, <span class="st">"start_sigma"</span>, <span class="st">"multi_start_seed"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-multistart" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-multistart-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.6
 </figcaption><div aria-describedby="tbl-settings-multistart-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="qqwqtccgye" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#qqwqtccgye table {
+<div id="kbruciuvgn" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#kbruciuvgn table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#qqwqtccgye thead, #qqwqtccgye tbody, #qqwqtccgye tfoot, #qqwqtccgye tr, #qqwqtccgye td, #qqwqtccgye th {
+#kbruciuvgn thead, #kbruciuvgn tbody, #kbruciuvgn tfoot, #kbruciuvgn tr, #kbruciuvgn td, #kbruciuvgn th {
   border-style: none;
 }
 
-#qqwqtccgye p {
+#kbruciuvgn p {
   margin: 0;
   padding: 0;
 }
 
-#qqwqtccgye .gt_table {
+#kbruciuvgn .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2580,12 +2705,12 @@ Table&nbsp;6.6
   border-left-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_caption {
+#kbruciuvgn .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#qqwqtccgye .gt_title {
+#kbruciuvgn .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2597,7 +2722,7 @@ Table&nbsp;6.6
   border-bottom-width: 0;
 }
 
-#qqwqtccgye .gt_subtitle {
+#kbruciuvgn .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2609,7 +2734,7 @@ Table&nbsp;6.6
   border-top-width: 0;
 }
 
-#qqwqtccgye .gt_heading {
+#kbruciuvgn .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2621,13 +2746,13 @@ Table&nbsp;6.6
   border-right-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_bottom_border {
+#kbruciuvgn .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_col_headings {
+#kbruciuvgn .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2642,7 +2767,7 @@ Table&nbsp;6.6
   border-right-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_col_heading {
+#kbruciuvgn .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2662,7 +2787,7 @@ Table&nbsp;6.6
   overflow-x: hidden;
 }
 
-#qqwqtccgye .gt_column_spanner_outer {
+#kbruciuvgn .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2674,15 +2799,15 @@ Table&nbsp;6.6
   padding-right: 4px;
 }
 
-#qqwqtccgye .gt_column_spanner_outer:first-child {
+#kbruciuvgn .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#qqwqtccgye .gt_column_spanner_outer:last-child {
+#kbruciuvgn .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#qqwqtccgye .gt_column_spanner {
+#kbruciuvgn .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2694,11 +2819,11 @@ Table&nbsp;6.6
   width: 100%;
 }
 
-#qqwqtccgye .gt_spanner_row {
+#kbruciuvgn .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#qqwqtccgye .gt_group_heading {
+#kbruciuvgn .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2724,7 +2849,7 @@ Table&nbsp;6.6
   text-align: left;
 }
 
-#qqwqtccgye .gt_empty_group_heading {
+#kbruciuvgn .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2739,15 +2864,15 @@ Table&nbsp;6.6
   vertical-align: middle;
 }
 
-#qqwqtccgye .gt_from_md > :first-child {
+#kbruciuvgn .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#qqwqtccgye .gt_from_md > :last-child {
+#kbruciuvgn .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#qqwqtccgye .gt_row {
+#kbruciuvgn .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2766,7 +2891,7 @@ Table&nbsp;6.6
   overflow-x: hidden;
 }
 
-#qqwqtccgye .gt_stub {
+#kbruciuvgn .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2779,7 +2904,7 @@ Table&nbsp;6.6
   padding-right: 5px;
 }
 
-#qqwqtccgye .gt_stub_row_group {
+#kbruciuvgn .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2793,15 +2918,15 @@ Table&nbsp;6.6
   vertical-align: top;
 }
 
-#qqwqtccgye .gt_row_group_first td {
+#kbruciuvgn .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#qqwqtccgye .gt_row_group_first th {
+#kbruciuvgn .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#qqwqtccgye .gt_summary_row {
+#kbruciuvgn .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2811,16 +2936,16 @@ Table&nbsp;6.6
   padding-right: 5px;
 }
 
-#qqwqtccgye .gt_first_summary_row {
+#kbruciuvgn .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_first_summary_row.thick {
+#kbruciuvgn .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#qqwqtccgye .gt_last_summary_row {
+#kbruciuvgn .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2830,7 +2955,7 @@ Table&nbsp;6.6
   border-bottom-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_grand_summary_row {
+#kbruciuvgn .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2840,7 +2965,7 @@ Table&nbsp;6.6
   padding-right: 5px;
 }
 
-#qqwqtccgye .gt_first_grand_summary_row {
+#kbruciuvgn .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2850,7 +2975,7 @@ Table&nbsp;6.6
   border-top-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_last_grand_summary_row_top {
+#kbruciuvgn .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2860,11 +2985,11 @@ Table&nbsp;6.6
   border-bottom-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_striped {
+#kbruciuvgn .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#qqwqtccgye .gt_table_body {
+#kbruciuvgn .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2873,7 +2998,7 @@ Table&nbsp;6.6
   border-bottom-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_footnotes {
+#kbruciuvgn .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2887,7 +3012,7 @@ Table&nbsp;6.6
   border-right-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_footnote {
+#kbruciuvgn .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2896,7 +3021,7 @@ Table&nbsp;6.6
   padding-right: 5px;
 }
 
-#qqwqtccgye .gt_sourcenotes {
+#kbruciuvgn .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2910,7 +3035,7 @@ Table&nbsp;6.6
   border-right-color: #D3D3D3;
 }
 
-#qqwqtccgye .gt_sourcenote {
+#kbruciuvgn .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2918,72 +3043,72 @@ Table&nbsp;6.6
   padding-right: 5px;
 }
 
-#qqwqtccgye .gt_left {
+#kbruciuvgn .gt_left {
   text-align: left;
 }
 
-#qqwqtccgye .gt_center {
+#kbruciuvgn .gt_center {
   text-align: center;
 }
 
-#qqwqtccgye .gt_right {
+#kbruciuvgn .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#qqwqtccgye .gt_font_normal {
+#kbruciuvgn .gt_font_normal {
   font-weight: normal;
 }
 
-#qqwqtccgye .gt_font_bold {
+#kbruciuvgn .gt_font_bold {
   font-weight: bold;
 }
 
-#qqwqtccgye .gt_font_italic {
+#kbruciuvgn .gt_font_italic {
   font-style: italic;
 }
 
-#qqwqtccgye .gt_super {
+#kbruciuvgn .gt_super {
   font-size: 65%;
 }
 
-#qqwqtccgye .gt_footnote_marks {
+#kbruciuvgn .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#qqwqtccgye .gt_asterisk {
+#kbruciuvgn .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#qqwqtccgye .gt_indent_1 {
+#kbruciuvgn .gt_indent_1 {
   text-indent: 5px;
 }
 
-#qqwqtccgye .gt_indent_2 {
+#kbruciuvgn .gt_indent_2 {
   text-indent: 10px;
 }
 
-#qqwqtccgye .gt_indent_3 {
+#kbruciuvgn .gt_indent_3 {
   text-indent: 15px;
 }
 
-#qqwqtccgye .gt_indent_4 {
+#kbruciuvgn .gt_indent_4 {
   text-indent: 20px;
 }
 
-#qqwqtccgye .gt_indent_5 {
+#kbruciuvgn .gt_indent_5 {
   text-indent: 25px;
 }
 
-#qqwqtccgye .katex-display {
+#kbruciuvgn .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#qqwqtccgye div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#kbruciuvgn div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -3028,7 +3153,7 @@ Table&nbsp;6.6
 </div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">mm</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"mm_multistart"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">mm</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"mm_multistart"</span><span class="op">)</span></span>
 <span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">mm</span><span class="op">$</span><span class="va">model</span>, <span class="st">"fit_options"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [fit_options]</span></span>
 <span><span class="co">#&gt;   method           = focei</span></span>
@@ -3050,8 +3175,8 @@ Table&nbsp;6.6
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>fit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"single start"</span>, <span class="st">"8 starts"</span><span class="op">)</span>, ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_single</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_multi</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span>,</span>
 <span>           seconds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">single_s</span>, <span class="va">multi_s</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            fit       ofv seconds</span></span>
-<span><span class="co">#&gt; 1 single start -453.3985     2.4</span></span>
-<span><span class="co">#&gt; 2     8 starts -453.3985    18.9</span></span>
+<span><span class="co">#&gt; 1 single start -453.3985     1.8</span></span>
+<span><span class="co">#&gt; 2     8 starts -453.3985    14.4</span></span>
 <span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_multi</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span>, <span class="st">"message"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity    category</span></span>
 <span><span class="co">#&gt; 1     info multi_start</span></span>
@@ -3061,7 +3186,7 @@ Table&nbsp;6.6
 <p>On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary – the alternative is not knowing whether the one start you ran was the good one. The <code>multi_start</code> note reports which start won.</p>
 <p>The two remedies for a stuck fit overlap, and ferx says how it resolves that rather than leaving you to guess. The global pre-search ignores its starting point by design, so running it on every perturbed start would overwrite the perturbation; instead it runs on start 0 only, and the remaining starts are ordinary perturbed local fits:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_both</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_both</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                     settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>global_search <span class="op">=</span> <span class="cn">TRUE</span>, global_maxeval <span class="op">=</span> <span class="fl">200</span>, n_starts <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">both_notes</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_both</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">both_notes</span><span class="op">[</span><span class="va">both_notes</span><span class="op">$</span><span class="va">category</span> <span class="op">==</span> <span class="st">"optimizer_config"</span>, <span class="st">"message"</span><span class="op">]</span></span>
@@ -3071,7 +3196,7 @@ Table&nbsp;6.6
 </section><section id="saem" class="level3"><h3 class="anchored" data-anchor-id="saem">SAEM</h3>
 <p>The bundled <code>warfarin_saem</code> model sets its SAEM options in the model file. With <code>conddist = TRUE</code>, SAEM also samples each subject’s conditional distribution of the random effects after fitting. <code>ferx_conddist()</code> returns it:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"n_exploration"</span>, <span class="st">"n_convergence"</span>, <span class="st">"n_mh_steps"</span>, <span class="st">"n_leapfrog"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"n_exploration"</span>, <span class="st">"n_convergence"</span>, <span class="st">"n_mh_steps"</span>, <span class="st">"n_leapfrog"</span>,</span>
 <span>                      <span class="st">"adapt_interval"</span>, <span class="st">"omega_burnin"</span>, <span class="st">"mstep_damping"</span>, <span class="st">"seed"</span>,</span>
 <span>                      <span class="st">"conddist"</span>, <span class="st">"conddist_nsamp"</span>, <span class="st">"conddist_burnin"</span>, <span class="st">"conddist_keep_samples"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-saem" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
@@ -3079,23 +3204,23 @@ Table&nbsp;6.6
 Table&nbsp;6.7
 </figcaption><div aria-describedby="tbl-settings-saem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="ibmujavrip" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ibmujavrip table {
+<div id="sibhzkavsz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#sibhzkavsz table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ibmujavrip thead, #ibmujavrip tbody, #ibmujavrip tfoot, #ibmujavrip tr, #ibmujavrip td, #ibmujavrip th {
+#sibhzkavsz thead, #sibhzkavsz tbody, #sibhzkavsz tfoot, #sibhzkavsz tr, #sibhzkavsz td, #sibhzkavsz th {
   border-style: none;
 }
 
-#ibmujavrip p {
+#sibhzkavsz p {
   margin: 0;
   padding: 0;
 }
 
-#ibmujavrip .gt_table {
+#sibhzkavsz .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -3121,12 +3246,12 @@ Table&nbsp;6.7
   border-left-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_caption {
+#sibhzkavsz .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ibmujavrip .gt_title {
+#sibhzkavsz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -3138,7 +3263,7 @@ Table&nbsp;6.7
   border-bottom-width: 0;
 }
 
-#ibmujavrip .gt_subtitle {
+#sibhzkavsz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -3150,7 +3275,7 @@ Table&nbsp;6.7
   border-top-width: 0;
 }
 
-#ibmujavrip .gt_heading {
+#sibhzkavsz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -3162,13 +3287,13 @@ Table&nbsp;6.7
   border-right-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_bottom_border {
+#sibhzkavsz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_col_headings {
+#sibhzkavsz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -3183,7 +3308,7 @@ Table&nbsp;6.7
   border-right-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_col_heading {
+#sibhzkavsz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3203,7 +3328,7 @@ Table&nbsp;6.7
   overflow-x: hidden;
 }
 
-#ibmujavrip .gt_column_spanner_outer {
+#sibhzkavsz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3215,15 +3340,15 @@ Table&nbsp;6.7
   padding-right: 4px;
 }
 
-#ibmujavrip .gt_column_spanner_outer:first-child {
+#sibhzkavsz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ibmujavrip .gt_column_spanner_outer:last-child {
+#sibhzkavsz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ibmujavrip .gt_column_spanner {
+#sibhzkavsz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -3235,11 +3360,11 @@ Table&nbsp;6.7
   width: 100%;
 }
 
-#ibmujavrip .gt_spanner_row {
+#sibhzkavsz .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ibmujavrip .gt_group_heading {
+#sibhzkavsz .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3265,7 +3390,7 @@ Table&nbsp;6.7
   text-align: left;
 }
 
-#ibmujavrip .gt_empty_group_heading {
+#sibhzkavsz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -3280,15 +3405,15 @@ Table&nbsp;6.7
   vertical-align: middle;
 }
 
-#ibmujavrip .gt_from_md > :first-child {
+#sibhzkavsz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ibmujavrip .gt_from_md > :last-child {
+#sibhzkavsz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ibmujavrip .gt_row {
+#sibhzkavsz .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3307,7 +3432,7 @@ Table&nbsp;6.7
   overflow-x: hidden;
 }
 
-#ibmujavrip .gt_stub {
+#sibhzkavsz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3320,7 +3445,7 @@ Table&nbsp;6.7
   padding-right: 5px;
 }
 
-#ibmujavrip .gt_stub_row_group {
+#sibhzkavsz .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3334,15 +3459,15 @@ Table&nbsp;6.7
   vertical-align: top;
 }
 
-#ibmujavrip .gt_row_group_first td {
+#sibhzkavsz .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ibmujavrip .gt_row_group_first th {
+#sibhzkavsz .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ibmujavrip .gt_summary_row {
+#sibhzkavsz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -3352,16 +3477,16 @@ Table&nbsp;6.7
   padding-right: 5px;
 }
 
-#ibmujavrip .gt_first_summary_row {
+#sibhzkavsz .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_first_summary_row.thick {
+#sibhzkavsz .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ibmujavrip .gt_last_summary_row {
+#sibhzkavsz .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3371,7 +3496,7 @@ Table&nbsp;6.7
   border-bottom-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_grand_summary_row {
+#sibhzkavsz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -3381,7 +3506,7 @@ Table&nbsp;6.7
   padding-right: 5px;
 }
 
-#ibmujavrip .gt_first_grand_summary_row {
+#sibhzkavsz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3391,7 +3516,7 @@ Table&nbsp;6.7
   border-top-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_last_grand_summary_row_top {
+#sibhzkavsz .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3401,11 +3526,11 @@ Table&nbsp;6.7
   border-bottom-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_striped {
+#sibhzkavsz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ibmujavrip .gt_table_body {
+#sibhzkavsz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -3414,7 +3539,7 @@ Table&nbsp;6.7
   border-bottom-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_footnotes {
+#sibhzkavsz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -3428,7 +3553,7 @@ Table&nbsp;6.7
   border-right-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_footnote {
+#sibhzkavsz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -3437,7 +3562,7 @@ Table&nbsp;6.7
   padding-right: 5px;
 }
 
-#ibmujavrip .gt_sourcenotes {
+#sibhzkavsz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -3451,7 +3576,7 @@ Table&nbsp;6.7
   border-right-color: #D3D3D3;
 }
 
-#ibmujavrip .gt_sourcenote {
+#sibhzkavsz .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -3459,72 +3584,72 @@ Table&nbsp;6.7
   padding-right: 5px;
 }
 
-#ibmujavrip .gt_left {
+#sibhzkavsz .gt_left {
   text-align: left;
 }
 
-#ibmujavrip .gt_center {
+#sibhzkavsz .gt_center {
   text-align: center;
 }
 
-#ibmujavrip .gt_right {
+#sibhzkavsz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ibmujavrip .gt_font_normal {
+#sibhzkavsz .gt_font_normal {
   font-weight: normal;
 }
 
-#ibmujavrip .gt_font_bold {
+#sibhzkavsz .gt_font_bold {
   font-weight: bold;
 }
 
-#ibmujavrip .gt_font_italic {
+#sibhzkavsz .gt_font_italic {
   font-style: italic;
 }
 
-#ibmujavrip .gt_super {
+#sibhzkavsz .gt_super {
   font-size: 65%;
 }
 
-#ibmujavrip .gt_footnote_marks {
+#sibhzkavsz .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ibmujavrip .gt_asterisk {
+#sibhzkavsz .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ibmujavrip .gt_indent_1 {
+#sibhzkavsz .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ibmujavrip .gt_indent_2 {
+#sibhzkavsz .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ibmujavrip .gt_indent_3 {
+#sibhzkavsz .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ibmujavrip .gt_indent_4 {
+#sibhzkavsz .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ibmujavrip .gt_indent_5 {
+#sibhzkavsz .gt_indent_5 {
   text-indent: 25px;
 }
 
-#ibmujavrip .katex-display {
+#sibhzkavsz .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#ibmujavrip div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#sibhzkavsz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -3623,7 +3748,7 @@ Table&nbsp;6.7
 </div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ws</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_saem"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ws</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_saem"</span><span class="op">)</span></span>
 <span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">ws</span><span class="op">$</span><span class="va">model</span>, <span class="st">"fit_options"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [fit_options]</span></span>
 <span><span class="co">#&gt;   method          = saem</span></span>
@@ -3678,29 +3803,29 @@ Table&nbsp;6.7
 <p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on a <code>ferx_conddist</code> object shows the distribution-based shrinkage and the per-subject conditional mean, SD and mode. <code>fit$saem_n_subjects_hmc</code> reports how many subjects used HMC proposals (<code>n_leapfrog &gt; 0</code>). It is not set here, because this model uses Metropolis-Hastings proposals.</p>
 </section><section id="laplace-and-adaptive-quadrature" class="level3"><h3 class="anchored" data-anchor-id="laplace-and-adaptive-quadrature">Laplace and adaptive quadrature</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"n_agq"</span>, <span class="st">"agq_eval_only"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"n_agq"</span>, <span class="st">"agq_eval_only"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-agq" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-agq-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.8
 </figcaption><div aria-describedby="tbl-settings-agq-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="gozdliqwgx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#gozdliqwgx table {
+<div id="rrxkjqpwct" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#rrxkjqpwct table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#gozdliqwgx thead, #gozdliqwgx tbody, #gozdliqwgx tfoot, #gozdliqwgx tr, #gozdliqwgx td, #gozdliqwgx th {
+#rrxkjqpwct thead, #rrxkjqpwct tbody, #rrxkjqpwct tfoot, #rrxkjqpwct tr, #rrxkjqpwct td, #rrxkjqpwct th {
   border-style: none;
 }
 
-#gozdliqwgx p {
+#rrxkjqpwct p {
   margin: 0;
   padding: 0;
 }
 
-#gozdliqwgx .gt_table {
+#rrxkjqpwct .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -3726,12 +3851,12 @@ Table&nbsp;6.8
   border-left-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_caption {
+#rrxkjqpwct .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#gozdliqwgx .gt_title {
+#rrxkjqpwct .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -3743,7 +3868,7 @@ Table&nbsp;6.8
   border-bottom-width: 0;
 }
 
-#gozdliqwgx .gt_subtitle {
+#rrxkjqpwct .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -3755,7 +3880,7 @@ Table&nbsp;6.8
   border-top-width: 0;
 }
 
-#gozdliqwgx .gt_heading {
+#rrxkjqpwct .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -3767,13 +3892,13 @@ Table&nbsp;6.8
   border-right-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_bottom_border {
+#rrxkjqpwct .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_col_headings {
+#rrxkjqpwct .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -3788,7 +3913,7 @@ Table&nbsp;6.8
   border-right-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_col_heading {
+#rrxkjqpwct .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3808,7 +3933,7 @@ Table&nbsp;6.8
   overflow-x: hidden;
 }
 
-#gozdliqwgx .gt_column_spanner_outer {
+#rrxkjqpwct .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3820,15 +3945,15 @@ Table&nbsp;6.8
   padding-right: 4px;
 }
 
-#gozdliqwgx .gt_column_spanner_outer:first-child {
+#rrxkjqpwct .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#gozdliqwgx .gt_column_spanner_outer:last-child {
+#rrxkjqpwct .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#gozdliqwgx .gt_column_spanner {
+#rrxkjqpwct .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -3840,11 +3965,11 @@ Table&nbsp;6.8
   width: 100%;
 }
 
-#gozdliqwgx .gt_spanner_row {
+#rrxkjqpwct .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#gozdliqwgx .gt_group_heading {
+#rrxkjqpwct .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3870,7 +3995,7 @@ Table&nbsp;6.8
   text-align: left;
 }
 
-#gozdliqwgx .gt_empty_group_heading {
+#rrxkjqpwct .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -3885,15 +4010,15 @@ Table&nbsp;6.8
   vertical-align: middle;
 }
 
-#gozdliqwgx .gt_from_md > :first-child {
+#rrxkjqpwct .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#gozdliqwgx .gt_from_md > :last-child {
+#rrxkjqpwct .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#gozdliqwgx .gt_row {
+#rrxkjqpwct .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3912,7 +4037,7 @@ Table&nbsp;6.8
   overflow-x: hidden;
 }
 
-#gozdliqwgx .gt_stub {
+#rrxkjqpwct .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3925,7 +4050,7 @@ Table&nbsp;6.8
   padding-right: 5px;
 }
 
-#gozdliqwgx .gt_stub_row_group {
+#rrxkjqpwct .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -3939,15 +4064,15 @@ Table&nbsp;6.8
   vertical-align: top;
 }
 
-#gozdliqwgx .gt_row_group_first td {
+#rrxkjqpwct .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#gozdliqwgx .gt_row_group_first th {
+#rrxkjqpwct .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#gozdliqwgx .gt_summary_row {
+#rrxkjqpwct .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -3957,16 +4082,16 @@ Table&nbsp;6.8
   padding-right: 5px;
 }
 
-#gozdliqwgx .gt_first_summary_row {
+#rrxkjqpwct .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_first_summary_row.thick {
+#rrxkjqpwct .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#gozdliqwgx .gt_last_summary_row {
+#rrxkjqpwct .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3976,7 +4101,7 @@ Table&nbsp;6.8
   border-bottom-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_grand_summary_row {
+#rrxkjqpwct .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -3986,7 +4111,7 @@ Table&nbsp;6.8
   padding-right: 5px;
 }
 
-#gozdliqwgx .gt_first_grand_summary_row {
+#rrxkjqpwct .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3996,7 +4121,7 @@ Table&nbsp;6.8
   border-top-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_last_grand_summary_row_top {
+#rrxkjqpwct .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4006,11 +4131,11 @@ Table&nbsp;6.8
   border-bottom-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_striped {
+#rrxkjqpwct .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#gozdliqwgx .gt_table_body {
+#rrxkjqpwct .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -4019,7 +4144,7 @@ Table&nbsp;6.8
   border-bottom-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_footnotes {
+#rrxkjqpwct .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -4033,7 +4158,7 @@ Table&nbsp;6.8
   border-right-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_footnote {
+#rrxkjqpwct .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -4042,7 +4167,7 @@ Table&nbsp;6.8
   padding-right: 5px;
 }
 
-#gozdliqwgx .gt_sourcenotes {
+#rrxkjqpwct .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -4056,7 +4181,7 @@ Table&nbsp;6.8
   border-right-color: #D3D3D3;
 }
 
-#gozdliqwgx .gt_sourcenote {
+#rrxkjqpwct .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -4064,72 +4189,72 @@ Table&nbsp;6.8
   padding-right: 5px;
 }
 
-#gozdliqwgx .gt_left {
+#rrxkjqpwct .gt_left {
   text-align: left;
 }
 
-#gozdliqwgx .gt_center {
+#rrxkjqpwct .gt_center {
   text-align: center;
 }
 
-#gozdliqwgx .gt_right {
+#rrxkjqpwct .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#gozdliqwgx .gt_font_normal {
+#rrxkjqpwct .gt_font_normal {
   font-weight: normal;
 }
 
-#gozdliqwgx .gt_font_bold {
+#rrxkjqpwct .gt_font_bold {
   font-weight: bold;
 }
 
-#gozdliqwgx .gt_font_italic {
+#rrxkjqpwct .gt_font_italic {
   font-style: italic;
 }
 
-#gozdliqwgx .gt_super {
+#rrxkjqpwct .gt_super {
   font-size: 65%;
 }
 
-#gozdliqwgx .gt_footnote_marks {
+#rrxkjqpwct .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#gozdliqwgx .gt_asterisk {
+#rrxkjqpwct .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#gozdliqwgx .gt_indent_1 {
+#rrxkjqpwct .gt_indent_1 {
   text-indent: 5px;
 }
 
-#gozdliqwgx .gt_indent_2 {
+#rrxkjqpwct .gt_indent_2 {
   text-indent: 10px;
 }
 
-#gozdliqwgx .gt_indent_3 {
+#rrxkjqpwct .gt_indent_3 {
   text-indent: 15px;
 }
 
-#gozdliqwgx .gt_indent_4 {
+#rrxkjqpwct .gt_indent_4 {
   text-indent: 20px;
 }
 
-#gozdliqwgx .gt_indent_5 {
+#rrxkjqpwct .gt_indent_5 {
   text-indent: 25px;
 }
 
-#gozdliqwgx .katex-display {
+#rrxkjqpwct .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#gozdliqwgx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#rrxkjqpwct div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -4169,7 +4294,7 @@ Table&nbsp;6.8
 </div>
 <p><code>n_agq</code> is the number of Gauss-Hermite nodes per random effect. The cost grows as <code>n_agq</code> to the power of the number of etas, so higher values suit models with few random effects. <code>agq_eval_only</code> uses quadrature only to evaluate the likelihood at a fitted point (see the ferx-core <a href="https://ferx-nlme.github.io/ferx-core/estimation/agq.html">AGQ page</a>).</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_lap</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"laplace"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_lap</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"laplace"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = foce` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `laplace`. The call-time value will be used.</span></span>
 <span><span class="va">fit_agq</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"laplace"</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>n_agq <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span>
@@ -4182,29 +4307,29 @@ Table&nbsp;6.8
 </div>
 </section><section id="gauss-newton" class="level3"><h3 class="anchored" data-anchor-id="gauss-newton">Gauss-Newton</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="st">"gn_lambda"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="st">"gn_lambda"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-gn" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-gn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.9
 </figcaption><div aria-describedby="tbl-settings-gn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="oxaowmggug" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#oxaowmggug table {
+<div id="joqbgiqvpv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#joqbgiqvpv table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#oxaowmggug thead, #oxaowmggug tbody, #oxaowmggug tfoot, #oxaowmggug tr, #oxaowmggug td, #oxaowmggug th {
+#joqbgiqvpv thead, #joqbgiqvpv tbody, #joqbgiqvpv tfoot, #joqbgiqvpv tr, #joqbgiqvpv td, #joqbgiqvpv th {
   border-style: none;
 }
 
-#oxaowmggug p {
+#joqbgiqvpv p {
   margin: 0;
   padding: 0;
 }
 
-#oxaowmggug .gt_table {
+#joqbgiqvpv .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -4230,12 +4355,12 @@ Table&nbsp;6.9
   border-left-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_caption {
+#joqbgiqvpv .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#oxaowmggug .gt_title {
+#joqbgiqvpv .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -4247,7 +4372,7 @@ Table&nbsp;6.9
   border-bottom-width: 0;
 }
 
-#oxaowmggug .gt_subtitle {
+#joqbgiqvpv .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -4259,7 +4384,7 @@ Table&nbsp;6.9
   border-top-width: 0;
 }
 
-#oxaowmggug .gt_heading {
+#joqbgiqvpv .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -4271,13 +4396,13 @@ Table&nbsp;6.9
   border-right-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_bottom_border {
+#joqbgiqvpv .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_col_headings {
+#joqbgiqvpv .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -4292,7 +4417,7 @@ Table&nbsp;6.9
   border-right-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_col_heading {
+#joqbgiqvpv .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4312,7 +4437,7 @@ Table&nbsp;6.9
   overflow-x: hidden;
 }
 
-#oxaowmggug .gt_column_spanner_outer {
+#joqbgiqvpv .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4324,15 +4449,15 @@ Table&nbsp;6.9
   padding-right: 4px;
 }
 
-#oxaowmggug .gt_column_spanner_outer:first-child {
+#joqbgiqvpv .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#oxaowmggug .gt_column_spanner_outer:last-child {
+#joqbgiqvpv .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#oxaowmggug .gt_column_spanner {
+#joqbgiqvpv .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -4344,11 +4469,11 @@ Table&nbsp;6.9
   width: 100%;
 }
 
-#oxaowmggug .gt_spanner_row {
+#joqbgiqvpv .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#oxaowmggug .gt_group_heading {
+#joqbgiqvpv .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4374,7 +4499,7 @@ Table&nbsp;6.9
   text-align: left;
 }
 
-#oxaowmggug .gt_empty_group_heading {
+#joqbgiqvpv .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -4389,15 +4514,15 @@ Table&nbsp;6.9
   vertical-align: middle;
 }
 
-#oxaowmggug .gt_from_md > :first-child {
+#joqbgiqvpv .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#oxaowmggug .gt_from_md > :last-child {
+#joqbgiqvpv .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#oxaowmggug .gt_row {
+#joqbgiqvpv .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4416,7 +4541,7 @@ Table&nbsp;6.9
   overflow-x: hidden;
 }
 
-#oxaowmggug .gt_stub {
+#joqbgiqvpv .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4429,7 +4554,7 @@ Table&nbsp;6.9
   padding-right: 5px;
 }
 
-#oxaowmggug .gt_stub_row_group {
+#joqbgiqvpv .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4443,15 +4568,15 @@ Table&nbsp;6.9
   vertical-align: top;
 }
 
-#oxaowmggug .gt_row_group_first td {
+#joqbgiqvpv .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#oxaowmggug .gt_row_group_first th {
+#joqbgiqvpv .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#oxaowmggug .gt_summary_row {
+#joqbgiqvpv .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -4461,16 +4586,16 @@ Table&nbsp;6.9
   padding-right: 5px;
 }
 
-#oxaowmggug .gt_first_summary_row {
+#joqbgiqvpv .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_first_summary_row.thick {
+#joqbgiqvpv .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#oxaowmggug .gt_last_summary_row {
+#joqbgiqvpv .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4480,7 +4605,7 @@ Table&nbsp;6.9
   border-bottom-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_grand_summary_row {
+#joqbgiqvpv .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -4490,7 +4615,7 @@ Table&nbsp;6.9
   padding-right: 5px;
 }
 
-#oxaowmggug .gt_first_grand_summary_row {
+#joqbgiqvpv .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4500,7 +4625,7 @@ Table&nbsp;6.9
   border-top-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_last_grand_summary_row_top {
+#joqbgiqvpv .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4510,11 +4635,11 @@ Table&nbsp;6.9
   border-bottom-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_striped {
+#joqbgiqvpv .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#oxaowmggug .gt_table_body {
+#joqbgiqvpv .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -4523,7 +4648,7 @@ Table&nbsp;6.9
   border-bottom-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_footnotes {
+#joqbgiqvpv .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -4537,7 +4662,7 @@ Table&nbsp;6.9
   border-right-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_footnote {
+#joqbgiqvpv .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -4546,7 +4671,7 @@ Table&nbsp;6.9
   padding-right: 5px;
 }
 
-#oxaowmggug .gt_sourcenotes {
+#joqbgiqvpv .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -4560,7 +4685,7 @@ Table&nbsp;6.9
   border-right-color: #D3D3D3;
 }
 
-#oxaowmggug .gt_sourcenote {
+#joqbgiqvpv .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -4568,72 +4693,72 @@ Table&nbsp;6.9
   padding-right: 5px;
 }
 
-#oxaowmggug .gt_left {
+#joqbgiqvpv .gt_left {
   text-align: left;
 }
 
-#oxaowmggug .gt_center {
+#joqbgiqvpv .gt_center {
   text-align: center;
 }
 
-#oxaowmggug .gt_right {
+#joqbgiqvpv .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#oxaowmggug .gt_font_normal {
+#joqbgiqvpv .gt_font_normal {
   font-weight: normal;
 }
 
-#oxaowmggug .gt_font_bold {
+#joqbgiqvpv .gt_font_bold {
   font-weight: bold;
 }
 
-#oxaowmggug .gt_font_italic {
+#joqbgiqvpv .gt_font_italic {
   font-style: italic;
 }
 
-#oxaowmggug .gt_super {
+#joqbgiqvpv .gt_super {
   font-size: 65%;
 }
 
-#oxaowmggug .gt_footnote_marks {
+#joqbgiqvpv .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#oxaowmggug .gt_asterisk {
+#joqbgiqvpv .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#oxaowmggug .gt_indent_1 {
+#joqbgiqvpv .gt_indent_1 {
   text-indent: 5px;
 }
 
-#oxaowmggug .gt_indent_2 {
+#joqbgiqvpv .gt_indent_2 {
   text-indent: 10px;
 }
 
-#oxaowmggug .gt_indent_3 {
+#joqbgiqvpv .gt_indent_3 {
   text-indent: 15px;
 }
 
-#oxaowmggug .gt_indent_4 {
+#joqbgiqvpv .gt_indent_4 {
   text-indent: 20px;
 }
 
-#oxaowmggug .gt_indent_5 {
+#joqbgiqvpv .gt_indent_5 {
   text-indent: 25px;
 }
 
-#oxaowmggug .katex-display {
+#joqbgiqvpv .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#oxaowmggug div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#joqbgiqvpv div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -4665,7 +4790,7 @@ Table&nbsp;6.9
 </div>
 </section><section id="importance-sampling" class="level3"><h3 class="anchored" data-anchor-id="importance-sampling">Importance sampling</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"imp_samples"</span>, <span class="st">"imp_proposal_df"</span>, <span class="st">"imp_seed"</span>, <span class="st">"imp_low_ess_threshold"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"imp_samples"</span>, <span class="st">"imp_proposal_df"</span>, <span class="st">"imp_seed"</span>, <span class="st">"imp_low_ess_threshold"</span>,</span>
 <span>                      <span class="st">"imp_iterations"</span>, <span class="st">"imp_averaging"</span>, <span class="st">"imp_auto"</span>, <span class="st">"imp_defensive_alpha"</span>,</span>
 <span>                      <span class="st">"imp_eval_only"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-imp" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
@@ -4673,23 +4798,23 @@ Table&nbsp;6.9
 Table&nbsp;6.10
 </figcaption><div aria-describedby="tbl-settings-imp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="fylekbybve" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#fylekbybve table {
+<div id="qvmxirgiek" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#qvmxirgiek table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#fylekbybve thead, #fylekbybve tbody, #fylekbybve tfoot, #fylekbybve tr, #fylekbybve td, #fylekbybve th {
+#qvmxirgiek thead, #qvmxirgiek tbody, #qvmxirgiek tfoot, #qvmxirgiek tr, #qvmxirgiek td, #qvmxirgiek th {
   border-style: none;
 }
 
-#fylekbybve p {
+#qvmxirgiek p {
   margin: 0;
   padding: 0;
 }
 
-#fylekbybve .gt_table {
+#qvmxirgiek .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -4715,12 +4840,12 @@ Table&nbsp;6.10
   border-left-color: #D3D3D3;
 }
 
-#fylekbybve .gt_caption {
+#qvmxirgiek .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#fylekbybve .gt_title {
+#qvmxirgiek .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -4732,7 +4857,7 @@ Table&nbsp;6.10
   border-bottom-width: 0;
 }
 
-#fylekbybve .gt_subtitle {
+#qvmxirgiek .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -4744,7 +4869,7 @@ Table&nbsp;6.10
   border-top-width: 0;
 }
 
-#fylekbybve .gt_heading {
+#qvmxirgiek .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -4756,13 +4881,13 @@ Table&nbsp;6.10
   border-right-color: #D3D3D3;
 }
 
-#fylekbybve .gt_bottom_border {
+#qvmxirgiek .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#fylekbybve .gt_col_headings {
+#qvmxirgiek .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -4777,7 +4902,7 @@ Table&nbsp;6.10
   border-right-color: #D3D3D3;
 }
 
-#fylekbybve .gt_col_heading {
+#qvmxirgiek .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4797,7 +4922,7 @@ Table&nbsp;6.10
   overflow-x: hidden;
 }
 
-#fylekbybve .gt_column_spanner_outer {
+#qvmxirgiek .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4809,15 +4934,15 @@ Table&nbsp;6.10
   padding-right: 4px;
 }
 
-#fylekbybve .gt_column_spanner_outer:first-child {
+#qvmxirgiek .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#fylekbybve .gt_column_spanner_outer:last-child {
+#qvmxirgiek .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#fylekbybve .gt_column_spanner {
+#qvmxirgiek .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -4829,11 +4954,11 @@ Table&nbsp;6.10
   width: 100%;
 }
 
-#fylekbybve .gt_spanner_row {
+#qvmxirgiek .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#fylekbybve .gt_group_heading {
+#qvmxirgiek .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4859,7 +4984,7 @@ Table&nbsp;6.10
   text-align: left;
 }
 
-#fylekbybve .gt_empty_group_heading {
+#qvmxirgiek .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -4874,15 +4999,15 @@ Table&nbsp;6.10
   vertical-align: middle;
 }
 
-#fylekbybve .gt_from_md > :first-child {
+#qvmxirgiek .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#fylekbybve .gt_from_md > :last-child {
+#qvmxirgiek .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#fylekbybve .gt_row {
+#qvmxirgiek .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4901,7 +5026,7 @@ Table&nbsp;6.10
   overflow-x: hidden;
 }
 
-#fylekbybve .gt_stub {
+#qvmxirgiek .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4914,7 +5039,7 @@ Table&nbsp;6.10
   padding-right: 5px;
 }
 
-#fylekbybve .gt_stub_row_group {
+#qvmxirgiek .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -4928,15 +5053,15 @@ Table&nbsp;6.10
   vertical-align: top;
 }
 
-#fylekbybve .gt_row_group_first td {
+#qvmxirgiek .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#fylekbybve .gt_row_group_first th {
+#qvmxirgiek .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#fylekbybve .gt_summary_row {
+#qvmxirgiek .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -4946,16 +5071,16 @@ Table&nbsp;6.10
   padding-right: 5px;
 }
 
-#fylekbybve .gt_first_summary_row {
+#qvmxirgiek .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#fylekbybve .gt_first_summary_row.thick {
+#qvmxirgiek .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#fylekbybve .gt_last_summary_row {
+#qvmxirgiek .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4965,7 +5090,7 @@ Table&nbsp;6.10
   border-bottom-color: #D3D3D3;
 }
 
-#fylekbybve .gt_grand_summary_row {
+#qvmxirgiek .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -4975,7 +5100,7 @@ Table&nbsp;6.10
   padding-right: 5px;
 }
 
-#fylekbybve .gt_first_grand_summary_row {
+#qvmxirgiek .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4985,7 +5110,7 @@ Table&nbsp;6.10
   border-top-color: #D3D3D3;
 }
 
-#fylekbybve .gt_last_grand_summary_row_top {
+#qvmxirgiek .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -4995,11 +5120,11 @@ Table&nbsp;6.10
   border-bottom-color: #D3D3D3;
 }
 
-#fylekbybve .gt_striped {
+#qvmxirgiek .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#fylekbybve .gt_table_body {
+#qvmxirgiek .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5008,7 +5133,7 @@ Table&nbsp;6.10
   border-bottom-color: #D3D3D3;
 }
 
-#fylekbybve .gt_footnotes {
+#qvmxirgiek .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5022,7 +5147,7 @@ Table&nbsp;6.10
   border-right-color: #D3D3D3;
 }
 
-#fylekbybve .gt_footnote {
+#qvmxirgiek .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -5031,7 +5156,7 @@ Table&nbsp;6.10
   padding-right: 5px;
 }
 
-#fylekbybve .gt_sourcenotes {
+#qvmxirgiek .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5045,7 +5170,7 @@ Table&nbsp;6.10
   border-right-color: #D3D3D3;
 }
 
-#fylekbybve .gt_sourcenote {
+#qvmxirgiek .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -5053,72 +5178,72 @@ Table&nbsp;6.10
   padding-right: 5px;
 }
 
-#fylekbybve .gt_left {
+#qvmxirgiek .gt_left {
   text-align: left;
 }
 
-#fylekbybve .gt_center {
+#qvmxirgiek .gt_center {
   text-align: center;
 }
 
-#fylekbybve .gt_right {
+#qvmxirgiek .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#fylekbybve .gt_font_normal {
+#qvmxirgiek .gt_font_normal {
   font-weight: normal;
 }
 
-#fylekbybve .gt_font_bold {
+#qvmxirgiek .gt_font_bold {
   font-weight: bold;
 }
 
-#fylekbybve .gt_font_italic {
+#qvmxirgiek .gt_font_italic {
   font-style: italic;
 }
 
-#fylekbybve .gt_super {
+#qvmxirgiek .gt_super {
   font-size: 65%;
 }
 
-#fylekbybve .gt_footnote_marks {
+#qvmxirgiek .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#fylekbybve .gt_asterisk {
+#qvmxirgiek .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#fylekbybve .gt_indent_1 {
+#qvmxirgiek .gt_indent_1 {
   text-indent: 5px;
 }
 
-#fylekbybve .gt_indent_2 {
+#qvmxirgiek .gt_indent_2 {
   text-indent: 10px;
 }
 
-#fylekbybve .gt_indent_3 {
+#qvmxirgiek .gt_indent_3 {
   text-indent: 15px;
 }
 
-#fylekbybve .gt_indent_4 {
+#qvmxirgiek .gt_indent_4 {
   text-indent: 20px;
 }
 
-#fylekbybve .gt_indent_5 {
+#qvmxirgiek .gt_indent_5 {
   text-indent: 25px;
 }
 
-#fylekbybve .katex-display {
+#qvmxirgiek .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#fylekbybve div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#qvmxirgiek div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -5201,7 +5326,7 @@ Table&nbsp;6.10
 </div>
 <p>A common use of <code>imp</code> is to evaluate the marginal likelihood at a FOCEI solution: the final stage of a chain, with <code>imp_eval_only = TRUE</code>. The result is in <code>fit$importance_sampling</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_imp</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"focei"</span>, <span class="st">"imp"</span><span class="op">)</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_imp</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"focei"</span>, <span class="st">"imp"</span><span class="op">)</span>,</span>
 <span>                    settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>imp_eval_only <span class="op">=</span> <span class="cn">TRUE</span>, imp_seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = focei` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `focei, imp`. The call-time value will be used.</span></span>
@@ -5224,7 +5349,7 @@ Table&nbsp;6.10
 </div>
 <p><code>?ferx_fit</code> notes that plain <code>"imp"</code> re-centers its proposal from the previous iteration’s samples and can be fragile on rich data. It recommends <code>"impmap"</code>, or a warm start such as <code>c("focei", "imp")</code>.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"impmap_iterations"</span>, <span class="st">"impmap_samples"</span>, <span class="st">"impmap_proposal_df"</span>, <span class="st">"impmap_seed"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"impmap_iterations"</span>, <span class="st">"impmap_samples"</span>, <span class="st">"impmap_proposal_df"</span>, <span class="st">"impmap_seed"</span>,</span>
 <span>                      <span class="st">"impmap_averaging"</span>, <span class="st">"impmap_low_ess_threshold"</span>, <span class="st">"impmap_trace"</span>,</span>
 <span>                      <span class="st">"impmap_mceta"</span>, <span class="st">"impmap_sobol"</span>, <span class="st">"impmap_auto"</span>, <span class="st">"iscale_min"</span>, <span class="st">"iscale_max"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-impmap" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
@@ -5232,23 +5357,23 @@ Table&nbsp;6.10
 Table&nbsp;6.11
 </figcaption><div aria-describedby="tbl-settings-impmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="vxapnznchd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#vxapnznchd table {
+<div id="ietcyhqvau" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ietcyhqvau table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#vxapnznchd thead, #vxapnznchd tbody, #vxapnznchd tfoot, #vxapnznchd tr, #vxapnznchd td, #vxapnznchd th {
+#ietcyhqvau thead, #ietcyhqvau tbody, #ietcyhqvau tfoot, #ietcyhqvau tr, #ietcyhqvau td, #ietcyhqvau th {
   border-style: none;
 }
 
-#vxapnznchd p {
+#ietcyhqvau p {
   margin: 0;
   padding: 0;
 }
 
-#vxapnznchd .gt_table {
+#ietcyhqvau .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -5274,12 +5399,12 @@ Table&nbsp;6.11
   border-left-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_caption {
+#ietcyhqvau .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#vxapnznchd .gt_title {
+#ietcyhqvau .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -5291,7 +5416,7 @@ Table&nbsp;6.11
   border-bottom-width: 0;
 }
 
-#vxapnznchd .gt_subtitle {
+#ietcyhqvau .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -5303,7 +5428,7 @@ Table&nbsp;6.11
   border-top-width: 0;
 }
 
-#vxapnznchd .gt_heading {
+#ietcyhqvau .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -5315,13 +5440,13 @@ Table&nbsp;6.11
   border-right-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_bottom_border {
+#ietcyhqvau .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_col_headings {
+#ietcyhqvau .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5336,7 +5461,7 @@ Table&nbsp;6.11
   border-right-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_col_heading {
+#ietcyhqvau .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5356,7 +5481,7 @@ Table&nbsp;6.11
   overflow-x: hidden;
 }
 
-#vxapnznchd .gt_column_spanner_outer {
+#ietcyhqvau .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5368,15 +5493,15 @@ Table&nbsp;6.11
   padding-right: 4px;
 }
 
-#vxapnznchd .gt_column_spanner_outer:first-child {
+#ietcyhqvau .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#vxapnznchd .gt_column_spanner_outer:last-child {
+#ietcyhqvau .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#vxapnznchd .gt_column_spanner {
+#ietcyhqvau .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -5388,11 +5513,11 @@ Table&nbsp;6.11
   width: 100%;
 }
 
-#vxapnznchd .gt_spanner_row {
+#ietcyhqvau .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#vxapnznchd .gt_group_heading {
+#ietcyhqvau .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5418,7 +5543,7 @@ Table&nbsp;6.11
   text-align: left;
 }
 
-#vxapnznchd .gt_empty_group_heading {
+#ietcyhqvau .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -5433,15 +5558,15 @@ Table&nbsp;6.11
   vertical-align: middle;
 }
 
-#vxapnznchd .gt_from_md > :first-child {
+#ietcyhqvau .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#vxapnznchd .gt_from_md > :last-child {
+#ietcyhqvau .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#vxapnznchd .gt_row {
+#ietcyhqvau .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5460,7 +5585,7 @@ Table&nbsp;6.11
   overflow-x: hidden;
 }
 
-#vxapnznchd .gt_stub {
+#ietcyhqvau .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5473,7 +5598,7 @@ Table&nbsp;6.11
   padding-right: 5px;
 }
 
-#vxapnznchd .gt_stub_row_group {
+#ietcyhqvau .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5487,15 +5612,15 @@ Table&nbsp;6.11
   vertical-align: top;
 }
 
-#vxapnznchd .gt_row_group_first td {
+#ietcyhqvau .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#vxapnznchd .gt_row_group_first th {
+#ietcyhqvau .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#vxapnznchd .gt_summary_row {
+#ietcyhqvau .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5505,16 +5630,16 @@ Table&nbsp;6.11
   padding-right: 5px;
 }
 
-#vxapnznchd .gt_first_summary_row {
+#ietcyhqvau .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_first_summary_row.thick {
+#ietcyhqvau .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#vxapnznchd .gt_last_summary_row {
+#ietcyhqvau .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5524,7 +5649,7 @@ Table&nbsp;6.11
   border-bottom-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_grand_summary_row {
+#ietcyhqvau .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5534,7 +5659,7 @@ Table&nbsp;6.11
   padding-right: 5px;
 }
 
-#vxapnznchd .gt_first_grand_summary_row {
+#ietcyhqvau .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5544,7 +5669,7 @@ Table&nbsp;6.11
   border-top-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_last_grand_summary_row_top {
+#ietcyhqvau .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5554,11 +5679,11 @@ Table&nbsp;6.11
   border-bottom-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_striped {
+#ietcyhqvau .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#vxapnznchd .gt_table_body {
+#ietcyhqvau .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5567,7 +5692,7 @@ Table&nbsp;6.11
   border-bottom-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_footnotes {
+#ietcyhqvau .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5581,7 +5706,7 @@ Table&nbsp;6.11
   border-right-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_footnote {
+#ietcyhqvau .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -5590,7 +5715,7 @@ Table&nbsp;6.11
   padding-right: 5px;
 }
 
-#vxapnznchd .gt_sourcenotes {
+#ietcyhqvau .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5604,7 +5729,7 @@ Table&nbsp;6.11
   border-right-color: #D3D3D3;
 }
 
-#vxapnznchd .gt_sourcenote {
+#ietcyhqvau .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -5612,72 +5737,72 @@ Table&nbsp;6.11
   padding-right: 5px;
 }
 
-#vxapnznchd .gt_left {
+#ietcyhqvau .gt_left {
   text-align: left;
 }
 
-#vxapnznchd .gt_center {
+#ietcyhqvau .gt_center {
   text-align: center;
 }
 
-#vxapnznchd .gt_right {
+#ietcyhqvau .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#vxapnznchd .gt_font_normal {
+#ietcyhqvau .gt_font_normal {
   font-weight: normal;
 }
 
-#vxapnznchd .gt_font_bold {
+#ietcyhqvau .gt_font_bold {
   font-weight: bold;
 }
 
-#vxapnznchd .gt_font_italic {
+#ietcyhqvau .gt_font_italic {
   font-style: italic;
 }
 
-#vxapnznchd .gt_super {
+#ietcyhqvau .gt_super {
   font-size: 65%;
 }
 
-#vxapnznchd .gt_footnote_marks {
+#ietcyhqvau .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#vxapnznchd .gt_asterisk {
+#ietcyhqvau .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#vxapnznchd .gt_indent_1 {
+#ietcyhqvau .gt_indent_1 {
   text-indent: 5px;
 }
 
-#vxapnznchd .gt_indent_2 {
+#ietcyhqvau .gt_indent_2 {
   text-indent: 10px;
 }
 
-#vxapnznchd .gt_indent_3 {
+#ietcyhqvau .gt_indent_3 {
   text-indent: 15px;
 }
 
-#vxapnznchd .gt_indent_4 {
+#ietcyhqvau .gt_indent_4 {
   text-indent: 20px;
 }
 
-#vxapnznchd .gt_indent_5 {
+#ietcyhqvau .gt_indent_5 {
   text-indent: 25px;
 }
 
-#vxapnznchd .katex-display {
+#ietcyhqvau .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#vxapnznchd div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ietcyhqvau div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -5777,29 +5902,29 @@ Table&nbsp;6.11
 </div>
 </section><section id="bayesian-estimation" class="level3"><h3 class="anchored" data-anchor-id="bayesian-estimation">Bayesian estimation</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"bayes_warmup"</span>, <span class="st">"bayes_iters"</span>, <span class="st">"bayes_chains"</span>, <span class="st">"bayes_thin"</span>, <span class="st">"bayes_seed"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"bayes_warmup"</span>, <span class="st">"bayes_iters"</span>, <span class="st">"bayes_chains"</span>, <span class="st">"bayes_thin"</span>, <span class="st">"bayes_seed"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-bayes" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-bayes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.12
 </figcaption><div aria-describedby="tbl-settings-bayes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="rudgxxfgwb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#rudgxxfgwb table {
+<div id="vixfkeikxr" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#vixfkeikxr table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#rudgxxfgwb thead, #rudgxxfgwb tbody, #rudgxxfgwb tfoot, #rudgxxfgwb tr, #rudgxxfgwb td, #rudgxxfgwb th {
+#vixfkeikxr thead, #vixfkeikxr tbody, #vixfkeikxr tfoot, #vixfkeikxr tr, #vixfkeikxr td, #vixfkeikxr th {
   border-style: none;
 }
 
-#rudgxxfgwb p {
+#vixfkeikxr p {
   margin: 0;
   padding: 0;
 }
 
-#rudgxxfgwb .gt_table {
+#vixfkeikxr .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -5825,12 +5950,12 @@ Table&nbsp;6.12
   border-left-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_caption {
+#vixfkeikxr .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#rudgxxfgwb .gt_title {
+#vixfkeikxr .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -5842,7 +5967,7 @@ Table&nbsp;6.12
   border-bottom-width: 0;
 }
 
-#rudgxxfgwb .gt_subtitle {
+#vixfkeikxr .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -5854,7 +5979,7 @@ Table&nbsp;6.12
   border-top-width: 0;
 }
 
-#rudgxxfgwb .gt_heading {
+#vixfkeikxr .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -5866,13 +5991,13 @@ Table&nbsp;6.12
   border-right-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_bottom_border {
+#vixfkeikxr .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_col_headings {
+#vixfkeikxr .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5887,7 +6012,7 @@ Table&nbsp;6.12
   border-right-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_col_heading {
+#vixfkeikxr .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5907,7 +6032,7 @@ Table&nbsp;6.12
   overflow-x: hidden;
 }
 
-#rudgxxfgwb .gt_column_spanner_outer {
+#vixfkeikxr .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5919,15 +6044,15 @@ Table&nbsp;6.12
   padding-right: 4px;
 }
 
-#rudgxxfgwb .gt_column_spanner_outer:first-child {
+#vixfkeikxr .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#rudgxxfgwb .gt_column_spanner_outer:last-child {
+#vixfkeikxr .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#rudgxxfgwb .gt_column_spanner {
+#vixfkeikxr .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -5939,11 +6064,11 @@ Table&nbsp;6.12
   width: 100%;
 }
 
-#rudgxxfgwb .gt_spanner_row {
+#vixfkeikxr .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#rudgxxfgwb .gt_group_heading {
+#vixfkeikxr .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5969,7 +6094,7 @@ Table&nbsp;6.12
   text-align: left;
 }
 
-#rudgxxfgwb .gt_empty_group_heading {
+#vixfkeikxr .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -5984,15 +6109,15 @@ Table&nbsp;6.12
   vertical-align: middle;
 }
 
-#rudgxxfgwb .gt_from_md > :first-child {
+#vixfkeikxr .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#rudgxxfgwb .gt_from_md > :last-child {
+#vixfkeikxr .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#rudgxxfgwb .gt_row {
+#vixfkeikxr .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6011,7 +6136,7 @@ Table&nbsp;6.12
   overflow-x: hidden;
 }
 
-#rudgxxfgwb .gt_stub {
+#vixfkeikxr .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6024,7 +6149,7 @@ Table&nbsp;6.12
   padding-right: 5px;
 }
 
-#rudgxxfgwb .gt_stub_row_group {
+#vixfkeikxr .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6038,15 +6163,15 @@ Table&nbsp;6.12
   vertical-align: top;
 }
 
-#rudgxxfgwb .gt_row_group_first td {
+#vixfkeikxr .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#rudgxxfgwb .gt_row_group_first th {
+#vixfkeikxr .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#rudgxxfgwb .gt_summary_row {
+#vixfkeikxr .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6056,16 +6181,16 @@ Table&nbsp;6.12
   padding-right: 5px;
 }
 
-#rudgxxfgwb .gt_first_summary_row {
+#vixfkeikxr .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_first_summary_row.thick {
+#vixfkeikxr .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#rudgxxfgwb .gt_last_summary_row {
+#vixfkeikxr .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6075,7 +6200,7 @@ Table&nbsp;6.12
   border-bottom-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_grand_summary_row {
+#vixfkeikxr .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6085,7 +6210,7 @@ Table&nbsp;6.12
   padding-right: 5px;
 }
 
-#rudgxxfgwb .gt_first_grand_summary_row {
+#vixfkeikxr .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6095,7 +6220,7 @@ Table&nbsp;6.12
   border-top-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_last_grand_summary_row_top {
+#vixfkeikxr .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6105,11 +6230,11 @@ Table&nbsp;6.12
   border-bottom-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_striped {
+#vixfkeikxr .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#rudgxxfgwb .gt_table_body {
+#vixfkeikxr .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6118,7 +6243,7 @@ Table&nbsp;6.12
   border-bottom-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_footnotes {
+#vixfkeikxr .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6132,7 +6257,7 @@ Table&nbsp;6.12
   border-right-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_footnote {
+#vixfkeikxr .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -6141,7 +6266,7 @@ Table&nbsp;6.12
   padding-right: 5px;
 }
 
-#rudgxxfgwb .gt_sourcenotes {
+#vixfkeikxr .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6155,7 +6280,7 @@ Table&nbsp;6.12
   border-right-color: #D3D3D3;
 }
 
-#rudgxxfgwb .gt_sourcenote {
+#vixfkeikxr .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -6163,72 +6288,72 @@ Table&nbsp;6.12
   padding-right: 5px;
 }
 
-#rudgxxfgwb .gt_left {
+#vixfkeikxr .gt_left {
   text-align: left;
 }
 
-#rudgxxfgwb .gt_center {
+#vixfkeikxr .gt_center {
   text-align: center;
 }
 
-#rudgxxfgwb .gt_right {
+#vixfkeikxr .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#rudgxxfgwb .gt_font_normal {
+#vixfkeikxr .gt_font_normal {
   font-weight: normal;
 }
 
-#rudgxxfgwb .gt_font_bold {
+#vixfkeikxr .gt_font_bold {
   font-weight: bold;
 }
 
-#rudgxxfgwb .gt_font_italic {
+#vixfkeikxr .gt_font_italic {
   font-style: italic;
 }
 
-#rudgxxfgwb .gt_super {
+#vixfkeikxr .gt_super {
   font-size: 65%;
 }
 
-#rudgxxfgwb .gt_footnote_marks {
+#vixfkeikxr .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#rudgxxfgwb .gt_asterisk {
+#vixfkeikxr .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#rudgxxfgwb .gt_indent_1 {
+#vixfkeikxr .gt_indent_1 {
   text-indent: 5px;
 }
 
-#rudgxxfgwb .gt_indent_2 {
+#vixfkeikxr .gt_indent_2 {
   text-indent: 10px;
 }
 
-#rudgxxfgwb .gt_indent_3 {
+#vixfkeikxr .gt_indent_3 {
   text-indent: 15px;
 }
 
-#rudgxxfgwb .gt_indent_4 {
+#vixfkeikxr .gt_indent_4 {
   text-indent: 20px;
 }
 
-#rudgxxfgwb .gt_indent_5 {
+#vixfkeikxr .gt_indent_5 {
   text-indent: 25px;
 }
 
-#rudgxxfgwb .katex-display {
+#vixfkeikxr .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#rudgxxfgwb div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#vixfkeikxr div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -6285,7 +6410,7 @@ Table&nbsp;6.12
 </div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_bayes</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"bayes"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_bayes</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"bayes"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = focei` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `bayes`. The call-time value will be used.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/with.html">with</a></span><span class="op">(</span><span class="va">fit_bayes</span><span class="op">$</span><span class="va">bayes</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>parameter <span class="op">=</span> <span class="va">param_names</span>, mean <span class="op">=</span> <span class="va">mean</span>, q025 <span class="op">=</span> <span class="va">q025</span>, q975 <span class="op">=</span> <span class="va">q975</span>,</span>
@@ -6307,7 +6432,7 @@ Table&nbsp;6.12
 </div>
 <p><code>fit$bayes</code> holds the posterior mean, median and 2.5%/97.5% quantiles, split-R-hat, effective sample sizes and Monte Carlo standard errors per parameter. Here the largest R-hat is 1.194, and the fit is marked unconverged with this warning:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">w_bayes</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_bayes</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">w_bayes</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_bayes</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/strwrap.html">strwrap</a></span><span class="op">(</span><span class="va">w_bayes</span><span class="op">$</span><span class="va">message</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"R-hat"</span>, <span class="va">w_bayes</span><span class="op">$</span><span class="va">message</span><span class="op">)</span><span class="op">]</span>, <span class="fl">80</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Bayes: max split-R-hat = 1.194 (&gt; 1.01) — chains may not have converged;"</span></span>
 <span><span class="co">#&gt; [2] "increase bayes_warmup / bayes_iters."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -6316,13 +6441,13 @@ Table&nbsp;6.12
 </section><section id="variational-inference" class="level3"><h3 class="anchored" data-anchor-id="variational-inference">Variational inference</h3>
 <p>Variational inference fits an approximate posterior of each subject’s random effects jointly with the population parameters, by maximizing a lower bound on the likelihood (the ELBO). <code>ferx_fit()</code>’s <code>method</code> argument does not accept it:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"vi"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"vi"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in match.arg(normalised, c("foce", "focei", "laplace", "saem", "gn",  : </span></span>
 <span><span class="co">#&gt;   'arg' should be one of "foce", "focei", "laplace", "saem", "gn", "gn_hybrid", "imp", "impmap", "bayes"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>It runs when the model file sets it. A copy of the base model with <code>method = vi</code> in <code>[fit_options]</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">vi_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"estimation"</span><span class="op">)</span>, <span class="st">"two_cpt_oral_base_vi.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">vi_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"estimation"</span><span class="op">)</span>, <span class="st">"two_cpt_oral_base_vi.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^  method     = focei"</span>, <span class="st">"  method     = vi"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span>, <span class="va">vi_model</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">vi_model</span>, <span class="st">"fit_options"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [fit_options]</span></span>
@@ -6344,7 +6469,7 @@ Table&nbsp;6.12
 </div>
 <p>The OFV is <code>NaN</code> by design: the ELBO is a lower bound, not −2 log-likelihood, and cannot be compared with other methods. The fit says so in a <code>general</code> warning. <code>vi_final_ofv = "laplace"</code> evaluates a Laplace OFV at the VI estimate. The <code>vi_*</code> settings can be passed with <code>settings</code> like any other:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># suppress the R warning about the model file's maxiter, which VI does not use</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># suppress the R warning about the model file's maxiter, which VI does not use</span></span>
 <span><span class="va">fit_vi_laplace</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">vi_model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>vi_final_ofv <span class="op">=</span> <span class="st">"laplace"</span><span class="op">)</span>,</span>
 <span>                                            verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>vi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_vi_laplace</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_vi_laplace</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>, focei <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span>
@@ -6354,30 +6479,30 @@ Table&nbsp;6.12
 </div>
 <p>The estimates are close to FOCEI. The ELBO itself and VI’s per-subject posterior summaries are not part of the R fit object at this build.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"vi_iters"</span>, <span class="st">"vi_mc_samples"</span>, <span class="st">"vi_lr"</span>, <span class="st">"vi_grad_clip"</span>, <span class="st">"vi_family"</span>, <span class="st">"vi_kl"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"vi_iters"</span>, <span class="st">"vi_mc_samples"</span>, <span class="st">"vi_lr"</span>, <span class="st">"vi_grad_clip"</span>, <span class="st">"vi_family"</span>, <span class="st">"vi_kl"</span>,</span>
 <span>                      <span class="st">"vi_omega_update"</span>, <span class="st">"vi_sigma_update"</span>, <span class="st">"vi_avg_last"</span>, <span class="st">"vi_eta_grad"</span>, <span class="st">"vi_final_ofv"</span>, <span class="st">"vi_seed"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-vi" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-vi-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;6.13
 </figcaption><div aria-describedby="tbl-settings-vi-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="dqqprmwako" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#dqqprmwako table {
+<div id="mmgaiudtvk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#mmgaiudtvk table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#dqqprmwako thead, #dqqprmwako tbody, #dqqprmwako tfoot, #dqqprmwako tr, #dqqprmwako td, #dqqprmwako th {
+#mmgaiudtvk thead, #mmgaiudtvk tbody, #mmgaiudtvk tfoot, #mmgaiudtvk tr, #mmgaiudtvk td, #mmgaiudtvk th {
   border-style: none;
 }
 
-#dqqprmwako p {
+#mmgaiudtvk p {
   margin: 0;
   padding: 0;
 }
 
-#dqqprmwako .gt_table {
+#mmgaiudtvk .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -6403,12 +6528,12 @@ Table&nbsp;6.13
   border-left-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_caption {
+#mmgaiudtvk .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#dqqprmwako .gt_title {
+#mmgaiudtvk .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -6420,7 +6545,7 @@ Table&nbsp;6.13
   border-bottom-width: 0;
 }
 
-#dqqprmwako .gt_subtitle {
+#mmgaiudtvk .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -6432,7 +6557,7 @@ Table&nbsp;6.13
   border-top-width: 0;
 }
 
-#dqqprmwako .gt_heading {
+#mmgaiudtvk .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -6444,13 +6569,13 @@ Table&nbsp;6.13
   border-right-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_bottom_border {
+#mmgaiudtvk .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_col_headings {
+#mmgaiudtvk .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6465,7 +6590,7 @@ Table&nbsp;6.13
   border-right-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_col_heading {
+#mmgaiudtvk .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6485,7 +6610,7 @@ Table&nbsp;6.13
   overflow-x: hidden;
 }
 
-#dqqprmwako .gt_column_spanner_outer {
+#mmgaiudtvk .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6497,15 +6622,15 @@ Table&nbsp;6.13
   padding-right: 4px;
 }
 
-#dqqprmwako .gt_column_spanner_outer:first-child {
+#mmgaiudtvk .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#dqqprmwako .gt_column_spanner_outer:last-child {
+#mmgaiudtvk .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#dqqprmwako .gt_column_spanner {
+#mmgaiudtvk .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -6517,11 +6642,11 @@ Table&nbsp;6.13
   width: 100%;
 }
 
-#dqqprmwako .gt_spanner_row {
+#mmgaiudtvk .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#dqqprmwako .gt_group_heading {
+#mmgaiudtvk .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6547,7 +6672,7 @@ Table&nbsp;6.13
   text-align: left;
 }
 
-#dqqprmwako .gt_empty_group_heading {
+#mmgaiudtvk .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -6562,15 +6687,15 @@ Table&nbsp;6.13
   vertical-align: middle;
 }
 
-#dqqprmwako .gt_from_md > :first-child {
+#mmgaiudtvk .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#dqqprmwako .gt_from_md > :last-child {
+#mmgaiudtvk .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#dqqprmwako .gt_row {
+#mmgaiudtvk .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6589,7 +6714,7 @@ Table&nbsp;6.13
   overflow-x: hidden;
 }
 
-#dqqprmwako .gt_stub {
+#mmgaiudtvk .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6602,7 +6727,7 @@ Table&nbsp;6.13
   padding-right: 5px;
 }
 
-#dqqprmwako .gt_stub_row_group {
+#mmgaiudtvk .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6616,15 +6741,15 @@ Table&nbsp;6.13
   vertical-align: top;
 }
 
-#dqqprmwako .gt_row_group_first td {
+#mmgaiudtvk .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#dqqprmwako .gt_row_group_first th {
+#mmgaiudtvk .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#dqqprmwako .gt_summary_row {
+#mmgaiudtvk .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6634,16 +6759,16 @@ Table&nbsp;6.13
   padding-right: 5px;
 }
 
-#dqqprmwako .gt_first_summary_row {
+#mmgaiudtvk .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_first_summary_row.thick {
+#mmgaiudtvk .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#dqqprmwako .gt_last_summary_row {
+#mmgaiudtvk .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6653,7 +6778,7 @@ Table&nbsp;6.13
   border-bottom-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_grand_summary_row {
+#mmgaiudtvk .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6663,7 +6788,7 @@ Table&nbsp;6.13
   padding-right: 5px;
 }
 
-#dqqprmwako .gt_first_grand_summary_row {
+#mmgaiudtvk .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6673,7 +6798,7 @@ Table&nbsp;6.13
   border-top-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_last_grand_summary_row_top {
+#mmgaiudtvk .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6683,11 +6808,11 @@ Table&nbsp;6.13
   border-bottom-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_striped {
+#mmgaiudtvk .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#dqqprmwako .gt_table_body {
+#mmgaiudtvk .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6696,7 +6821,7 @@ Table&nbsp;6.13
   border-bottom-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_footnotes {
+#mmgaiudtvk .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6710,7 +6835,7 @@ Table&nbsp;6.13
   border-right-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_footnote {
+#mmgaiudtvk .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -6719,7 +6844,7 @@ Table&nbsp;6.13
   padding-right: 5px;
 }
 
-#dqqprmwako .gt_sourcenotes {
+#mmgaiudtvk .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6733,7 +6858,7 @@ Table&nbsp;6.13
   border-right-color: #D3D3D3;
 }
 
-#dqqprmwako .gt_sourcenote {
+#mmgaiudtvk .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -6741,72 +6866,72 @@ Table&nbsp;6.13
   padding-right: 5px;
 }
 
-#dqqprmwako .gt_left {
+#mmgaiudtvk .gt_left {
   text-align: left;
 }
 
-#dqqprmwako .gt_center {
+#mmgaiudtvk .gt_center {
   text-align: center;
 }
 
-#dqqprmwako .gt_right {
+#mmgaiudtvk .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#dqqprmwako .gt_font_normal {
+#mmgaiudtvk .gt_font_normal {
   font-weight: normal;
 }
 
-#dqqprmwako .gt_font_bold {
+#mmgaiudtvk .gt_font_bold {
   font-weight: bold;
 }
 
-#dqqprmwako .gt_font_italic {
+#mmgaiudtvk .gt_font_italic {
   font-style: italic;
 }
 
-#dqqprmwako .gt_super {
+#mmgaiudtvk .gt_super {
   font-size: 65%;
 }
 
-#dqqprmwako .gt_footnote_marks {
+#mmgaiudtvk .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#dqqprmwako .gt_asterisk {
+#mmgaiudtvk .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#dqqprmwako .gt_indent_1 {
+#mmgaiudtvk .gt_indent_1 {
   text-indent: 5px;
 }
 
-#dqqprmwako .gt_indent_2 {
+#mmgaiudtvk .gt_indent_2 {
   text-indent: 10px;
 }
 
-#dqqprmwako .gt_indent_3 {
+#mmgaiudtvk .gt_indent_3 {
   text-indent: 15px;
 }
 
-#dqqprmwako .gt_indent_4 {
+#mmgaiudtvk .gt_indent_4 {
   text-indent: 20px;
 }
 
-#dqqprmwako .gt_indent_5 {
+#mmgaiudtvk .gt_indent_5 {
   text-indent: 25px;
 }
 
-#dqqprmwako .katex-display {
+#mmgaiudtvk .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#dqqprmwako div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#mmgaiudtvk div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -6912,13 +7037,13 @@ Table&nbsp;6.13
 </section></section><section id="running-a-fit-in-the-background" class="level2"><h2 class="anchored" data-anchor-id="running-a-fit-in-the-background">Running a fit in the background</h2>
 <p>In an interactive session, <code>ferx_fit_async()</code> starts the fit in a background process and returns a <code>ferx_job</code> handle immediately. It accepts the same <code>model</code>, <code>data</code> and other arguments as <code>ferx_fit()</code>. When R is not interactive (scripts, knitr, and so this book), it runs a normal fit and returns the result:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_bg</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit_async</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_bg</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit_async</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">fit_bg</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "ferx_fit"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The handle functions therefore only make sense interactively. They are shown here without being run:</p>
 <div class="cell" data-layout-align="center" data-eval-reason="interactive only; in a non-interactive render ferx_fit_async() returns a finished fit, not a job handle">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit_async</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, tail_n <span class="op">=</span> <span class="fl">6</span>, poll_interval <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit_async</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, tail_n <span class="op">=</span> <span class="fl">6</span>, poll_interval <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span><span class="va">job</span>                          <span class="co"># print(): status of the background job</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">job</span><span class="op">)</span>                    <span class="co"># trace so far</span></span>
 <span><span class="va">job</span><span class="op">$</span><span class="va">trace_path</span>               <span class="co"># path of the trace file, once written</span></span>
@@ -6931,7 +7056,7 @@ Table&nbsp;6.13
 <li>
 <p><strong>Unused options.</strong> An option that does not apply to the chosen method is ignored and reported with a <code>general</code> warning, which lists the options the method does use. Here the model file’s <code>maxiter</code> is not used by SAEM:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_saem_base</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"saem"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_saem_base</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"saem"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = focei` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `saem`. The call-time value will be used.</span></span>
 <span><span class="va">w_saem</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_saem_base</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -6952,6 +7077,10 @@ Table&nbsp;6.13
 <ul>
 <li>
 <code>optimizer_health</code> (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.</li>
+<li>
+<code>stalled_at_init</code> (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. Arrives alongside <code>converged = TRUE</code>, which is why it is not a <code>convergence</code> warning (above).</li>
+<li>
+<code>ebe_start_dependent</code> (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise <code>inner_maxiter</code>, or <code>inner_restarts</code> for a suspected second mode (above).</li>
 <li>
 <code>gradient_fallback</code> (info): a slower fallback gradient or sampler path was taken.</li>
 <li>

@@ -739,7 +739,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt;  Model: two_cpt_oral_base        Dataset: two_cpt_oral_cov</span></span>
 <span><span class="co">#&gt;  Method: FOCEI | Gradient: FD | Subjects: 30 | Obs: 300</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   98 iterations   0.9s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   98 iterations   0.7s</span></span>
 <span><span class="co">#&gt;  OFV: -1185.4028    AIC: -1163.4028    BIC: -1122.6612</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -839,7 +839,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; EPS shrinkage: 27.9%</span></span>
 <span><span class="co">#&gt; DW: 2.91 [negative autocorrelation]</span></span>
 <span><span class="co">#&gt; lag-1 r: -0.532</span></span>
-<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 0.9s</span></span>
+<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 0.7s</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Warnings:</span></span>
 <span><span class="co">#&gt;   * Negative IWRES autocorrelation detected (Durbin-Watson = 2.91). Possible over-parameterization or misspecified error model. </span></span>
@@ -1290,24 +1290,29 @@ Table&nbsp;5.1: The same model from different starting values.
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  start converged       ofv worst_warning</span></span>
 <span><span class="co">#&gt; 1           model file      TRUE -1185.403       warning</span></span>
-<span><span class="co">#&gt; 2                  NCA      TRUE  6265.497      critical</span></span>
+<span><span class="co">#&gt; 2                  NCA      TRUE -1080.741      critical</span></span>
 <span><span class="co">#&gt; 3 NCA, gradient = auto      TRUE -1185.462       warning</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>
-<p>All three report <code>converged = TRUE</code> (with <code>gradient = "auto"</code>, ferx used the analytic gradient). The NCA start with finite differences, however, ended at an OFV about 7451 points higher than the other two, with a critical warning. Its warnings show why the result cannot be trusted:</p>
+<p>All three report <code>converged = TRUE</code> (with <code>gradient = "auto"</code>, ferx used the analytic gradient). The NCA start with finite differences, however, ended at an OFV about 105 points higher than the other two, with a critical warning. Its warnings show why the result cannot be trusted:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_nca</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">nca_warnings</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_nca</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">nca_warnings</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity               category</span></span>
 <span><span class="co">#&gt; 1  warning                general</span></span>
-<span><span class="co">#&gt; 2  warning covariance_regularized</span></span>
-<span><span class="co">#&gt; 3  warning          eps_shrinkage</span></span>
+<span><span class="co">#&gt; 2  warning    ebe_start_dependent</span></span>
+<span><span class="co">#&gt; 3  warning covariance_regularized</span></span>
 <span><span class="co">#&gt; 4  warning           inflated_rse</span></span>
 <span><span class="co">#&gt; 5  warning     dw_autocorrelation</span></span>
-<span><span class="co">#&gt; 6 critical       condition_number</span></span>
-<span><span class="co">#&gt; 7  warning          eta_normality</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 6  warning       high_correlation</span></span>
+<span><span class="co">#&gt; 7 critical       condition_number</span></span>
+<span><span class="co">#&gt; 8  warning          eta_normality</span></span>
+<span><span class="co"># The paragraph below names this category, so its absence has to fail the render.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="st">"ebe_start_dependent"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">nca_warnings</span><span class="op">$</span><span class="va">category</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The NCA-based absorption rate constant (<code>TVKA</code> = 0.237) is far from the estimate of the successful fits (1.247). Convergence only means the optimizer stopped. Always compare the OFV and read the warnings before accepting a fit.</p>
+<p><code>ebe_start_dependent</code> in that list is a second reason to distrust this one: the random effects it reports depend on where the inner loop started, so every per-subject diagnostic built on them (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>) inherits that dependence. <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a> shows what to change.</p>
 </section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
 <p><strong>A fit stopped by its iteration limit.</strong> <code>maxiter</code> limits the outer optimizer iterations. A fit that hits the limit is marked unconverged with a critical <code>convergence</code> warning. For the warfarin example with <code>method = "focei"</code>:</p>
 <div class="cell" data-layout-align="center">

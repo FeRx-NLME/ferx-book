@@ -597,6 +597,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><a href="#estimation-method-for-the-sde-model" id="toc-estimation-method-for-the-sde-model" class="nav-link" data-scroll-target="#estimation-method-for-the-sde-model">Estimation method for the SDE model</a></li>
   <li><a href="#a-neural-network-covariate-model" id="toc-a-neural-network-covariate-model" class="nav-link" data-scroll-target="#a-neural-network-covariate-model">A neural-network covariate model</a></li>
   <li><a href="#regularizing-the-network" id="toc-regularizing-the-network" class="nav-link" data-scroll-target="#regularizing-the-network">Regularizing the network</a></li>
+  <li><a href="#parameter-priors" id="toc-parameter-priors" class="nav-link" data-scroll-target="#parameter-priors">Parameter priors</a></li>
   </ul>
 </li>
   <li>
@@ -625,7 +626,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 </header><section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
-<p>Two model extensions in ferx are explicitly experimental: stochastic differential equations, which add random noise to the model states between observations, and neural networks for the covariate model, known as deep compartment models. Both fit from R with the bundled examples. This chapter runs them, compares them with their conventional counterparts, and shows what the fits report.</p>
+<p>Two model extensions in ferx are explicitly experimental: stochastic differential equations, which add random noise to the model states between observations, and neural networks for the covariate model, known as deep compartment models. Both fit from R with the bundled examples. This chapter runs them, compares them with their conventional counterparts, and shows what the fits report. It closes with parameter priors, which carry the same label without being a model extension.</p>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -636,7 +637,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>ferx-core labels <code>[diffusion]</code> (SDE) and <code>[covariate_nn]</code> (neural networks) <strong>experimental</strong>: validated on a small set of examples, with syntax that may still change. Every fit that uses them carries an <code>experimental</code> warning. See <a href="https://ferx-nlme.github.io/ferx-core/maturity.html">feature maturity</a>.</p>
+<p>ferx-core labels <code>[diffusion]</code> (SDE) and <code>[covariate_nn]</code> (neural networks) <strong>experimental</strong>: validated on a small set of examples, with syntax that may still change. Every fit that uses them carries an <code>experimental</code> warning. The <a href="https://ferx-nlme.github.io/ferx-core/maturity.html">feature maturity</a> table’s third experimental entry is the Vern7 ODE stepper (<a href="14-structural-models.html" class="quarto-xref"><span>Structural models: analytical and ODE</span></a>). Parameter priors, at the end of this chapter, are labelled experimental on their <a href="https://ferx-nlme.github.io/ferx-core/estimation/priors.html">own page</a> but are absent from that table, and a priored fit raises no <code>experimental</code> warning.</p>
 </div>
 </div>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
@@ -702,7 +703,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span>           durbin_watson <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_sde</span><span class="op">$</span><span class="va">dw_statistic</span>, <span class="va">fit_ode</span><span class="op">$</span><span class="va">dw_statistic</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              model       ofv durbin_watson</span></span>
 <span><span class="co">#&gt; 1 with [diffusion] -276.3050      2.569116</span></span>
-<span><span class="co">#&gt; 2          without -279.7188      2.609525</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2          without -280.0208      2.609533</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>These data show no system noise. System noise is meant for residuals that are correlated in time within a subject (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>); the IWRES autocorrelation here is negative, not positive, and the diffusion term does not change it.</p>
 </section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
@@ -741,23 +742,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Table&nbsp;24.1
 </figcaption><div aria-describedby="tbl-settings-nn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="ieywwwxbuj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ieywwwxbuj table {
+<div id="tsziexodsc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#tsziexodsc table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ieywwwxbuj thead, #ieywwwxbuj tbody, #ieywwwxbuj tfoot, #ieywwwxbuj tr, #ieywwwxbuj td, #ieywwwxbuj th {
+#tsziexodsc thead, #tsziexodsc tbody, #tsziexodsc tfoot, #tsziexodsc tr, #tsziexodsc td, #tsziexodsc th {
   border-style: none;
 }
 
-#ieywwwxbuj p {
+#tsziexodsc p {
   margin: 0;
   padding: 0;
 }
 
-#ieywwwxbuj .gt_table {
+#tsziexodsc .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -783,12 +784,12 @@ Table&nbsp;24.1
   border-left-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_caption {
+#tsziexodsc .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ieywwwxbuj .gt_title {
+#tsziexodsc .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -800,7 +801,7 @@ Table&nbsp;24.1
   border-bottom-width: 0;
 }
 
-#ieywwwxbuj .gt_subtitle {
+#tsziexodsc .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -812,7 +813,7 @@ Table&nbsp;24.1
   border-top-width: 0;
 }
 
-#ieywwwxbuj .gt_heading {
+#tsziexodsc .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -824,13 +825,13 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_bottom_border {
+#tsziexodsc .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_col_headings {
+#tsziexodsc .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -845,7 +846,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_col_heading {
+#tsziexodsc .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -865,7 +866,7 @@ Table&nbsp;24.1
   overflow-x: hidden;
 }
 
-#ieywwwxbuj .gt_column_spanner_outer {
+#tsziexodsc .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -877,15 +878,15 @@ Table&nbsp;24.1
   padding-right: 4px;
 }
 
-#ieywwwxbuj .gt_column_spanner_outer:first-child {
+#tsziexodsc .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ieywwwxbuj .gt_column_spanner_outer:last-child {
+#tsziexodsc .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ieywwwxbuj .gt_column_spanner {
+#tsziexodsc .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -897,11 +898,11 @@ Table&nbsp;24.1
   width: 100%;
 }
 
-#ieywwwxbuj .gt_spanner_row {
+#tsziexodsc .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ieywwwxbuj .gt_group_heading {
+#tsziexodsc .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -927,7 +928,7 @@ Table&nbsp;24.1
   text-align: left;
 }
 
-#ieywwwxbuj .gt_empty_group_heading {
+#tsziexodsc .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -942,15 +943,15 @@ Table&nbsp;24.1
   vertical-align: middle;
 }
 
-#ieywwwxbuj .gt_from_md > :first-child {
+#tsziexodsc .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ieywwwxbuj .gt_from_md > :last-child {
+#tsziexodsc .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ieywwwxbuj .gt_row {
+#tsziexodsc .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -969,7 +970,7 @@ Table&nbsp;24.1
   overflow-x: hidden;
 }
 
-#ieywwwxbuj .gt_stub {
+#tsziexodsc .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -982,7 +983,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#ieywwwxbuj .gt_stub_row_group {
+#tsziexodsc .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -996,15 +997,15 @@ Table&nbsp;24.1
   vertical-align: top;
 }
 
-#ieywwwxbuj .gt_row_group_first td {
+#tsziexodsc .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ieywwwxbuj .gt_row_group_first th {
+#tsziexodsc .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ieywwwxbuj .gt_summary_row {
+#tsziexodsc .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1014,16 +1015,16 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#ieywwwxbuj .gt_first_summary_row {
+#tsziexodsc .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_first_summary_row.thick {
+#tsziexodsc .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ieywwwxbuj .gt_last_summary_row {
+#tsziexodsc .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1033,7 +1034,7 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_grand_summary_row {
+#tsziexodsc .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1043,7 +1044,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#ieywwwxbuj .gt_first_grand_summary_row {
+#tsziexodsc .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1053,7 +1054,7 @@ Table&nbsp;24.1
   border-top-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_last_grand_summary_row_top {
+#tsziexodsc .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1063,11 +1064,11 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_striped {
+#tsziexodsc .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ieywwwxbuj .gt_table_body {
+#tsziexodsc .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1076,7 +1077,7 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_footnotes {
+#tsziexodsc .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1090,7 +1091,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_footnote {
+#tsziexodsc .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1099,7 +1100,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#ieywwwxbuj .gt_sourcenotes {
+#tsziexodsc .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1113,7 +1114,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#ieywwwxbuj .gt_sourcenote {
+#tsziexodsc .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1121,72 +1122,72 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#ieywwwxbuj .gt_left {
+#tsziexodsc .gt_left {
   text-align: left;
 }
 
-#ieywwwxbuj .gt_center {
+#tsziexodsc .gt_center {
   text-align: center;
 }
 
-#ieywwwxbuj .gt_right {
+#tsziexodsc .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ieywwwxbuj .gt_font_normal {
+#tsziexodsc .gt_font_normal {
   font-weight: normal;
 }
 
-#ieywwwxbuj .gt_font_bold {
+#tsziexodsc .gt_font_bold {
   font-weight: bold;
 }
 
-#ieywwwxbuj .gt_font_italic {
+#tsziexodsc .gt_font_italic {
   font-style: italic;
 }
 
-#ieywwwxbuj .gt_super {
+#tsziexodsc .gt_super {
   font-size: 65%;
 }
 
-#ieywwwxbuj .gt_footnote_marks {
+#tsziexodsc .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ieywwwxbuj .gt_asterisk {
+#tsziexodsc .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ieywwwxbuj .gt_indent_1 {
+#tsziexodsc .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ieywwwxbuj .gt_indent_2 {
+#tsziexodsc .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ieywwwxbuj .gt_indent_3 {
+#tsziexodsc .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ieywwwxbuj .gt_indent_4 {
+#tsziexodsc .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ieywwwxbuj .gt_indent_5 {
+#tsziexodsc .gt_indent_5 {
   text-indent: 25px;
 }
 
-#ieywwwxbuj .katex-display {
+#tsziexodsc .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#ieywwwxbuj div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#tsziexodsc div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1331,10 +1332,53 @@ Table&nbsp;24.2: Neural-network covariate model compared with the base and the e
 <p>The multiplier is the same for every subject to seven significant digits, across the whole range of weight and creatinine clearance: the fitted network learned no covariate dependence at all, and only rescaled the typical clearance.</p>
 </section><section id="regularizing-the-network" class="level3"><h3 class="anchored" data-anchor-id="regularizing-the-network">Regularizing the network</h3>
 <p><code>nn_l2</code> (weight decay) and <code>nn_smooth</code> (a penalty on curvature) keep a network from fitting spurious covariate effects. They are set in <code>[fit_options]</code> or with <code>settings</code>, apply to the FOCE-family methods, and the reported OFV stays the unpenalized one, so regularized and unregularized fits remain comparable (<a href="https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html#regularization-nn_l2-nn_smooth">regularization</a>). On this example a fit with <code>settings = list(nn_l2 = 0.01)</code> did not finish within 10 minutes, with either the model’s <code>lbfgs</code> or the <code>bobyqa</code> optimizer, against about half a minute without the penalty. It is therefore not run in this book.</p>
+</section><section id="parameter-priors" class="level3"><h3 class="anchored" data-anchor-id="parameter-priors">Parameter priors</h3>
+<p>A prior pins a parameter near a value you already believe and lets the data move it only as far as the data can pay for – penalized maximum likelihood, the mechanism behind updating a published model on local data. It is written inline on the <code>[parameters]</code> row it belongs to, as a central value and a relative standard error, both on the scale the parameter was declared on:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">warf</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<span><span class="va">priored</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">experimental_dir</span>, <span class="st">"warfarin_prior.ferx"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta TVCL(0.134, 0.001, 10.0)"</span>,</span>
+<span>               <span class="st">"theta TVCL(0.134, 0.001, 10.0) prior(0.25, rse = 10%)"</span>,</span>
+<span>               <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">priored</span><span class="op">)</span></span>
+<span><span class="va">fit_plain</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_prior</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">priored</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>no_prior <span class="op">=</span> <span class="va">fit_plain</span><span class="op">$</span><span class="va">theta</span><span class="op">[[</span><span class="st">"TVCL"</span><span class="op">]</span><span class="op">]</span>, with_prior <span class="op">=</span> <span class="va">fit_prior</span><span class="op">$</span><span class="va">theta</span><span class="op">[[</span><span class="st">"TVCL"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   no_prior with_prior </span></span>
+<span><span class="co">#&gt;  0.1329690  0.1627248</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>These data want a <code>TVCL</code> near 0.133; a prior centred at 0.25 with a 10% relative standard error pulls the estimate to 0.1627. The penalty is added to the objective, so <code>fit$ofv</code> is the penalized total and does not compare with the unpenalized fit. The information criteria are built from the data half alone, which is why <code>fit$aic</code> is not <code>fit$ofv + 2 * fit$n_parameters</code> once a prior is in the model:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>fit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"no prior"</span>, <span class="st">"prior on TVCL"</span><span class="op">)</span>,</span>
+<span>           ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_prior</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span>,</span>
+<span>           aic <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">aic</span>, <span class="va">fit_prior</span><span class="op">$</span><span class="va">aic</span><span class="op">)</span>,</span>
+<span>           ofv_plus_2k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">ofv</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">fit_plain</span><span class="op">$</span><span class="va">n_parameters</span>,</span>
+<span>                           <span class="va">fit_prior</span><span class="op">$</span><span class="va">ofv</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">fit_prior</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             fit       ofv       aic ofv_plus_2k</span></span>
+<span><span class="co">#&gt; 1      no prior -280.3640 -266.3640   -266.3640</span></span>
+<span><span class="co">#&gt; 2 prior on TVCL -250.4404 -254.9709   -236.4404</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The split of the objective into its data and prior halves is not on the R fit object at this build, so the size of the penalty has to be read off that difference. Compare priored models by a ΔOFV against a null twin, not against an unpenalized fit.</p>
+<p>A <code>[priors]</code> block takes the priors from a previous fit instead of writing them out by hand. It has exactly one key, <code>from_fit</code>, naming a saved fit. That path does not work from R at this build: the only fit file ferx-r writes is the <code>.fitrx</code> bundle of <code>ferx_save_fit()</code>, and the engine’s reader rejects it.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">saved</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">experimental_dir</span>, <span class="st">"warfarin.fitrx"</span><span class="op">)</span></span>
+<span><span class="fu">ferx_save_fit</span><span class="op">(</span><span class="va">fit_plain</span>, <span class="va">saved</span><span class="op">)</span></span>
+<span><span class="va">from_fit_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">experimental_dir</span>, <span class="st">"warfarin_from_fit.ferx"</span><span class="op">)</span></span>
+<span><span class="co"># normalizePath(): `//` starts a comment in a .ferx file, and R's tempdir()</span></span>
+<span><span class="co"># contains one on macOS, which would truncate the path before the engine saw it.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">""</span>, <span class="st">"[priors]"</span>,</span>
+<span>             <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"  from_fit = "</span>, <span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html">normalizePath</a></span><span class="op">(</span><span class="va">saved</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>           <span class="va">from_fit_model</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">from_fit_model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
+<span><span class="co">#&gt;   Error parsing model: [priors] from_fit: failed to read `/tmp/RtmpZZqYHl/experimental/warfarin.fitrx`: JSON error: invalid type: string "foce", expected a sequence at line 3 column 24</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The bundle stores every one-element array as a plain value, so the first such field the reader meets – here the method chain, which it expects as a list of methods – ends the import. That one field is not the whole of it: a chained fit writes a correct list and then stops at the next single-element field instead (<a href="https://github.com/FeRx-NLME/ferx-r/issues/379">ferx-r #379</a>). Until the writer and the format agree, write priors inline.</p>
 </section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
 <ul>
 <li>
 <strong>Experimental means validate yourself.</strong> Compare an SDE or network model with its conventional counterpart, as above, before relying on it.</li>
+<li>
+<strong><code>[priors] from_fit</code> does not work from R at this build.</strong> The <code>.fitrx</code> bundle <code>ferx_save_fit()</code> writes is rejected by the engine’s reader (<a href="https://github.com/FeRx-NLME/ferx-r/issues/379">ferx-r #379</a>). Write the prior inline on the <code>[parameters]</code> row instead, as above.</li>
 <li>
 <strong>Extra flexibility is not extra information.</strong> A diffusion variance or a network with many weights needs data that support it; check standard errors, the OFV change and information criteria.</li>
 <li>
@@ -1354,7 +1398,9 @@ Table&nbsp;24.2: Neural-network covariate model compared with the base and the e
 <code>[covariate_nn]</code> lets a neural network produce covariate multipliers; compare its OFV and AIC with an explicit covariate model.</li>
 <li>
 <code>nn_l2</code> and <code>nn_smooth</code> regularize a network.</li>
-<li>Both features are experimental: fits carry an <code>experimental</code> warning.</li>
+<li>An inline <code>prior(value, rse = …)</code> regularizes a parameter towards a value you already believe; the reported OFV is then penalized, and the <code>[priors]</code> block’s <code>from_fit</code> import is not reachable from R at this build.</li>
+<li>
+<code>[diffusion]</code> and <code>[covariate_nn]</code> fits carry an <code>experimental</code> warning.</li>
 </ul>
 <p>Next: <a href="25-reference.html" class="quarto-xref"><span>Function, option and example index</span></a> lists every function, option and example with the chapter that covers it.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
@@ -1368,9 +1414,9 @@ Table&nbsp;24.2: Neural-network covariate model compared with the base and the e
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_fit</code>
+<li>R help: <code>?ferx_fit</code>, <code>?ferx_save_fit</code>
 </li>
-<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/model-file/diffusion.html">SDE and diffusion</a>, <a href="https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html">covariate neural networks</a>, <a href="https://ferx-nlme.github.io/ferx-core/model-file/neural-networks.html">neural networks overview</a>
+<li>ferx-core: <a href="https://ferx-nlme.github.io/ferx-core/model-file/diffusion.html">SDE and diffusion</a>, <a href="https://ferx-nlme.github.io/ferx-core/model-file/covariate-nn.html">covariate neural networks</a>, <a href="https://ferx-nlme.github.io/ferx-core/model-file/neural-networks.html">neural networks overview</a>, <a href="https://ferx-nlme.github.io/ferx-core/estimation/priors.html">parameter priors</a>
 </li>
 </ul>
 </div>
