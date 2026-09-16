@@ -116,6 +116,31 @@ iters <- ferx_runlog_iters(fit, verbose = FALSE)
 cat(head(strsplit(iters, "\n")[[1]], 10), sep = "\n")
 ```
 
+### The gradient at the reported estimates
+
+The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes a central finite-difference gradient after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported:
+
+```{r}
+#| label: final-gradient
+fit_bobyqa <- ferx_fit(warf$model, warf$data, settings = list(optimizer = "bobyqa"), verbose = FALSE)
+data.frame(optimizer = fit_bobyqa$optimizer_label, converged = fit_bobyqa$converged,
+           n_gradient = length(fit_bobyqa$final_gradient))
+round(fit_bobyqa$final_gradient, 4)
+```
+
+That costs one gradient's worth of extra objective evaluations -- two per free parameter -- after the fit, and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
+
+```{r}
+#| label: report-final-gradient-off
+fit_no_grad <- ferx_fit(warf$model, warf$data,
+                        settings = list(optimizer = "bobyqa", report_final_gradient = FALSE),
+                        verbose = FALSE)
+c(same_ofv = isTRUE(all.equal(fit_no_grad$ofv, fit_bobyqa$ofv)),
+  gradient_is_null = is.null(fit_no_grad$final_gradient))
+```
+
+It stays `NULL` for the built-in BFGS and for SAEM, which report no gradient at all.
+
 ## Options that matter
 
 ### Arguments of `ferx_fit()`
@@ -172,7 +197,7 @@ book_settings_table(c("maxiter", "optimizer_trace", "checkpoint", "checkpoint_in
 #| label: tbl-settings-outer
 book_settings_table(c("optimizer", "outer_xtol", "outer_ftol", "stagnation_guard",
                       "reconverge_gradient_interval", "steihaug_max_iters",
-                      "global_search", "global_maxeval"))
+                      "report_final_gradient", "global_search", "global_maxeval"))
 ```
 
 **Inner loop (individual random effects)**
@@ -182,6 +207,88 @@ book_settings_table(c("optimizer", "outer_xtol", "outer_ftol", "stagnation_guard
 book_settings_table(c("inner_optimizer", "inner_maxiter", "inner_tol", "inner_restarts",
                       "ebe_warm_start", "max_unconverged_frac", "min_obs_for_convergence_check"))
 ```
+
+#### Two warnings about where a fit started
+
+Both loops can end up reporting a number that describes their starting point rather than the model, and each has its own warning.
+
+`stalled_at_init` says the outer loop never left its initial estimates: no free theta, omega or sigma moved. The OFV is then the objective *of the initial values*, and `converged` does not contradict it -- a fit that never moved has a flat trace to plateau on. The honest way to see it is the case where it is expected: refit a model whose `[parameters]` block has been rewritten with the estimates of a converged run.
+
+```{r}
+#| label: stalled-at-init
+fit_warf <- ferx_fit(warf$model, warf$data, verbose = FALSE)
+restart_dir <- book_tempdir("estimation-restart")
+
+# Rewrite the [parameters] block with a fit's own estimates. Each stopifnot() is
+# there so a renamed or reformatted declaration stops the render: without it a
+# missed match writes the file back unchanged, and the fit below would have
+# nothing to stall on while the text still claimed it did.
+rewrite_inits <- function(fit, path) {
+  est <- fit$estimates
+  lines <- readLines(warf$model)
+  for (nm in c("TVCL", "TVV", "TVKA")) {
+    i <- grep(paste0("theta ", nm, "\\("), lines)
+    stopifnot(length(i) == 1L)
+    lines[i] <- sub(paste0("theta ", nm, "\\(([^,]+),"),
+                    paste0("theta ", nm, "(", format(est[nm, "estimate"], digits = 12), ","),
+                    lines[i])
+  }
+  for (nm in c("ETA_CL", "ETA_V", "ETA_KA")) {
+    i <- grep(paste0("omega ", nm, "\\s*~"), lines)
+    stopifnot(length(i) == 1L)
+    lines[i] <- sub("~.*$", paste0("~ ", format(est[nm, "estimate"], digits = 12)), lines[i])
+  }
+  i <- grep("sigma PROP_ERR\\s*~", lines)
+  stopifnot(length(i) == 1L)
+  lines[i] <- sub("~.*$", paste0("~ ", format(est["PROP_ERR", "estimate"], digits = 12), " (sd)"),
+                  lines[i])
+  writeLines(lines, path)
+  lines
+}
+
+restart <- file.path(restart_dir, "warfarin_restart.ferx")
+grep("theta |omega |sigma ", rewrite_inits(fit_warf, restart), value = TRUE)
+fit_restart <- ferx_fit(restart, warf$data, settings = list(optimizer = "bobyqa"), verbose = FALSE)
+data.frame(ofv = fit_restart$ofv, converged = fit_restart$converged,
+           stalled_at_init = fit_restart$stalled_at_init)
+restart_warnings <- ferx_get_warnings(fit_restart, as_df = TRUE)
+restart_warnings[, c("severity", "category")]
+# The section is about this warning, so its absence has to fail the render
+# rather than quietly leave a shorter table under unchanged prose.
+stopifnot("stalled_at_init" %in% restart_warnings$category)
+```
+
+Here the start really was the optimum, so the warning is expected and harmless, and it arrives with `converged = TRUE` -- which is the point. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
+
+The seed has to come from a run that actually reached the optimum. The same rewrite applied to the `bobyqa` fit of the previous section does not stall, because that fit stopped short of the optimum (@tbl-optimizers) and the optimizer still has somewhere to go:
+
+```{r}
+#| label: stalled-at-init-seed
+from_bobyqa <- file.path(restart_dir, "warfarin_restart_bobyqa.ferx")
+invisible(rewrite_inits(fit_bobyqa, from_bobyqa))
+fit_from_bobyqa <- ferx_fit(from_bobyqa, warf$data, settings = list(optimizer = "bobyqa"),
+                            verbose = FALSE)
+data.frame(seed = c("converged fit", "bobyqa fit"),
+           seed_ofv = c(fit_warf$ofv, fit_bobyqa$ofv),
+           stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
+```
+
+`ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. Squeezing that budget produces it on warfarin:
+
+```{r}
+#| label: ebe-start-dependent
+fit_tight_inner <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 10),
+                            verbose = FALSE)
+data.frame(ofv = fit_tight_inner$ofv, converged = fit_tight_inner$converged)
+tight_warnings <- ferx_get_warnings(fit_tight_inner, as_df = TRUE)
+tight_warnings[, c("severity", "category")]
+stopifnot("ebe_start_dependent" %in% tight_warnings$category)
+# head(), not [1:4]: a shorter message would pad with NA and print it as output.
+cat(head(strwrap(tight_warnings$message[tight_warnings$category == "ebe_start_dependent"], 90), 4),
+    sep = "\n")
+```
+
+Two things are wrong at once here, and they have separate warnings: starving the inner loop also stops the outer one from converging, hence the critical `convergence` warning beside it. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the estimates are usable. What the warning limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare.
 
 Choosing the outer `optimizer` on warfarin:
 
@@ -428,6 +535,8 @@ ferx_stop(job)               # or: stop the job
 See the ferx-core [warnings page](https://ferx-nlme.github.io/ferx-core/warnings.html) for the full descriptions.
 
 - `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.
+- `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. Arrives alongside `converged = TRUE`, which is why it is not a `convergence` warning (above).
+- `ebe_start_dependent` (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise `inner_maxiter`, or `inner_restarts` for a suspected second mode (above).
 - `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
 - `mu_referencing` (warning or info): mu-referencing is missing or partial. Prefer forms like `CL = TVCL * exp(ETA_CL)` for SAEM and Bayes.
 - `optimizer_config` (warning or info): a note on, or failure of, the `global_search` configuration.

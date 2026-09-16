@@ -349,10 +349,15 @@ All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r 
 
 ```{r}
 #| label: nca-warnings
-ferx_get_warnings(fit_nca, as_df = TRUE)[, c("severity", "category")]
+nca_warnings <- ferx_get_warnings(fit_nca, as_df = TRUE)
+nca_warnings[, c("severity", "category")]
+# The paragraph below names this category, so its absence has to fail the render.
+stopifnot("ebe_start_dependent" %in% nca_warnings$category)
 ```
 
 The NCA-based absorption rate constant (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the estimate of the successful fits (`r round(ferx_coef(fit, "TVKA"), 3)`). Convergence only means the optimizer stopped. Always compare the OFV and read the warnings before accepting a fit.
+
+`ebe_start_dependent` in that list is a second reason to distrust this one: the random effects it reports depend on where the inner loop started, so every per-subject diagnostic built on them (@sec-diagnostics) inherits that dependence. @sec-estimation-methods shows what to change.
 
 ## Pitfalls
 

@@ -566,21 +566,68 @@ Per-chapter loop:
     an ordering for block omega elements.
   - Not reader-visible: no chapter prints `cov_matrix` or `cor_matrix` for a block model.
     Nothing to remove from the book when this is fixed; recheck the labels then.
-- **ferx-core bug (found writing the ch16 scales section), important:** `(sd)` on a
-  `block_omega`, `block_kappa` or `block_sigma` is silently ignored instead of rejected.
-  - `docs/model-file/parameters.qmd` at `8372248c` says the tag "is not accepted there
-    because the lower-triangle list mixes variances and covariances and a single tag
-    would be ambiguous". The pinned build neither rejects nor applies it:
-    `warfarin_block_omega` with `[0.07, 0.02, 0.02] (sd)` validates as `VALID` with zero
-    diagnostics, fits to the same OFV (−280.4858) as without the tag, and leaves
-    `init_as_sd` `FALSE` for every omega row.
-  - All three block forms behave the same way: `block_kappa` gives OFV 202.186055 tagged and
-    untagged, and `block_sigma` gives -280.751039 both ways with 9 parameters each.
-  - So a user who writes SDs in a block gets them read as variances with no warning.
-    Diagonal `omega`/`sigma` handle `(sd)` correctly — verified equivalent:
+- **Process finding (found at the `a961146` bump):** `_variables.yml` carried a stale
+  `ferx_core_sha` (`8372248c`) while its `ferx_r_sha` (`70f7fe3`) actually built ferx-core
+  `7abf4235`. `tools/inventory.R` reads ferx-core with `git show <ferx_core_sha>:…`, so the
+  whole feature inventory at that pin was taken against the wrong engine revision, and the
+  `[priors]` DSL block — present at `7abf4235`, absent at `8372248c` — was missing from
+  `features.csv` and therefore never had to be covered. Read the ferx-core SHA out of the
+  ferx-r commit's `src/rust/Cargo.lock` at every bump (D1); `src/rust/Cargo.toml` says
+  `branch = "main"` and reads as unpinned. `tools/features-pin.yml` guards a stale
+  `features.csv`, but nothing guards a `_variables.yml` whose two SHAs disagree.
+- ~~**ferx-core bug (found writing the ch16 scales section), important:** `(sd)` on a
+  `block_omega`, `block_kappa` or `block_sigma` is silently ignored instead of rejected.~~
+  **Fixed** by ferx-core [#1377](https://github.com/FeRx-NLME/ferx-core/issues/1377)
+  (PR [#1388](https://github.com/FeRx-NLME/ferx-core/pull/1388)), in the pin from ferx-core
+  `d66046e`.
+  - Was: `docs/model-file/parameters.qmd` said the tag "is not accepted there because the
+    lower-triangle list mixes variances and covariances and a single tag would be
+    ambiguous", but the build neither rejected nor applied it. `warfarin_block_omega` with
+    `[0.07, 0.02, 0.02] (sd)` validated as `VALID` with zero diagnostics, fitted to the same
+    OFV (−280.4858) as without the tag, and left `init_as_sd` `FALSE` for every omega row.
+    All three block forms behaved the same way: `block_kappa` gave OFV 202.186055 tagged and
+    untagged, and `block_sigma` gave −280.751039 both ways with 9 parameters each. So a user
+    who wrote SDs in a block got them read as variances with no warning.
+  - Verified at `d66046e`: the tagged file is `INVALID`, one diagnostic,
+    `code = E_BLOCK_VARIANCE_ONLY`, and `ferx_fit()` refuses it with the same message
+    (without the code — see the ch25 usability gap below). The repair rides along in
+    `suggestion` and depends on the tag: after `(sd)`, "square each SD into a variance and
+    write the off-diagonals as covariances"; after `(variance)` / `(var)`, "delete the tag:
+    the lower triangle is already variances and covariances, so the numbers do not change".
+    The `block` and `line` fields of the diagnostic are `NA` for this code, so ch16 prints
+    only `code` and `suggestion`.
+  - ch16's callout is gone. The section is ordinary content (`block-sd-rejected`,
+    `block-sd-fit`, `block-variance-tag`) showing the refusal, the code and both repairs.
+    The generalisation to `block_kappa` / `block_sigma` is stated as the engine's documented
+    rule with a link, not as a measured claim: only `block_omega` is exercised live, because
+    the chapter's `block_kappa` and `block_sigma` models are built further down the page.
+  - Still true and still shown: diagonal `omega`/`sigma` take `(sd)` correctly —
     `omega ETA_CL ~ 0.07` and `~ 0.2645751 (sd)` both give OFV −280.364, as do
     `sigma PROP_ERR ~ 0.01 (sd)` and `~ 0.0001`.
-  - ch16 shows it in a callout; remove that after the pin bump that fixes it.
+- **ferx-r / ferx-core bug (found covering `[priors]` at the `a961146` bump), important:**
+  the `.fitrx` bundle `ferx_save_fit()` writes cannot be read back by ferx-core, so
+  `[priors] from_fit` — the model-updating import, and the block's only key — is unreachable
+  from R.
+  - `fit.json` inside the bundle records `"method_chain": "foce"`, a string;
+    `src/io/fitrx.rs` declares `method_chain: Vec<String>`. Fitting a model with
+    `[priors] from_fit = <that file>` stops at parse time with
+    ``failed to read … JSON error: invalid type: string "foce", expected a sequence at line 3
+    column 24``. `ferx_model_validate()` reports it as `E_PARSE`.
+  - `ferx_save_fit()`'s Rd says the schema "is shared with the ferx-core Rust crate", so this
+    is drift, not a documented limitation. `ferx_load_fit()` round-trips inside R, which is
+    why it went unnoticed; only the Rust reader rejects the file.
+  - Not a book blocker: the inline `prior(value, rse = …)` form on a `[parameters]` row does
+    work from R, and ch24 shows it. ch24 also shows the `from_fit` refusal as the reason the
+    block is not demonstrated further. Remove that paragraph once the schemas agree.
+  - Also missing from the R fit object: the `ofv_data` / `ofv_prior` split ferx-core's priors
+    page documents. ch24 infers the penalty from `aic - 2k` instead, and says so.
+  - **Found alongside, and a trap for any reader on macOS:** `//` starts a comment in a
+    `.ferx` file, and R's `tempdir()` contains one (`/var/folders/…/T//Rtmp…`). A path value
+    written into a block from `book_tempdir()` is therefore truncated at the `//` before the
+    engine sees it, and the error names the truncated path rather than the real problem —
+    ``[priors] from_fit: `/var/folders/…/T`: unsupported fit file extension `` instead of the
+    schema mismatch above. ch24 wraps the path in `normalizePath()` with a comment saying
+    why. Worth an upstream look: a path is the one place `//` is likely to appear innocently.
 - ~~**ferx-r bug (found reviewing PR #26), important:** a `logit_probability` theta is
   back-transformed twice.~~ **Fixed** by [ferx-r #372](https://github.com/FeRx-NLME/ferx-r/pull/372),
   in the pin from `c08673d`. The ch05 callout and its `logit-probability-bug` chunk are
@@ -750,7 +797,7 @@ Per-chapter loop:
 
 | # | Decision | Outcome |
 |---|---|---|
-| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` (ferx-core `8372248c`); re-pin to next release tag when cut |
+| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` -> `70f7fe3` (ferx-core `7abf4235`) -> `a961146` (ferx-core `d66046e`); re-pin to next release tag when cut. Read the ferx-core SHA out of that ferx-r commit's `src/rust/Cargo.lock`; never infer it from `src/rust/Cargo.toml`, which says `branch = "main"` and reads as unpinned. `_variables.yml` carried a stale `ferx_core_sha` (`8372248c`) through the `70f7fe3` bump for exactly that reason |
 | D2 | xpose | **Decided:** mention only; `ferx_xpose` eval-reason |
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |

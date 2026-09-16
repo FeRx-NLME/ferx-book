@@ -192,6 +192,7 @@ Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The cha
 | `outer_xtol` | float | `1e-4` | Relative **step** tolerance: how far the optimizer's step must shrink before it declares success. | @sec-estimation-methods |
 | `parameter_scaling` | `auto`, `none`, `abs`, `rescale2` | `auto` | Parameter-scaling strategy for the outer optimizer (supersedes `scale_params` when non-`none`). | @sec-variability |
 | `reconverge_gradient_interval` | integer ≥ 0 | `0` | How often to re-solve each subject's inner EBE loop during the population gradient instead of holding the EBEs (η̂) and FOCE Hessian fixed. | @sec-estimation-methods |
+| `report_final_gradient` | `true`, `false` | `true` | Compute a finite-difference gradient at the reported estimates when the optimizer supplied none of its own, and report it as `final_gradient` with `final_gradient_source = "finite_difference"`. | @sec-estimation-methods |
 | `scale_params` |  | `false` | Legacy boolean alias for `parameter_scaling = abs`. Divide each packed (log/Cholesky) coordinate by its initial magnitude before passing it to the optimizer. | @sec-variability |
 | `seed` |  | `12345` | RNG seed for reproducibility | @sec-estimation-methods |
 | `sir_df` |  | `5.0` | Degrees of freedom for the Student-t proposal; higher values approach a normal proposal | @sec-uncertainty |
@@ -240,6 +241,7 @@ The blocks a `.ferx` model file can contain. *Required* and *Purpose* are the fe
 | `[odes]` | If ODE | ODE right-hand-side equations | @sec-structural-models | [ode-models](https://ferx-nlme.github.io/ferx-core/model-file/ode-models.html) |
 | `[output]` | No | Extra sdtab output columns | @sec-tables-figures | [output](https://ferx-nlme.github.io/ferx-core/model-file/output.html) |
 | `[parameters]` | Yes | Define theta, omega, and sigma parameters | @sec-model-files | [parameters](https://ferx-nlme.github.io/ferx-core/model-file/parameters.html) |
+| `[priors]` |  |  | @sec-experimental | [priors](https://ferx-nlme.github.io/ferx-core/estimation/priors.html) |
 | `[scaling]` | No | Compartment scaling / observation readouts | @sec-structural-models | [scaling](https://ferx-nlme.github.io/ferx-core/model-file/scaling.html) |
 | `[simulation]` | No | Define a simulation trial design | @sec-simulation | [simulation](https://ferx-nlme.github.io/ferx-core/model-file/simulation.html) |
 | `[structural_model]` | Yes | Specify the PK model (analytical or ODE) | @sec-model-files | [structural-model](https://ferx-nlme.github.io/ferx-core/model-file/structural-model.html) |
@@ -364,12 +366,13 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 | `boundary_estimate` | Warning | One or more THETA **estimates** are pinned to an optimizer bound. | @sec-diagnostics |
 | `cancelled` | Info | Run cancelled by the user. | @sec-estimation-methods |
 | `condition_number` | Critical | Ill-conditioned covariance / high condition number. | @sec-diagnostics |
-| `convergence` | Critical | Optimizer did not converge. | @sec-first-fit |
+| `convergence` | Critical | Optimizer did not converge, **or** (`W_NONFINITE_OBJECTIVE`) the objective at the final estimates is `NaN`, infinite, or the clamped divergence sentinel. | @sec-first-fit |
 | `covariance_failed` | Critical | Covariance step failed — no standard errors. | @sec-uncertainty |
 | `covariance_regularized` | Warning | Covariance step succeeded but was regularized / degraded. | @sec-uncertainty |
 | `covariance_step` | Info | Covariance-step informational note (e.g. evaluation cost). | @sec-uncertainty |
 | `data_quality` | Warning | Dataset issue (missing DV, ADDL/II, non-positive DV, …). | @sec-data |
 | `dw_autocorrelation` | Warning | IWRES autocorrelation (Durbin–Watson out of range). | @sec-diagnostics |
+| `ebe_start_dependent` | Warning | (`W_EBE_START_DEPENDENT`) The empirical Bayes estimates at the final parameters depend on where the inner loop starts: re-solving them cold scores materially worse than the EBEs the optimizer minimised against, or returns a non-finite objective (#833). | @sec-estimation-methods |
 | `eps_shrinkage` | Warning | Residual (EPS) shrinkage high / negative. | @sec-diagnostics |
 | `eta_normality` | Warning | ETA departs from normality. | @sec-diagnostics |
 | `eta_shrinkage` | Warning | One or more ETA shrinkages exceed ~30%. | @sec-diagnostics |
@@ -391,17 +394,19 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 | `parameter_at_runaway_guard` | Critical / Warning | A free coordinate is pinned to a hidden optimizer guard (implicit THETA cap, OMEGA / SIGMA rail), with a `verdict` the side does not decide. | @sec-estimation-methods |
 | `simulation` | Warning | A simulated subject was handled specially — a degenerate hazard draw (censored, no event) or an over-large recurrent-event stream (skipped/truncated). | @sec-time-to-event |
 | `sir` | Warning | SIR failed or was requested without a covariance. | @sec-uncertainty |
+| `stalled_at_init` | Warning | The fit never left its initial estimates — **no** free THETA, OMEGA or SIGMA coordinate moved, so the reported objective is the objective *of the initial values* and carries no information about the model. | @sec-estimation-methods |
 | `threads` | Info | Thread-count efficiency note. | @sec-estimation-methods |
 | `vi_bad_basin` | Critical | VI's final ELBO tightness check found that a flat objective is an unusable variational bound, not convergence. | @sec-estimation-methods |
 
 ## Check report codes
 
-Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises the same message but without the code, so validate the model when you want the identifier rather than the prose. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 48 codes below (30 errors, 18 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.
+Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises the same message but without the code, so validate the model when you want the identifier rather than the prose. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 49 codes below (31 errors, 18 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.
 
 | Code | Severity | Meaning |
 |---|---|---|
 | `E_BLOCK_FEATURE_DISABLED` | error | A recognised block needs a cargo feature this binary was not built with — `[event_model]` / `[binary_model]` need `--features survival`, `[markov_model]` needs `--features markov`. |
 | `E_BLOCK_INSTANCE_NAME` | error | A `[block NAME]` instance name is given for a block that takes none (e.g. `[fit_options DOSE]`), or omitted for one that requires it (`[covariate_nn NAME]`). |
+| `E_BLOCK_VARIANCE_ONLY` | error | A scale tag (`(sd)`, `(variance)` or `(var)`) on a `block_omega`, `block_sigma` or `block_kappa` declaration. |
 | `E_DATA` | error | The `--data` file could not be read or parsed. |
 | `E_DEPRECATED_BLOCK` | error | A `[block]` that *was* ferx syntax and is no longer read — currently `[initial_values]`, whose contents moved inline into `[parameters]`. |
 | `E_DERIVED_NAME_CONFLICT` | error | A `[derived]` name clashes with a built-in sdtab column, theta, eta, or individual-parameter name. |
