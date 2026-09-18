@@ -554,9 +554,12 @@ Per-chapter loop:
   Verified: the FREM model prints all seven etas, and `warfarin_block_omega` prints
   `ETA_CL, ETA_V, ETA_KA`. Sourcing the pre-fit structure from the engine instead of
   the R parser is [ferx-r #363](https://github.com/FeRx-NLME/ferx-r/issues/363), open.
-- **ferx-r bug (found reviewing the 078e489 bump, ch16):** `fit$cov_matrix` labels its
+- ~~**ferx-r bug (found reviewing the 078e489 bump, ch16):** `fit$cov_matrix` labels its
   omega rows and columns row-major while ordering their values column-major, so for a
-  3×3 block two labels are wrong (positions 3 and 4 swap).
+  3×3 block two labels are wrong (positions 3 and 4 swap).~~ **Fixed** by
+  [ferx-r #378](https://github.com/FeRx-NLME/ferx-r/pull/378) (closing
+  [#367](https://github.com/FeRx-NLME/ferx-r/issues/367)), in the pin from `6e2f701`.
+  Nothing in the book changed: no chapter prints these labels for a block model.
   - On `warfarin_block_omega` the two zero-variance diagonal entries — the held
     covariances — are labelled `ETA_V,ETA_V` and `ETA_KA,ETA_V`. But `ETA_V,ETA_V` is
     estimated: `se_omega` gives it 0.004298, and in the full-block twin its `cov_matrix`
@@ -619,8 +622,13 @@ Per-chapter loop:
   - Not a book blocker: the inline `prior(value, rse = …)` form on a `[parameters]` row does
     work from R, and ch24 shows it. ch24 also shows the `from_fit` refusal as the reason the
     block is not demonstrated further. Remove that paragraph once the schemas agree.
-  - Also missing from the R fit object: the `ofv_data` / `ofv_prior` split ferx-core's priors
-    page documents. ch24 infers the penalty from `aic - 2k` instead, and says so.
+  - ~~Also missing from the R fit object: the `ofv_data` / `ofv_prior` split ferx-core's priors
+    page documents. ch24 infers the penalty from `aic - 2k` instead, and says so.~~ **Fixed** by
+    [ferx-r #383](https://github.com/FeRx-NLME/ferx-r/pull/383) (closing
+    [#366](https://github.com/FeRx-NLME/ferx-r/issues/366)), in the pin from `6e2f701`. ch24's
+    `prior-objective` chunk now prints `ofv_data` and `ofv_prior`, and `prior-print` and
+    `prior-summary` show the annotated OFV line and `fit$prior_summary`; the "at this build"
+    sentence is gone. The `from_fit` refusal (ferx-r #379) is still open and still shown.
   - **Found alongside, and a trap for any reader on macOS:** `//` starts a comment in a
     `.ferx` file, and R's `tempdir()` contains one (`/var/folders/…/T//Rtmp…`). A path value
     written into a block from `book_tempdir()` is therefore truncated at the `//` before the
@@ -651,20 +659,62 @@ Per-chapter loop:
     by under 0.001). At the `c08673d` bump the ch05 callout and `logit-probability-bug`
     chunk came out; the ch05 table row, `logit-probability-check` and the ch16 clause stayed,
     since they describe the transform, not the defect.
-- **ferx-r usability gap (found reviewing the ch25 lookup tables):** a refused `ferx_fit()`
-  drops the stable check-report code. `ferx_model_validate()` returns `E_UNKNOWN_BLOCK` in
+- ~~**ferx-r usability gap (found reviewing the ch25 lookup tables):** a refused `ferx_fit()`
+  drops the stable check-report code.~~ **Fixed** by ferx-r #378, in the pin from `6e2f701`:
+  the refusal is a `ferx_engine_error` condition carrying `code`, `block`, `line` and
+  `suggestion`, with the code appended to the message. Verified on `[not_a_block]`
+  (`E_UNKNOWN_BLOCK`, line 30); the ch25 sentence in `tools/make-reference.R` now says so.
+  Was: `ferx_model_validate()` returns `E_UNKNOWN_BLOCK` in
   `$diagnostics$code`, but fitting the same file raises only
   ``Error parsing model: Unknown block `[not_a_block]` (line 30). ...`` — same prose, no
   identifier. The stable code is therefore unavailable on the path most users hit first, and
   a script cannot branch on it without validating separately. ch25 says so; if the fit error
   gains the code, drop that sentence.
+- **Book prose defect (found at the `6e2f701` bump, ch24):** the SDE section said system noise
+  "is meant for residuals that are correlated in time within a subject". The engine at the pin
+  (`src/ode/ekf.rs`) applies the Kalman update to the state covariance only; the state mean
+  stays the ODE solution, so a `[diffusion]` fit is the ODE prediction with an inflated
+  observation variance and cannot follow a subject's drift
+  ([ferx-core #1285](https://github.com/FeRx-NLME/ferx-core/issues/1285)). The sentence is
+  replaced by what the term does and does not do. ferx-core's own docs at `d66046e` still
+  carry the old recommendation (fix open as ferx-core #1426; the website twin is
+  [ferx-nlme.github.io #30](https://github.com/FeRx-NLME/ferx-nlme.github.io/issues/30), whose
+  "ferx-book is clean" line missed this sentence). When #1426 is in the pin, link its
+  "What the filter does not do" section from ch24.
+- **Process finding (found at the `6e2f701` bump): prose that quotes a result can be true on
+  one platform only.** Diffing the local macOS render against the live Linux render, with all
+  numbers masked, showed two cases with the same engine on both sides:
+  - ch05 `maxiter-stop` used `maxiter = 5`, which sits on the edge for warfarin FOCEI: macOS
+    stops unconverged, the live site printed `converged TRUE` with no `convergence` warning
+    under a sentence saying the fit is unconverged. Now `maxiter = 2` (unconverged up to 5
+    locally, converged from 8) with a `stopifnot()` guard.
+  - ch09 `ferx_globalsearch()`: the sentence "the runner-up has the better OFV and still ranks
+    second" holds on the live Linux render (winner `CL-WT=none`) and not on macOS (winner
+    `CL-WT=power`, which also has the best OFV). Left as is because CI is what publishes;
+    a robust version needs the point made from the table by code, not by a fixed sentence.
+  - The `W_DESIGN_DV` / `W_NO_DOSES` warnings `ferx_predict()` now passes on (ferx-r #283) are
+    explained in ch11 and referenced from ch15 (muffled in the nine-model loop), ch18 and ch20.
+  - `tools/make-reference.R` now escapes `<placeholder>` text in table cells; `model <name>` in
+    the `model_name` row had been swallowed as an HTML tag.
+- **ferx-r usability gap (found in the adversarial review of the `6e2f701` bump):** on a refused
+  model `ferx_predict()` and `ferx_simulate()` print the engine's parse error and return
+  `NULL` without raising an R error; only `ferx_fit()` raises `ferx_engine_error`. Verified on
+  `[not_a_block]`. A script that checks for an error therefore continues with `NULL`. The ch25
+  sentence names only `ferx_fit()` and stays correct. Filed as
+  [ferx-r #385](https://github.com/FeRx-NLME/ferx-r/issues/385); widen the ch25 sentence when it lands.
+- **ferx-core doc imprecision (same review):** `maxiter` is documented as "maximum outer loop
+  iterations", but the engine sets an evaluation budget, `maxiter * (n + 1)` on the NLopt gradient path
+  and a separate value for BOBYQA (`outer_optimizer.rs`, `set_maxeval`); `n_iterations` was 8, 16, 24 for `maxiter` 1, 2, 3 on
+  warfarin (n = 7). ch05 now says so. Filed as
+  [ferx-core #1430](https://github.com/FeRx-NLME/ferx-core/issues/1430).
 - **ferx-core doc gap (found building the ch25 lookup tables):** `docs/data-format.qmd` at
   `8372248c` never mentions `ADDL`, `FREMTYPE` or `TENTRY`, although the engine reads all
   three and the book fits `warfarin_addl`, FREM datasets and `TENTRY` delayed entry. They
   are the only three of the book's 14 data columns with no type and no description in the
   generated reference table, which leaves those cells blank by design rather than by
   invention. Adding them to the data-format table upstream fills the table automatically.
-- **ferx-r doc bug (found reviewing the 078e489 bump):** `?ferx_fit` says `model_name` is
+- **ferx-r doc bug (found reviewing the 078e489 bump; fixed by ferx-r #378 in the pin from
+  `6e2f701` — the name is declared by a bare top-level `model <name>` line):** `?ferx_fit` says `model_name` is
   the "Model name from the `.ferx` file", falling back to the basename "when the file
   declares no name" — but no model-file syntax for declaring a name exists. ferx-core's
   block list is closed-world with no `[model]`/`[metadata]` block, and
@@ -797,7 +847,7 @@ Per-chapter loop:
 
 | # | Decision | Outcome |
 |---|---|---|
-| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` -> `70f7fe3` (ferx-core `7abf4235`) -> `a961146` (ferx-core `d66046e`); re-pin to next release tag when cut. Read the ferx-core SHA out of that ferx-r commit's `src/rust/Cargo.lock`; never infer it from `src/rust/Cargo.toml`, which says `branch = "main"` and reads as unpinned. `_variables.yml` carried a stale `ferx_core_sha` (`8372248c`) through the `70f7fe3` bump for exactly that reason |
+| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` -> `70f7fe3` (ferx-core `7abf4235`) -> `a961146` (ferx-core `d66046e`) -> `6e2f701` (ferx-core `d66046e`, unchanged); re-pin to next release tag when cut. Read the ferx-core SHA out of that ferx-r commit's `src/rust/Cargo.lock`; never infer it from `src/rust/Cargo.toml`, which says `branch = "main"` and reads as unpinned. `_variables.yml` carried a stale `ferx_core_sha` (`8372248c`) through the `70f7fe3` bump for exactly that reason |
 | D2 | xpose | **Decided:** mention only; `ferx_xpose` eval-reason |
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |
