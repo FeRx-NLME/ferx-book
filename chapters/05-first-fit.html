@@ -1046,7 +1046,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <p><code>fit$eta_log_transformed</code> is a narrower flag and not a substitute: it is <code>TRUE</code> only for the <code>TVCL * exp(ETA_CL)</code> form, so an eta written <code>exp(TVCL + ETA_CL)</code> is log-normal and still reads <code>FALSE</code>.</p>
 <p>Nothing here converts for you. An omega row is a variance, so a between-subject CV% is yours to compute (<a href="12-tables-figures.html" class="quarto-xref"><span>Tables and figures</span></a>), and a log-transform-both-sides model reports an <code>additive</code> sigma on the log scale rather than in the units of <code>DV</code> (<a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a>).</p>
 </section><section id="the-fit-object" class="level3"><h3 class="anchored" data-anchor-id="the-fit-object">The fit object</h3>
-<p>A fit is a named list with 109 elements. These are the ones you will use most:</p>
+<p>A fit is a named list with 112 elements. These are the ones you will use most:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -1314,23 +1314,30 @@ Table&nbsp;5.1: The same model from different starting values.
 <p>The NCA-based absorption rate constant (<code>TVKA</code> = 0.237) is far from the estimate of the successful fits (1.247). Convergence only means the optimizer stopped. Always compare the OFV and read the warnings before accepting a fit.</p>
 <p><code>ebe_start_dependent</code> in that list is a second reason to distrust this one: the random effects it reports depend on where the inner loop started, so every per-subject diagnostic built on them (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>) inherits that dependence. <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a> shows what to change.</p>
 </section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
-<p><strong>A fit stopped by its iteration limit.</strong> <code>maxiter</code> limits the outer optimizer iterations. A fit that hits the limit is marked unconverged with a critical <code>convergence</code> warning. For the warfarin example with <code>method = "focei"</code>:</p>
+<p><strong>A fit stopped by its iteration limit.</strong> <code>maxiter</code> caps the outer optimizer. The engine turns it into a budget of objective evaluations, whose size depends on the optimizer, which is why the warning below speaks of an evaluation budget. A fit that hits the limit is marked unconverged with a critical <code>convergence</code> warning. For the warfarin example with <code>method = "focei"</code>:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">warf</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
 <span><span class="va">fit_short</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>,</span>
-<span>                      settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>maxiter <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                      settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>maxiter <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = foce` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `focei`. The call-time value will be used.</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `maxiter = 300` but ferx_fit() argument</span></span>
-<span><span class="co">#&gt; overrides it with `5`. The call-time value will be used.</span></span>
+<span><span class="co">#&gt; overrides it with `2`. The call-time value will be used.</span></span>
+<span><span class="co"># The sentence above says this fit is unconverged, so a converged one has to fail the render.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="op">!</span><span class="va">fit_short</span><span class="op">$</span><span class="va">converged</span><span class="op">)</span></span>
 <span><span class="va">fit_short</span><span class="op">$</span><span class="va">converged</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
 <span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_short</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span>, <span class="st">"message"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity           category</span></span>
-<span><span class="co">#&gt; 1  warning dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 1  warning            general</span></span>
+<span><span class="co">#&gt; 2 critical        convergence</span></span>
+<span><span class="co">#&gt; 3  warning dw_autocorrelation</span></span>
 <span><span class="co">#&gt;                                                                                                                       message</span></span>
-<span><span class="co">#&gt; 1 Negative IWRES autocorrelation detected (Durbin-Watson = 2.61). Possible over-parameterization or misspecified error model.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1           Outer optimization hit the evaluation budget (maxiter = 2) before converging; increase maxiter for a tighter fit.</span></span>
+<span><span class="co">#&gt; 2                                                                                         Outer optimization did not converge</span></span>
+<span><span class="co">#&gt; 3 Negative IWRES autocorrelation detected (Durbin-Watson = 2.61). Possible over-parameterization or misspecified error model.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p>For the same reason <code>fit_short$n_iterations</code> is 16 here, not 2.</p>
 <p><strong>Other points</strong>:</p>
 <ul>
 <li>

@@ -795,11 +795,11 @@ Table&nbsp;14.1: Analytical models and their ODE twins (covariance step skipped)
 <span><span class="va">twin_results</span></span>
 <span><span class="co">#&gt;              model ofv_analytical    ofv_ode seconds_analytical seconds_ode</span></span>
 <span><span class="co">#&gt; 1       one_cpt_iv      -317.1068  -317.1068                0.0         0.4</span></span>
-<span><span class="co">#&gt; 2       two_cpt_iv      -858.5245  -858.5245                0.1         4.2</span></span>
-<span><span class="co">#&gt; 3     three_cpt_iv      -712.6165  -712.6165                0.2        11.6</span></span>
-<span><span class="co">#&gt; 4         warfarin      -280.3640  -280.3640                0.2         3.7</span></span>
-<span><span class="co">#&gt; 5   three_cpt_oral      -584.1844  -584.1844                0.5        18.7</span></span>
-<span><span class="co">#&gt; 6 two_cpt_oral_cov     -1199.3264 -1199.3264                0.5        38.6</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2       two_cpt_iv      -858.5245  -858.5245                0.1         4.1</span></span>
+<span><span class="co">#&gt; 3     three_cpt_iv      -712.6165  -712.6165                0.2        10.5</span></span>
+<span><span class="co">#&gt; 4         warfarin      -280.3640  -280.3640                0.2         3.5</span></span>
+<span><span class="co">#&gt; 5   three_cpt_oral      -584.1844  -584.1844                0.5        17.3</span></span>
+<span><span class="co">#&gt; 6 two_cpt_oral_cov     -1199.3264 -1199.3264                0.5        36.4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>
@@ -962,7 +962,7 @@ Table&nbsp;14.2: One-compartment warfarin model with different <code>[scaling]</
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu">set_scaling</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">w_ode</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">"  obs_scale = V * (1 + TIME)"</span><span class="op">)</span>, <span class="va">time_in_divisor</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">time_in_divisor</span>, <span class="va">w_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
-<span><span class="co">#&gt;   Error parsing model: [scaling] obs_scale: `V * (1 + TIME)` references the `TIME` built-in (or its `T` alias), but `obs_scale` is a subject-static divisor — it is evaluated once per subject at t = 0 and applied to every observation, so `TIME` would always read 0. Write the time-dependent readout as Form C instead (`y = &lt;expr&gt;`, or `y[CMT=N] = &lt;expr&gt;`), where `TIME` resolves to each observation's own time. See issue #1028.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   Error parsing model: [scaling] obs_scale: `V * (1 + TIME)` references the `TIME` built-in (or its `T` alias), but `obs_scale` is a subject-static divisor — it is evaluated once per subject at t = 0 and applied to every observation, so `TIME` would always read 0. Write the time-dependent readout as Form C instead (`y = &lt;expr&gt;`, or `y[CMT=N] = &lt;expr&gt;`), where `TIME` resolves to each observation's own time. See issue #1028. [E_PARSE]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>As form C, the same idea is accepted. Here the readout subtracts a term that grows with time from the concentration, which the predictions confirm:</p>
 <div class="cell" data-layout-align="center">
@@ -1016,7 +1016,7 @@ Table&nbsp;14.2: One-compartment warfarin model with different <code>[scaling]</
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu">set_scaling</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">"  y = central / V * F"</span><span class="op">)</span>, <span class="va">f_twice</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">f_twice</span>, <span class="va">bio</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
-<span><span class="co">#&gt;   Error parsing model: [scaling]: `F` is this model's bioavailability — the engine already scales each dose amount by it — but it is also read in [scaling], so the value is applied twice: once at the dose, once where you read it (#1004). If `F` is meant to be bioavailability, remove it from [scaling]; if it is meant to be an ordinary parameter, remove the `f=F` mapping from the `pk(...)` call — the mapping, not the name, is what makes `F` a dose attribute.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   Error parsing model: [scaling]: `F` is this model's bioavailability — the engine already scales each dose amount by it — but it is also read in [scaling], so the value is applied twice: once at the dose, once where you read it (#1004). If `F` is meant to be bioavailability, remove it from [scaling]; if it is meant to be an ordinary parameter, remove the `f=F` mapping from the `pk(...)` call — the mapping, not the name, is what makes `F` a dose attribute. [E_DOSE_ATTR_DOUBLE_USE]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>A name in <code>[scaling]</code> that is not a state, parameter or built-in is a covariate, and so a required data column. A typo therefore stops the fit instead of reading 0:</p>
 <div class="cell" data-layout-align="center">
@@ -1025,7 +1025,7 @@ Table&nbsp;14.2: One-compartment warfarin model with different <code>[scaling]</
 <span>                       <span class="va">ode_line</span>, <span class="st">"ode(states=[depot, central])"</span><span class="op">)</span>, <span class="va">typo</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">typo</span>, <span class="va">w_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
-<span><span class="co">#&gt;   Fit error: Model references covariate(s) not found in data (case-sensitive): VV. Available covariate columns: (none).</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   Fit error: Model references covariate(s) not found in data (case-sensitive): VV. Available covariate columns: (none). [E_MISSING_COVARIATE]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The ferx-core <a href="https://ferx-nlme.github.io/ferx-core/model-file/scaling.html">scaling</a> page documents the rest: <code><a href="https://rdrr.io/r/base/Extremes.html">min()</a></code>, <code><a href="https://rdrr.io/r/base/Extremes.html">max()</a></code> and <code>clamp()</code>, conditional readouts, a data column named <code>T</code>, and gradients.</p>
 </section></section><section id="sec-derived-states" class="level2"><h2 class="anchored" data-anchor-id="sec-derived-states">Model states in <code>[derived]</code>
@@ -1199,23 +1199,23 @@ Table&nbsp;14.2: One-compartment warfarin model with different <code>[scaling]</
 Table&nbsp;14.3
 </figcaption><div aria-describedby="tbl-settings-ode-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="fsfraxjjnh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#fsfraxjjnh table {
+<div id="prgkipxwyi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#prgkipxwyi table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#fsfraxjjnh thead, #fsfraxjjnh tbody, #fsfraxjjnh tfoot, #fsfraxjjnh tr, #fsfraxjjnh td, #fsfraxjjnh th {
+#prgkipxwyi thead, #prgkipxwyi tbody, #prgkipxwyi tfoot, #prgkipxwyi tr, #prgkipxwyi td, #prgkipxwyi th {
   border-style: none;
 }
 
-#fsfraxjjnh p {
+#prgkipxwyi p {
   margin: 0;
   padding: 0;
 }
 
-#fsfraxjjnh .gt_table {
+#prgkipxwyi .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1241,12 +1241,12 @@ Table&nbsp;14.3
   border-left-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_caption {
+#prgkipxwyi .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#fsfraxjjnh .gt_title {
+#prgkipxwyi .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1258,7 +1258,7 @@ Table&nbsp;14.3
   border-bottom-width: 0;
 }
 
-#fsfraxjjnh .gt_subtitle {
+#prgkipxwyi .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1270,7 +1270,7 @@ Table&nbsp;14.3
   border-top-width: 0;
 }
 
-#fsfraxjjnh .gt_heading {
+#prgkipxwyi .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1282,13 +1282,13 @@ Table&nbsp;14.3
   border-right-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_bottom_border {
+#prgkipxwyi .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_col_headings {
+#prgkipxwyi .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1303,7 +1303,7 @@ Table&nbsp;14.3
   border-right-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_col_heading {
+#prgkipxwyi .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1323,7 +1323,7 @@ Table&nbsp;14.3
   overflow-x: hidden;
 }
 
-#fsfraxjjnh .gt_column_spanner_outer {
+#prgkipxwyi .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1335,15 +1335,15 @@ Table&nbsp;14.3
   padding-right: 4px;
 }
 
-#fsfraxjjnh .gt_column_spanner_outer:first-child {
+#prgkipxwyi .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#fsfraxjjnh .gt_column_spanner_outer:last-child {
+#prgkipxwyi .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#fsfraxjjnh .gt_column_spanner {
+#prgkipxwyi .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1355,11 +1355,11 @@ Table&nbsp;14.3
   width: 100%;
 }
 
-#fsfraxjjnh .gt_spanner_row {
+#prgkipxwyi .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#fsfraxjjnh .gt_group_heading {
+#prgkipxwyi .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1385,7 +1385,7 @@ Table&nbsp;14.3
   text-align: left;
 }
 
-#fsfraxjjnh .gt_empty_group_heading {
+#prgkipxwyi .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1400,15 +1400,15 @@ Table&nbsp;14.3
   vertical-align: middle;
 }
 
-#fsfraxjjnh .gt_from_md > :first-child {
+#prgkipxwyi .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#fsfraxjjnh .gt_from_md > :last-child {
+#prgkipxwyi .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#fsfraxjjnh .gt_row {
+#prgkipxwyi .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1427,7 +1427,7 @@ Table&nbsp;14.3
   overflow-x: hidden;
 }
 
-#fsfraxjjnh .gt_stub {
+#prgkipxwyi .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1440,7 +1440,7 @@ Table&nbsp;14.3
   padding-right: 5px;
 }
 
-#fsfraxjjnh .gt_stub_row_group {
+#prgkipxwyi .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1454,15 +1454,15 @@ Table&nbsp;14.3
   vertical-align: top;
 }
 
-#fsfraxjjnh .gt_row_group_first td {
+#prgkipxwyi .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#fsfraxjjnh .gt_row_group_first th {
+#prgkipxwyi .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#fsfraxjjnh .gt_summary_row {
+#prgkipxwyi .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1472,16 +1472,16 @@ Table&nbsp;14.3
   padding-right: 5px;
 }
 
-#fsfraxjjnh .gt_first_summary_row {
+#prgkipxwyi .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_first_summary_row.thick {
+#prgkipxwyi .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#fsfraxjjnh .gt_last_summary_row {
+#prgkipxwyi .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1491,7 +1491,7 @@ Table&nbsp;14.3
   border-bottom-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_grand_summary_row {
+#prgkipxwyi .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1501,7 +1501,7 @@ Table&nbsp;14.3
   padding-right: 5px;
 }
 
-#fsfraxjjnh .gt_first_grand_summary_row {
+#prgkipxwyi .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1511,7 +1511,7 @@ Table&nbsp;14.3
   border-top-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_last_grand_summary_row_top {
+#prgkipxwyi .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1521,11 +1521,11 @@ Table&nbsp;14.3
   border-bottom-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_striped {
+#prgkipxwyi .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#fsfraxjjnh .gt_table_body {
+#prgkipxwyi .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1534,7 +1534,7 @@ Table&nbsp;14.3
   border-bottom-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_footnotes {
+#prgkipxwyi .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1548,7 +1548,7 @@ Table&nbsp;14.3
   border-right-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_footnote {
+#prgkipxwyi .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1557,7 +1557,7 @@ Table&nbsp;14.3
   padding-right: 5px;
 }
 
-#fsfraxjjnh .gt_sourcenotes {
+#prgkipxwyi .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1571,7 +1571,7 @@ Table&nbsp;14.3
   border-right-color: #D3D3D3;
 }
 
-#fsfraxjjnh .gt_sourcenote {
+#prgkipxwyi .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1579,72 +1579,72 @@ Table&nbsp;14.3
   padding-right: 5px;
 }
 
-#fsfraxjjnh .gt_left {
+#prgkipxwyi .gt_left {
   text-align: left;
 }
 
-#fsfraxjjnh .gt_center {
+#prgkipxwyi .gt_center {
   text-align: center;
 }
 
-#fsfraxjjnh .gt_right {
+#prgkipxwyi .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#fsfraxjjnh .gt_font_normal {
+#prgkipxwyi .gt_font_normal {
   font-weight: normal;
 }
 
-#fsfraxjjnh .gt_font_bold {
+#prgkipxwyi .gt_font_bold {
   font-weight: bold;
 }
 
-#fsfraxjjnh .gt_font_italic {
+#prgkipxwyi .gt_font_italic {
   font-style: italic;
 }
 
-#fsfraxjjnh .gt_super {
+#prgkipxwyi .gt_super {
   font-size: 65%;
 }
 
-#fsfraxjjnh .gt_footnote_marks {
+#prgkipxwyi .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#fsfraxjjnh .gt_asterisk {
+#prgkipxwyi .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#fsfraxjjnh .gt_indent_1 {
+#prgkipxwyi .gt_indent_1 {
   text-indent: 5px;
 }
 
-#fsfraxjjnh .gt_indent_2 {
+#prgkipxwyi .gt_indent_2 {
   text-indent: 10px;
 }
 
-#fsfraxjjnh .gt_indent_3 {
+#prgkipxwyi .gt_indent_3 {
   text-indent: 15px;
 }
 
-#fsfraxjjnh .gt_indent_4 {
+#prgkipxwyi .gt_indent_4 {
   text-indent: 20px;
 }
 
-#fsfraxjjnh .gt_indent_5 {
+#prgkipxwyi .gt_indent_5 {
   text-indent: 25px;
 }
 
-#fsfraxjjnh .katex-display {
+#prgkipxwyi .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#fsfraxjjnh div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#prgkipxwyi div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1729,7 +1729,7 @@ Table&nbsp;14.4
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   tolerance   ode_reltol     ode_abstol       ofv seconds</span></span>
 <span><span class="co">#&gt; 1   default 0.0001000000 0.000001000000 -280.3589     1.2</span></span>
-<span><span class="co">#&gt; 2     tight 0.0000000001 0.000000000001 -280.3640     3.8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2     tight 0.0000000001 0.000000000001 -280.3640     3.6</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>
@@ -1749,11 +1749,11 @@ Table&nbsp;14.5
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     ode_method converged       ofv seconds</span></span>
 <span><span class="co">#&gt; 1         auto      TRUE -280.3639     1.6</span></span>
-<span><span class="co">#&gt; 2         rk45      TRUE -280.3640    17.5</span></span>
-<span><span class="co">#&gt; 3        vern7      TRUE -280.3640     7.3</span></span>
-<span><span class="co">#&gt; 4 rosenbrock23      TRUE -280.3587     6.6</span></span>
-<span><span class="co">#&gt; 5       rodas4      TRUE -280.3640     3.3</span></span>
-<span><span class="co">#&gt; 6      rodas5p      TRUE -280.3640     2.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2         rk45      TRUE -280.3640    17.2</span></span>
+<span><span class="co">#&gt; 3        vern7      TRUE -280.3640     7.1</span></span>
+<span><span class="co">#&gt; 4 rosenbrock23      TRUE -280.3587     6.3</span></span>
+<span><span class="co">#&gt; 5       rodas4      TRUE -280.3640     3.0</span></span>
+<span><span class="co">#&gt; 6      rodas5p      TRUE -280.3640     1.8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>

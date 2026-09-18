@@ -692,7 +692,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span><span class="op">(</span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_sde</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">message</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span>, <span class="fl">150</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Stochastic differential equations ([diffusion] / Extended Kalman Filter) are an EXPERIMENTAL feature: validated only on a small set of toy examples, w"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The diffusion variance is small with a relative standard error above 100%. Removing the <code>[diffusion]</code> block gives the ordinary ODE model, which reaches a similar OFV:</p>
+<p>The diffusion variance is small, and the covariance step does not support it: the relative standard error of every parameter, not only of <code>DIFF_CENTRAL</code>, runs to thousands of percent (the smallest is 1,637%), and the fit carries <code>covariance_regularized</code>, <code>inflated_rse</code>, <code>high_correlation</code> and a critical <code>condition_number</code> warning. The standard errors of this fit are not usable. Removing the <code>[diffusion]</code> block gives the ordinary ODE model, which reaches a similar OFV:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sde_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">sde</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
 <span><span class="va">start</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"^\\[diffusion\\]"</span>, <span class="va">sde_lines</span><span class="op">)</span></span>
@@ -705,7 +705,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; 1 with [diffusion] -276.3050      2.569116</span></span>
 <span><span class="co">#&gt; 2          without -280.0208      2.609533</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>These data show no system noise. System noise is meant for residuals that are correlated in time within a subject (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>); the IWRES autocorrelation here is negative, not positive, and the diffusion term does not change it.</p>
+<p>These data show no system noise. A <code>[diffusion]</code> term is not a remedy for residuals that are correlated in time within a subject (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>). The filter propagates the state <em>variance</em> and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject’s observations, so the term cannot follow a drift. Here the Durbin-Watson statistic barely moves, 2.57 with the block and 2.61 without. What <code>[diffusion]</code> does estimate is how much unexplained variance builds up between observations.</p>
 </section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
 <table class="caption-top table">
 <colgroup>
@@ -742,23 +742,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Table&nbsp;24.1
 </figcaption><div aria-describedby="tbl-settings-nn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="tsziexodsc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#tsziexodsc table {
+<div id="btibalttzh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#btibalttzh table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#tsziexodsc thead, #tsziexodsc tbody, #tsziexodsc tfoot, #tsziexodsc tr, #tsziexodsc td, #tsziexodsc th {
+#btibalttzh thead, #btibalttzh tbody, #btibalttzh tfoot, #btibalttzh tr, #btibalttzh td, #btibalttzh th {
   border-style: none;
 }
 
-#tsziexodsc p {
+#btibalttzh p {
   margin: 0;
   padding: 0;
 }
 
-#tsziexodsc .gt_table {
+#btibalttzh .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -784,12 +784,12 @@ Table&nbsp;24.1
   border-left-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_caption {
+#btibalttzh .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#tsziexodsc .gt_title {
+#btibalttzh .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -801,7 +801,7 @@ Table&nbsp;24.1
   border-bottom-width: 0;
 }
 
-#tsziexodsc .gt_subtitle {
+#btibalttzh .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -813,7 +813,7 @@ Table&nbsp;24.1
   border-top-width: 0;
 }
 
-#tsziexodsc .gt_heading {
+#btibalttzh .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -825,13 +825,13 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_bottom_border {
+#btibalttzh .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_col_headings {
+#btibalttzh .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -846,7 +846,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_col_heading {
+#btibalttzh .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -866,7 +866,7 @@ Table&nbsp;24.1
   overflow-x: hidden;
 }
 
-#tsziexodsc .gt_column_spanner_outer {
+#btibalttzh .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -878,15 +878,15 @@ Table&nbsp;24.1
   padding-right: 4px;
 }
 
-#tsziexodsc .gt_column_spanner_outer:first-child {
+#btibalttzh .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#tsziexodsc .gt_column_spanner_outer:last-child {
+#btibalttzh .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#tsziexodsc .gt_column_spanner {
+#btibalttzh .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -898,11 +898,11 @@ Table&nbsp;24.1
   width: 100%;
 }
 
-#tsziexodsc .gt_spanner_row {
+#btibalttzh .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#tsziexodsc .gt_group_heading {
+#btibalttzh .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -928,7 +928,7 @@ Table&nbsp;24.1
   text-align: left;
 }
 
-#tsziexodsc .gt_empty_group_heading {
+#btibalttzh .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -943,15 +943,15 @@ Table&nbsp;24.1
   vertical-align: middle;
 }
 
-#tsziexodsc .gt_from_md > :first-child {
+#btibalttzh .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#tsziexodsc .gt_from_md > :last-child {
+#btibalttzh .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#tsziexodsc .gt_row {
+#btibalttzh .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -970,7 +970,7 @@ Table&nbsp;24.1
   overflow-x: hidden;
 }
 
-#tsziexodsc .gt_stub {
+#btibalttzh .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -983,7 +983,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#tsziexodsc .gt_stub_row_group {
+#btibalttzh .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -997,15 +997,15 @@ Table&nbsp;24.1
   vertical-align: top;
 }
 
-#tsziexodsc .gt_row_group_first td {
+#btibalttzh .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#tsziexodsc .gt_row_group_first th {
+#btibalttzh .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#tsziexodsc .gt_summary_row {
+#btibalttzh .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1015,16 +1015,16 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#tsziexodsc .gt_first_summary_row {
+#btibalttzh .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_first_summary_row.thick {
+#btibalttzh .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#tsziexodsc .gt_last_summary_row {
+#btibalttzh .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1034,7 +1034,7 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_grand_summary_row {
+#btibalttzh .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1044,7 +1044,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#tsziexodsc .gt_first_grand_summary_row {
+#btibalttzh .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1054,7 +1054,7 @@ Table&nbsp;24.1
   border-top-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_last_grand_summary_row_top {
+#btibalttzh .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1064,11 +1064,11 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_striped {
+#btibalttzh .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#tsziexodsc .gt_table_body {
+#btibalttzh .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1077,7 +1077,7 @@ Table&nbsp;24.1
   border-bottom-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_footnotes {
+#btibalttzh .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1091,7 +1091,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_footnote {
+#btibalttzh .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1100,7 +1100,7 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#tsziexodsc .gt_sourcenotes {
+#btibalttzh .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1114,7 +1114,7 @@ Table&nbsp;24.1
   border-right-color: #D3D3D3;
 }
 
-#tsziexodsc .gt_sourcenote {
+#btibalttzh .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1122,72 +1122,72 @@ Table&nbsp;24.1
   padding-right: 5px;
 }
 
-#tsziexodsc .gt_left {
+#btibalttzh .gt_left {
   text-align: left;
 }
 
-#tsziexodsc .gt_center {
+#btibalttzh .gt_center {
   text-align: center;
 }
 
-#tsziexodsc .gt_right {
+#btibalttzh .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#tsziexodsc .gt_font_normal {
+#btibalttzh .gt_font_normal {
   font-weight: normal;
 }
 
-#tsziexodsc .gt_font_bold {
+#btibalttzh .gt_font_bold {
   font-weight: bold;
 }
 
-#tsziexodsc .gt_font_italic {
+#btibalttzh .gt_font_italic {
   font-style: italic;
 }
 
-#tsziexodsc .gt_super {
+#btibalttzh .gt_super {
   font-size: 65%;
 }
 
-#tsziexodsc .gt_footnote_marks {
+#btibalttzh .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#tsziexodsc .gt_asterisk {
+#btibalttzh .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#tsziexodsc .gt_indent_1 {
+#btibalttzh .gt_indent_1 {
   text-indent: 5px;
 }
 
-#tsziexodsc .gt_indent_2 {
+#btibalttzh .gt_indent_2 {
   text-indent: 10px;
 }
 
-#tsziexodsc .gt_indent_3 {
+#btibalttzh .gt_indent_3 {
   text-indent: 15px;
 }
 
-#tsziexodsc .gt_indent_4 {
+#btibalttzh .gt_indent_4 {
   text-indent: 20px;
 }
 
-#tsziexodsc .gt_indent_5 {
+#btibalttzh .gt_indent_5 {
   text-indent: 25px;
 }
 
-#tsziexodsc .katex-display {
+#btibalttzh .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#tsziexodsc div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#btibalttzh div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1241,9 +1241,9 @@ Table&nbsp;24.1
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">ferx_simulate</span><span class="op">(</span><span class="va">sde</span><span class="op">$</span><span class="va">model</span>, <span class="va">sde</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_sde</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   DRAW SIM ID TIME CMT    IPRED   DV_SIM OBSERVED</span></span>
-<span><span class="co">#&gt; 1    1   1  1  0.5   1 3.516303 3.494879      NaN</span></span>
-<span><span class="co">#&gt; 2    1   1  1  1.0   1 5.968058 5.914088      NaN</span></span>
-<span><span class="co">#&gt; 3    1   1  1  2.0   1 8.832364 9.000727      NaN</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1    1   1  1  0.5   1 3.516303 3.494879       NA</span></span>
+<span><span class="co">#&gt; 2    1   1  1  1.0   1 5.968058 5.914088       NA</span></span>
+<span><span class="co">#&gt; 3    1   1  1  2.0   1 8.832364 9.000727       NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="a-neural-network-covariate-model" class="level3"><h3 class="anchored" data-anchor-id="a-neural-network-covariate-model">A neural-network covariate model</h3>
 <p><code>warfarin_dcm</code> replaces the covariate expressions of <code>two_cpt_oral_cov</code> with a network. The network reads <code>WT</code> and <code>CRCL</code> and outputs a multiplier for each PK parameter. The multipliers start at 1, so the thetas carry the typical values:</p>
@@ -1346,21 +1346,40 @@ Table&nbsp;24.2: Neural-network covariate model compared with the base and the e
 <span><span class="co">#&gt;   no_prior with_prior </span></span>
 <span><span class="co">#&gt;  0.1329690  0.1627248</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>These data want a <code>TVCL</code> near 0.133; a prior centred at 0.25 with a 10% relative standard error pulls the estimate to 0.1627. The penalty is added to the objective, so <code>fit$ofv</code> is the penalized total and does not compare with the unpenalized fit. The information criteria are built from the data half alone, which is why <code>fit$aic</code> is not <code>fit$ofv + 2 * fit$n_parameters</code> once a prior is in the model:</p>
+<p>These data want a <code>TVCL</code> near 0.133; a prior centred at 0.25 with a 10% relative standard error pulls the estimate to 0.1627. The penalty is added to the objective, so <code>fit$ofv</code> is the penalized total and does not compare with the unpenalized fit. The fit reports the two halves separately: <code>fit$ofv_data</code> is the data’s share, <code>fit$ofv_prior</code> the penalty, and they sum to <code>fit$ofv</code>. The information criteria are built from the data half alone, so <code>fit$aic</code> is <code>fit$ofv_data + 2 * fit$n_parameters</code> and not <code>fit$ofv + 2 * fit$n_parameters</code> once a prior is in the model:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>fit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"no prior"</span>, <span class="st">"prior on TVCL"</span><span class="op">)</span>,</span>
 <span>           ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_prior</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span>,</span>
+<span>           ofv_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">ofv_data</span>, <span class="va">fit_prior</span><span class="op">$</span><span class="va">ofv_data</span><span class="op">)</span>,</span>
+<span>           ofv_prior <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">ofv_prior</span>, <span class="va">fit_prior</span><span class="op">$</span><span class="va">ofv_prior</span><span class="op">)</span>,</span>
 <span>           aic <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">aic</span>, <span class="va">fit_prior</span><span class="op">$</span><span class="va">aic</span><span class="op">)</span>,</span>
-<span>           ofv_plus_2k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">ofv</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">fit_plain</span><span class="op">$</span><span class="va">n_parameters</span>,</span>
-<span>                           <span class="va">fit_prior</span><span class="op">$</span><span class="va">ofv</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">fit_prior</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;             fit       ofv       aic ofv_plus_2k</span></span>
-<span><span class="co">#&gt; 1      no prior -280.3640 -266.3640   -266.3640</span></span>
-<span><span class="co">#&gt; 2 prior on TVCL -250.4404 -254.9709   -236.4404</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>           ofv_data_plus_2k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">ofv_data</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">fit_plain</span><span class="op">$</span><span class="va">n_parameters</span>,</span>
+<span>                                <span class="va">fit_prior</span><span class="op">$</span><span class="va">ofv_data</span> <span class="op">+</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">fit_prior</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             fit       ofv  ofv_data ofv_prior       aic ofv_data_plus_2k</span></span>
+<span><span class="co">#&gt; 1      no prior -280.3640 -280.3640    0.0000 -266.3640        -266.3640</span></span>
+<span><span class="co">#&gt; 2 prior on TVCL -250.4404 -268.9709   18.5305 -254.9709        -254.9709</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The split of the objective into its data and prior halves is not on the R fit object at this build, so the size of the penalty has to be read off that difference. Compare priored models by a ΔOFV against a null twin, not against an unpenalized fit.</p>
+<p>A fit without a prior has <code>ofv_data</code> equal to <code>ofv</code> and an <code>ofv_prior</code> of 0. <code>ofv_data</code> is the number to set beside the unpenalized fit: -268.97 against -280.36, so pulling <code>TVCL</code> towards 0.25 costs the data 11.39 points of objective, on top of a penalty of 18.53. <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> state the split under the OFV line:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"OFV|prior"</span>, <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit_prior</span><span class="op">)</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] " Model: warfarin_prior           Dataset: warfarin"                                             </span></span>
+<span><span class="co">#&gt; [2] " OFV: -250.4404    AIC: -254.9709    BIC: -236.0676"                                            </span></span>
+<span><span class="co">#&gt; [3] "  (prior on 1 parameter: data OFV -268.9709 + prior penalty 18.5305; AIC/BIC use the data half)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>fit$prior_summary</code> has one row per priored parameter, and is <code>NULL</code> for a model without one:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_prior</span><span class="op">$</span><span class="va">prior_summary</span></span>
+<span><span class="co">#&gt;   name prior_value  estimate shift_in_prior_sds penalty    family</span></span>
+<span><span class="co">#&gt; 1 TVCL        0.25 0.1627248          -4.304707 18.5305 lognormal</span></span>
+<span><span class="co">#&gt;   prior_lower_95 prior_upper_95</span></span>
+<span><span class="co">#&gt; 1       0.205604      0.3039824</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">fit_plain</span><span class="op">$</span><span class="va">prior_summary</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>shift_in_prior_sds</code> is how far the estimate landed from the prior’s centre, with its sign, in prior standard deviations on the scale the prior is evaluated on. For a <code>lognormal</code> family that is the log scale, so it is not <code>(estimate - 0.25) / 0.025</code>. <code>penalty</code> is its square, and that parameter’s share of <code>ofv_prior</code>. <code>prior_lower_95</code> and <code>prior_upper_95</code> are the interval that <code>rse = 10%</code> implies for the <code>family</code> the engine chose (<code>?ferx_fit</code> describes every column). An estimate 4.3 prior standard deviations from the centre, outside that interval, says the prior and these data disagree. The standard errors of a priored fit are those of the penalized objective. What the prior cost in total is <code>fit_prior$ofv - fit_plain$ofv</code>, 29.92 points: the data’s share plus the penalty.</p>
 <p>A <code>[priors]</code> block takes the priors from a previous fit instead of writing them out by hand. It has exactly one key, <code>from_fit</code>, naming a saved fit. That path does not work from R at this build: the only fit file ferx-r writes is the <code>.fitrx</code> bundle of <code>ferx_save_fit()</code>, and the engine’s reader rejects it.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">saved</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">experimental_dir</span>, <span class="st">"warfarin.fitrx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">saved</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">experimental_dir</span>, <span class="st">"warfarin.fitrx"</span><span class="op">)</span></span>
 <span><span class="fu">ferx_save_fit</span><span class="op">(</span><span class="va">fit_plain</span>, <span class="va">saved</span><span class="op">)</span></span>
 <span><span class="va">from_fit_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">experimental_dir</span>, <span class="st">"warfarin_from_fit.ferx"</span><span class="op">)</span></span>
 <span><span class="co"># normalizePath(): `//` starts a comment in a .ferx file, and R's tempdir()</span></span>
@@ -1370,7 +1389,7 @@ Table&nbsp;24.2: Neural-network covariate model compared with the base and the e
 <span>           <span class="va">from_fit_model</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">from_fit_model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
-<span><span class="co">#&gt;   Error parsing model: [priors] from_fit: failed to read `/tmp/RtmpZZqYHl/experimental/warfarin.fitrx`: JSON error: invalid type: string "foce", expected a sequence at line 3 column 24</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   Error parsing model: [priors] from_fit: failed to read `/tmp/RtmpsHlA2J/experimental/warfarin.fitrx`: JSON error: invalid type: string "foce", expected a sequence at line 3 column 24 [E_PARSE]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The bundle stores every one-element array as a plain value, so the first such field the reader meets – here the method chain, which it expects as a list of methods – ends the import. That one field is not the whole of it: a chained fit writes a correct list and then stops at the next single-element field instead (<a href="https://github.com/FeRx-NLME/ferx-r/issues/379">ferx-r #379</a>). Until the writer and the format agree, write priors inline.</p>
 </section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
