@@ -103,7 +103,7 @@ md_table <- function(df) {
   # A placeholder such as `model <name>` would be read as an HTML tag and vanish
   # from the page. Escape it outside code spans; real tags (<sub>) are kept.
   placeholders <- function(x) {
-    pattern <- "`[^`]*`|<(?!/?(sub|sup|br)>)[A-Za-z_]+>"
+    pattern <- "`[^`]*`|<(?!/?(sub|sup|br)>)[A-Za-z_][A-Za-z0-9_-]*>"
     m <- gregexpr(pattern, x, perl = TRUE)
     regmatches(x, m) <- lapply(regmatches(x, m), function(hit) {
       tag <- !startsWith(hit, "`")
@@ -354,7 +354,7 @@ err_tab <- data.frame(Code = code(core_key(err_rows[, "Code"])), Severity = err_
 err_tab <- err_tab[nzchar(err_tab$Meaning), ]
 n_err <- sum(startsWith(err_tab$Code, "`E_"))
 out <- c(out, "## Check report codes", "",
-  sprintf("Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises a condition of class `ferx_engine_error` that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion`, and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The %d codes below (%d errors, %d warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.",
+  sprintf("Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises a condition of class `ferx_engine_error` that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The %d codes below (%d errors, %d warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.",
           nrow(err_tab), n_err, nrow(err_tab) - n_err), "",
   md_table(err_tab))
 

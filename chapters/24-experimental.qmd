@@ -51,7 +51,7 @@ ferx_get_warnings(fit_sde, as_df = TRUE)[, c("severity", "category")]
 substr(ferx_get_warnings(fit_sde, as_df = TRUE)$message[1], 1, 150)
 ```
 
-The diffusion variance is small with a relative standard error above 100%. Removing the `[diffusion]` block gives the ordinary ODE model, which reaches a similar OFV:
+The diffusion variance is small, and the covariance step does not support it: the relative standard error of every parameter, not only of `DIFF_CENTRAL`, runs to thousands of percent (the smallest is `r format(round(min(fit_sde$estimates$rse_pct)), big.mark = ",")`%), and the fit carries `covariance_regularized`, `inflated_rse`, `high_correlation` and a critical `condition_number` warning. The standard errors of this fit are not usable. Removing the `[diffusion]` block gives the ordinary ODE model, which reaches a similar OFV:
 
 ```{r}
 #| label: sde-vs-ode
@@ -64,7 +64,7 @@ data.frame(model = c("with [diffusion]", "without"), ofv = c(fit_sde$ofv, fit_od
            durbin_watson = c(fit_sde$dw_statistic, fit_ode$dw_statistic))
 ```
 
-These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic barely moves, `r round(fit_sde$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance accumulates along the trajectory.
+These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic barely moves, `r round(fit_sde$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations.
 
 ## Options that matter
 
@@ -194,7 +194,7 @@ data.frame(fit = c("no prior", "prior on TVCL"),
                                 fit_prior$ofv_data + 2 * fit_prior$n_parameters))
 ```
 
-A fit without a prior has `ofv_data` equal to `ofv` and an `ofv_prior` of 0. `ofv_data` is the number to set beside the unpenalized fit: `r round(fit_prior$ofv_data, 2)` against `r round(fit_plain$ofv, 2)`, so holding `TVCL` near 0.25 costs the data `r round(fit_prior$ofv_data - fit_plain$ofv, 2)` points of objective, on top of a penalty of `r round(fit_prior$ofv_prior, 2)`. `print()` and `summary()` state the split under the OFV line:
+A fit without a prior has `ofv_data` equal to `ofv` and an `ofv_prior` of 0. `ofv_data` is the number to set beside the unpenalized fit: `r round(fit_prior$ofv_data, 2)` against `r round(fit_plain$ofv, 2)`, so pulling `TVCL` towards 0.25 costs the data `r round(fit_prior$ofv_data - fit_plain$ofv, 2)` points of objective, on top of a penalty of `r round(fit_prior$ofv_prior, 2)`. `print()` and `summary()` state the split under the OFV line:
 
 ```{r}
 #| label: prior-print
@@ -209,7 +209,7 @@ fit_prior$prior_summary
 is.null(fit_plain$prior_summary)
 ```
 
-`shift_in_prior_sds` is how far the estimate landed from the prior's centre, in prior standard deviations and with its sign; `penalty` is that parameter's share of `ofv_prior`. `prior_lower_95` and `prior_upper_95` are the interval that `rse = 10%` implies for the `family` the engine chose (`?ferx_fit` describes every column). An estimate `r round(abs(fit_prior$prior_summary$shift_in_prior_sds), 1)` prior standard deviations from the centre, outside that interval, says the prior and these data disagree. The standard errors of a priored fit are those of the penalized objective. Compare priored models with each other by a ΔOFV against a null twin.
+`shift_in_prior_sds` is how far the estimate landed from the prior's centre, with its sign, in prior standard deviations on the scale the prior is evaluated on. For a `lognormal` family that is the log scale, so it is not `(estimate - 0.25) / 0.025`. `penalty` is its square, and that parameter's share of `ofv_prior`. `prior_lower_95` and `prior_upper_95` are the interval that `rse = 10%` implies for the `family` the engine chose (`?ferx_fit` describes every column). An estimate `r round(abs(fit_prior$prior_summary$shift_in_prior_sds), 1)` prior standard deviations from the centre, outside that interval, says the prior and these data disagree. The standard errors of a priored fit are those of the penalized objective. What the prior cost in total is `fit_prior$ofv - fit_plain$ofv`, `r round(fit_prior$ofv - fit_plain$ofv, 2)` points: the data's share plus the penalty.
 
 A `[priors]` block takes the priors from a previous fit instead of writing them out by hand. It has exactly one key, `from_fit`, naming a saved fit. That path does not work from R at this build: the only fit file ferx-r writes is the `.fitrx` bundle of `ferx_save_fit()`, and the engine's reader rejects it.
 

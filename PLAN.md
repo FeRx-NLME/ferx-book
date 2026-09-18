@@ -696,6 +696,15 @@ Per-chapter loop:
     explained in ch11 and referenced from ch15 (muffled in the nine-model loop), ch18 and ch20.
   - `tools/make-reference.R` now escapes `<placeholder>` text in table cells; `model <name>` in
     the `model_name` row had been swallowed as an HTML tag.
+- **ferx-r usability gap (found in the adversarial review of the `6e2f701` bump):** on a refused
+  model `ferx_predict()` and `ferx_simulate()` print the engine's parse error and return
+  `NULL` without raising an R error; only `ferx_fit()` raises `ferx_engine_error`. Verified on
+  `[not_a_block]`. A script that checks for an error therefore continues with `NULL`. The ch25
+  sentence names only `ferx_fit()` and stays correct. To file upstream.
+- **ferx-core doc imprecision (same review):** `maxiter` is documented as "maximum outer loop
+  iterations", but the engine sets an evaluation budget, `maxiter * (n + 1)` on the NLopt gradient path
+  and a separate value for BOBYQA (`outer_optimizer.rs`, `set_maxeval`); `n_iterations` was 8, 16, 24 for `maxiter` 1, 2, 3 on
+  warfarin (n = 7). ch05 now says so.
 - **ferx-core doc gap (found building the ch25 lookup tables):** `docs/data-format.qmd` at
   `8372248c` never mentions `ADDL`, `FREMTYPE` or `TENTRY`, although the engine reads all
   three and the book fits `warfarin_addl`, FREM datasets and `TENTRY` delayed entry. They
