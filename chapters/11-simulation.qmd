@@ -71,6 +71,8 @@ typical <- ferx_predict(cov$model, single_file, fit = fit)
 head(typical)
 ```
 
+The warning is expected for a design file. Its sample rows have an empty `DV` with `MDV = 0`, which ferx reads as "predict here", and the engine's data reader says so with the code `W_DESIGN_DV`. The rows are sampling times, so they keep `MDV = 0`: a row with `MDV = 1` is not predicted at all. Every diagnostic of the data reader reaches the caller this way, on `ferx_predict()` and on the simulation functions below, and is also kept in `attr(typical, "simulation_warnings")`.
+
 ```{r}
 #| label: fig-typical
 #| fig-cap: "Typical concentration profiles after a single oral dose, by dose and body weight."
@@ -97,7 +99,7 @@ regimen_file <- write_design(regimens, times = seq(0.5, 168, by = 0.5),
 sim <- ferx_simulate(cov$model, regimen_file, n_sim = 500, seed = 1, fit = fit)
 ```
 
-The warning is expected: the design rows have an empty `DV`, so ferx simulates them as design points. It also records this in `attr(sim, "simulation_warnings")`.
+The same `W_DESIGN_DV` warning appears, for the same reason: the design rows have an empty `DV`, so ferx simulates them as design points. It is again recorded in `attr(sim, "simulation_warnings")`.
 
 ```{r}
 #| label: fig-regimens

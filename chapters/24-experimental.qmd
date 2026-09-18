@@ -64,7 +64,7 @@ data.frame(model = c("with [diffusion]", "without"), ofv = c(fit_sde$ofv, fit_od
            durbin_watson = c(fit_sde$dw_statistic, fit_ode$dw_statistic))
 ```
 
-These data show no system noise. System noise is meant for residuals that are correlated in time within a subject (@sec-diagnostics); the IWRES autocorrelation here is negative, not positive, and the diffusion term does not change it.
+These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic barely moves, `r round(fit_sde$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance accumulates along the trajectory.
 
 ## Options that matter
 
@@ -181,18 +181,35 @@ fit_prior <- ferx_fit(priored, warf$data, verbose = FALSE)
 c(no_prior = fit_plain$theta[["TVCL"]], with_prior = fit_prior$theta[["TVCL"]])
 ```
 
-These data want a `TVCL` near `r signif(fit_plain$theta[["TVCL"]], 4)`; a prior centred at 0.25 with a 10% relative standard error pulls the estimate to `r signif(fit_prior$theta[["TVCL"]], 4)`. The penalty is added to the objective, so `fit$ofv` is the penalized total and does not compare with the unpenalized fit. The information criteria are built from the data half alone, which is why `fit$aic` is not `fit$ofv + 2 * fit$n_parameters` once a prior is in the model:
+These data want a `TVCL` near `r signif(fit_plain$theta[["TVCL"]], 4)`; a prior centred at 0.25 with a 10% relative standard error pulls the estimate to `r signif(fit_prior$theta[["TVCL"]], 4)`. The penalty is added to the objective, so `fit$ofv` is the penalized total and does not compare with the unpenalized fit. The fit reports the two halves separately: `fit$ofv_data` is the data's share, `fit$ofv_prior` the penalty, and they sum to `fit$ofv`. The information criteria are built from the data half alone, so `fit$aic` is `fit$ofv_data + 2 * fit$n_parameters` and not `fit$ofv + 2 * fit$n_parameters` once a prior is in the model:
 
 ```{r}
 #| label: prior-objective
 data.frame(fit = c("no prior", "prior on TVCL"),
            ofv = c(fit_plain$ofv, fit_prior$ofv),
+           ofv_data = c(fit_plain$ofv_data, fit_prior$ofv_data),
+           ofv_prior = c(fit_plain$ofv_prior, fit_prior$ofv_prior),
            aic = c(fit_plain$aic, fit_prior$aic),
-           ofv_plus_2k = c(fit_plain$ofv + 2 * fit_plain$n_parameters,
-                           fit_prior$ofv + 2 * fit_prior$n_parameters))
+           ofv_data_plus_2k = c(fit_plain$ofv_data + 2 * fit_plain$n_parameters,
+                                fit_prior$ofv_data + 2 * fit_prior$n_parameters))
 ```
 
-The split of the objective into its data and prior halves is not on the R fit object at this build, so the size of the penalty has to be read off that difference. Compare priored models by a ΔOFV against a null twin, not against an unpenalized fit.
+A fit without a prior has `ofv_data` equal to `ofv` and an `ofv_prior` of 0. `ofv_data` is the number to set beside the unpenalized fit: `r round(fit_prior$ofv_data, 2)` against `r round(fit_plain$ofv, 2)`, so holding `TVCL` near 0.25 costs the data `r round(fit_prior$ofv_data - fit_plain$ofv, 2)` points of objective, on top of a penalty of `r round(fit_prior$ofv_prior, 2)`. `print()` and `summary()` state the split under the OFV line:
+
+```{r}
+#| label: prior-print
+grep("OFV|prior", capture.output(print(fit_prior)), value = TRUE)
+```
+
+`fit$prior_summary` has one row per priored parameter, and is `NULL` for a model without one:
+
+```{r}
+#| label: prior-summary
+fit_prior$prior_summary
+is.null(fit_plain$prior_summary)
+```
+
+`shift_in_prior_sds` is how far the estimate landed from the prior's centre, in prior standard deviations and with its sign; `penalty` is that parameter's share of `ofv_prior`. `prior_lower_95` and `prior_upper_95` are the interval that `rse = 10%` implies for the `family` the engine chose (`?ferx_fit` describes every column). An estimate `r round(abs(fit_prior$prior_summary$shift_in_prior_sds), 1)` prior standard deviations from the centre, outside that interval, says the prior and these data disagree. The standard errors of a priored fit are those of the penalized objective. Compare priored models with each other by a ΔOFV against a null twin.
 
 A `[priors]` block takes the priors from a previous fit instead of writing them out by hand. It has exactly one key, `from_fit`, naming a saved fit. That path does not work from R at this build: the only fit file ferx-r writes is the `.fitrx` bundle of `ferx_save_fit()`, and the engine's reader rejects it.
 

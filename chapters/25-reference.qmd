@@ -400,7 +400,7 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 
 ## Check report codes
 
-Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises the same message but without the code, so validate the model when you want the identifier rather than the prose. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 49 codes below (31 errors, 18 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.
+Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises a condition of class `ferx_engine_error` that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion`, and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 49 codes below (31 errors, 18 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.
 
 | Code | Severity | Meaning |
 |---|---|---|
@@ -513,7 +513,7 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `method_chain` |  |
 | `model_file_settings` | Named list of raw key = value pairs from the model file's [fit_options] block, as character strings (before Rust type coercion). |
 | `model_hash` |  |
-| `model_name` | Model name from the .ferx file. Falls back to the model file's basename (without extension) when the file declares no name. |
+| `model_name` | Model name declared in the .ferx file by a top-level model \<name\> line (outside any [block], e.g. model warfarin_pk); the name is a single word. |
 | `model_path` |  |
 | `model_source` |  |
 | `model_structure` | Named list returned by the Rust engine, derived from the parsed CompiledModel so it reflects exactly what ferx-core ran. |
@@ -528,7 +528,9 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `neural_networks` | Named list of sub-lists, one per [covariate_nn] block declared in the model file. |
 | `nlopt_missing_algorithms` | Character vector of NLopt algorithm names that are not available in the current build (empty on most platforms). |
 | `obs_time_range` | Length-2 numeric vector c(min_time, max_time) across all observation records, or NULL when there are no observations. |
-| `ofv` | Objective function value (-2 log-likelihood) |
+| `ofv` | Objective function value (-2 log-likelihood). The penalized objective when the model declares a prior(...) on any parameter, i.e. ofv_data + ofv_prior. |
+| `ofv_data` | The data half of ofv - the -2 log-likelihood the AIC and BIC are computed from, and the value to compare against an unpriored fit of the same model. |
+| `ofv_prior` | The prior half of ofv: the penalty summed over the priored coordinates. Exactly 0 when no prior is declared. |
 | `omega` | Between-subject variability covariance matrix. Row and column names are the declared ETA names (e.g. "ETA_CL"); fallback is "OMEGA(1,1)" when names are absent. |
 | `omega_init` | Initial omega variance matrix, same layout as omega. A zero matrix for in-memory fits and older bundles. |
 | `omega_init_as_sd` | Logical vector, one entry per BSV eta. TRUE when the corresponding omega line in the model file was annotated with (sd), meaning the initial value was specified as a standard deviation rather than a variance. print.ferx_fit() appends [initial specified as SD] to those rows. |
@@ -537,6 +539,7 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `optimizer_label` | Human-readable label for the outer optimizer used (e.g. "LBFGS", "BOBYQA"). Mirrors the optimizer enum value from ferx-core. |
 | `outer_gtol` | Numeric. Gradient tolerance passed to the outer optimizer. |
 | `outer_maxiter` | Integer. Maximum number of outer-loop iterations passed to the optimizer. |
+| `prior_summary` | Per-parameter prior report, or NULL when the model declares no prior. One row per priored parameter with columns name, prior_value, estimate, shift_in_prior_sds (signed, in prior SDs), penalty (this parameter's contribution to ofv_prior), family ("lognormal" or "normal", decided by the parameter's declared lower bound), and the implied 95% prior interval prior_lower_95 / prior_upper_95. |
 | `saem_mu_ref_m_step_evals_saved` | Number of OFV evaluations saved by mu-referencing in the SAEM M-step. Only populated for SAEM fits with mu_referencing = TRUE; NULL otherwise. |
 | `saem_n_subjects_hmc` | Integer count of subjects whose SAEM E-step proposals were generated by HMC (i.e. n_leapfrog > 0 and the AD build is active). |
 | `saem_seed` | Numeric scalar (or NULL) giving the SAEM stochastic seed. NULL for non-SAEM methods. |

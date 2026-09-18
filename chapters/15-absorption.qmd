@@ -110,7 +110,7 @@ fits$mixed_absorption$theta[c("TVFZO", "TVKA", "TVDUR")]
 
 So compare absorption models by OFV, but read the warnings before accepting a lower OFV (@sec-diagnostics, @sec-uncertainty).
 
-Note that `max()` and `tmax()` in `[derived]` use the observation times, so `TMAX` is always one of the sampling times. The typical profile on a fine time grid shows the shapes between the samples. `ferx_predict()` on a one-subject design (@sec-simulation) gives it for every model:
+Note that `max()` and `tmax()` in `[derived]` use the observation times, so `TMAX` is always one of the sampling times. The typical profile on a fine time grid shows the shapes between the samples. `ferx_predict()` on a one-subject design (@sec-simulation) gives it for every model. Each of these calls raises the `W_DESIGN_DV` warning that every design file with empty `DV` cells gets (explained in @sec-simulation), so the loop muffles it:
 
 ```{r}
 #| label: fig-absorption-profiles
@@ -121,7 +121,8 @@ write.csv(data.frame(ID = 1, TIME = c(0, seq(0.1, 24, by = 0.1)), DV = NA,
                      AMT = c(100, rep(NA, 240)), EVID = c(1, rep(0, 240)), CMT = 1, MDV = c(1, rep(0, 240))),
           design, row.names = FALSE, na = ".")
 profiles <- do.call(rbind, lapply(names(fits), function(name) {
-  p <- ferx_predict(shared[[name]]$model, design, fit = fits[[name]])
+  # suppress the W_DESIGN_DV warning of a design file, once per model
+  p <- suppressWarnings(ferx_predict(shared[[name]]$model, design, fit = fits[[name]]))
   data.frame(model = name, TIME = p$TIME, PRED = p$PRED)
 }))
 ggplot(profiles, aes(TIME, PRED)) +

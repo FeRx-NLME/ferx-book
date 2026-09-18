@@ -100,7 +100,19 @@ walk_value(fit_rd[[which(vapply(fit_rd, rd_tag, "") == "\\value")]])
 
 md_table <- function(df) {
   # Cells hold raw text: escape pipes here, once, rather than at each call site.
-  esc <- function(x) gsub("\\|", "\\\\|", gsub("\n", " ", as.character(x)))
+  # A placeholder such as `model <name>` would be read as an HTML tag and vanish
+  # from the page. Escape it outside code spans; real tags (<sub>) are kept.
+  placeholders <- function(x) {
+    pattern <- "`[^`]*`|<(?!/?(sub|sup|br)>)[A-Za-z_]+>"
+    m <- gregexpr(pattern, x, perl = TRUE)
+    regmatches(x, m) <- lapply(regmatches(x, m), function(hit) {
+      tag <- !startsWith(hit, "`")
+      hit[tag] <- paste0("\\<", substr(hit[tag], 2, nchar(hit[tag]) - 1), "\\>")
+      hit
+    })
+    x
+  }
+  esc <- function(x) placeholders(gsub("\\|", "\\\\|", gsub("\n", " ", as.character(x))))
   c(paste0("| ", paste(names(df), collapse = " | "), " |"),
     paste0("|", paste(rep("---", ncol(df)), collapse = "|"), "|"),
     apply(df, 1, function(r) paste0("| ", paste(esc(r), collapse = " | "), " |")), "")
@@ -342,7 +354,7 @@ err_tab <- data.frame(Code = code(core_key(err_rows[, "Code"])), Severity = err_
 err_tab <- err_tab[nzchar(err_tab$Meaning), ]
 n_err <- sum(startsWith(err_tab$Code, "`E_"))
 out <- c(out, "## Check report codes", "",
-  sprintf("Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises the same message but without the code, so validate the model when you want the identifier rather than the prose. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The %d codes below (%d errors, %d warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.",
+  sprintf("Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises a condition of class `ferx_engine_error` that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion`, and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The %d codes below (%d errors, %d warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.",
           nrow(err_tab), n_err, nrow(err_tab) - n_err), "",
   md_table(err_tab))
 
