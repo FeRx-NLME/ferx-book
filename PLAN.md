@@ -700,11 +700,13 @@ Per-chapter loop:
   model `ferx_predict()` and `ferx_simulate()` print the engine's parse error and return
   `NULL` without raising an R error; only `ferx_fit()` raises `ferx_engine_error`. Verified on
   `[not_a_block]`. A script that checks for an error therefore continues with `NULL`. The ch25
-  sentence names only `ferx_fit()` and stays correct. To file upstream.
+  sentence names only `ferx_fit()` and stays correct. Filed as
+  [ferx-r #385](https://github.com/FeRx-NLME/ferx-r/issues/385); widen the ch25 sentence when it lands.
 - **ferx-core doc imprecision (same review):** `maxiter` is documented as "maximum outer loop
   iterations", but the engine sets an evaluation budget, `maxiter * (n + 1)` on the NLopt gradient path
   and a separate value for BOBYQA (`outer_optimizer.rs`, `set_maxeval`); `n_iterations` was 8, 16, 24 for `maxiter` 1, 2, 3 on
-  warfarin (n = 7). ch05 now says so.
+  warfarin (n = 7). ch05 now says so. Filed as
+  [ferx-core #1430](https://github.com/FeRx-NLME/ferx-core/issues/1430).
 - **ferx-core doc gap (found building the ch25 lookup tables):** `docs/data-format.qmd` at
   `8372248c` never mentions `ADDL`, `FREMTYPE` or `TENTRY`, although the engine reads all
   three and the book fits `warfarin_addl`, FREM datasets and `TENTRY` delayed entry. They
