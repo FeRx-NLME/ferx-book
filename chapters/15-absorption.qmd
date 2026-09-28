@@ -13,7 +13,7 @@ The oral models in @sec-structural-models absorb the dose by a first-order proce
 
 ::: {.callout-warning}
 ## Maturity: stable and beta parts
-Lag time is **stable** in ferx-core. The built-in absorption models (transit, inverse Gaussian, Weibull, zero-order, parallel and mixed pathways) and ODE models are **beta**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+Lag time is **stable** in ferx-core. The built-in absorption models (transit, inverse Gaussian, Weibull, zero-order, parallel and mixed pathways) and ODE models are **beta**. See [feature maturity](https://ferx-nlme.org/ferx-core/maturity.html).
 :::
 
 ## The data
@@ -157,7 +157,7 @@ Rules the parser enforces:
 - At most one `zero_order()` term may feed a compartment.
 - Arguments are named (`n=`, `mtt=`) and must be declared individual parameters, so they can carry random effects and covariates.
 
-The formulas, dose handling and domains are on the ferx-core [absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html) and [lag time](https://ferx-nlme.github.io/ferx-core/model-file/lagtime.html) pages.
+The formulas, dose handling and domains are on the ferx-core [absorption](https://ferx-nlme.org/ferx-core/model-file/absorption.html) and [lag time](https://ferx-nlme.org/ferx-core/model-file/lagtime.html) pages.
 
 ## Variants
 
@@ -444,7 +444,7 @@ Estimating absolute bioavailability needs data after doses by a route with known
 - **`TMAX` from `[derived]` is a sampling time.** Aggregates use the observation rows. Predict on a fine design for the shape between samples.
 - **Oral data alone do not identify `F`.** Fix it or add data that inform it.
 - **Keep absorption parameters in their domain.** `mtt` must be positive and `n` non-negative. Parameterise them log-normally (`MTT = TVMTT * exp(ETA_MTT)`). A typical value outside the domain stops the fit with `E_ABSORPTION_DOMAIN`.
-- **Analytical transit and inverse-Gaussian models have a limited scope.** Steady-state doses, infusions, inter-occasion variability and time-varying covariates are handled by switching the subject to the equivalent ODE model. Resets and doses into another compartment are rejected. See [scope](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html#scope-first-version) on the ferx-core absorption page.
+- **Analytical transit and inverse-Gaussian models have a limited scope.** Steady-state doses, infusions, inter-occasion variability and time-varying covariates are handled by switching the subject to the equivalent ODE model. Resets and doses into another compartment are rejected. See [scope](https://ferx-nlme.org/ferx-core/model-file/absorption.html#scope-first-version) on the ferx-core absorption page.
 
 ### Warnings you may see here
 
@@ -462,7 +462,7 @@ Estimating absolute bioavailability needs data after doses by a route with known
   ferx_get_warnings(fit_flip, as_df = TRUE)[, c("severity", "category")]
   ```
 
-  The fit still reaches the optimum of the original model, but the warning stays. It refers to the starting values: check them when the regime is unexpected. The analytical inverse-Gaussian models report the same category. So does a model without an ODE equivalent (next item) whose subjects reach the regime at their individual estimates. See the ferx-core section on the [flip-flop regime](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html#the-flip-flop-regime).
+  The fit still reaches the optimum of the original model, but the warning stays. It refers to the starting values: check them when the regime is unexpected. The analytical inverse-Gaussian models report the same category. So does a model without an ODE equivalent (next item) whose subjects reach the regime at their individual estimates. See the ferx-core section on the [flip-flop regime](https://ferx-nlme.org/ferx-core/model-file/absorption.html#the-flip-flop-regime).
 
 - `absorption_twin_declined` (warning): ferx could not build the equivalent ODE model of an analytical absorption model, so the fallback above is unavailable. The model still fits. Subjects that would need the fallback (steady-state or infusion doses, inter-occasion variability, time-varying covariates, the flip-flop regime) are rejected with an error. The usual cause is an individual parameter named like a state of the ODE version, such as `CENTRAL`:
 
@@ -489,7 +489,7 @@ Estimating absolute bioavailability needs data after doses by a route with known
   twinless_check <- ferx_model_validate(twinless_flip, one_transit$data)
   ```
 
-  Renaming the parameter restores the ODE fallback. See "When a model loses its ODE twin" on the ferx-core [absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html) page.
+  Renaming the parameter restores the ODE fallback. See "When a model loses its ODE twin" on the ferx-core [absorption](https://ferx-nlme.org/ferx-core/model-file/absorption.html) page.
 
 ## Summary
 
@@ -504,5 +504,5 @@ Next: @sec-variability adds inter-occasion variability and other random-effect s
 ::: {.callout-tip}
 ## Reference
 - R help: `?ferx_fit`, `?ferx_model_validate`, `?ferx_predict`
-- ferx-core: [absorption](https://ferx-nlme.github.io/ferx-core/model-file/absorption.html), [lag time](https://ferx-nlme.github.io/ferx-core/model-file/lagtime.html), [ODE models](https://ferx-nlme.github.io/ferx-core/model-file/ode-models.html), [`[derived]`](https://ferx-nlme.github.io/ferx-core/model-file/derived.html)
+- ferx-core: [absorption](https://ferx-nlme.org/ferx-core/model-file/absorption.html), [lag time](https://ferx-nlme.org/ferx-core/model-file/lagtime.html), [ODE models](https://ferx-nlme.org/ferx-core/model-file/ode-models.html), [`[derived]`](https://ferx-nlme.org/ferx-core/model-file/derived.html)
 :::

@@ -13,7 +13,7 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 
 ::: {.callout-warning}
 ## Maturity: stable, beta and experimental parts
-Analytical 1-, 2- and 3-compartment models are **stable** in ferx-core. ODE models, the stiff steppers and `[scaling]` are **beta**, and the Vern7 stepper is **experimental**. See [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html).
+Analytical 1-, 2- and 3-compartment models are **stable** in ferx-core. ODE models, the stiff steppers and `[scaling]` are **beta**, and the Vern7 stepper is **experimental**. See [feature maturity](https://ferx-nlme.org/ferx-core/maturity.html).
 :::
 
 ## The data
@@ -251,7 +251,7 @@ writeLines(set_scaling(readLines(w_ode$model), "  y = central / VV",
 try(ferx_fit(typo, w_ode$data, verbose = FALSE))
 ```
 
-The ferx-core [scaling](https://ferx-nlme.github.io/ferx-core/model-file/scaling.html) page documents the rest: `min()`, `max()` and `clamp()`, conditional readouts, a data column named `T`, and gradients.
+The ferx-core [scaling](https://ferx-nlme.org/ferx-core/model-file/scaling.html) page documents the rest: `min()`, `max()` and `clamp()`, conditional readouts, a data column named `T`, and gradients.
 
 ## Model states in `[derived]` {#sec-derived-states}
 
@@ -330,7 +330,7 @@ distinct(fit_cov_states$sdtab, ID, WT, CRCL, CMAX_PERIPH, AUC_PERIPH_0_48, AUC_C
   head(5)
 ```
 
-`max()` and `min()` over a state use the observation rows, like over `IPRED`. The filter `TIME == 1` picks the one-hour sample. Compartment states are `NaN` for subjects with inter-occasion variability, and for analytical models with time-varying covariates. For ODE models with time-varying covariates they are approximate (ferx-core [derived: compartment states](https://ferx-nlme.github.io/ferx-core/model-file/derived.html#compartment-states-ode-and-analytical-models)).
+`max()` and `min()` over a state use the observation rows, like over `IPRED`. The filter `TIME == 1` picks the one-hour sample. Compartment states are `NaN` for subjects with inter-occasion variability, and for analytical models with time-varying covariates. For ODE models with time-varying covariates they are approximate (ferx-core [derived: compartment states](https://ferx-nlme.org/ferx-core/model-file/derived.html#compartment-states-ode-and-analytical-models)).
 
 ## Variants
 
@@ -423,19 +423,19 @@ c(template = fit_tmpl$ofv, analytical = ferx_fit(cov$model, cov$data, covariance
 
 ### Initial conditions
 
-ferx-core also supports an `[initial_conditions]` block to set non-zero starting amounts for ODE states, for example an endogenous baseline. No bundled ferx-r example uses it; see the ferx-core [initial conditions](https://ferx-nlme.github.io/ferx-core/model-file/initial-conditions.html) page.
+ferx-core also supports an `[initial_conditions]` block to set non-zero starting amounts for ODE states, for example an endogenous baseline. No bundled ferx-r example uses it; see the ferx-core [initial conditions](https://ferx-nlme.org/ferx-core/model-file/initial-conditions.html) page.
 
 ## Pitfalls
 
 - **ODE models are slower.** Use them only when no built-in model fits, and check the cost of tight tolerances.
-- **`CMT` refers to the declared states.** In an ODE model, compartment numbers follow the order of `states=[...]`, starting at 1 (ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html)).
+- **`CMT` refers to the declared states.** In an ODE model, compartment numbers follow the order of `states=[...]`, starting at 1 (ferx-core [data format](https://ferx-nlme.org/ferx-core/data-format.html)).
 - **Scale the observation.** An ODE state is an amount unless you write it as a concentration. Give `[scaling]` an `obs_scale` or a `y` readout (or write the state in concentration units, as `mm_oral` does).
 - **Do not scale a built-in model by its volume.** A `pk` model already returns a concentration. `obs_scale = V` divides again and changes the estimates, with only a validation warning.
 - **States in `[derived]` are unscaled.** The same name can be a concentration in an analytical model and an amount in an ODE model.
 
 ### Warnings you may see here
 
-- `ode_solver` (warning or info): the ODE solver's health at the final estimates, for example steps clamped at the minimum step size, unfinished segments, or an `auto` escalation (as info). The message names the counts. Consider a stiff `ode_method` or looser tolerances. See [solver warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-solver).
+- `ode_solver` (warning or info): the ODE solver's health at the final estimates, for example steps clamped at the minimum step size, unfinished segments, or an `auto` escalation (as info). The message names the counts. Consider a stiff `ode_method` or looser tolerances. See [solver warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-solver).
 
 ## Summary
 
@@ -449,5 +449,5 @@ ferx-core also supports an `[initial_conditions]` block to set non-zero starting
 ::: {.callout-tip}
 ## Reference
 - R help: `?ferx_fit` (ODE settings), `?ferx_model_get_section`, `?ferx_model_validate`
-- ferx-core: [structural model](https://ferx-nlme.github.io/ferx-core/model-file/structural-model.html), [ODE models](https://ferx-nlme.github.io/ferx-core/model-file/ode-models.html), [scaling](https://ferx-nlme.github.io/ferx-core/model-file/scaling.html), [`[derived]`](https://ferx-nlme.github.io/ferx-core/model-file/derived.html), [initial conditions](https://ferx-nlme.github.io/ferx-core/model-file/initial-conditions.html), [ODE stepper selection](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html#ode-stepper-selection)
+- ferx-core: [structural model](https://ferx-nlme.org/ferx-core/model-file/structural-model.html), [ODE models](https://ferx-nlme.org/ferx-core/model-file/ode-models.html), [scaling](https://ferx-nlme.org/ferx-core/model-file/scaling.html), [`[derived]`](https://ferx-nlme.org/ferx-core/model-file/derived.html), [initial conditions](https://ferx-nlme.org/ferx-core/model-file/initial-conditions.html), [ODE stepper selection](https://ferx-nlme.org/ferx-core/model-file/fit-options.html#ode-stepper-selection)
 :::

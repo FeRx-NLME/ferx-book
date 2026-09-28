@@ -8,7 +8,7 @@
 #   examples   every ferx_example("x") name exists in the pinned registry
 #   eval       every `eval: false` chunk carries `#| eval-reason:`
 #   output     no hand-written knitr output (`#>` lines) in the source
-#   links      no links to retired ferx-nlme.github.io pages
+#   links      no links to retired ferx-nlme.org pages (either domain)
 #   ferx-only  no mentions of other NLME software outside URLs
 # Coverage (report; hard only with --strict):
 #   every row of tools/features.csv has a home chapter in tools/homes.csv and
@@ -88,7 +88,7 @@ for (f in files) {
     }
   }
   for (i in grep("^\\s*#>", lines)) note("output", sprintf("%s:%d: hand-written output line", f, i))
-  for (i in grep("ferx-nlme\\.github\\.io/(model-dsl|learn|examples)/", lines)) note("links", sprintf("%s:%d: retired site link", f, i))
+  for (i in grep("ferx-nlme\\.(github\\.io|org)/(model-dsl|learn|examples)/", lines)) note("links", sprintf("%s:%d: retired site link", f, i))
   for (i in grep(banned, strip_urls(lines), ignore.case = TRUE)) note("ferx-only", sprintf("%s:%d: %s", f, i, trimws(lines[i])))
 }
 

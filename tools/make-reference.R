@@ -238,7 +238,7 @@ fun_tab <- data.frame(
 s3 <- inv[inv$kind == "s3method", ]
 s3 <- s3[order(s3$name), ]
 out <- c(out, "## Functions", "",
-  "Help pages: `?name`. Function reference on the web: [ferx-r reference](https://ferx-nlme.github.io/ferx-r/reference/).", "",
+  "Help pages: `?name`. Function reference on the web: [ferx-r reference](https://ferx-nlme.org/ferx-r/reference/).", "",
   md_table(fun_tab),
   "### S3 methods", "",
   md_table(data.frame(Method = code(s3$name), Chapter = chapter_link(s3$home), check.names = FALSE)))
@@ -249,7 +249,7 @@ st <- st[order(st$name), ]
 st <- merge(st, settings_docs, by.x = "name", by.y = "key", all.x = TRUE)
 st[is.na(st)] <- ""
 out <- c(out, "## Fit settings", "",
-  "Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The chapter column points at the section that uses the key; the ferx-core [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) page gives the full semantics. A blank *Values* cell means the key takes a free value (a number, a name or a list) rather than a fixed set; a blank *Meaning* means the pinned engine documents the key only in terms of other software, which this book does not quote.", "",
+  "Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The chapter column points at the section that uses the key; the ferx-core [fit options](https://ferx-nlme.org/ferx-core/model-file/fit-options.html) page gives the full semantics. A blank *Values* cell means the key takes a free value (a number, a name or a list) rather than a fixed set; a blank *Meaning* means the pinned engine documents the key only in terms of other software, which this book does not quote.", "",
   md_table(data.frame(Setting = code(st$name), Values = st$values, Default = st$default,
                       Meaning = desc_cell(st$description), Chapter = chapter_link(st$home),
                       check.names = FALSE)))
@@ -301,7 +301,7 @@ out <- c(out, "## Model file blocks", "",
                       Required = lookup(block_tabs, block_keys, "^Block", "^Required", "model file block"),
                       Purpose = desc_cell(lookup(block_tabs, block_keys, "^Block", "^Purpose", "model file block")),
                       Chapter = chapter_link(bl$home),
-                      `ferx-core page` = sprintf("[%s](https://ferx-nlme.github.io/ferx-core/%s.html)",
+                      `ferx-core page` = sprintf("[%s](https://ferx-nlme.org/ferx-core/%s.html)",
                                                  basename(block_pages[bl$name]), block_pages[bl$name]),
                       check.names = FALSE)))
 
@@ -311,7 +311,7 @@ dc <- inv[inv$kind == "data_column", ]
 # Column|Type|Default|Description. The description is the last filled cell of a row.
 dc_tabs <- core_tables(core_doc("data-format.qmd"))
 out <- c(out, "## Data columns", "",
-  "Columns the ferx data format recognises. *Type* and *Meaning* are taken from the ferx-core [data format](https://ferx-nlme.github.io/ferx-core/data-format.html) page at the pinned engine, and are blank for the columns that page does not list; the chapter column covers those.", "",
+  "Columns the ferx data format recognises. *Type* and *Meaning* are taken from the ferx-core [data format](https://ferx-nlme.org/ferx-core/data-format.html) page at the pinned engine, and are blank for the columns that page does not list; the chapter column covers those.", "",
   md_table(data.frame(Column = code(dc$name),
                       Type = lookup(dc_tabs, dc$name, "^Column", "^Type", "data column"),
                       Meaning = desc_cell(lookup(dc_tabs, dc$name, "^Column", "^Description", "data column")),
@@ -332,7 +332,7 @@ wc <- inv[inv$kind == "warning_code", ]
 wc <- wc[order(wc$name), ]
 warn_tabs <- core_tables(core_doc("warnings.qmd"))
 out <- c(out, "## Warning categories", "",
-  "Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fit that ran, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. A model that never ran fails with a check report code instead, listed under *Check report codes* below. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html) page describes them all.", "",
+  "Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fit that ran, with the severity and meaning ferx-core gives them at the pinned engine. **Critical** means the result is untrustworthy as it stands; **Warning** means it stands with a caveat; **Info** implies no action. A model that never ran fails with a check report code instead, listed under *Check report codes* below. Each chapter's *Warnings you may see here* section covers the ones it meets, and the ferx-core [warnings](https://ferx-nlme.org/ferx-core/warnings.html) page describes them all.", "",
   md_table(data.frame(Category = code(wc$name),
                       Severity = lookup(warn_tabs, wc$name, "^Code", "^Severity", "warning category"),
                       Meaning = desc_cell(lookup(warn_tabs, wc$name, "^Code", "^Flags", "warning category")),
@@ -354,7 +354,7 @@ err_tab <- data.frame(Code = code(core_key(err_rows[, "Code"])), Severity = err_
 err_tab <- err_tab[nzchar(err_tab$Meaning), ]
 n_err <- sum(startsWith(err_tab$Code, "`E_"))
 out <- c(out, "## Check report codes", "",
-  sprintf("Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises a condition of class `ferx_engine_error` that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The %d codes below (%d errors, %d warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.github.io/ferx-core/file-formats/check-report.html) page gives the full text.",
+  sprintf("Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises a condition of class `ferx_engine_error` that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The %d codes below (%d errors, %d warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.",
           nrow(err_tab), n_err, nrow(err_tab) - n_err), "",
   md_table(err_tab))
 
@@ -385,12 +385,12 @@ na_tab <- data.frame(
     "No bundled example",
     "Not on the R fit object"),
   `Where to look` = c("@sec-estimation-methods",
-                      "[Markov models](https://ferx-nlme.github.io/ferx-core/model-file/markov-model.html)",
+                      "[Markov models](https://ferx-nlme.org/ferx-core/model-file/markov-model.html)",
                       "@sec-simulation",
-                      "[Neural networks](https://ferx-nlme.github.io/ferx-core/model-file/neural-networks.html)",
+                      "[Neural networks](https://ferx-nlme.org/ferx-core/model-file/neural-networks.html)",
                       "@sec-covariates, @sec-time-to-event, @sec-dosing",
-                      "@sec-variability, [data format](https://ferx-nlme.github.io/ferx-core/data-format.html)",
-                      "[Variational inference](https://ferx-nlme.github.io/ferx-core/estimation/vi.html)"),
+                      "@sec-variability, [data format](https://ferx-nlme.org/ferx-core/data-format.html)",
+                      "[Variational inference](https://ferx-nlme.org/ferx-core/estimation/vi.html)"),
   check.names = FALSE)
 out <- c(out, "## Not available from R", "",
   "Features documented for ferx-core that the pinned ferx-r build cannot run, or runs only partly:", "",
@@ -404,12 +404,12 @@ mat_rows <- do.call(rbind, lapply(rows, function(r) {
   page <- sub(".*\\]\\(([^)]+)\\.qmd[^)]*\\).*", "\\1", cells[3])
   label <- sub(".*\\[([^]]+)\\].*", "\\1", cells[3])
   data.frame(Feature = cells[1], Maturity = gsub("\\*", "", cells[2]),
-             `ferx-core page` = if (grepl("\\.qmd", cells[3])) sprintf("[%s](https://ferx-nlme.github.io/ferx-core/%s.html)", label, page) else "",
+             `ferx-core page` = if (grepl("\\.qmd", cells[3])) sprintf("[%s](https://ferx-nlme.org/ferx-core/%s.html)", label, page) else "",
              check.names = FALSE)
 }))
 mat_rows <- mat_rows[!grepl(banned, mat_rows$Feature, ignore.case = TRUE), ]
 out <- c(out, "## Feature maturity", "",
-  "The maturity label of each ferx-core feature at the pinned engine (ferx-core {{< var ferx_core_sha_short >}}). **stable** features are well tested across datasets and estimation options; **beta** features are stable in limited testing; **experimental** features have been tested on a few examples and may change. See the ferx-core [feature maturity](https://ferx-nlme.github.io/ferx-core/maturity.html) page.", "",
+  "The maturity label of each ferx-core feature at the pinned engine (ferx-core {{< var ferx_core_sha_short >}}). **stable** features are well tested across datasets and estimation options; **beta** features are stable in limited testing; **experimental** features have been tested on a few examples and may change. See the ferx-core [feature maturity](https://ferx-nlme.org/ferx-core/maturity.html) page.", "",
   md_table(mat_rows))
 
 writeLines(out, "chapters/25-reference.qmd")
