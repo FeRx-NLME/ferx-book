@@ -77,7 +77,7 @@ maturity callouts). What went wrong:
    - `ferx_xpose(backend = "xpose4")` is a ferx argument and is allowed.
 9. **Link, don't copy.** Each chapter ends with a Reference callout (`?fn` +
    `https://ferx-nlme.org/ferx-core/<path>.html`). Never link to stale
-   `ferx-nlme.github.io/model-dsl|learn|examples` pages.
+   `ferx-nlme.org/model-dsl|learn|examples` pages.
 10. **Report behaviour as it is.** If a fit doesn't converge or warns, show that
     honestly. Never tune settings to hide it without saying so.
 

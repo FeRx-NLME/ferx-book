@@ -8,7 +8,7 @@
 #   examples   every ferx_example("x") name exists in the pinned registry
 #   eval       every `eval: false` chunk carries `#| eval-reason:`
 #   output     no hand-written knitr output (`#>` lines) in the source
-#   links      no links to retired ferx-nlme.org / ferx-nlme.github.io pages
+#   links      no links to retired ferx-nlme.org pages (either domain)
 #   ferx-only  no mentions of other NLME software outside URLs
 # Coverage (report; hard only with --strict):
 #   every row of tools/features.csv has a home chapter in tools/homes.csv and
