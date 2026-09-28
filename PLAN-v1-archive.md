@@ -236,7 +236,7 @@ Living backlog so no ferx feature slips through the restructure. When a feature'
 **trigger** is met, write the chapter/section and move the row to "Landed" (or
 delete it once §4/§5 cover it). **Recheck procedure each PR:** diff
 `../ferx-r/NAMESPACE` for new exports, re-read `../ferx-core/docs/maturity.qmd`
-for maturity bumps, and skim the [Roadmap](https://ferx-nlme.github.io/roadmap.html).
+for maturity bumps, and skim the [Roadmap](https://ferx-nlme.org/roadmap.html).
 
 ### Known features waiting on maturity / build support
 | Feature | Current state | Trigger to add | Target chapter |
