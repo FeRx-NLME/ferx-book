@@ -6,7 +6,7 @@ round 1 (§1b). Supersedes `PLAN-v1-archive.md`.
 Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, fully
 runnable book on **using ferx-r in an R modeling analysis**. Technical detail (DSL
 grammar, estimator math, exhaustive option semantics) lives in the
-[ferx-core docs](https://ferx-nlme.github.io/ferx-core/) and is linked, not copied.
+[ferx-core docs](https://ferx-nlme.org/ferx-core/) and is linked, not copied.
 The book is about ferx. Another NLME engine may be named in an analogy that shows what a ferx example or feature corresponds to, **never in a comparison that says ferx is better** (rule 8, softened by the owner 2026-10-02).
 
 ---
@@ -82,8 +82,8 @@ maturity callouts). What went wrong:
      sentence that passes is an analogy is for review to judge.
    - `ferx_xpose(backend = "xpose4")` is a ferx argument and is allowed.
 9. **Link, don't copy.** Each chapter ends with a Reference callout (`?fn` +
-   `https://ferx-nlme.github.io/ferx-core/<path>.html`). Never link to stale
-   `ferx-nlme.github.io/model-dsl|learn|examples` pages.
+   `https://ferx-nlme.org/ferx-core/<path>.html`). Never link to stale
+   `ferx-nlme.org/model-dsl|learn|examples` pages.
 10. **Report behaviour as it is.** If a fit doesn't converge or warns, show that
     honestly. Never tune settings to hide it without saying so.
 
@@ -176,7 +176,7 @@ run the same loop compactly for one scenario.
    - the fit-warning `category` tokens whose home is this chapter
      (`tools/homes.csv`, kind `warning_code`);
    - for each: severity and what it flags (from ferx-core `warnings.qmd` at the
-     pin), plus a link to `https://ferx-nlme.github.io/ferx-core/warnings.html#codes-<group>`;
+     pin), plus a link to `https://ferx-nlme.org/ferx-core/warnings.html#codes-<group>`;
    - show a warning live only when a bundled example in the chapter actually
      triggers it. Never build a broken model just to provoke one.
 8. Summary → next

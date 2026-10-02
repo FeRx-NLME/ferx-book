@@ -10,7 +10,7 @@
 #   eval       every `eval: false` chunk carries `#| eval-reason:`
 #   output     no hand-written knitr output (`#>` lines) in the source
 #   links      no links to the old ferx-nlme.github.io host (the site moved to ferx-nlme.org)
-#              and none to retired site sections (learn, examples)
+#              and none to retired site sections (model-dsl, learn, examples)
 #   ferx-only  no mentions of other NLME software outside URLs
 # Coverage (report; hard only with --strict):
 #   every row of tools/features.csv has a home chapter in tools/homes.csv and
@@ -141,7 +141,7 @@ for (f in files) {
   }
   for (i in grep("^\\s*#>", lines)) note("output", sprintf("%s:%d: hand-written output line", f, i))
   for (i in grep("https?://ferx-nlme\\.github\\.io/", lines)) note("links", sprintf("%s:%d: old site host (use ferx-nlme.org)", f, i))
-  for (i in grep("ferx-nlme\\.org/(learn|examples)/", lines)) note("links", sprintf("%s:%d: retired site link", f, i))
+  for (i in grep("ferx-nlme\\.org/(model-dsl|learn|examples)/", lines)) note("links", sprintf("%s:%d: retired site link", f, i))
   for (i in grep(banned, strip_urls(lines), ignore.case = TRUE)) {
     if (claims_over(lines[i])) note("ferx-only", sprintf("%s:%d: names another engine next to comparative wording: %s",
                                                          f, i, trimws(lines[i])))
