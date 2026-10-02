@@ -100,7 +100,11 @@ structure_info$theta_names
 #| label: validate
 check <- ferx_model_validate(base$model, data = base$data)
 check$ok
+# The sentence below explains this note, so its absence has to fail the render.
+stopifnot("W_AUTO_OPTIMIZER_FOLLOWS_GRADIENT" %in% check$diagnostics$code)
 ```
+
+The model is valid, with one note. `W_*` codes are warnings that do not stop a model from running, so `ok` stays `TRUE`. This one says that the model file's `gradient = fd` also decides which optimizer runs (@sec-estimation-methods).
 
 The report is printed, and the invisible return value holds `ok`, the `model` and `data` names, and a `diagnostics` data frame. To see a failing check, misspell a block name in a copy of the model:
 

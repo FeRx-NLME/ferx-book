@@ -201,14 +201,17 @@ The structural parameters are precisely estimated by every route. The covariate 
 
 ## Pitfalls
 
-**An unreliable covariance step.** A fit can report standard errors that should not be trusted. The fit from NCA-based starting values in @sec-first-fit is an example: its covariance matrix had to be regularised.
+**An unreliable covariance step.** A fit can report standard errors that should not be trusted. The bundled `emax_pkpd` model is an example: a joint PK/PD model fitted to three subjects (@sec-pkpd), whose covariance matrix is ill-conditioned and whose PD parameters are almost perfectly correlated.
 
 ```{r}
 #| label: regularized
-base <- ferx_example("two_cpt_oral_base")
-fit_bad <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, verbose = FALSE)
+emax <- ferx_example("emax_pkpd")
+fit_bad <- ferx_fit(emax$model, emax$data, verbose = FALSE)
 w_bad <- ferx_get_warnings(fit_bad, as_df = TRUE)
-w_bad[w_bad$category %in% c("covariance_regularized", "condition_number"), c("severity", "category")]
+w_bad[w_bad$category %in% c("condition_number", "high_correlation", "inflated_rse"), c("severity", "category")]
+# The sentence above names these warnings, so their absence has to fail the render.
+stopifnot(all(c("condition_number", "high_correlation") %in% w_bad$category))
+fit_bad$estimates[c("TVE0", "TVEMAX", "TVEC50"), c("estimate", "rse_pct")]
 ```
 
 In such a case, fix the model before quantifying uncertainty. `covariance_fallback = "sir"` runs SIR automatically when the covariance step fails.

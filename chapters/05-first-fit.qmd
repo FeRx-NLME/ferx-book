@@ -277,7 +277,13 @@ ferx classifies everything it notices during a fit. Each warning has a **severit
 #| label: warnings
 ferx_get_warnings(fit)
 ferx_get_warnings(fit, as_df = TRUE)[, c("severity", "category")]
+# The paragraph below reads these two warnings in this order, so any other set has to fail the render.
+stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", "dw_autocorrelation")),
+          grepl("gradient = fd also changed the outer optimizer",
+                ferx_get_warnings(fit, as_df = TRUE)$message[1], fixed = TRUE))
 ```
+
+The first one has the category `general`, the fallback for a message without a category of its own, so read its text: the model file sets `gradient = fd`, and with the optimizer left at `auto` that also changes the optimizer (@sec-estimation-methods). The second is the residual autocorrelation warning that @sec-diagnostics takes up.
 
 `fit$warnings` holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. For example, reject any fit with a critical warning. `check_diagnostics()` returns the residual autocorrelation and shrinkage behind two common warnings as data frames:
 
@@ -345,19 +351,22 @@ data.frame(
 )
 ```
 
-All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient). The NCA start with finite differences, however, ended at an OFV about `r round(fit_nca$ofv - fit$ofv)` points higher than the other two, with a critical warning. Its warnings show why the result cannot be trusted:
+All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient). The NCA start with finite differences, however, ended at an OFV about `r round(fit_nca$ofv - fit$ofv)` points higher than the fit from the model file's values, and nothing in its warnings says so:
 
 ```{r}
 #| label: nca-warnings
 nca_warnings <- ferx_get_warnings(fit_nca, as_df = TRUE)
 nca_warnings[, c("severity", "category")]
-# The paragraph below names this category, so its absence has to fail the render.
-stopifnot("ebe_start_dependent" %in% nca_warnings$category)
+rbind(model_file = fit$theta, nca = fit_nca$theta)
+# The paragraph below says this fit is clearly worse yet carries only these three
+# warnings, so either claim turning false has to fail the render.
+stopifnot(fit_nca$ofv - fit$ofv > 10,
+          identical(sort(nca_warnings$category), c("dw_autocorrelation", "general", "general")))
 ```
 
-The NCA-based absorption rate constant (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the estimate of the successful fits (`r round(ferx_coef(fit, "TVKA"), 3)`). Convergence only means the optimizer stopped. Always compare the OFV and read the warnings before accepting a fit.
+The two `general` notes are about the gradient setting and the NCA itself, and the residual autocorrelation warning is the one the model-file fit carries as well. The fit simply stopped at a different, worse point: `TVV1` ends at `r round(fit_nca$theta[["TVV1"]], 1)` instead of `r round(fit$theta[["TVV1"]], 1)`. The NCA-based absorption rate constant it started from (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the model-file fit's estimate (`r round(ferx_coef(fit, "TVKA"), 3)`). The analytic-gradient fit from the same start comes within `r abs(round(fit_nca_auto$ofv - fit$ofv, 1))` points of the model-file fit.
 
-`ebe_start_dependent` in that list is a second reason to distrust this one: the random effects it reports depend on where the inner loop started, so every per-subject diagnostic built on them (@sec-diagnostics) inherits that dependence. @sec-estimation-methods shows what to change.
+Convergence only means the optimizer stopped, and a clean warning list does not mean it stopped at the best point. Fit from more than one start and compare the OFVs before accepting a fit.
 
 ## Pitfalls
 
@@ -384,7 +393,7 @@ For the same reason `fit_short$n_iterations` is `r fit_short$n_iterations` here,
 ### Warnings you may see here
 
 - `convergence` (critical): the optimizer did not converge. Reject the fit, then change starting values, method or bounds and refit. See [convergence and covariance warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-convergence).
-- `general` (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, and a misspelt data-selection column (@sec-data). Read the message. See [solver, numerics and unclassified warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-solver).
+- `general` (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, a misspelt data-selection column (@sec-data), and two notes about the outer gradient: that `gradient = fd` in the model file also changed the optimizer, and that some subjects "could not be given the exact analytic outer gradient" and used an approximate one (@sec-estimation-methods). Read the message. See [solver, numerics and unclassified warnings](https://ferx-nlme.github.io/ferx-core/warnings.html#codes-solver).
 
 ## Summary
 

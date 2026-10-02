@@ -88,13 +88,20 @@ A converged fit can still be unfit for comparison: it may never have left its in
 check_strictness(fit_cov, require_covariance = TRUE)
 ```
 
-The fit from NCA-based starting values in @sec-first-fit converged to a much worse OFV. The gates reject it:
+The gates judge whether a fit is healthy, not whether it found the best optimum. Here they are applied to the fit from NCA-based starting values in @sec-first-fit, and to the `emax_pkpd` example of @sec-pkpd, three subjects fitted with a joint PK/PD model:
 
 ```{r}
 #| label: strictness-fail
 fit_nca <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, verbose = FALSE)
-check_strictness(fit_nca)
+check_strictness(fit_nca)$passed
+emax <- ferx_example("emax_pkpd")
+emax_gate <- check_strictness(ferx_fit(emax$model, emax$data, verbose = FALSE))
+emax_gate$failures
+# The paragraph above says the first passes and the second fails, so either changing has to fail the render.
+stopifnot(check_strictness(fit_nca)$passed, !emax_gate$passed)
 ```
+
+The NCA-start fit passes every gate, although its OFV is `r round(fit_nca$ofv - fit_base$ofv)` points worse than `fit_base`: only comparing OFVs shows that it stopped at a worse point. The `emax_pkpd` fit is refused because its parameters cannot be told apart.
 
 The gates and their defaults: `require_converged = TRUE`, `require_covariance = FALSE`, `max_condition_number = 1000`, `max_correlation = 0.95`, `reject_on_boundary = TRUE` and `reject_init_stall = TRUE`. Set a threshold to `NULL`, or a flag to `FALSE`, to disable that gate. `reject_init_stall` assumes a cold start from the model file's initial values, so turn it off when candidates start from a previous model's estimates.
 
@@ -267,10 +274,12 @@ rs_screen <- ruv(TRUE)
 screened <- startsWith(rs_screen$candidates$id, "cwres")
 rbind(fitted_to_data = range(rs_data$candidates$criterion[rs_data$candidates$id != "input"]),
       screened_on_cwres = range(rs_screen$candidates$criterion[screened]))
-c(selected_data = length(rs_data$final_features), selected_screened = length(rs_screen$final_features))
+list(fitted_to_data = rs_data$final_features, screened_on_cwres = rs_screen$final_features)
+# The paragraph below says both passes selected the same feature, so a difference has to fail the render.
+stopifnot(identical(rs_data$final_features, rs_screen$final_features))
 ```
 
-The two sets of numbers are not comparable, and the screening rows are the ones whose `id` starts with `cwres`. Note that the cheaper pass also selected differently here, so treat prescreening as a different search rather than a faster one. The engine default is `cwres_prescreen = FALSE`, which is what the configuration run above used.
+The two sets of numbers are not comparable, and the screening rows are the ones whose `id` starts with `cwres`. Here both passes select the same feature, but they rank candidates on different quantities and need not agree, so treat prescreening as a different search rather than a faster one. The engine default is `cwres_prescreen = FALSE`, which is what the configuration run above used.
 
 
 The search accepted a time-varying residual error in the first iteration, and nothing further in the second. The base model of this workflow, which carried a residual autocorrelation warning in @sec-diagnostics, can be searched the same way with the inline arguments (`model`, `data`, `p_value`, `max_iter`, …).
@@ -288,14 +297,17 @@ iiv
 
 The printed output has three steps. The eta-count stage removes etas from the input structure -- `top_down_exhaustive` tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. The third step, `compare_to_input`, puts the winner of the block stage back against the input structure, and it is there that the selection is made. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool.
 
-Read the printed output carefully. The input model is a candidate in its own right: the step tables rank it, and in the eta-count stage it ranks first. The strictness gate is separate from that ranking. It rejected `r sum(!iiv$models$passed)` of the fitted models, and one of them reached a better criterion than the winner did:
+Read the printed output carefully. The input model is a candidate in its own right: the step tables rank it, and in the eta-count stage it ranks first, because removing any eta costs more than it saves. The block stage then prefers to drop the covariance between `ETA_CL` and `ETA_V`, and `compare_to_input` confirms it, so the search selects the diagonal structure. The strictness gate is separate from that ranking. It rejected `r sum(!iiv$models$passed)` of the fitted models:
 
 ```{r}
 #| label: iivsearch-gate
 iiv$models[, c("id", "structure", "criterion", "rank", "passed")]
+# The paragraphs around this chunk describe this outcome, so a different one has to fail the render.
+stopifnot(iiv$final_structure == "[ETA_CL]+[ETA_KA]+[ETA_V]",
+          all(iiv$models$criterion[!iiv$models$passed] > iiv$final_criterion))
 ```
 
-`run8` scores `r round(min(iiv$models$criterion[!iiv$models$passed]), 2)` against the selected `r round(iiv$final_criterion, 2)`, and is out because it did not pass. Note where that verdict lives: `converged` and `passed` are columns of the tables that report on fitted candidates -- `$models` here, `$candidates` and `$steps` elsewhere -- and not of the per-stage ranking summary, which ranks models those rows already judged:
+`r paste0("\x60", iiv$models$id[!iiv$models$passed], "\x60", collapse = " and ")` is out because it did not pass, and carries no rank. Its criterion was worse than the winner's anyway, but a gated model is excluded whatever it scores. Note where that verdict lives: `converged` and `passed` are columns of the tables that report on fitted candidates -- `$models` here, `$candidates` and `$steps` elsewhere -- and not of the per-stage ranking summary, which ranks models those rows already judged:
 
 ```{r}
 #| label: steps-vs-models
@@ -323,16 +335,11 @@ iiv_block <- ferx_iivsearch(model = bo$model, data = bo$data,
                             directory = book_tempdir("iivsearch-block"), progress = FALSE)
 c(input = iiv_block$input_structure, final = iiv_block$final_structure)
 iiv_block$models[, c("id", "structure", "criterion", "rank", "passed")]
+# The sentence below says this run agrees with the full search, so a difference has to fail the render.
+stopifnot(iiv_block$final_structure == iiv$final_structure)
 ```
 
-Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The input is kept -- but read why. The diagonal candidate reaches the better criterion of the two, and it is out because it fails the strictness gate. The `failures` column gives the reason:
-
-```{r}
-#| label: iivsearch-blocks-reason
-with(iiv_block$models, failures[!is.na(failures)])
-```
-
-No free parameter moved more than 1% of its initial value, so `reject_init_stall` refused the fit. Whether that is the right call here depends on where the candidate started, which the printed output does not say: a candidate handed its parent's optimum can sit still because it is already converged, which is why `ferx_amd()` turns this gate off inside its steps (below). Read a gated-out candidate as unjudged rather than as rejected on merit, and refit it yourself if it matters. A selection is only as meaningful as the gate that produced it.
+Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The diagonal one reaches the better criterion, passes the gate and is selected: the same answer as the full search above, from `r nrow(iiv_block$models)` fits instead of `r nrow(iiv$models)`. When a candidate does fail the gate, the `failures` column of `$models` gives the reason, as in the covariate search above.
 
 ## Inter-occasion variability search
 
@@ -373,7 +380,10 @@ Read the top two rows before anything else. The runner-up has the *better* OFV a
 
 ```{r}
 #| label: globalsearch-ofv-vs-criterion
-head(gs$models[order(gs$models$fitness), c("id", "genome", "ofv", "criterion", "fitness")], 3)
+top <- head(gs$models[order(gs$models$fitness), c("id", "genome", "ofv", "criterion", "fitness")], 3)
+top
+# The paragraph above says the runner-up has the better OFV, so the reverse has to fail the render.
+stopifnot(top$ofv[2] < top$ofv[1])
 ```
 
 ### The criterion is not the whole of the ranking

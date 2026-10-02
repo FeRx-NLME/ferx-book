@@ -141,9 +141,13 @@ cond <- ferx_example("warfarin_if")
 invisible(ferx_model_get_section(cond$model, "individual_parameters"))
 fit_if <- ferx_fit(cond$model, cond$data, verbose = FALSE)
 ferx_get_warnings(fit_if, as_df = TRUE)[, c("severity", "category", "message")]
+# The sentence below explains the general warning as the outer-gradient note, so anything else has to fail the render.
+if_warnings <- ferx_get_warnings(fit_if, as_df = TRUE)
+stopifnot(all(grepl("exact analytic outer gradient", if_warnings$message[if_warnings$category == "general"],
+                    fixed = TRUE)))
 ```
 
-A parameter assigned inside an `if` block loses mu-referencing (@sec-variability), and the fit says so with an `info` note. On the same data, the three models compare as follows:
+A parameter assigned inside an `if` block loses mu-referencing (@sec-variability), and the fit says so with an `info` note. The `general` warning is the outer-gradient note explained in @sec-estimation-methods. On the same data, the three models compare as follows:
 
 ```{r}
 #| label: tbl-covariate-models

@@ -90,12 +90,15 @@ The file stores the fields of the cross-language schema, not every element of th
 setdiff(names(fit), names(loaded))
 ```
 
-Warning categories are an example. After loading, the warnings are still there, but their category is `general`:
+The structured warning table `warnings_structured` is one of them, but the warnings survive as text, and `ferx_get_warnings()` classifies a loaded fit's messages again with the engine's own rules. The loaded fit therefore reports the same severities and categories as the fresh one:
 
 ```{r}
 #| label: warnings-loaded
 ferx_get_warnings(fit, as_df = TRUE)$category
 ferx_get_warnings(loaded, as_df = TRUE)$category
+# The sentence above says the two agree, so a difference has to fail the render.
+stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)[, c("severity", "category")],
+                    ferx_get_warnings(loaded, as_df = TRUE)[, c("severity", "category")]))
 ```
 
 Keep what you need from the missing fields (for example `individual_estimates` or `condition_number`) in your own tables. Or save the R object as well, with `saveRDS()`.
@@ -170,7 +173,7 @@ Keep search directories (@sec-model-selection) and bootstrap directories (@sec-u
 
 ## Pitfalls
 
-- **Reloaded fits are not complete R fit objects.** Check that the fields you need survive `ferx_save_fit()`/`ferx_load_fit()`, and do not rely on warning categories after loading.
+- **Reloaded fits are not complete R fit objects.** Check that the fields you need survive `ferx_save_fit()`/`ferx_load_fit()`. Warnings come back as text, with their categories derived again from it.
 - **Changing a model or data file invalidates follow-up steps.** `ferx_sir()` and `ferx_covariance()` stop when the hashes no longer match. Version model files (`run2.ferx`) instead of editing them in place.
 - **Record the build.** Output can change between ferx builds. Record the ferx-r commit or release with every run.
 

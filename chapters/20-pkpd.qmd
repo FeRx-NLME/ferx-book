@@ -64,10 +64,14 @@ The predictions follow the data, but three subjects cannot determine eight struc
 ```{r}
 #| label: pkpd-estimates
 fit_pkpd$estimates[, c("estimate", "rse_pct")]
-ferx_get_warnings(fit_pkpd, as_df = TRUE)[, c("severity", "category")]
+pkpd_warnings <- ferx_get_warnings(fit_pkpd, as_df = TRUE)
+pkpd_warnings[, c("severity", "category")]
+# The text below reads these warnings, so a different set has to fail the render.
+stopifnot("high_correlation" %in% pkpd_warnings$category,
+          all(grepl("gradient = fd", pkpd_warnings$message[pkpd_warnings$category == "general"], fixed = TRUE)))
 ```
 
-The PD parameters have relative standard errors in the thousands of percent, and the parameters are almost perfectly correlated. The model structure is fine; the data are too few (see the simulation–estimation variant below).
+The PD baseline `TVE0` has a relative standard error of `r round(fit_pkpd$estimates["TVE0", "rse_pct"])`%, `TVEC50` of `r round(fit_pkpd$estimates["TVEC50", "rse_pct"])`%, and the PD parameters are almost perfectly correlated with each other. The model structure is fine; the data are too few (see the simulation–estimation variant below).
 
 ## Options that matter
 
@@ -158,7 +162,7 @@ fit_timecourse <- ferx_fit(timecourse$model, timecourse$data, verbose = FALSE)
 fit_timecourse$estimates[, c("estimate", "rse_pct")]
 ```
 
-Such a model works with prediction, simulation and the diagnostics like any other. `TAD` and `TAFD` are `NaN` in `sdtab`, since there are no doses. For the same reason `ferx_predict()` passes on the data reader's `W_NO_DOSES` warning, which for a compartment-free model states the design rather than a problem:
+Such a model works with prediction, simulation and the diagnostics like any other. `TAD` and `TAFD` are `NaN` in `sdtab`, since there are no doses. For the same reason `ferx_predict()` passes on the data reader's `W_NO_DOSES` warning, and `W_CMT_DEFAULTED` because the dataset has no `CMT` column. For a compartment-free model with one endpoint, both state the design rather than a problem:
 
 ```{r}
 #| label: fig-timecourse
@@ -184,7 +188,7 @@ A compartment-free model cannot have `[odes]`, `[scaling]` or references to `cen
 
 - `general` (warning): parameters declared but not used by the predictions, such as the fixed PD thetas of `warfarin_derived_pkpd` that only `[derived]` reads.
 
-Other warnings above (`inflated_rse`, `high_correlation`, `condition_number`, `covariance_regularized`) are covered in @sec-uncertainty.
+Other warnings above (`inflated_rse`, `high_correlation`, `condition_number`) are covered in @sec-uncertainty, `eta_shrinkage` in @sec-diagnostics, and the `general` note about `gradient = fd` in @sec-estimation-methods.
 
 ## Summary
 
