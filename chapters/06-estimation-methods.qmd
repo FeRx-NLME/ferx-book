@@ -447,7 +447,7 @@ saem_runs <- lapply(saem_variants, function(s) suppressWarnings(
 t(sapply(saem_runs, function(f) c(ofv = f$ofv, f$theta)))
 ```
 
-The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. `mstep_draws = 4` `r if (identical(saem_runs$bobyqa_4_draws$theta, saem_runs$defaults$theta)) "leaves this fit's estimates exactly as they were" else "moves this fit's estimates slightly"`. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
+The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. `mstep_draws = 4` `r if (identical(saem_runs$bobyqa_4_draws$theta, saem_runs$defaults$theta)) "leaves this fit's estimates exactly as they were" else sprintf("moves this fit's estimates by at most %s%%", signif(max(abs(saem_runs$bobyqa_4_draws$theta / saem_runs$defaults$theta - 1)) * 100, 1))`. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
 
 ### Laplace and adaptive quadrature
 

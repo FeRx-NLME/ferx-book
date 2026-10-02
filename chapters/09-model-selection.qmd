@@ -298,18 +298,18 @@ iiv
 
 The printed output has three steps. The eta-count stage removes etas from the input structure -- `top_down_exhaustive` tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. The third step, `compare_to_input`, puts the winner of the block stage back against the input structure, and it is there that the selection is made. Candidates are ranked on the BIC(iiv), which is what `rank = "bic"` means for this tool.
 
-Read the printed output carefully. The input model is a candidate in its own right: the step tables rank it, and in the eta-count stage it ranks first, because removing any eta costs more than it saves. The block stage then prefers to drop the covariance between `ETA_CL` and `ETA_V`, and `compare_to_input` confirms it, so the search selects the diagonal structure. The strictness gate is separate from that ranking. It rejected `r sum(!iiv$models$passed)` of the fitted models:
+Read the printed output carefully. The input model is a candidate in its own right, and the step tables rank it beside the candidates. The strictness gate is separate from that ranking; `$models` shows both:
 
 ```{r}
 #| label: iivsearch-gate
 iiv$models[, c("id", "structure", "criterion", "rank", "passed")]
-# The paragraphs around this chunk describe this outcome -- the diagonal winner and
-# exactly one gated model, worse than the winner -- so a different one has to fail the render.
-stopifnot(iiv$final_structure == "[ETA_CL]+[ETA_KA]+[ETA_V]", sum(!iiv$models$passed) == 1,
-          iiv$models$criterion[!iiv$models$passed] > iiv$final_criterion)
+eta_stage <- iiv$steps[iiv$steps$kind == "no_of_etas", ]
+input_rank <- eta_stage$rank[eta_stage$id == "input"]
+gated <- iiv$models[!iiv$models$passed, ]
+diagonal <- !grepl(",", iiv$final_structure)
 ```
 
-`r paste0("\x60", iiv$models$id[!iiv$models$passed], "\x60")` is out because it did not pass, and carries no rank. Its criterion was worse than the winner's anyway, but a gated model is excluded whatever it scores. Note where that verdict lives: `converged` and `passed` are columns of the tables that report on fitted candidates -- `$models` here, `$candidates` and `$steps` elsewhere -- and not of the per-stage ranking summary, which ranks models those rows already judged:
+`r if (identical(input_rank, 1L) || identical(input_rank, 1)) "In the eta-count stage the input ranks first: removing any eta costs more than it saves." else sprintf("In the eta-count stage the input ranks %s.", input_rank)` `r if (diagonal) sprintf("The search selects the diagonal structure %s: the block stage drops the covariance block, and \x60compare_to_input\x60 confirms it.", iiv$final_structure) else sprintf("The search keeps a covariance block: %s.", iiv$final_structure)` `r if (nrow(gated) == 0) "The gate rejected none of the fitted models." else sprintf("The gate rejected %s, which %s no rank. %s", paste0("\x60", gated$id, "\x60", collapse = " and "), if (nrow(gated) == 1) "carries" else "carry", if (all(gated$criterion > iiv$final_criterion)) "Its criterion was worse than the winner's anyway, but a gated model is excluded whatever it scores." else "At least one reached a better criterion than the winner and is out only because it did not pass.")` Note where that verdict lives: `converged` and `passed` are columns of the tables that report on fitted candidates -- `$models` here, `$candidates` and `$steps` elsewhere -- and not of the per-stage ranking summary, which ranks models those rows already judged:
 
 ```{r}
 #| label: steps-vs-models
@@ -337,11 +337,9 @@ iiv_block <- ferx_iivsearch(model = bo$model, data = bo$data,
                             directory = book_tempdir("iivsearch-block"), progress = FALSE)
 c(input = iiv_block$input_structure, final = iiv_block$final_structure)
 iiv_block$models[, c("id", "structure", "criterion", "rank", "passed")]
-# The sentence below says this run agrees with the full search, so a difference has to fail the render.
-stopifnot(iiv_block$final_structure == iiv$final_structure)
 ```
 
-Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The diagonal one reaches the better criterion, passes the gate and is selected: the same answer as the full search above, from `r nrow(iiv_block$models)` fits instead of `r nrow(iiv$models)`. When a candidate does fail the gate, the `failures` column of `$models` gives the reason, as `$steps` does for the covariate search above.
+Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. `r if (!grepl(",", iiv_block$final_structure)) "The diagonal one is selected" else "The block is kept"`, `r if (iiv_block$final_structure == iiv$final_structure) "the same answer as the full search above" else "a different answer from the full search above, which also decided which etas to keep"`, from `r nrow(iiv_block$models)` fits instead of `r nrow(iiv$models)`. When a candidate does fail the gate, the `failures` column of `$models` gives the reason, as `$steps` does for the covariate search above.
 
 ## Inter-occasion variability search
 
@@ -378,7 +376,7 @@ gs <- ferx_globalsearch(config = gs_ex$search,
 gs
 ```
 
-Read the top rows with both columns in view. The ranking is on the criterion, which charges each model for its parameters, so the best OFV need not win:
+Read the top rows with both columns in view. The ranking is on the criterion, which charges each model for its parameters and for an unhealthy fit, so the best OFV need not win:
 
 ```{r}
 #| label: globalsearch-ofv-vs-criterion
@@ -387,7 +385,7 @@ top
 charge <- top$criterion - top$ofv
 ```
 
-`r if (top$ofv[2] < top$ofv[1]) sprintf("Here the runner-up has the *better* OFV (%.1f against %.1f) and still ranks second, because the criterion charges it %.1f for its parameters against %.1f for the winner. A table showing only the OFV would name the wrong winner", top$ofv[2], top$ofv[1], charge[2], charge[1]) else sprintf("Here the winner also has the better OFV (%.1f against %.1f for the runner-up), but the margin on the criterion is %.1f rather than %.1f, because the two are charged %.1f and %.1f for their parameters", top$ofv[1], top$ofv[2], top$criterion[2] - top$criterion[1], top$ofv[2] - top$ofv[1], charge[1], charge[2])`, which is why the criterion and the OFV are separate columns.
+`r if (top$ofv[2] < top$ofv[1]) sprintf("Here the runner-up has the *better* OFV (%.1f against %.1f) and still ranks second, because the criterion charges it %.1f for its parameters and fit health against %.1f for the winner. A table showing only the OFV would name the wrong winner", top$ofv[2], top$ofv[1], charge[2], charge[1]) else sprintf("Here the winner also has the better OFV (%.1f against %.1f for the runner-up), but the margin on the criterion is %.1f rather than %.1f, because the two are charged %.1f and %.1f for their parameters and fit health", top$ofv[1], top$ofv[2], top$criterion[2] - top$criterion[1], top$ofv[2] - top$ofv[1], charge[1], charge[2])`, which is why the criterion and the OFV are separate columns.
 
 ### The criterion is not the whole of the ranking
 

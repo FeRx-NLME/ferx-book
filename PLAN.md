@@ -744,7 +744,7 @@ Per-chapter loop:
   - **`print()` of a binary fit:** says "Obs: 0", "Structural: 1-cpt IV" and "Residual: per-CMT ()" for `binary_logistic`.
   - **Misclassified notice:** the finite-difference inner-gradient notice is categorised `data_quality` (warning).
   - **FOCE runs without complaint:** the docs say FOCE is biased for binary endpoints, but `method = "foce"` on the random-intercept model runs silently with the same OFV as FOCEI.
-  - ~~**SAEM default seed:** on that model the default seed ends at a degenerate point (RSE 2e6%), while seeds 1–3 agree.~~ Gone at `5c9cc7a` with the new SAEM defaults (`scale_adaptation = robbins_monro`, `n_mh_steps = auto`): no seed needs a regularized covariance step, but the four runs now scatter (`ETA_I` 0.39-0.56). ch21 reports the spread with inline numbers and a guard.
+  - ~~**SAEM default seed:** on that model the default seed ends at a degenerate point (RSE 2e6%), while seeds 1–3 agree.~~ Gone at `5c9cc7a` with the new SAEM defaults (`scale_adaptation = robbins_monro`, `n_mh_steps = auto`): no seed needs a regularized covariance step, but the four runs now scatter (`ETA_I` 0.39-0.56). ch21 reports the spread, and how many runs needed a regularized covariance step, with inline numbers.
 - ferx-r/ferx-core (found in 4.4, ch22), to check:
   - **Empty `sdtab`:** TTE-only fits return an empty `sdtab` (0 rows).
   - **Stale model comment:** the `tte_exponential` comment says `[event_model]` cannot reference individual parameters; the docs now say it can.

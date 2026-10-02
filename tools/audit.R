@@ -41,14 +41,26 @@ if (!identical(wf_sha, pin$ferx_r_sha)) note("pin", sprintf("render.yml FERX_R_S
 # tag must resolve to the pinned commit. Checked on GitHub (CI has no ../ferx-r);
 # without network the check is skipped and says so rather than passing silently.
 if (!is.null(pin$ferx_r_tag)) {
-  peeled <- tryCatch(suppressWarnings(system2("git", c("ls-remote", "https://github.com/FeRx-NLME/ferx-r.git",
-                       paste0("refs/tags/", pin$ferx_r_tag, "^{}")), stdout = TRUE, stderr = FALSE)),
-                     error = function(e) character(0))
-  if (!length(peeled)) {
-    cat("pin: could not resolve ferx_r_tag", pin$ferx_r_tag, "on GitHub (offline?); tag check skipped\n")
-  } else if (!identical(sub("\\s.*$", "", peeled[1]), pin$ferx_r_sha)) {
-    note("pin", sprintf("ferx_r_tag %s resolves to %s, not ferx_r_sha %s - update or remove ferx_r_tag",
-                        pin$ferx_r_tag, sub("\\s.*$", "", peeled[1]), pin$ferx_r_sha))
+  # Ask for the tag and its peeled form: an annotated tag's commit is the `^{}`
+  # line, a lightweight tag has only the plain line. git's exit status tells an
+  # unreachable remote (skip, say so) from a tag that does not exist (fail).
+  tag_ref <- paste0("refs/tags/", pin$ferx_r_tag)
+  ls <- tryCatch(suppressWarnings(system2("git", c("ls-remote", "https://github.com/FeRx-NLME/ferx-r.git",
+                                               tag_ref, paste0(tag_ref, "^{}")),
+                                          stdout = TRUE, stderr = FALSE)),
+                 error = function(e) structure(character(0), status = 127L))
+  status <- attr(ls, "status")
+  if (!is.null(status) && status != 0) {
+    cat("pin: could not reach GitHub to resolve ferx_r_tag", pin$ferx_r_tag, "(git status", status, "); tag check skipped\n")
+  } else if (!length(ls)) {
+    note("pin", sprintf("ferx_r_tag %s does not exist on FeRx-NLME/ferx-r - fix or remove ferx_r_tag", pin$ferx_r_tag))
+  } else {
+    peeled <- grep("\\^\\{\\}$", ls, value = TRUE)
+    tag_sha <- sub("\\s.*$", "", if (length(peeled)) peeled[1] else ls[1])
+    if (!identical(tag_sha, pin$ferx_r_sha)) {
+      note("pin", sprintf("ferx_r_tag %s resolves to %s, not ferx_r_sha %s - update or remove ferx_r_tag",
+                          pin$ferx_r_tag, tag_sha, pin$ferx_r_sha))
+    }
   }
 }
 if (requireNamespace("ferx", quietly = TRUE)) {

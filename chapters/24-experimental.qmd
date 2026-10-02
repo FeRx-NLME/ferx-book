@@ -145,7 +145,7 @@ data.frame(model = c("two_cpt_oral_base (no covariates)", "two_cpt_oral_cov (WT,
            aic = c(fit_base$aic, fit_cov$aic, fit_dcm$aic))
 ```
 
-This fit of the network does not improve on the model without covariates, and its 141 weights make the AIC far worse than either alternative. The explicit covariate model captures the covariate effects with two parameters.
+This fit of the network reaches an OFV of `r round(fit_dcm$ofv, 1)` against `r round(fit_base$ofv, 1)` without covariates, and its 141 weights put its AIC at `r round(fit_dcm$aic, 1)`, against `r round(fit_base$aic, 1)` and `r round(fit_cov$aic, 1)` for the alternatives. The explicit covariate model captures the covariate effects with two parameters.
 
 How much the network departs from multipliers of 1 can be read from the individual parameters. For clearance, `CL / (TVCL * exp(ETA_CL))` is the network's multiplier for each subject:
 
@@ -163,11 +163,10 @@ multipliers <- left_join(clearance_multiplier(fit_dcm), subjects, by = "ID")
 summary(multipliers$multiplier)
 range(subjects$WT)
 range(subjects$CRCL)
-# The sentence below says the multiplier is constant to seven significant digits.
-stopifnot(diff(range(multipliers$multiplier)) / mean(multipliers$multiplier) < 1e-7)
+spread <- diff(range(multipliers$multiplier)) / mean(multipliers$multiplier)
 ```
 
-The multiplier is the same for every subject to seven significant digits, across the whole range of weight and creatinine clearance: this fit of the network learned no covariate dependence at all, and only rescaled the typical clearance. The next section shows that this says more about where the optimizer stopped than about the data.
+`r if (spread < 1e-6) sprintf("The multiplier is the same for every subject to %d significant digits, across the whole range of weight and creatinine clearance: this fit of the network learned no covariate dependence at all, and only rescaled the typical clearance.", floor(-log10(spread))) else sprintf("The multiplier varies by only %s%% across the whole range of weight and creatinine clearance: this fit of the network learned almost no covariate dependence.", signif(spread * 100, 2))` The next section shows that this says more about where the optimizer stopped than about the data.
 
 ### Regularizing the network
 
@@ -185,15 +184,14 @@ data.frame(fit = c("network", "network, nn_l2 = 0.01", "two_cpt_oral_cov"),
            aic = c(fit_dcm$aic, fit_dcm_l2$aic, fit_cov$aic))
 multipliers_l2 <- clearance_multiplier(fit_dcm_l2)$multiplier
 summary(multipliers_l2)
-# The paragraph below reads this ordering and says the multipliers now vary between
-# subjects, so a different outcome has to fail the render.
-stopifnot(fit_dcm_l2$ofv < min(fit_dcm$ofv, fit_cov$ofv) - 50, fit_dcm_l2$aic > fit_cov$aic,
-          diff(range(multipliers_l2)) / mean(multipliers_l2) > 0.1)
+# The argument below rests on the penalized fit reaching a lower unpenalized OFV than
+# the fit without the penalty; if it does not, the paragraph is wrong and the render stops.
+stopifnot(fit_dcm_l2$ofv < fit_dcm$ofv)
 ```
 
-With the penalty, the network gives each subject its own clearance multiplier, and the fit reports an unpenalized OFV `r round(fit_dcm$ofv - fit_dcm_l2$ofv)` points below that of the fit without the penalty. A penalty cannot make the unpenalized objective better than its optimum, so the fit without it, although it reports convergence, stopped far from that optimum. ferx-core lists DCM FOCEI fits that report convergence far above a point of their own parameter space as a known issue at this release ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Fit a network more than once, with and without a penalty, and compare the OFVs before reading anything into it.
+With the penalty, the network's clearance multipliers range from `r round(min(multipliers_l2), 2)` to `r round(max(multipliers_l2), 2)` across subjects, and the fit reports an unpenalized OFV `r round(fit_dcm$ofv - fit_dcm_l2$ofv)` points below that of the fit without the penalty. A penalty cannot make the unpenalized objective better than its optimum, so the fit without it, although it reports convergence, stopped at least that far above its optimum. ferx-core lists DCM FOCEI fits that report convergence far above a point of their own parameter space as a known issue at this release ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Fit a network more than once, with and without a penalty, and compare the OFVs before reading anything into it.
 
-Even at its lower OFV, the regularized network does not beat the explicit covariate model on AIC (`r round(fit_dcm_l2$aic, 1)` against `r round(fit_cov$aic, 1)`): `r fit_dcm_l2$n_parameters` parameters cost more than the objective gains.
+`r if (fit_dcm_l2$aic > fit_cov$aic) sprintf("Even at its lower OFV, the regularized network does not beat the explicit covariate model on AIC (%.1f against %.1f): %d parameters cost more than the objective gains.", fit_dcm_l2$aic, fit_cov$aic, fit_dcm_l2$n_parameters) else sprintf("On AIC the regularized network beats the explicit covariate model (%.1f against %.1f) despite its %d parameters.", fit_dcm_l2$aic, fit_cov$aic, fit_dcm_l2$n_parameters)`
 
 ### Parameter priors
 
@@ -289,7 +287,7 @@ Each updated estimate sits between those of the two studies. `r if (length(narro
 - **Experimental means validate yourself.** Compare an SDE or network model with its conventional counterpart, as above, before relying on it.
 - **`from_fit` paths in a temporary directory.** `//` starts a comment in a `.ferx` file, so write the path to the saved fit through `normalizePath()`, as above, or keep the saved fit next to the model and give a relative path, which is resolved against the model file's directory.
 - **Extra flexibility is not extra information.** A diffusion variance or a network with many weights needs data that support it; check standard errors, the OFV change and information criteria.
-- **A converged network fit may be far from its optimum at this build.** Without a penalty, `warfarin_dcm` reports convergence at an OFV far above that of a regularized fit of the same model ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Compare fits with and without `nn_l2`.
+- **A converged network fit may be far from its optimum at this build.** Without a penalty, `warfarin_dcm` reports convergence at an OFV above that of a regularized fit of the same model ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Compare fits with and without `nn_l2`.
 - **Standard errors of network weights are not reliable,** and the covariance step with many weights is slow. Skip it with `covariance = FALSE` while exploring.
 - **SDE fits are slow.** The extended Kalman filter uses finite differences; the warfarin SDE fit takes many times longer than the ODE fit.
 

@@ -59,10 +59,14 @@ book_tempdir <- function(name) {
 # Options table for `settings` keys. Values, defaults and descriptions come from
 # tools/settings-docs.csv, generated from the pinned ferx-core fit-options docs
 # and ?ferx_fit (tools/settings-docs.R) -- never typed by hand.
-book_settings_table <- function(keys, caption = NULL) {
+book_settings_docs <- function() {
   path <- if (file.exists("tools/settings-docs.csv")) "tools/settings-docs.csv" else
     file.path("..", "tools", "settings-docs.csv")
-  docs <- read.csv(path, stringsAsFactors = FALSE)
+  read.csv(path, stringsAsFactors = FALSE)
+}
+
+book_settings_table <- function(keys, caption = NULL) {
+  docs <- book_settings_docs()
   missing <- setdiff(keys, docs$key)
   if (length(missing)) stop("not a settings key on the pinned build: ", paste(missing, collapse = ", "))
   rows <- docs[match(keys, docs$key), ]
@@ -78,9 +82,7 @@ book_settings_table <- function(keys, caption = NULL) {
 # Default of one `settings` key, for inline use in prose, from the same generated
 # file as book_settings_table() (never typed by hand). Backticks are stripped.
 book_setting_default <- function(key) {
-  path <- if (file.exists("tools/settings-docs.csv")) "tools/settings-docs.csv" else
-    file.path("..", "tools", "settings-docs.csv")
-  docs <- read.csv(path, stringsAsFactors = FALSE)
+  docs <- book_settings_docs()
   if (!key %in% docs$key) stop("not a settings key on the pinned build: ", key)
   gsub("`", "", docs$default[docs$key == key])
 }

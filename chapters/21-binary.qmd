@@ -117,7 +117,7 @@ saem_runs <- do.call(rbind, lapply(names(saem_seeds), function(name) {
 saem_runs
 ```
 
-`r c("No run needs", "One run needs", "Two runs need", "Three runs need", "All four runs need")[sum(saem_runs$covariance_regularized) + 1]` a regularized covariance step, and the runs stop at different points: the variance of the random intercept ranges from `r round(min(saem_runs$ETA_I), 2)` to `r round(max(saem_runs$ETA_I), 2)` between seeds (FOCEI: `r round(fit_ri$omega["ETA_I", "ETA_I"], 2)`), and the covariate effect `THX` from `r round(min(saem_runs$THX), 2)` to `r round(max(saem_runs$THX), 2)`. On a likelihood this flat, the seed decides where the run stops.
+`r n_reg <- sum(saem_runs$covariance_regularized); if (n_reg == 0) "No run needs" else if (n_reg == nrow(saem_runs)) "Every run needs" else sprintf("%d of the %d runs need", n_reg, nrow(saem_runs))` a regularized covariance step, and the runs stop at different points: the variance of the random intercept ranges from `r round(min(saem_runs$ETA_I), 2)` to `r round(max(saem_runs$ETA_I), 2)` between seeds (FOCEI: `r round(fit_ri$omega["ETA_I", "ETA_I"], 2)`), and the covariate effect `THX` from `r round(min(saem_runs$THX), 2)` to `r round(max(saem_runs$THX), 2)`. On a likelihood this flat, the seed decides where the run stops.
 
 Set the seed for SAEM fits, and compare a few seeds when a variance is weakly identified (@sec-estimation-methods).
 
