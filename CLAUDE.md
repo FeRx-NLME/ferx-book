@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## What this is
 
-ferx-book is the Quarto book for the ferx R package: a fully runnable tutorial on using ferx-r in an R modeling analysis, organised as a workflow (data → model → estimate → evaluate → simulate → report), followed by scenario chapters and a generated reference index. Technical detail (DSL grammar, estimator math, every option) lives in the [ferx-core docs](https://ferx-nlme.github.io/ferx-core/) and is linked, not copied.
+ferx-book is the Quarto book for the ferx R package: a fully runnable tutorial on using ferx-r in an R modeling analysis, organised as a workflow (data → model → estimate → evaluate → simulate → report), followed by scenario chapters and a generated reference index. Technical detail (DSL grammar, estimator math, every option) lives in the [ferx-core docs](https://ferx-nlme.org/ferx-core/) and is linked, not copied.
 
 `PLAN.md` records the design, ground rules, decisions and upstream findings of the v2 rebuild. Read it before larger changes.
 

@@ -44,7 +44,7 @@ warf <- ferx_example("warfarin")
 | `"bayes"` | Full MCMC | Posterior summaries in `fit$bayes` instead of a covariance step |
 | `vi` (model file only) | Variational inference | Set in `[fit_options]`; not accepted by the `method` argument (see below) |
 
-The ferx-core [estimation methods](https://ferx-nlme.github.io/ferx-core/estimation/index.html) pages describe each algorithm. The same warfarin model fitted with each method:
+The ferx-core [estimation methods](https://ferx-nlme.org/ferx-core/estimation/index.html) pages describe each algorithm. The same warfarin model fitted with each method:
 
 ```{r}
 #| label: tbl-methods
@@ -207,7 +207,7 @@ The note reports the route the gradient took, not a defect in the result: it nam
 
 ### Settings
 
-Everything else is set through `settings = list(key = value)`, or with the same key in the model's `[fit_options]`. The tables below are generated from the ferx-core [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html) documentation and `?ferx_fit` for the pinned build.
+Everything else is set through `settings = list(key = value)`, or with the same key in the model's `[fit_options]`. The tables below are generated from the ferx-core [fit options](https://ferx-nlme.org/ferx-core/model-file/fit-options.html) documentation and `?ferx_fit` for the pinned build.
 
 **Run control**
 
@@ -343,7 +343,7 @@ stopifnot(fit_starved$converged,
           !any(c("convergence", "ebe_start_dependent") %in% starved_warnings$category))
 ```
 
-The other warnings -- the critical `condition_number` among them -- say the result is unusable, but not why. Estimates sitting exactly on the midpoints of their bounds are the sign. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it. A derivative-free `optimizer` such as `bobyqa` stalls at the initial estimates instead, which `stalled_at_init` does report.
+The other warnings -- the critical `condition_number` among them -- say the result is unusable, but not why. Estimates sitting exactly on the midpoints of their bounds are the sign. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it. A derivative-free `optimizer` such as `bobyqa` stalls at the initial estimates instead, which `stalled_at_init` does report ([ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617)).
 :::
 
 Choosing the outer `optimizer` on warfarin:
@@ -448,7 +448,7 @@ saem_runs <- lapply(saem_variants, function(s) suppressWarnings(
 t(sapply(saem_runs, function(f) c(ofv = f$ofv, f$theta)))
 ```
 
-The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.github.io/ferx-core/estimation/saem.html) page measures on harder models.
+The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
 
 ### Laplace and adaptive quadrature
 
@@ -457,7 +457,7 @@ The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previ
 book_settings_table(c("n_agq", "agq_eval_only"))
 ```
 
-`n_agq` is the number of Gauss-Hermite nodes per random effect. The cost grows as `n_agq` to the power of the number of etas, so higher values suit models with few random effects. `agq_eval_only` uses quadrature only to evaluate the likelihood at a fitted point (see the ferx-core [AGQ page](https://ferx-nlme.github.io/ferx-core/estimation/agq.html)).
+`n_agq` is the number of Gauss-Hermite nodes per random effect. The cost grows as `n_agq` to the power of the number of etas, so higher values suit models with few random effects. `agq_eval_only` uses quadrature only to evaluate the likelihood at a fitted point (see the ferx-core [AGQ page](https://ferx-nlme.org/ferx-core/estimation/agq.html)).
 
 ```{r}
 #| label: laplace-agq
@@ -565,7 +565,7 @@ book_settings_table(c("vi_iters", "vi_mc_samples", "vi_lr", "vi_grad_clip", "vi_
                       "vi_omega_update", "vi_sigma_update", "vi_avg_last", "vi_eta_grad", "vi_final_ofv", "vi_seed"))
 ```
 
-VI does not support non-Gaussian endpoints (time-to-event, binary). See the ferx-core [variational inference](https://ferx-nlme.github.io/ferx-core/estimation/vi.html) page.
+VI does not support non-Gaussian endpoints (time-to-event, binary). See the ferx-core [variational inference](https://ferx-nlme.org/ferx-core/estimation/vi.html) page.
 
 ## Running a fit in the background
 
@@ -609,7 +609,7 @@ ferx_stop(job)               # or: stop the job
 
 ### Warnings you may see here
 
-See the ferx-core [warnings page](https://ferx-nlme.github.io/ferx-core/warnings.html) for the full descriptions.
+See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html) for the full descriptions.
 
 - `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.
 - `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. Arrives alongside `converged = TRUE`, which is why it is not a `convergence` warning (above).
@@ -652,5 +652,5 @@ Next: @sec-diagnostics evaluates the fit.
 ::: {.callout-tip}
 ## Reference
 - R help: `?ferx_fit`, `?ferx_trace`, `?plot.ferx_fit`, `?ferx_runlog`, `?ferx_runlog_iters`, `?ferx_conddist`, `?ferx_fit_async`, `?ferx_collect`, `?ferx_stop`
-- ferx-core: [estimation methods](https://ferx-nlme.github.io/ferx-core/estimation/index.html), [optimizers](https://ferx-nlme.github.io/ferx-core/estimation/optimizers.html), [fit options](https://ferx-nlme.github.io/ferx-core/model-file/fit-options.html), [warnings](https://ferx-nlme.github.io/ferx-core/warnings.html)
+- ferx-core: [estimation methods](https://ferx-nlme.org/ferx-core/estimation/index.html), [optimizers](https://ferx-nlme.org/ferx-core/estimation/optimizers.html), [fit options](https://ferx-nlme.org/ferx-core/model-file/fit-options.html), [warnings](https://ferx-nlme.org/ferx-core/warnings.html)
 :::

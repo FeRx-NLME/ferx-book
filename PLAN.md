@@ -844,11 +844,11 @@ Per-chapter loop:
     `optimizer = auto` -- `two_cpt_oral_base`, `emax_pkpd`) and the #1154 outer-gradient note ("N of M
     subjects could not be given the exact analytic outer gradient", on `two_cpt_oral_cov`,
     `warfarin_ode`, `mm_oral`, `warfarin_if`, `warfarin_dcm`, ...). `gradient_fallback` /
-    `optimizer_config` would fit. Not filed yet. The book explains both as `general` notes (ch05 list and
+    `optimizer_config` would fit. Filed as [ferx-core #1618](https://github.com/FeRx-NLME/ferx-core/issues/1618). The book explains both as `general` notes (ch05 list and
     `warnings` chunk, ch06 `gradient-moves-optimizer` / `outer-gradient-note`, pointers in ch07, ch17, ch20);
     when they get a category, the guards in ch05, ch07, ch17 and ch20 stop the render.
   - **ferx-core docs gap:** `docs/warnings.qmd` at `2a6076af` has no row for `init_not_representable`, so
-    its severity and description are blank in the generated ch25 table. ch06 documents and runs it
+    its severity and description are blank in the generated ch25 table. Already tracked: ferx-core #1436, closed into #1439 (docs drift, item 4). ch06 documents and runs it
     (`init-not-representable`).
   - **ferx-core bug, important: a fit whose every outer trial is guard-rejected reports convergence at
     the midpoint of its bounds.** Investigated at the `5c9cc7a` bump. When more than
@@ -868,7 +868,7 @@ Per-chapter loop:
     library) gives the same midpoints at k ≤ 6; 0.4.0 improved k = 7 and 10, which used to report a fit
     at the optimum as unconverged with `ebe_start_dependent` -- which is why ch06's old demo stopped
     triggering. Fix direction: treat "no feasible evaluation" as non-convergence (critical
-    `convergence` naming the guard) instead of restoring a penalty point. Not filed yet. ch06
+    `convergence` naming the guard) instead of restoring a penalty point. Filed as [ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617). ch06
     (`starved-inner-loop`) shows it in an "at this build" callout whose guard stops the render once the
     engine reports it. Replaces the old
     `ebe-start-dependent` demo (`inner_maxiter = 10` on warfarin), which no longer raises the warning;
