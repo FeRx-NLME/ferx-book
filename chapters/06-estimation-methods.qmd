@@ -280,15 +280,13 @@ data.frame(optimizer = c("bobyqa", "slsqp"), ofv = c(fit_restart$ofv, fit_restar
            stalled_at_init = c(fit_restart$stalled_at_init, fit_restart_slsqp$stalled_at_init))
 restart_warnings <- ferx_get_warnings(fit_restart, as_df = TRUE)
 restart_warnings[, c("severity", "category")]
-# The section is about this warning, and the paragraph below about the two
-# convergence verdicts, so either changing has to fail the render rather than
-# quietly leave a different table under unchanged prose.
+# The section is about this warning, so its absence on either fit has to fail the
+# render rather than quietly leave a different table under unchanged prose.
 stopifnot("stalled_at_init" %in% restart_warnings$category,
-          "stalled_at_init" %in% ferx_get_warnings(fit_restart_slsqp, as_df = TRUE)$category,
-          !fit_restart$converged, fit_restart_slsqp$converged)
+          "stalled_at_init" %in% ferx_get_warnings(fit_restart_slsqp, as_df = TRUE)$category)
 ```
 
-Here the start really was the optimum, so `stalled_at_init` is expected and harmless. What `converged` says beside it depends on the optimizer. `slsqp` reports `converged = TRUE`, which is the case the warning exists for: nothing else would flag that fit. `bobyqa` reports the same stalled fit as unconverged, with a critical `convergence` warning. Either way, read `stalled_at_init` first. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
+Here the start really was the optimum, so `stalled_at_init` is expected and harmless. What `converged` says beside it can depend on the optimizer: here it is `r fit_restart_slsqp$converged` under `slsqp` and `r fit_restart$converged` under `bobyqa`. A stalled fit reported as converged is the case the warning exists for, since nothing else would flag it. Either way, read `stalled_at_init` first. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
 
 The seed has to come from a run that actually reached the optimum. The same rewrite applied to the `bobyqa` fit of the previous section does not stall, because that fit stopped short of the optimum (@tbl-optimizers) and the optimizer still has somewhere to go:
 
@@ -317,12 +315,12 @@ cat(head(strwrap(sde_warnings$message[sde_warnings$category == "ebe_start_depend
     sep = "\n")
 ```
 
-The reported OFV is the *better* of the two EBE sets -- the message names both -- so the estimates are usable. What the warning limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare.
+The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare. On this SDE fit it is one problem among several: its standard errors are not usable either (@sec-experimental).
 
 ::: {.callout-warning}
 ## A starved inner loop is not reported as such at this build
 
-When too many subjects' inner loops fail to converge -- more than `max_unconverged_frac` of them, 10% by default -- ferx rejects the outer trial and returns a penalty instead of an objective, which pushes the optimizer towards the middle of the parameter box. If *every* trial is rejected, a gradient-based optimizer converges on that penalty, and the fit reports `converged = TRUE` at the midpoint of the declared bounds, with no `convergence` or `ebe_start_dependent` warning. Cutting `inner_maxiter` far below its default does that on warfarin:
+When too many subjects' inner loops fail to converge -- a larger fraction of them than `max_unconverged_frac`, `r book_setting_default("max_unconverged_frac")` by default -- ferx rejects the outer trial and returns a penalty instead of an objective, which pushes the optimizer towards the middle of the parameter box. If *every* trial is rejected, a gradient-based optimizer converges on that penalty, and the fit reports `converged = TRUE` at the midpoint of the declared bounds, with no `convergence` or `ebe_start_dependent` warning. Cutting `inner_maxiter` far below its default does that on warfarin:
 
 ```{r}
 #| label: starved-inner-loop
@@ -432,7 +430,7 @@ cond
 
 `print()` on a `ferx_conddist` object shows the distribution-based shrinkage and the per-subject conditional mean, SD and mode. `fit$saem_n_subjects_hmc` reports how many subjects used HMC proposals (`n_leapfrog > 0`). It is `r if (is.null(fit_saem$saem_n_subjects_hmc) || is.na(fit_saem$saem_n_subjects_hmc)) "not set" else fit_saem$saem_n_subjects_hmc` here, because this model uses Metropolis-Hastings proposals.
 
-How those proposals are tuned is set by three defaults. `scale_adaptation = "robbins_monro"` adjusts each subject's step scale every iteration towards the target acceptance rate, but leaves it alone while the acceptance rate is inside `scale_deadband`. `n_mh_steps = "auto"` sizes the number of proposals from the data. `mstep_damping` is off except in models with `iiv_on_ruv`. `interval` is the older rule, which rescales only every `adapt_interval` iterations. Passing it with `n_mh_steps = 20` and `mstep_damping = 0.03` gives the previous defaults back. `mstep_solver = "score_sa"` is an alternative solver for the numerical M-step, the step that estimates a theta without a random effect:
+How those proposals are tuned is set by three defaults. `scale_adaptation = "robbins_monro"` adjusts each subject's step scale every iteration towards the target acceptance rate, but leaves it alone while the acceptance rate is inside `scale_deadband`. `n_mh_steps = "auto"` sizes the number of proposals from the data. `mstep_damping` is off except in models with `iiv_on_ruv`. `interval` is the older rule, which rescales only every `adapt_interval` iterations. Passing it with `n_mh_steps = 20` and `mstep_damping = 0.03` gives the previous defaults back. `mstep_solver = "score_sa"` is an alternative solver for the numerical M-step, the step that estimates a theta without a random effect, and `mstep_draws` averages the default `bobyqa` M-step over several E-step draws instead of one:
 
 ```{r}
 #| label: saem-adaptation
@@ -440,7 +438,8 @@ saem_variants <- list(
   defaults = NULL,
   previous_defaults = list(scale_adaptation = "interval", n_mh_steps = 20, mstep_damping = 0.03),
   no_deadband = list(scale_deadband = "none"),
-  score_sa = list(mstep_solver = "score_sa", mstep_draws = 1)
+  score_sa = list(mstep_solver = "score_sa"),
+  bobyqa_4_draws = list(mstep_draws = 4)
 )
 # suppress the R warning that reports overriding the model file's n_mh_steps
 saem_runs <- lapply(saem_variants, function(s) suppressWarnings(
@@ -448,7 +447,7 @@ saem_runs <- lapply(saem_variants, function(s) suppressWarnings(
 t(sapply(saem_runs, function(f) c(ofv = f$ofv, f$theta)))
 ```
 
-The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
+The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. `mstep_draws = 4` `r if (identical(saem_runs$bobyqa_4_draws$theta, saem_runs$defaults$theta)) "leaves this fit's estimates exactly as they were" else "moves this fit's estimates slightly"`. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
 
 ### Laplace and adaptive quadrature
 
@@ -612,7 +611,7 @@ ferx_stop(job)               # or: stop the job
 See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html) for the full descriptions.
 
 - `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.
-- `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. Arrives alongside `converged = TRUE`, which is why it is not a `convergence` warning (above).
+- `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. It can arrive alongside `converged = TRUE`, which is why it is a warning of its own rather than a `convergence` warning; whether `converged` agrees depends on the optimizer (above).
 - `ebe_start_dependent` (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise `inner_maxiter`, or `inner_restarts` for a suspected second mode (above).
 - `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
 - `mu_referencing` (warning or info): mu-referencing is missing or partial. Prefer forms like `CL = TVCL * exp(ETA_CL)` for SAEM and Bayes.
@@ -622,7 +621,7 @@ See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html)
 - `threads` (info): a note on thread-count efficiency.
 - `flat_parameter` (warning): a theta has no effect on the objective at its initial value and was frozen there. Map it into the model or remove it.
 - `init_outside_bounds` (warning): an initial estimate lay outside an internal limit and was clamped before the first evaluation.
-- `init_not_representable` (warning): an initial estimate that the optimizer cannot represent at all, such as a positive theta started at or below the `1e-10` floor of the log scale it is estimated on. The value is moved before the first evaluation, so the fit does not start where the file says. Here a `TVKA` started at `1e-12`, inside its own bounds:
+- `init_not_representable` (warning): an initial estimate that the optimizer cannot represent at all, such as a positive theta started at or below the floor of the log scale it is estimated on (the message gives the value). The value is moved before the first evaluation, so the fit does not start where the file says. Here a `TVKA` started at `1e-12`, inside its own bounds:
 
   ```{r}
   #| label: init-not-representable

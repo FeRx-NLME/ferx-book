@@ -67,8 +67,9 @@ fit_pkpd$estimates[, c("estimate", "rse_pct")]
 pkpd_warnings <- ferx_get_warnings(fit_pkpd, as_df = TRUE)
 pkpd_warnings[, c("severity", "category")]
 # The text below reads these warnings, so a different set has to fail the render.
+pkpd_general <- pkpd_warnings$message[pkpd_warnings$category == "general"]
 stopifnot("high_correlation" %in% pkpd_warnings$category,
-          all(grepl("gradient = fd", pkpd_warnings$message[pkpd_warnings$category == "general"], fixed = TRUE)))
+          length(pkpd_general) == 1, grepl("gradient = fd", pkpd_general, fixed = TRUE))
 ```
 
 The PD baseline `TVE0` has a relative standard error of `r round(fit_pkpd$estimates["TVE0", "rse_pct"])`%, `TVEC50` of `r round(fit_pkpd$estimates["TVEC50", "rse_pct"])`%, and the PD parameters are almost perfectly correlated with each other. The model structure is fine; the data are too few (see the simulation–estimation variant below).

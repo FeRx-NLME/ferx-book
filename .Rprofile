@@ -1,1 +1,2 @@
-options(downlit.extra = list(ferx = "https://ferx-nlme.org/reference/"))
+# Link ferx functions in code to the site's reference (downlit appends /reference).
+options(downlit.local_packages = c(ferx = "https://ferx-nlme.org"))

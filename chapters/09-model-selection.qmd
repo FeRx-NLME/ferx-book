@@ -93,12 +93,13 @@ The gates judge whether a fit is healthy, not whether it found the best optimum.
 ```{r}
 #| label: strictness-fail
 fit_nca <- ferx_fit(base$model, base$data, inits_from_nca = TRUE, verbose = FALSE)
-check_strictness(fit_nca)$passed
+nca_gate <- check_strictness(fit_nca)
+nca_gate$passed
 emax <- ferx_example("emax_pkpd")
 emax_gate <- check_strictness(ferx_fit(emax$model, emax$data, verbose = FALSE))
 emax_gate$failures
 # The paragraph above says the first passes and the second fails, so either changing has to fail the render.
-stopifnot(check_strictness(fit_nca)$passed, !emax_gate$passed)
+stopifnot(nca_gate$passed, !emax_gate$passed)
 ```
 
 The NCA-start fit passes every gate, although its OFV is `r round(fit_nca$ofv - fit_base$ofv)` points worse than `fit_base`: only comparing OFVs shows that it stopped at a worse point. The `emax_pkpd` fit is refused because its parameters cannot be told apart.
@@ -302,12 +303,13 @@ Read the printed output carefully. The input model is a candidate in its own rig
 ```{r}
 #| label: iivsearch-gate
 iiv$models[, c("id", "structure", "criterion", "rank", "passed")]
-# The paragraphs around this chunk describe this outcome, so a different one has to fail the render.
-stopifnot(iiv$final_structure == "[ETA_CL]+[ETA_KA]+[ETA_V]",
-          all(iiv$models$criterion[!iiv$models$passed] > iiv$final_criterion))
+# The paragraphs around this chunk describe this outcome -- the diagonal winner and
+# exactly one gated model, worse than the winner -- so a different one has to fail the render.
+stopifnot(iiv$final_structure == "[ETA_CL]+[ETA_KA]+[ETA_V]", sum(!iiv$models$passed) == 1,
+          iiv$models$criterion[!iiv$models$passed] > iiv$final_criterion)
 ```
 
-`r paste0("\x60", iiv$models$id[!iiv$models$passed], "\x60", collapse = " and ")` is out because it did not pass, and carries no rank. Its criterion was worse than the winner's anyway, but a gated model is excluded whatever it scores. Note where that verdict lives: `converged` and `passed` are columns of the tables that report on fitted candidates -- `$models` here, `$candidates` and `$steps` elsewhere -- and not of the per-stage ranking summary, which ranks models those rows already judged:
+`r paste0("\x60", iiv$models$id[!iiv$models$passed], "\x60")` is out because it did not pass, and carries no rank. Its criterion was worse than the winner's anyway, but a gated model is excluded whatever it scores. Note where that verdict lives: `converged` and `passed` are columns of the tables that report on fitted candidates -- `$models` here, `$candidates` and `$steps` elsewhere -- and not of the per-stage ranking summary, which ranks models those rows already judged:
 
 ```{r}
 #| label: steps-vs-models
@@ -339,7 +341,7 @@ iiv_block$models[, c("id", "structure", "criterion", "rank", "passed")]
 stopifnot(iiv_block$final_structure == iiv$final_structure)
 ```
 
-Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The diagonal one reaches the better criterion, passes the gate and is selected: the same answer as the full search above, from `r nrow(iiv_block$models)` fits instead of `r nrow(iiv$models)`. When a candidate does fail the gate, the `failures` column of `$models` gives the reason, as in the covariate search above.
+Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and the diagonal alternative. The diagonal one reaches the better criterion, passes the gate and is selected: the same answer as the full search above, from `r nrow(iiv_block$models)` fits instead of `r nrow(iiv$models)`. When a candidate does fail the gate, the `failures` column of `$models` gives the reason, as `$steps` does for the covariate search above.
 
 ## Inter-occasion variability search
 
@@ -376,15 +378,16 @@ gs <- ferx_globalsearch(config = gs_ex$search,
 gs
 ```
 
-Read the top two rows before anything else. The runner-up has the *better* OFV and still ranks second, because it carries one more covariate relation and the criterion charges it for the parameter. A table showing only the OFV would name the wrong winner, which is why the criterion and the OFV are separate columns:
+Read the top rows with both columns in view. The ranking is on the criterion, which charges each model for its parameters, so the best OFV need not win:
 
 ```{r}
 #| label: globalsearch-ofv-vs-criterion
 top <- head(gs$models[order(gs$models$fitness), c("id", "genome", "ofv", "criterion", "fitness")], 3)
 top
-# The paragraph above says the runner-up has the better OFV, so the reverse has to fail the render.
-stopifnot(top$ofv[2] < top$ofv[1])
+charge <- top$criterion - top$ofv
 ```
+
+`r if (top$ofv[2] < top$ofv[1]) sprintf("Here the runner-up has the *better* OFV (%.1f against %.1f) and still ranks second, because the criterion charges it %.1f for its parameters against %.1f for the winner. A table showing only the OFV would name the wrong winner", top$ofv[2], top$ofv[1], charge[2], charge[1]) else sprintf("Here the winner also has the better OFV (%.1f against %.1f for the runner-up), but the margin on the criterion is %.1f rather than %.1f, because the two are charged %.1f and %.1f for their parameters", top$ofv[1], top$ofv[2], top$criterion[2] - top$criterion[1], top$ofv[2] - top$ofv[1], charge[1], charge[2])`, which is why the criterion and the OFV are separate columns.
 
 ### The criterion is not the whole of the ranking
 

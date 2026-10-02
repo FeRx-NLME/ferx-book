@@ -115,11 +115,9 @@ saem_runs <- do.call(rbind, lapply(names(saem_seeds), function(name) {
              covariance_regularized = "covariance_regularized" %in% ferx_get_warnings(f, as_df = TRUE)$category)
 }))
 saem_runs
-# The paragraph below says no run needed a regularized covariance step, so one that did has to fail the render.
-stopifnot(!any(saem_runs$covariance_regularized))
 ```
 
-No run needs a regularized covariance step, but the runs stop at different points: the variance of the random intercept ranges from `r round(min(saem_runs$ETA_I), 2)` to `r round(max(saem_runs$ETA_I), 2)` between seeds (FOCEI: `r round(fit_ri$omega["ETA_I", "ETA_I"], 2)`), and the covariate effect `THX` from `r round(min(saem_runs$THX), 2)` to `r round(max(saem_runs$THX), 2)`. On a likelihood this flat, the seed decides where the run stops.
+`r c("No run needs", "One run needs", "Two runs need", "Three runs need", "All four runs need")[sum(saem_runs$covariance_regularized) + 1]` a regularized covariance step, and the runs stop at different points: the variance of the random intercept ranges from `r round(min(saem_runs$ETA_I), 2)` to `r round(max(saem_runs$ETA_I), 2)` between seeds (FOCEI: `r round(fit_ri$omega["ETA_I", "ETA_I"], 2)`), and the covariate effect `THX` from `r round(min(saem_runs$THX), 2)` to `r round(max(saem_runs$THX), 2)`. On a likelihood this flat, the seed decides where the run stops.
 
 Set the seed for SAEM fits, and compare a few seeds when a variance is weakly identified (@sec-estimation-methods).
 

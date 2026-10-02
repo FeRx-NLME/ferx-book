@@ -81,7 +81,7 @@ Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eva
 
 ## Bumping the pin
 
-1. Install the new ferx-r commit (`git archive origin/main` of `../ferx-r`, then `R CMD INSTALL`), and update `_variables.yml` and `FERX_R_SHA` in the workflow.
+1. Install the new ferx-r commit (`git archive origin/main` of `../ferx-r`, then `R CMD INSTALL`), and update `_variables.yml` and `FERX_R_SHA` in the workflow. Set `ferx_r_tag` to the release tag if the pin is one, or delete it and its sentence in chapter 01 if not; the audit checks that the tag resolves to `ferx_r_sha`.
 2. `Rscript tools/inventory.R`, `Rscript tools/assign-homes.R`, `Rscript tools/settings-docs.R`, `Rscript tools/smoke-examples.R`. Run them under `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`, like `make-reference.R`: in the C locale the CSVs sort `_` differently and every example row moves, burying real changes in a reordering diff. `inventory.R` also writes `tools/features-pin.yml`, the pin `features.csv` was generated at; commit it with the CSV, or the audit refuses to run.
 3. `LANG=en_US.UTF-8 Rscript tools/make-reference.R`.
 4. `Rscript tools/audit.R --strict`; give new rows a home and cover them.

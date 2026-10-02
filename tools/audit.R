@@ -2,7 +2,8 @@
 # Audit the book source against the pinned ferx build (runs locally and in CI).
 #
 # Hard checks (non-zero exit on failure):
-#   pin        _variables.yml ferx_r_sha == render.yml FERX_R_SHA (and the
+#   pin        _variables.yml ferx_r_sha == render.yml FERX_R_SHA, ferx_r_tag (if set)
+#              resolves to ferx_r_sha on GitHub (and the
 #              installed package's RemoteSha, when pak recorded one)
 #   calls      every ferx_*() / check_*() call is a pinned export
 #   examples   every ferx_example("x") name exists in the pinned registry
@@ -36,6 +37,20 @@ pin <- yaml::read_yaml("_variables.yml")
 wf <- readLines(".github/workflows/render.yml", warn = FALSE)
 wf_sha <- sub('^\\s*FERX_R_SHA:\\s*"?([0-9a-f]+)"?.*$', "\\1", grep("FERX_R_SHA:", wf, value = TRUE))
 if (!identical(wf_sha, pin$ferx_r_sha)) note("pin", sprintf("render.yml FERX_R_SHA (%s) != _variables.yml ferx_r_sha (%s)", paste(wf_sha, collapse = ","), pin$ferx_r_sha))
+# ch01 offers ferx_r_tag as an install ref "that gives the same build", so the
+# tag must resolve to the pinned commit. Checked on GitHub (CI has no ../ferx-r);
+# without network the check is skipped and says so rather than passing silently.
+if (!is.null(pin$ferx_r_tag)) {
+  peeled <- tryCatch(suppressWarnings(system2("git", c("ls-remote", "https://github.com/FeRx-NLME/ferx-r.git",
+                       paste0("refs/tags/", pin$ferx_r_tag, "^{}")), stdout = TRUE, stderr = FALSE)),
+                     error = function(e) character(0))
+  if (!length(peeled)) {
+    cat("pin: could not resolve ferx_r_tag", pin$ferx_r_tag, "on GitHub (offline?); tag check skipped\n")
+  } else if (!identical(sub("\\s.*$", "", peeled[1]), pin$ferx_r_sha)) {
+    note("pin", sprintf("ferx_r_tag %s resolves to %s, not ferx_r_sha %s - update or remove ferx_r_tag",
+                        pin$ferx_r_tag, sub("\\s.*$", "", peeled[1]), pin$ferx_r_sha))
+  }
+}
 if (requireNamespace("ferx", quietly = TRUE)) {
   remote <- utils::packageDescription("ferx")$RemoteSha
   if (!is.null(remote) && !startsWith(pin$ferx_r_sha, remote) && !startsWith(remote, pin$ferx_r_sha)) {

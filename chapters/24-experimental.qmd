@@ -152,14 +152,19 @@ How much the network departs from multipliers of 1 can be read from the individu
 ```{r}
 #| label: dcm-multiplier
 subjects <- read.csv(dcm$data) |> distinct(ID, WT, CRCL)
-multipliers <- mutate(fit_dcm$individual_estimates, ID = as.integer(ID)) |>
-  select(ID, CL) |>
-  left_join(mutate(fit_dcm$ebe_etas, ID = as.integer(ID)) |> select(ID, ETA_CL), by = "ID") |>
-  left_join(subjects, by = "ID") |>
-  mutate(multiplier = CL / (fit_dcm$theta[["TVCL"]] * exp(ETA_CL)))
+# The network's clearance multiplier per subject: CL / (TVCL * exp(ETA_CL)).
+clearance_multiplier <- function(f) {
+  mutate(f$individual_estimates, ID = as.integer(ID)) |>
+    select(ID, CL) |>
+    left_join(mutate(f$ebe_etas, ID = as.integer(ID)) |> select(ID, ETA_CL), by = "ID") |>
+    mutate(multiplier = CL / (f$theta[["TVCL"]] * exp(ETA_CL)))
+}
+multipliers <- left_join(clearance_multiplier(fit_dcm), subjects, by = "ID")
 summary(multipliers$multiplier)
 range(subjects$WT)
 range(subjects$CRCL)
+# The sentence below says the multiplier is constant to seven significant digits.
+stopifnot(diff(range(multipliers$multiplier)) / mean(multipliers$multiplier) < 1e-7)
 ```
 
 The multiplier is the same for every subject to seven significant digits, across the whole range of weight and creatinine clearance: this fit of the network learned no covariate dependence at all, and only rescaled the typical clearance. The next section shows that this says more about where the optimizer stopped than about the data.
@@ -173,21 +178,17 @@ The multiplier is the same for every subject to seven significant digits, across
 # suppress the R warning that reports overriding the model file's covariance setting
 fit_dcm_l2 <- suppressWarnings(ferx_fit(dcm$model, dcm$data, covariance = FALSE,
                                         settings = list(nn_l2 = 0.01), verbose = FALSE))
-clearance_multiplier <- function(f) {
-  mutate(f$individual_estimates, ID = as.integer(ID)) |>
-    select(ID, CL) |>
-    left_join(mutate(f$ebe_etas, ID = as.integer(ID)) |> select(ID, ETA_CL), by = "ID") |>
-    mutate(multiplier = CL / (f$theta[["TVCL"]] * exp(ETA_CL))) |>
-    pull(multiplier)
-}
 data.frame(fit = c("network", "network, nn_l2 = 0.01", "two_cpt_oral_cov"),
            converged = c(fit_dcm$converged, fit_dcm_l2$converged, fit_cov$converged),
            parameters = c(fit_dcm$n_parameters, fit_dcm_l2$n_parameters, fit_cov$n_parameters),
            ofv = c(fit_dcm$ofv, fit_dcm_l2$ofv, fit_cov$ofv),
            aic = c(fit_dcm$aic, fit_dcm_l2$aic, fit_cov$aic))
-summary(clearance_multiplier(fit_dcm_l2))
-# The paragraph below reads this ordering, so a different one has to fail the render.
-stopifnot(fit_dcm_l2$ofv < min(fit_dcm$ofv, fit_cov$ofv) - 50, fit_dcm_l2$aic > fit_cov$aic)
+multipliers_l2 <- clearance_multiplier(fit_dcm_l2)$multiplier
+summary(multipliers_l2)
+# The paragraph below reads this ordering and says the multipliers now vary between
+# subjects, so a different outcome has to fail the render.
+stopifnot(fit_dcm_l2$ofv < min(fit_dcm$ofv, fit_cov$ofv) - 50, fit_dcm_l2$aic > fit_cov$aic,
+          diff(range(multipliers_l2)) / mean(multipliers_l2) > 0.1)
 ```
 
 With the penalty, the network gives each subject its own clearance multiplier, and the fit reports an unpenalized OFV `r round(fit_dcm$ofv - fit_dcm_l2$ofv)` points below that of the fit without the penalty. A penalty cannot make the unpenalized objective better than its optimum, so the fit without it, although it reports convergence, stopped far from that optimum. ferx-core lists DCM FOCEI fits that report convergence far above a point of their own parameter space as a known issue at this release ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Fit a network more than once, with and without a penalty, and compare the OFVs before reading anything into it.
@@ -277,11 +278,11 @@ rbind(later_only = fit_later$estimates[c("TVCL", "TVV", "TVKA"), "rse_pct"],
 between <- (fit_updated$theta - fit_earlier$theta) * (fit_updated$theta - fit_later$theta) < 0
 rse_later <- fit_later$estimates[c("TVCL", "TVV", "TVKA"), "rse_pct"]
 rse_updated <- fit_updated$estimates[c("TVCL", "TVV", "TVKA"), "rse_pct"]
-stopifnot(all(between), identical(rse_updated < rse_later, c(TRUE, FALSE, TRUE)),
-          nrow(fit_updated$prior_summary) == 7)
+narrower <- c("TVCL", "TVV", "TVKA")[rse_updated < rse_later]
+stopifnot(all(between), nrow(fit_updated$prior_summary) == 7)
 ```
 
-Each updated estimate sits between those of the two studies. The relative standard errors of `TVCL` and `TVKA` are smaller than with the new data alone; that of `TVV` is not. As with an inline prior, `fit_updated$ofv` is penalized (`ofv_prior` = `r round(fit_updated$ofv_prior, 2)`), and `ofv_data` is the number to compare with unpenalized fits.
+Each updated estimate sits between those of the two studies. `r if (length(narrower) == 3) "Every relative standard error is smaller than with the new data alone." else if (length(narrower) == 0) "No relative standard error is smaller than with the new data alone." else paste0("The relative standard error is smaller than with the new data alone for ", paste0("\x60", narrower, "\x60", collapse = " and "), ", but not for ", paste0("\x60", setdiff(c("TVCL", "TVV", "TVKA"), narrower), "\x60", collapse = " and "), ".")` As with an inline prior, `fit_updated$ofv` is penalized (`ofv_prior` = `r round(fit_updated$ofv_prior, 2)`), and `ofv_data` is the number to compare with unpenalized fits.
 
 ## Pitfalls
 

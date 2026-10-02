@@ -40,6 +40,11 @@ knitr::opts_chunk$set(
 
 theme_set(theme_minimal(base_size = 12))
 
+# Code autolinks: point ferx functions at the site's reference rather than the
+# URL in the installed package's DESCRIPTION (downlit appends /reference).
+# Set here as well as in .Rprofile, because chapters may render from chapters/.
+options(downlit.local_packages = c(ferx = "https://ferx-nlme.org"))
+
 # Inline `r x` numbers: plain notation (knitr otherwise prints 11610 as 1.161^{4}).
 options(scipen = 100)
 
@@ -68,6 +73,16 @@ book_settings_table <- function(keys, caption = NULL) {
     gt::fmt_markdown(columns = gt::everything()) |>
     gt::cols_width(Setting ~ gt::pct(22), Values ~ gt::pct(18), Default ~ gt::pct(12)) |>
     gt::tab_options(table.font.size = gt::px(13), table.width = gt::pct(100))
+}
+
+# Default of one `settings` key, for inline use in prose, from the same generated
+# file as book_settings_table() (never typed by hand). Backticks are stripped.
+book_setting_default <- function(key) {
+  path <- if (file.exists("tools/settings-docs.csv")) "tools/settings-docs.csv" else
+    file.path("..", "tools", "settings-docs.csv")
+  docs <- read.csv(path, stringsAsFactors = FALSE)
+  if (!key %in% docs$key) stop("not a settings key on the pinned build: ", key)
+  gsub("`", "", docs$default[docs$key == key])
 }
 
 # Workflow banner for Part II chapters. Call from a chunk with
