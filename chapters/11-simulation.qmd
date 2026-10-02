@@ -23,6 +23,14 @@ In ferx you answer these by simulating from a **design dataset**: a CSV in the u
 ## The data
 
 ```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
 #| label: fit
 cov <- ferx_example("two_cpt_oral_cov")
 fit <- ferx_fit(cov$model, cov$data, verbose = FALSE)
@@ -32,7 +40,8 @@ A small helper builds a design dataset from a table of subjects, one dose record
 
 ```{r}
 #| label: design-helper
-design_dir <- book_tempdir("simulation")
+design_dir <- file.path(tempdir(), "simulation")
+dir.create(design_dir, showWarnings = FALSE)
 
 write_design <- function(subjects, times, file) {
   doses <- subjects |>
@@ -194,13 +203,46 @@ length(unique(sim_sir$DRAW))
 
 ### Matched simulation of observed data
 
-In real-world data, dosing often depends on the patient: higher clearance, more frequent dosing. A plain simulation assigns random effects to subjects at random, which breaks that link. It can then make a VPC look wrong even when the model is right. `match` reassigns each replicate's simulated random effects to the observed subjects by propensity-score matching against their estimated random effects. The options are `TRUE` or `"optimal"` (recommended), `"nearest"` and `"rank"`:
+In real-world data, dosing often depends on the patient: higher clearance, more frequent dosing. A plain simulation assigns random effects to subjects at random, which breaks that link. It can then make a VPC look wrong even when the model is right. `match` reassigns each replicate's simulated random effects to the observed subjects by propensity-score matching against their estimated random effects. The options are `TRUE` or `"optimal"` (recommended), `"nearest"` and `"rank"`. Simulating the observed dataset with and without matching, and comparing each subject's typical simulated concentration with its observed one, shows what changes:
 
 ```{r}
-#| label: match
+#| label: fig-match
+#| fig-cap: "Each subject's mean observed concentration against the median, over 100 replicates, of its mean simulated concentration: plain and matched simulation."
+sim_plain <- ferx_simulate(cov$model, cov$data, n_sim = 100, seed = 1, fit = fit)
 sim_matched <- ferx_simulate(cov$model, cov$data, n_sim = 100, seed = 1, fit = fit, match = "optimal")
-nrow(sim_matched)
+subject_means <- function(sim) {
+  sim |>
+    mutate(ID = as.integer(ID)) |>
+    group_by(SIM, ID) |>
+    summarise(mean_conc = mean(DV_SIM), .groups = "drop") |>
+    group_by(ID) |>
+    summarise(simulated = median(mean_conc))
+}
+observed_means <- read.csv(cov$data, na.strings = ".") |>
+  filter(EVID == 0) |>
+  group_by(ID) |>
+  summarise(observed = mean(DV))
+by_subject <- bind_rows(plain = subject_means(sim_plain), matched = subject_means(sim_matched),
+                        .id = "simulation") |>
+  left_join(observed_means, by = "ID")
+match_cor <- by_subject |> group_by(simulation) |> summarise(correlation = cor(observed, simulated))
+match_cor
+ggplot(by_subject, aes(observed, simulated)) +
+  geom_abline(linetype = "dashed") +
+  geom_point() +
+  facet_wrap(~ factor(simulation, levels = c("plain", "matched"))) +
+  labs(x = "Mean observed concentration", y = "Median simulated mean concentration")
 ```
+
+```{r}
+#| label: check-match
+#| include: false
+# The paragraph below says matching ties each simulated subject to its observed counterpart.
+match_r <- setNames(match_cor$correlation, match_cor$simulation)
+stopifnot(match_r[["matched"]] > 0.8, match_r[["matched"]] > match_r[["plain"]] + 0.2)
+```
+
+In the plain simulation a subject keeps its doses and covariates but draws new random effects, so its simulated concentrations follow the observed ones only loosely (r = `r round(match_r[["plain"]], 2)`). Matched, each subject is simulated with random effects close to its own estimates, and the correlation rises to `r round(match_r[["matched"]], 2)`. That is the link a VPC of real-world data needs when the dose depends on the patient.
 
 Matching needs every subject to have observations, so it works on the observed dataset but not on a design with empty `DV`:
 

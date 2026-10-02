@@ -18,12 +18,21 @@ The dataset columns used here are part of the stable ferx data format. `[derived
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 In `warfarin_addl`, each subject has a single dose record that stands for seven daily doses: `II = 24` is the interval and `ADDL = 6` the number of additional doses. Samples are taken on days 1, 2, 4, 6, 7 and 8:
 
 ```{r}
 #| label: data
 addl <- ferx_example("warfarin_addl")
-dosing_dir <- book_tempdir("dosing")
+dosing_dir <- file.path(tempdir(), "dosing")
+dir.create(dosing_dir, showWarnings = FALSE)
 addl_data <- read.csv(addl$data, na.strings = ".")
 filter(addl_data, ID == 1) |> select(ID, TIME, DV, EVID, AMT, II, ADDL)
 ```

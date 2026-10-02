@@ -13,10 +13,11 @@ ferx-book is the Quarto book for the ferx R package: a fully runnable tutorial o
 1. **One pinned ferx-r build.** Every chunk runs against the ferx-r commit in `_variables.yml` (`ferx_r_sha`), which CI installs (`FERX_R_SHA` in `.github/workflows/render.yml`) and chapter 01 tells readers to install. `tools/audit.R` checks the two match.
 2. **Every ferx call is real.** Only exports, arguments, settings keys and `ferx_example()` names present in the pinned build. Variants are built by code from bundled models and data (copies in a temp dir) and actually run.
 3. **Every chunk runs.** `eval: false` needs `#| eval-reason:` and is allowed only for `ferx_xpose()` and the interactive-only job handles of `ferx_fit_async()`.
-4. **No hand-written output.** Never write `#>` lines or invent numbers. Numbers in prose are inline R. Output tables of options come from generated files (`book_settings_table()`), not typed defaults.
+4. **No hand-written output.** Never write `#>` lines or invent numbers. Numbers in prose are inline R. Output tables of options come from generated files (`book_settings_table()`, in an `echo: false` chunk), not typed defaults. A claim the prose makes about output (a direction, a ranking, "converges", "recovers") is backed by a `stopifnot()` in a following `#| include: false` chunk labelled `check-<label>`, so the render stops when a new pin makes it false. Checks a reader would also write, such as that an edit to a model copy landed, stay in the visible chunk.
 5. **Report behaviour as it is.** Non-convergence, collapsed variances, warnings and bugs at the pinned build are shown, not tuned away. A bug gets an "at this build" callout and an entry in `PLAN.md` Step 7.
-6. **ferx only.** No comparisons to or translations from other NLME software, in prose or in printed output. The audit bans their names; when ferx output (engine messages, bundled model comments) names them, print only the part that does not.
+6. **Analogies, not claims.** Another NLME engine may be named in an analogy that shows a reader what a ferx example or feature corresponds to (for example, what a block is the equivalent of). Never name one in a comparison that says ferx is better, faster or improved. The audit flags such a name only when its line also uses comparative wording; whether a sentence is an analogy or a claim is for review to judge.
 7. **Self-contained chapters.** No object from another chapter. Link, don't copy: end each chapter with a Reference callout (`?fn` + ferx-core page).
+8. **Reader code runs as shown.** A reader copying the visible chunks into a fresh R session gets the same output. Each chapter loads ferx, dplyr and ggplot2 in a visible `packages` chunk under "The data"; `_common.R` attaches no package, so a chunk that needs one the chapter never loads fails the render. Files a chapter writes go to a directory under `tempdir()` created in visible code. Book helpers (`book_*()`) appear only in hidden chunks, and `_common.R` sets no option that changes printed output.
 
 ## Repository layout
 
@@ -68,14 +69,14 @@ Rscript tools/audit.R --strict                 # hard checks + full coverage (CI
 Rscript tools/audit.R --chapter=15-absorption  # uncovered rows of one chapter
 ```
 
-Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eval: false` has a reason, no `#>` lines in sources, no retired site links, no banned software names. Coverage rules: exports `name(`, arguments `` `arg` `` or `arg =` with the function named, settings `` `key` ``/`key =`/`"key"`, DSL blocks `[block]`, warning categories `` `category` ``, examples `ferx_example("name")`. HTML comments never count.
+Hard checks: pin match, `ferx_*` calls exist, `ferx_example()` names exist, `eval: false` has a reason, no `#>` lines in sources, no retired site links, no other NLME engine named next to comparative wording, reader code self-sufficient (rule 8: a visible `packages` chunk in chapters 02–24, no `book_*()` helper or render-check comment in a visible chunk, no package attached by `_common.R`). Coverage rules: exports `name(`, arguments `` `arg` `` or `arg =` with the function named, settings `` `key` ``/`key =`/`"key"`, DSL blocks `[block]`, warning categories `` `category` ``, examples `ferx_example("name")`. HTML comments never count.
 
 ## Rendering
 
 - Render a chapter from an **empty cache**: `rm -rf chapters/<ch>_cache chapters/<ch>_files && quarto render chapters/<ch>.qmd`. Knitr does not replay side effects, so a partially cached chapter can fail (e.g. a temp dir created in a cached chunk).
 - Local renders need a UTF-8 locale (`_environment.local` sets `LANG`); `_common.R` also forces one.
 - `cache.extra` is the pinned SHA, so a pin bump invalidates all caches. CI renders without a cache.
-- Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy to `book_tempdir()` first. For the same reason, give `ferx_model_to_frem()` an `output_dir` under `book_tempdir()`.
+- Never call `ferx_model_set_section()` or any file-writing helper on a `ferx_example()` path: that edits the installed package. Copy it to the chapter's directory under `tempdir()` first. For the same reason, give `ferx_model_to_frem()` an `output_dir` under `tempdir()`.
 - A single-chapter render warns about cross-references to other chapters; a full `quarto render` resolves them.
 - **Never run two renders in the same working tree at once.** A full `quarto render` moves each rendered page into `_book/` at the end; a concurrent single-chapter render replaces that page first, and the full render dies with `NotFound: ... rename '.../chapters/<ch>.html' -> '_book/chapters/<ch>.html'` after executing every chunk. Wait for one to finish, or render in a second worktree.
 

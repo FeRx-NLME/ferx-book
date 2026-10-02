@@ -26,13 +26,22 @@ The `[covariates]` block is **stable** in ferx-core. The `[covariate_model]` blo
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 `two_cpt_oral_base` and `two_cpt_oral_cov` share one dataset: 30 subjects with a single oral dose of 250, body weight `WT` and creatinine clearance `CRCL`. Both covariates are constant within each subject:
 
 ```{r}
 #| label: data
 base <- ferx_example("two_cpt_oral_base")
 cov <- ferx_example("two_cpt_oral_cov")
-covariate_dir <- book_tempdir("covariates")
+covariate_dir <- file.path(tempdir(), "covariates")
+dir.create(covariate_dir, showWarnings = FALSE)
 subjects <- read.csv(base$data, na.strings = ".") |> distinct(ID, WT, CRCL)
 nrow(subjects)
 summary(subjects[, c("WT", "CRCL")])
@@ -141,6 +150,11 @@ cond <- ferx_example("warfarin_if")
 invisible(ferx_model_get_section(cond$model, "individual_parameters"))
 fit_if <- ferx_fit(cond$model, cond$data, verbose = FALSE)
 ferx_get_warnings(fit_if, as_df = TRUE)[, c("severity", "category", "message")]
+```
+
+```{r}
+#| label: check-warfarin-if
+#| include: false
 # The sentence below explains the general warning as the outer-gradient note, so anything else has to fail the render.
 if_warnings <- ferx_get_warnings(fit_if, as_df = TRUE)
 if_general <- if_warnings$message[if_warnings$category == "general"]
@@ -171,13 +185,21 @@ invisible(ferx_model_get_section(scaled$model_path, "covariate_model"))
 
 Each `[covariate_model]` line states a relation (`PARAM ~ COV form(...)`), and ferx rewrites it into the expression you would otherwise write by hand. The ferx-core [covariate model](https://ferx-nlme.org/ferx-core/model-file/covariate-model.html) page lists the forms (`linear`, `power`, `exponential`, `hockey`, `categorical`, …). No bundled ferx-r example writes the block by hand.
 
-With `fit = TRUE`, the default, the base and the scaled model are both fitted. `print()` on the `ferx_allometry` result shows the relations and both fits (its `digits` argument sets the precision):
+With `fit = TRUE`, the default, the base and the scaled model are both fitted. `print()` on the `ferx_allometry` result shows the relations and both fits (its `digits` argument sets the precision). The R warning about the correlation matrix comes from the fixed exponents, which have no standard error:
 
 ```{r}
 #| label: allometry-fit
 allometry <- ferx_allometry(base$model, base$data)
 allometry
 allometry$dofv
+```
+
+```{r}
+#| label: check-allometry-fit
+#| include: false
+# The sentence above traces the R warning to the fixed exponents, which have no standard error.
+fixed_exponents <- grepl("_WT$", rownames(allometry$fit$estimates))
+stopifnot(any(fixed_exponents), all(allometry$fit$estimates$se[fixed_exponents] == 0))
 ```
 
 Fixed allometric exponents make this model worse. With `estimate = TRUE` the exponents are estimated between `lower` and `upper`, and `parameters` limits the scaling to clearance and central volume. `directory` keeps a journal of the run:
@@ -274,6 +296,8 @@ FREM options:
 
 ```{r}
 #| label: tbl-settings-frem
+#| echo: false
+#| tbl-cap: "FREM settings."
 book_settings_table(c("frem_rao_blackwell", "frem_predictions", "frem_sigma"))
 ```
 

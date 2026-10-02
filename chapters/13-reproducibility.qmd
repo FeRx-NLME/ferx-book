@@ -21,9 +21,18 @@ The last step of the workflow makes the analysis durable. Results should be save
 ## The data
 
 ```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
 #| label: example
 cov <- ferx_example("two_cpt_oral_cov")
-run_dir <- book_tempdir("runs")
+run_dir <- file.path(tempdir(), "runs")
+dir.create(run_dir, showWarnings = FALSE)
 ```
 
 ## Minimal runnable call: saving a fit
@@ -96,6 +105,11 @@ The structured warning table `warnings_structured` is one of them, but the warni
 #| label: warnings-loaded
 ferx_get_warnings(fit, as_df = TRUE)$category
 ferx_get_warnings(loaded, as_df = TRUE)$category
+```
+
+```{r}
+#| label: check-warnings-loaded
+#| include: false
 # The sentence above says the two agree, so a difference has to fail the render.
 stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)[, c("severity", "category")],
                     ferx_get_warnings(loaded, as_df = TRUE)[, c("severity", "category")]))

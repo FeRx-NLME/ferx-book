@@ -24,12 +24,21 @@ This chapter shows how each level is declared in a ferx model, and how to read t
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 Most examples use the warfarin data (10 subjects, one oral dose each). `warfarin_block_omega`, `warfarin_additive_eta` and `warfarin_ltbs` ship their own copies of it, with the same concentrations:
 
 ```{r}
 #| label: data
 w <- ferx_example("warfarin")
-variability_dir <- book_tempdir("variability")
+variability_dir <- file.path(tempdir(), "variability")
+dir.create(variability_dir, showWarnings = FALSE)
 warfarin_dv <- read.csv(w$data, na.strings = ".")$DV
 sapply(c("warfarin_block_omega", "warfarin_additive_eta", "warfarin_ltbs"), function(name) {
   isTRUE(all.equal(read.csv(ferx_example(name)$data, na.strings = ".")$DV, warfarin_dv))
@@ -119,6 +128,8 @@ Estimation options that act on these parameters:
 
 ```{r}
 #| label: tbl-settings-variability
+#| echo: false
+#| tbl-cap: "Occasion, mu-referencing and parameter scaling settings."
 book_settings_table(c("iov_column", "iov_occasion", "mu_referencing", "parameter_scaling", "scale_params"))
 ```
 
@@ -178,6 +189,11 @@ refusal <- tryCatch(ferx_fit(block_sd, block_ex$data, verbose = FALSE),
                     ferx_engine_error = function(e) e)
 cat(strwrap(conditionMessage(refusal), 90), sep = "\n")
 refusal$code
+```
+
+```{r}
+#| label: check-block-sd-fit
+#| include: false
 # The paragraph above says the refusal carries the code, so its absence has to fail the render.
 stopifnot(identical(refusal$code, "E_BLOCK_VARIANCE_ONLY"))
 ```

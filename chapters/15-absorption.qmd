@@ -18,6 +18,14 @@ Lag time is **stable** in ferx-core. The built-in absorption models (transit, in
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 Nine of the examples share one dataset: 20 subjects with a single oral dose of 100 and 12 samples each over 24 hours. The transit examples ship it as `transit_oral.csv`, the others as `igd_oral.csv`. The two files hold the same doses, times and concentrations. Only the `CMT` of the observation rows differs, which the prediction does not use for these models:
 
 ```{r}
@@ -61,7 +69,8 @@ The nine models fitted to the shared data differ in absorption only. The `[deriv
 ```{r}
 #| label: tbl-absorption-comparison
 #| tbl-cap: "Absorption models fitted to the same data, with per-subject exposure (median over subjects) from `[derived]`."
-comparison_dir <- book_tempdir("absorption")
+comparison_dir <- file.path(tempdir(), "absorption")
+dir.create(comparison_dir, showWarnings = FALSE)
 shared <- list(
   transit_savic = ferx_example("transit_savic"),
   one_cpt_transit = ferx_example("one_cpt_transit"),
@@ -100,7 +109,24 @@ comparison |>
   gt::cols_label(condition_number = "condition number", auc_0_24 = "AUC 0–24")
 ```
 
-`transit_savic` agrees with the simulation model and reaches the second-lowest OFV with no warnings. `one_cpt_transit`, which has no `KA` step, follows with no warnings, then the Weibull and inverse-Gaussian models. The biphasic inverse-Gaussian model reaches a slightly lower OFV with two more parameters. Its warnings show that the data cannot inform them: relative standard errors in the thousands of percent, correlations of ±1 and a condition number of about `r signif(fits$biphasic_igd_absorption$condition_number / 1e10, 2)` × 10^10^. `parallel_absorption` collapses to a single route (both absorption rate constants end at the same value), and `mixed_absorption` ends with parameters at their bounds:
+```{r}
+#| label: check-absorption-comparison
+#| include: false
+# The paragraph below reads this ranking, these warnings and the biphasic fit's covariance.
+ranked <- comparison$model[order(comparison$ofv)]
+igd_warnings <- ferx_get_warnings(fits$igd_inverse_gaussian, as_df = TRUE)
+biphasic_cor <- fits$biphasic_igd_absorption$cor_matrix
+diag(biphasic_cor) <- 0
+stopifnot(identical(ranked[1:5], c("biphasic_igd_absorption", "transit_savic", "one_cpt_transit",
+                                   "weibull_absorption", "igd_inverse_gaussian")),
+          !nzchar(comparison$warnings[comparison$model == "transit_savic"]),
+          !nzchar(comparison$warnings[comparison$model == "one_cpt_transit"]),
+          all(grepl("exact analytic outer gradient", igd_warnings$message[igd_warnings$category == "general"])),
+          max(fits$biphasic_igd_absorption$estimates$rse_pct, na.rm = TRUE) > 1000,
+          max(abs(biphasic_cor), na.rm = TRUE) > 0.999)
+```
+
+`transit_savic` agrees with the simulation model and reaches the second-lowest OFV with no warnings. `one_cpt_transit`, which has no `KA` step, follows with no warnings, then the Weibull and inverse-Gaussian models; the `general` warning of the inverse-Gaussian fit is the outer-gradient note of @sec-estimation-methods. The biphasic inverse-Gaussian model reaches a slightly lower OFV with two more parameters. Its warnings show that the data cannot inform them: relative standard errors in the thousands of percent, correlations of ±1 and a condition number of about `r signif(fits$biphasic_igd_absorption$condition_number / 1e10, 2)` × 10^10^. `parallel_absorption` collapses to a single route (both absorption rate constants end at the same value), and `mixed_absorption` ends with parameters at their bounds:
 
 ```{r}
 #| label: collapsed-fits
@@ -244,15 +270,18 @@ rbind(analytical = c(ofv = fits$one_cpt_transit$ofv, fits$one_cpt_transit$theta)
       ode = c(ofv = fit_transit_ode$ofv, fit_transit_ode$theta))
 ```
 
-`two_cpt_transit` does the same for a two-compartment disposition. Its dataset was simulated from the model at the initial values in its `[parameters]` block, so the fit should recover them:
+`two_cpt_transit` does the same for a two-compartment disposition. Its dataset was simulated from the model at the initial values in its `[parameters]` block, so the fit should recover them, and `fit$theta_init` holds those values:
 
 ```{r}
 #| label: two-cpt-transit
 two_transit <- ferx_example("two_cpt_transit")
 invisible(ferx_model_get_section(two_transit$model, "structural_model"))
 fit_two_transit <- ferx_fit(two_transit$model, two_transit$data, verbose = FALSE)
-fit_two_transit$estimates[1:6, c("estimate", "rse_pct")]
+data.frame(simulated_with = fit_two_transit$theta_init, estimate = fit_two_transit$theta,
+           rse_pct = fit_two_transit$estimates[names(fit_two_transit$theta), "rse_pct"])
 ```
+
+Every typical value lands within `r ceiling(100 * max(abs(fit_two_transit$theta / fit_two_transit$theta_init - 1)))`% of the value it was simulated with.
 
 The analytical inverse-Gaussian models `one_cpt_ig` and `two_cpt_ig` are the closed forms of `igd()`. The one-compartment version and the `igd()` ODE model give the same fit on the `one_cpt_ig` dataset, which was simulated from an inverse-Gaussian model:
 

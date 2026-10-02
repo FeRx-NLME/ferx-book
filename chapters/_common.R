@@ -6,7 +6,13 @@
 #   source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 #   ```
 # Helpers defined here are named book_*() so tools/audit.R never mistakes them
-# for ferx exports.
+# for ferx exports. None of them may appear in code a reader sees: chunks that
+# call one are `echo: false`.
+#
+# This file attaches no packages. Each chapter loads ferx, dplyr and ggplot2 in
+# a visible chunk, so a reader running the chapter from a fresh session has
+# everything the code uses, and a chunk that relies on a package the chapter
+# never loads fails the render instead of passing on this file's behalf.
 
 # Renders must run in a UTF-8 locale (gt and ggplot2 labels use non-ASCII
 # characters); a bare shell with no LANG gives R the "C" locale.
@@ -15,12 +21,6 @@ if (!isTRUE(l10n_info()$`UTF-8`)) {
     if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", loc)))) break
   }
 }
-
-suppressPackageStartupMessages({
-  library(ferx)
-  library(ggplot2)
-  library(dplyr)
-})
 
 book_pin <- yaml::read_yaml(
   if (file.exists("_variables.yml")) "_variables.yml" else file.path("..", "_variables.yml")
@@ -38,23 +38,25 @@ knitr::opts_chunk$set(
   cache.extra = book_pin$ferx_r_sha
 )
 
-theme_set(theme_minimal(base_size = 12))
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 12))
 
 # Code autolinks: point ferx functions at the site's reference rather than the
 # URL in the installed package's DESCRIPTION (downlit appends /reference).
 # Set here as well as in .Rprofile, because chapters may render from chapters/.
 options(downlit.local_packages = c(ferx = "https://ferx-nlme.org"))
 
-# Inline `r x` numbers: plain notation (knitr otherwise prints 11610 as 1.161^{4}).
-options(scipen = 100)
-
-# Scratch directory for tools that write run directories (bootstrap, search,
-# FREM, allometry). Never write into the book tree.
-book_tempdir <- function(name) {
-  path <- file.path(tempdir(), name)
-  dir.create(path, recursive = TRUE, showWarnings = FALSE)
-  path
-}
+# Inline `r x` numbers: plain notation (knitr otherwise prints 11610 as
+# 1.161^{4}). Only while the inline hook formats a value: a global
+# options(scipen = 100) also reformats every printed result, so the book's
+# output would differ from what a reader's session prints.
+local({
+  inline_default <- knitr::knit_hooks$get("inline")
+  knitr::knit_hooks$set(inline = function(x) {
+    old <- options(scipen = 100)
+    on.exit(options(old))
+    inline_default(x)
+  })
+})
 
 # Options table for `settings` keys. Values, defaults and descriptions come from
 # tools/settings-docs.csv, generated from the pinned ferx-core fit-options docs

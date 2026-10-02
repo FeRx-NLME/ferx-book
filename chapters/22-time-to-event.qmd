@@ -18,12 +18,21 @@ ferx-core labels time-to-event endpoints **beta**. See [feature maturity](https:
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 A TTE row is an observation (`EVID = 0`) on the event model's `CMT`. `TIME` is the event or censoring time and `DV` says which: 1 for an event, 0 for right censoring. `tte_weibull` has one row for each of 30 subjects, with follow-up to 60 hours:
 
 ```{r}
 #| label: data
 weibull <- ferx_example("tte_weibull")
-tte_dir <- book_tempdir("tte")
+tte_dir <- file.path(tempdir(), "tte")
+dir.create(tte_dir, showWarnings = FALSE)
 weibull_data <- read.csv(weibull$data, na.strings = ".")
 head(weibull_data, 4)
 count(weibull_data, DV)
@@ -123,7 +132,16 @@ fit_exponential$estimates[c("TVLAMBDA", "ETA_LAMBDA"), c("estimate", "rse_pct")]
 fit_gompertz$estimates[, c("estimate", "rse_pct")]
 ```
 
-The model files give the simulation values: an exponential rate of 0.05 with variance 0.09, and Gompertz `TVALPHA` 0.002, `TVGAMMA` 0.05 with variance 0.04. The typical parameters are in range, but the between-subject variances of these single-event datasets are poorly determined. With one event per subject, frailty is hard to separate from the hazard's shape.
+```{r}
+#| label: check-exponential-fixed
+#| include: false
+# The paragraph below traces the R warning to the fixed placeholder parameters.
+fixed_rows <- c("DUMMY_CL", "DUMMY_V", "SIGMA_DV")
+stopifnot(all(fixed_rows %in% rownames(fit_exponential$estimates)),
+          all(fit_exponential$estimates[fixed_rows, "se"] == 0))
+```
+
+The R warning after the exponential fit comes from its fixed placeholder parameters, which have no standard error. The model files give the simulation values: an exponential rate of 0.05 with variance 0.09, and Gompertz `TVALPHA` 0.002, `TVGAMMA` 0.05 with variance 0.04. The typical parameters are in range, but the between-subject variances of these single-event datasets are poorly determined. With one event per subject, frailty is hard to separate from the hazard's shape.
 
 ### A simulation-based check
 

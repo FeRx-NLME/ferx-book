@@ -25,6 +25,14 @@ The dataset is checked (@sec-data) and the base model is written and validated (
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 The base model and its dataset from the previous chapters:
 
 ```{r}
@@ -114,7 +122,7 @@ The fit used `method = focei` and `gradient = fd` from the model's `[fit_options
 summary(fit)
 ```
 
-The last warning line, the number of EBE fallbacks, comes from `fit$total_ebe_fallbacks` (`r fit$total_ebe_fallbacks` here). It is a run statistic rather than a structured fit warning, so `ferx_get_warnings()` below does not list it.
+The last warning line, the number of EBE fallbacks, comes from `fit$total_ebe_fallbacks` (`r fit$total_ebe_fallbacks` here). Each one is a per-subject inner solve whose BFGS step failed and that finished with Nelder-Mead instead. The count runs over all subjects and the whole run, in which every objective evaluation solves every subject again, so it is not a number of problem subjects. It is a run statistic rather than a structured fit warning, and `ferx_get_warnings()` below does not list it.
 
 ### Parameter estimates
 
@@ -178,7 +186,10 @@ For a `log` theta the back-transform is real, and `estimate_natural` is exactly 
 
 ```{r}
 #| label: log-back-transform
-log_model <- file.path(book_tempdir("first-fit"), "log_theta.ferx")
+# Model copies written in this chapter go to a scratch directory, never into the installed package.
+fit_dir <- file.path(tempdir(), "first-fit")
+dir.create(fit_dir, showWarnings = FALSE)
+log_model <- file.path(fit_dir, "log_theta.ferx")
 writeLines(sub("  CL = TVCL * exp(ETA_CL)", "  CL = exp(TVCL + ETA_CL)",
                sub("  theta TVCL(0.134, 0.001, 10.0)", "  theta TVCL(-2.0, -7.0, 2.3)",
                    readLines(ferx_example("warfarin")$model), fixed = TRUE),
@@ -210,7 +221,7 @@ Declaring the same bioavailability on a `logit` theta instead, in a separate fit
 
 ```{r}
 #| label: logit-twin
-logit_model <- file.path(book_tempdir("first-fit"), "bioavailability_logit.ferx")
+logit_model <- file.path(fit_dir, "bioavailability_logit.ferx")
 bio_lines <- readLines(ferx_example("bioavailability")$model)
 twin_lines <- sub("theta THETA_F(0.70, 0.001, 0.999)  # typical bioavailability, directly on (0,1) scale",
                   "theta THETA_F(0.847, -5.0, 5.0)  # typical bioavailability on the logit scale",
@@ -277,6 +288,11 @@ ferx classifies everything it notices during a fit. Each warning has a **severit
 #| label: warnings
 ferx_get_warnings(fit)
 ferx_get_warnings(fit, as_df = TRUE)[, c("severity", "category")]
+```
+
+```{r}
+#| label: check-warnings
+#| include: false
 # The paragraph below reads these two warnings in this order, so any other set has to fail the render.
 stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", "dw_autocorrelation")),
           grepl("gradient = fd also changed the outer optimizer",
@@ -358,6 +374,11 @@ All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r 
 nca_warnings <- ferx_get_warnings(fit_nca, as_df = TRUE)
 nca_warnings[, c("severity", "category")]
 rbind(model_file = fit$theta, nca = fit_nca$theta)
+```
+
+```{r}
+#| label: check-nca-warnings
+#| include: false
 # The paragraphs around this chunk say the fit is clearly worse yet its warnings are
 # no more severe than the model-file fit's, so either turning false has to fail the render.
 nca_general <- nca_warnings$message[nca_warnings$category == "general"]
@@ -378,10 +399,15 @@ Convergence only means the optimizer stopped, and a clean warning list does not 
 warf <- ferx_example("warfarin")
 fit_short <- ferx_fit(warf$model, warf$data, method = "focei",
                       settings = list(maxiter = 2), verbose = FALSE)
-# The sentence above says this fit is unconverged, so a converged one has to fail the render.
-stopifnot(!fit_short$converged)
 fit_short$converged
 ferx_get_warnings(fit_short, as_df = TRUE)[, c("severity", "category", "message")]
+```
+
+```{r}
+#| label: check-maxiter-stop
+#| include: false
+# The sentence above says this fit is unconverged, so a converged one has to fail the render.
+stopifnot(!fit_short$converged)
 ```
 
 For the same reason `fit_short$n_iterations` is `r fit_short$n_iterations` here, not 2.

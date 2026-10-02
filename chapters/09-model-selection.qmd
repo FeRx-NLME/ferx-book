@@ -26,9 +26,21 @@ The base model is fitted (@sec-first-fit) and evaluated (@sec-diagnostics, @sec-
 ## The data
 
 ```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
 #| label: examples
 base <- ferx_example("two_cpt_oral_base")
 cov <- ferx_example("two_cpt_oral_cov")
+# Search runs and the files this chapter writes go to a scratch directory, one
+# subdirectory per run; the search tools create a run directory that does not exist yet.
+search_dir <- file.path(tempdir(), "searches")
+dir.create(search_dir, showWarnings = FALSE)
 ```
 
 ## Comparing fitted models
@@ -54,7 +66,7 @@ Both are FOCEI fits to the same data, and the base model is nested in the covari
 #| label: lrt
 d_ofv <- fit_base$ofv - fit_cov$ofv
 df <- fit_cov$n_parameters - fit_base$n_parameters
-c(d_ofv = d_ofv, df = df, p_value = pchisq(d_ofv, df, lower.tail = FALSE))
+data.frame(d_ofv = d_ofv, df = df, p_value = pchisq(d_ofv, df, lower.tail = FALSE))
 ```
 
 For non-nested models, use information criteria. `fit$aic` and `fit$bic` are the classical AIC and BIC. `ferx_bic()` computes four BIC variants that differ in how parameters are penalised:
@@ -98,7 +110,12 @@ nca_gate$passed
 emax <- ferx_example("emax_pkpd")
 emax_gate <- check_strictness(ferx_fit(emax$model, emax$data, verbose = FALSE))
 emax_gate$failures
-# The paragraph above says the first passes and the second fails, so either changing has to fail the render.
+```
+
+```{r}
+#| label: check-strictness-fail
+#| include: false
+# The paragraph below says the first passes and the second fails, so either changing has to fail the render.
 stopifnot(nca_gate$passed, !emax_gate$passed)
 ```
 
@@ -165,7 +182,7 @@ An uncovered feature is not quietly dropped. Asking for one in a configuration f
 
 ```{r}
 #| label: coverage-is-an-error
-uncovered <- file.path(book_tempdir("search-space"), "uncovered.ferxsearch")
+uncovered <- file.path(search_dir, "uncovered.ferxsearch")
 writeLines(sub('mfl = .*', 'mfl = "ABSORPTION([FO,SEQ-ZO-FO])"', readLines(base$search)), uncovered)
 tryCatch(ferx_search_config(uncovered), error = function(e) sub(".*mfl: ", "", conditionMessage(e)))
 ```
@@ -178,16 +195,18 @@ That is what `ferx_search_coverage()` is for: check a space before you file it.
 
 ```{r}
 #| label: covsearch
-cs_dir <- book_tempdir("covsearch")
+cs_dir <- file.path(search_dir, "covsearch")
 cs <- ferx_covsearch(config = base$search, directory = cs_dir, progress = FALSE)
 cs
 ```
 
-The forward phase added `CL ~ CRCL` (linear) at p = `r signif(cs$steps$p_value[cs$steps$selected & cs$steps$phase == "forward"][1], 2)`, below `p_forward`. That p-value is above `p_backward`, so the backward phase removed the effect again. The search returns the base model. Candidates excluded by the strictness gate are kept in the step table with their reason:
+The forward phase added `CL ~ CRCL` (linear) at p = `r signif(cs$steps$p_value[cs$steps$selected & cs$steps$phase == "forward"][1], 2)`, below `p_forward`. That p-value is above `p_backward`, so the backward phase removed the effect again. The search returns the base model. Candidates excluded by the strictness gate are kept in the step table with their reasons; here is the first reason of each, without its detail:
 
 ```{r}
 #| label: covsearch-excluded
-cs$steps[!cs$steps$passed, c("step", "parameter", "covariate", "form", "failures")]
+excluded <- cs$steps[!cs$steps$passed, c("step", "parameter", "covariate", "form", "failures")]
+excluded$failures <- trimws(sub("[;(].*", "", excluded$failures))
+excluded
 ```
 
 `print()` shows the selected step of each phase. `summary()` on the result adds every candidate of every step; the same table is `cs$steps`. The run directory holds the per-step journals, `steps.csv` and `final.ferx`. `ferx_search_results()` reads the step table back from disk:
@@ -206,7 +225,7 @@ The search can also be stated inline. Here it is restricted to `CL`, with a less
 cs_cl <- ferx_covsearch(model = base$model, data = base$data,
                         search_space = "COVARIATE?(CL, [WT, CRCL], [pow, lin])",
                         p_forward = 0.01, p_backward = 0.01,
-                        directory = book_tempdir("covsearch-cl"), progress = FALSE)
+                        directory = file.path(search_dir, "covsearch-cl"), progress = FALSE)
 cs_cl$included
 c(base_ofv = cs_cl$base_ofv, final_ofv = cs_cl$final_ofv)
 ```
@@ -219,7 +238,7 @@ The selected covariate model depends on the search space and the significance le
 
 ```{r}
 #| label: modelsearch
-ms_dir <- book_tempdir("modelsearch")
+ms_dir <- file.path(search_dir, "modelsearch")
 warf <- ferx_example("warfarin")
 ms <- ferx_modelsearch(config = warf$search, directory = ms_dir, progress = FALSE)
 ms
@@ -257,18 +276,21 @@ Up to `max_iter` accepted features are stacked. The bundled configuration search
 ```{r}
 #| label: ruvsearch
 transit <- ferx_example("one_cpt_transit")
-rs <- ferx_ruvsearch(config = transit$search, directory = book_tempdir("ruvsearch"), progress = FALSE)
+rs <- ferx_ruvsearch(config = transit$search, directory = file.path(search_dir, "ruvsearch"), progress = FALSE)
 rs
 rs$final_features
 ```
-`cwres_prescreen` changes what those numbers are. With it on, candidates are screened against the parent's CWRES rather than fitted to the data, which is cheaper but puts the criterion on a different scale. Two runs that differ only in that flag, everything else held equal:
+
+`r accepted <- rs$steps[rs$steps$selected, ]; if (nrow(accepted) == 0) sprintf("The search accepted no feature in its %d iterations.", rs$n_iterations) else sprintf("The search accepted %s in iteration %s%s.", paste0("\x60", accepted$feature, "\x60 (", gsub("_", "-", accepted$family), ")", collapse = " and "), paste(accepted$iteration, collapse = " and "), if (rs$n_iterations > max(accepted$iteration)) sprintf(", and nothing further in iteration %d", rs$n_iterations) else "")` The base model of this workflow, which carried a residual autocorrelation warning in @sec-diagnostics, can be searched the same way with the inline arguments (`model`, `data`, `p_value`, `max_iter`, …).
+
+`cwres_prescreen` changes what the candidates are scored on. With it on, candidates are screened against the parent's CWRES rather than fitted to the data, which is cheaper but puts the criterion on a different scale. Two runs that differ only in that flag, everything else held equal:
 
 ```{r}
 #| label: ruvsearch-prescreen
 ruv <- function(prescreen) {
   ferx_ruvsearch(model = transit$model, data = transit$data, p_value = 0.05, max_iter = 1,
                  retries = 0, cwres_prescreen = prescreen,
-                 directory = book_tempdir(paste0("ruvsearch-", prescreen)), progress = FALSE)
+                 directory = file.path(search_dir, paste0("ruvsearch-", prescreen)), progress = FALSE)
 }
 rs_data <- ruv(FALSE)
 rs_screen <- ruv(TRUE)
@@ -276,14 +298,16 @@ screened <- startsWith(rs_screen$candidates$id, "cwres")
 rbind(fitted_to_data = range(rs_data$candidates$criterion[rs_data$candidates$id != "input"]),
       screened_on_cwres = range(rs_screen$candidates$criterion[screened]))
 list(fitted_to_data = rs_data$final_features, screened_on_cwres = rs_screen$final_features)
+```
+
+```{r}
+#| label: check-ruvsearch-prescreen
+#| include: false
 # The paragraph below says both passes selected the same feature, so a difference has to fail the render.
 stopifnot(identical(rs_data$final_features, rs_screen$final_features))
 ```
 
 The two sets of numbers are not comparable, and the screening rows are the ones whose `id` starts with `cwres`. Here both passes select the same feature, but they rank candidates on different quantities and need not agree, so treat prescreening as a different search rather than a faster one. The engine default is `cwres_prescreen = FALSE`, which is what the configuration run above used.
-
-
-The search accepted a time-varying residual error in the first iteration, and nothing further in the second. The base model of this workflow, which carried a residual autocorrelation warning in @sec-diagnostics, can be searched the same way with the inline arguments (`model`, `data`, `p_value`, `max_iter`, …).
 
 ## Variability search
 
@@ -292,7 +316,7 @@ The search accepted a time-varying residual error in the first iteration, and no
 ```{r}
 #| label: iivsearch
 bo <- ferx_example("warfarin_block_omega")
-iiv <- ferx_iivsearch(config = bo$search, directory = book_tempdir("iivsearch"), progress = FALSE)
+iiv <- ferx_iivsearch(config = bo$search, directory = file.path(search_dir, "iivsearch"), progress = FALSE)
 iiv
 ```
 
@@ -334,7 +358,7 @@ iiv_block <- ferx_iivsearch(model = bo$model, data = bo$data,
                             algorithm = "skip",
                             correlation_algorithm = "top_down_exhaustive",
                             block_retries = 1,
-                            directory = book_tempdir("iivsearch-block"), progress = FALSE)
+                            directory = file.path(search_dir, "iivsearch-block"), progress = FALSE)
 c(input = iiv_block$input_structure, final = iiv_block$final_structure)
 iiv_block$models[, c("id", "structure", "criterion", "rank", "passed")]
 ```
@@ -348,7 +372,7 @@ Two structures are compared here: the input's `block_omega (ETA_CL, ETA_V)` and 
 ```{r}
 #| label: iovsearch
 iov_ex <- ferx_example("warfarin_iov")
-iov <- ferx_iovsearch(config = iov_ex$search, directory = book_tempdir("iovsearch"), progress = FALSE)
+iov <- ferx_iovsearch(config = iov_ex$search, directory = file.path(search_dir, "iovsearch"), progress = FALSE)
 iov
 ```
 
@@ -372,7 +396,7 @@ The bundled `two_cpt_oral_global` example is built to have something to find: a 
 #| label: globalsearch
 gs_ex <- ferx_example("two_cpt_oral_global")
 gs <- ferx_globalsearch(config = gs_ex$search,
-                        directory = book_tempdir("globalsearch"), progress = FALSE)
+                        directory = file.path(search_dir, "globalsearch"), progress = FALSE)
 gs
 ```
 
@@ -414,14 +438,14 @@ Sixteen points is small enough to enumerate, which is what makes the bundled fil
 
 ```{r}
 #| label: globalsearch-ga
-ga_config <- file.path(book_tempdir("globalsearch-ga-config"), "global.ferxsearch")
+ga_config <- file.path(search_dir, "global_ga.ferxsearch")
 ga_lines <- readLines(gs_ex$search)
 ga_lines <- sub("^base = .*", sprintf('base = "%s"', normalizePath(gs_ex$model, winslash = "/")), ga_lines)
 ga_lines <- sub("^data = .*", sprintf('data = "%s"', normalizePath(gs_ex$data, winslash = "/")), ga_lines)
 ga_lines <- sub('algorithm = "exhaustive"', 'algorithm = "ga"', ga_lines, fixed = TRUE)
 writeLines(ga_lines, ga_config)
 gs_ga <- ferx_globalsearch(config = ga_config,
-                           directory = book_tempdir("globalsearch-ga"), progress = FALSE)
+                           directory = file.path(search_dir, "globalsearch-ga"), progress = FALSE)
 gs_ga$generations
 data.frame(
   algorithm = c("exhaustive", "ga"),
@@ -456,7 +480,7 @@ plan
 
 ```{r}
 #| label: amd
-amd <- ferx_amd(config = amd_ex$search, directory = book_tempdir("amd"), progress = FALSE)
+amd <- ferx_amd(config = amd_ex$search, directory = file.path(search_dir, "amd"), progress = FALSE)
 amd
 ```
 
@@ -467,7 +491,7 @@ Getting the result out of an AMD run takes a little care, because two fields bot
 ```{r}
 #| label: amd-result
 c(final_model = class(amd$final_model), fit = class(amd$fit))
-c(input_ofv = amd$input_ofv, final_ofv = amd$final_ofv, d_ofv = amd$d_ofv)
+data.frame(input_ofv = amd$input_ofv, final_ofv = amd$final_ofv, d_ofv = amd$d_ofv)
 basename(amd$final_model_path)
 ```
 
@@ -501,7 +525,7 @@ data.frame(strategy = strategies, order = vapply(strategies, function(s) {
 amd_sir <- ferx_amd(model = amd_ex$model, data = amd_ex$data,
                     search_space = "PERIPHERALS(0..1); IIV?(@PK, exp)",
                     strategy = "SIR", skip = "residual", retries_on = "final",
-                    retries = 0, directory = book_tempdir("amd-sir"), progress = FALSE)
+                    retries = 0, directory = file.path(search_dir, "amd-sir"), progress = FALSE)
 amd_sir$steps[, c("step", "status", "criterion", "candidates", "seconds")]
 ```
 
@@ -511,9 +535,8 @@ A `.ferxsearch` file may carry a section addressed to a tool this package does n
 
 ```{r}
 #| label: unconsumed-sections
-sections_dir <- book_tempdir("search-sections")
 unconsumed <- function(section, body) {
-  path <- file.path(sections_dir, paste0(gsub("\\[|\\]", "", section), ".ferxsearch"))
+  path <- file.path(search_dir, paste0(gsub("\\[|\\]", "", section), ".ferxsearch"))
   writeLines(c(readLines(base$search), "", section, body), path)
   tryCatch(ferx_search_config(path), warning = conditionMessage)
 }

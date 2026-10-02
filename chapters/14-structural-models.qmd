@@ -18,6 +18,14 @@ Analytical 1-, 2- and 3-compartment models are **stable** in ferx-core. ODE mode
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 Every model in this chapter is a bundled example with its own dataset.
 
 ## Minimal runnable call: a built-in model
@@ -38,7 +46,9 @@ The built-in models are `one_cpt_iv`, `one_cpt_oral`, `two_cpt_iv`, `two_cpt_ora
 #| label: builtin-lines
 builtin <- c("one_cpt_iv", "two_cpt_iv", "three_cpt_iv", "warfarin", "two_cpt_oral_cov", "three_cpt_oral")
 data.frame(example = builtin, structural_model = vapply(builtin, function(e) {
-  trimws(ferx_model_get_section(ferx_example(e)$model, "structural_model", strip = TRUE)[1])
+  # ferx_model_get_section() also prints the block; capture.output() keeps only the table
+  capture.output(lines <- ferx_model_get_section(ferx_example(e)$model, "structural_model", strip = TRUE))
+  trimws(lines[1])
 }, character(1)), row.names = NULL)
 ```
 
@@ -69,7 +79,8 @@ pairs <- list(
 )
 fit_timed <- function(ex) {
   start <- Sys.time()
-  f <- ferx_fit(ex$model, ex$data, covariance = FALSE, verbose = FALSE)
+  # suppress the R warning that reports overriding the model file's covariance setting
+  f <- suppressWarnings(ferx_fit(ex$model, ex$data, covariance = FALSE, verbose = FALSE))
   c(ofv = f$ofv, seconds = as.numeric(difftime(Sys.time(), start, units = "secs")))
 }
 twin_results <- do.call(rbind, lapply(pairs, function(p) {
@@ -141,7 +152,8 @@ rbind(scaled = fit_ws$theta, milligram_doses = fit_ref$theta)
 ```{r}
 #| label: tbl-scaling-forms
 #| tbl-cap: "One-compartment warfarin model with different `[scaling]` forms (covariance step skipped)."
-scaling_dir <- book_tempdir("scaling")
+scaling_dir <- file.path(tempdir(), "scaling")
+dir.create(scaling_dir, showWarnings = FALSE)
 w <- ferx_example("warfarin")
 w_ode <- ferx_example("warfarin_ode")
 
@@ -362,6 +374,8 @@ head(distinct(fit_ot$sdtab, ID, KE, T_HALF, CMAX, AUC_72), 3)
 
 ```{r}
 #| label: tbl-settings-ode
+#| echo: false
+#| tbl-cap: "ODE solver settings."
 book_settings_table(c("ode_method", "ode_reltol", "ode_abstol", "ode_max_steps",
                       "ode_stiff_abort_after", "ode_auto_switch"))
 ```
@@ -370,6 +384,7 @@ The bundled ODE twins set very tight tolerances (`ode_reltol = 1e-10`, `ode_abst
 
 ```{r}
 #| label: tbl-ode-tolerance
+#| tbl-cap: "Default and tight ODE tolerances on `warfarin_ode` (covariance step skipped)."
 w_ode <- ferx_example("warfarin_ode")
 tolerances <- list(default = list(), tight = list(ode_reltol = 1e-10, ode_abstol = 1e-12))
 do.call(rbind, lapply(names(tolerances), function(nm) {
@@ -387,6 +402,7 @@ do.call(rbind, lapply(names(tolerances), function(nm) {
 
 ```{r}
 #| label: tbl-ode-methods
+#| tbl-cap: "ODE steppers on `warfarin_ode` (covariance step skipped)."
 ode_methods <- c("auto", "rk45", "vern7", "rosenbrock23", "rodas4", "rodas5p")
 do.call(rbind, lapply(ode_methods, function(m) {
   start <- Sys.time()
@@ -407,7 +423,7 @@ A model may declare no `omega` at all. All subjects then share one set of parame
 pooled <- ferx_example("one_cpt_iv_pooled")
 invisible(ferx_model_get_section(pooled$model, "parameters"))
 fit_pooled <- ferx_fit(pooled$model, pooled$data, verbose = FALSE)
-c(converged = fit_pooled$converged, ofv = fit_pooled$ofv, n_eta = nrow(fit_pooled$omega))
+data.frame(converged = fit_pooled$converged, ofv = fit_pooled$ofv, n_eta = nrow(fit_pooled$omega))
 isTRUE(all.equal(fit_pooled$sdtab$PRED, fit_pooled$sdtab$IPRED))
 ```
 
@@ -423,7 +439,47 @@ c(template = fit_tmpl$ofv, analytical = ferx_fit(cov$model, cov$data, covariance
 
 ### Initial conditions
 
-ferx-core also supports an `[initial_conditions]` block to set non-zero starting amounts for ODE states, for example an endogenous baseline. No bundled ferx-r example uses it; see the ferx-core [initial conditions](https://ferx-nlme.org/ferx-core/model-file/initial-conditions.html) page.
+A subject can start with drug already on board: an endogenous baseline, or what is left of a dose given before the study. On an analytical model the `[initial_conditions]` block sets that starting amount, as `init(compartment) = <expression>` for `central`, `depot` or a `CMT` number. The expression is an amount, not a concentration, and may use parameters and covariates. On an ODE model the same line goes inside `[odes]` instead. Here 50 is placed in the central compartment of both warfarin models:
+
+```{r}
+#| label: initial-conditions
+baseline_analytical <- file.path(scaling_dir, "warfarin_baseline.ferx")
+w_lines <- readLines(w$model)
+writeLines(append(w_lines, c("[initial_conditions]", "  init(central) = 50", ""),
+                  after = grep("^\\[error_model\\]", w_lines) - 1), baseline_analytical)
+invisible(ferx_model_get_section(baseline_analytical, "initial_conditions"))
+
+baseline_ode <- file.path(scaling_dir, "warfarin_ode_baseline.ferx")
+ode_lines <- readLines(w_ode$model)
+writeLines(append(ode_lines, "  init(central) = 50", after = max(grep("^  d/dt\\(", ode_lines))), baseline_ode)
+invisible(ferx_model_get_section(baseline_ode, "odes"))
+
+no_baseline <- ferx_predict(w$model, w$data)
+baseline_predictions <- data.frame(TIME = no_baseline$TIME, no_baseline = no_baseline$PRED,
+                                   analytical = ferx_predict(baseline_analytical, w$data)$PRED,
+                                   ode = ferx_predict(baseline_ode, w_ode$data)$PRED)
+head(baseline_predictions, 5)
+```
+
+```{r}
+#| label: check-initial-conditions
+#| include: false
+# The sentence below says the two forms agree and add the decaying baseline.
+stopifnot(isTRUE(all.equal(baseline_predictions$analytical, baseline_predictions$ode, tolerance = 1e-6)),
+          all(baseline_predictions$analytical > baseline_predictions$no_baseline))
+```
+
+The two forms give the same predictions: the baseline adds a concentration that decays at the elimination rate. The block is refused on an ODE model, with a message that names the fix:
+
+```{r}
+#| label: initial-conditions-ode-error
+block_on_ode <- file.path(scaling_dir, "warfarin_ode_block.ferx")
+writeLines(append(ode_lines, c("[initial_conditions]", "  init(central) = 50", ""),
+                  after = grep("^\\[error_model\\]", ode_lines) - 1), block_on_ode)
+try(ferx_predict(block_on_ode, w_ode$data))
+```
+
+The ferx-core [initial conditions](https://ferx-nlme.org/ferx-core/model-file/initial-conditions.html) page covers the rest, including what happens at a system reset and with steady-state doses.
 
 ## Pitfalls
 

@@ -18,12 +18,21 @@ Binary endpoints are the first of ferx-core's categorical endpoints. Ordinal, co
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 `binary_logistic` has 60 subjects with an outcome at times 0, 1 and 2, and a subject covariate `X`. `DV` is the 0/1 outcome on `CMT = 3`. There are no dose records:
 
 ```{r}
 #| label: data
 binary <- ferx_example("binary_logistic")
-binary_dir <- book_tempdir("binary")
+binary_dir <- file.path(tempdir(), "binary")
+dir.create(binary_dir, showWarnings = FALSE)
 binary_data <- read.csv(binary$data, na.strings = ".")
 head(binary_data, 6)
 binary_data |> group_by(TIME) |> summarise(subjects = n(), fraction_1 = mean(DV))

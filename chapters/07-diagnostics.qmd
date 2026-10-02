@@ -21,6 +21,14 @@ A converged fit with a sensible OFV is only a candidate. Before trusting it, che
 ## The data
 
 ```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
 #| label: fit
 base <- ferx_example("two_cpt_oral_base")
 fit <- ferx_fit(base$model, base$data, verbose = FALSE)
@@ -100,6 +108,11 @@ The fit also tests the residuals for serial correlation within subjects. `fit$dw
 ```{r}
 #| label: dw-warning
 ferx_get_warnings(fit)
+```
+
+```{r}
+#| label: check-dw-warning
+#| include: false
 # The paragraph below reads these two warnings in this order, so any other set has to fail the render.
 stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", "dw_autocorrelation")))
 ```
@@ -240,6 +253,8 @@ summary(fit$sdtab[, c("NPDE", "NPD")])
 
 ```{r}
 #| label: tbl-settings-npde
+#| echo: false
+#| tbl-cap: "NPDE settings."
 book_settings_table(c("npde_nsim", "npde_seed"))
 ```
 

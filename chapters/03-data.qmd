@@ -22,6 +22,14 @@ This chapter covers the column layout ferx expects, checking a dataset in R, and
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 `ferx_get_columns()` reads only the header line and sorts the columns into the standard ones ferx recognises and everything else. Columns it doesn't recognise are treated as covariates:
 
 ```{r}
@@ -228,7 +236,8 @@ A `[data]` block lets a model file name its own dataset, so that model and data 
 
 ```{r}
 #| label: data-block
-run_dir <- book_tempdir("data-block")
+run_dir <- file.path(tempdir(), "data-block")
+dir.create(run_dir, showWarnings = FALSE)
 invisible(file.copy(ex$data, file.path(run_dir, "pk.csv"), overwrite = TRUE))
 model_with_data <- file.path(run_dir, "two_cpt_oral_cov.ferx")
 writeLines(c(readLines(ex$model), "", "[data]", "  path = pk.csv"), model_with_data)
@@ -245,17 +254,22 @@ basename(fit_db$data_path)
 #| label: data-block-rename
 conc <- read.csv(ex$data, na.strings = ".")
 names(conc)[names(conc) == "DV"] <- "CONC"
-write.csv(conc, file.path(run_dir, "pk_conc.csv"), row.names = FALSE, na = ".", quote = FALSE)
+conc_file <- file.path(run_dir, "pk_conc.csv")
+write.csv(conc, conc_file, row.names = FALSE, na = ".", quote = FALSE)
 model_renamed <- file.path(run_dir, "two_cpt_oral_cov_conc.ferx")
 writeLines(c(readLines(ex$model), "", "[data]", "  path = pk_conc.csv", "  DV = CONC"), model_renamed)
 
-conc_file <- file.path(run_dir, "pk_conc.csv")
 excluded <- c(
   without_model = attr(ferx_apply_selection(conc_file, ignore = "DV < 0.2"), "exclusions")$n_obs_excluded,
   with_model = attr(ferx_apply_selection(conc_file, ignore = "DV < 0.2", model = model_renamed),
                     "exclusions")$n_obs_excluded,
   fit = ferx_fit(model_renamed, ignore = "DV < 0.2", verbose = FALSE)$exclusions$n_obs_excluded)
 excluded
+```
+
+```{r}
+#| label: check-data-block-rename
+#| include: false
 # The paragraph below compares these three counts, so a different pattern has to fail the render.
 stopifnot(excluded[["without_model"]] == 0, excluded[["with_model"]] == excluded[["fit"]], excluded[["fit"]] > 0)
 ```

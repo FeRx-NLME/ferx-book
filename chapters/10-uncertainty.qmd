@@ -23,9 +23,17 @@ book_stage_banner("EVALUATE")
 - the **bootstrap**: refitting the model to resampled datasets;
 - **Bayesian estimation**: posterior intervals.
 
-This chapter applies each to the covariate model and compares the intervals.
+This chapter applies each to the covariate model and compares the intervals of the first three. Bayesian estimation does not converge on this model at this build, so its intervals are left out (below).
 
 ## The data
+
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
 
 ```{r}
 #| label: fit
@@ -49,6 +57,8 @@ The full variance-covariance matrix of the estimates is `fit$cov_matrix`, and it
 
 ```{r}
 #| label: tbl-settings-covariance
+#| echo: false
+#| tbl-cap: "Covariance step settings."
 book_settings_table(c("covariance_method", "covariance_fallback", "analytic_cov_hessian",
                       "cov_inner_tol", "fd_hessian_step"))
 ```
@@ -81,6 +91,8 @@ fit_sir$sir_ci_theta
 
 ```{r}
 #| label: tbl-settings-sir
+#| echo: false
+#| tbl-cap: "SIR settings."
 book_settings_table(c("sir_samples", "sir_resamples", "sir_seed", "sir_keep_samples", "sir_df"))
 ```
 
@@ -101,7 +113,8 @@ Check `sir_ess` on every run. When it is low, increase `sir_samples` and confirm
 
 ```{r}
 #| label: bootstrap
-boot_dir <- book_tempdir("bootstrap")
+boot_dir <- file.path(tempdir(), "bootstrap")
+dir.create(boot_dir, showWarnings = FALSE)
 boot <- ferx_bootstrap(cov$model, cov$data, samples = 100, seed = 1, directory = boot_dir)
 boot
 ```
@@ -158,15 +171,29 @@ head(relaxed$parameters[, c("parameter", "ci_lower", "ci_upper")], 7)
 
 ## Bayesian estimation
 
-`method = "bayes"` returns posterior summaries instead of a covariance step (@sec-estimation-methods). Posterior intervals are only meaningful when the chains have converged:
+`method = "bayes"` returns posterior summaries instead of a covariance step (@sec-estimation-methods). Posterior intervals are only meaningful when the chains have converged, which ferx reports as a largest R-hat at or below 1.01. On this model neither the default run nor one with four times longer chains gets there:
 
 ```{r}
 #| label: bayes
-fit_bayes <- ferx_fit(cov$model, cov$data, method = "bayes", verbose = FALSE)
-c(converged = fit_bayes$converged, max_rhat = fit_bayes$bayes$max_rhat)
+chain_lengths <- list(default = list(), four_times_longer = list(bayes_warmup = 4000, bayes_iters = 4000))
+# suppress the R warnings that report overriding the model file's method
+bayes_runs <- lapply(chain_lengths, function(s) {
+  suppressWarnings(ferx_fit(cov$model, cov$data, method = "bayes", settings = s, verbose = FALSE))
+})
+do.call(rbind, lapply(names(bayes_runs), function(run) {
+  data.frame(run = run, draws_per_chain = bayes_runs[[run]]$bayes$n_draws_per_chain,
+             converged = bayes_runs[[run]]$converged, max_rhat = bayes_runs[[run]]$bayes$max_rhat)
+}))
 ```
 
-On this model the default run has not converged (R-hat far above 1.01), so its intervals are not used below.
+```{r}
+#| label: check-bayes
+#| include: false
+# The text says neither run converges, so a converged one has to fail the render.
+stopifnot(!bayes_runs$default$converged, !bayes_runs$four_times_longer$converged)
+```
+
+The largest R-hat is `r round(bayes_runs$default$bayes$max_rhat, 2)` with the default chains and `r round(bayes_runs$four_times_longer$bayes$max_rhat, 2)` with the longer ones, so the chains disagree and their intervals are not used below. @sec-estimation-methods shows a Bayes fit that converges, on warfarin, and the same failure on the base model.
 
 ## Comparing the intervals
 
@@ -189,7 +216,7 @@ intervals <- bind_rows(
 
 ggplot(intervals, aes(y = method, xmin = lower_rel, xmax = upper_rel, colour = method)) +
   geom_vline(xintercept = 1, linetype = "dashed") +
-  geom_errorbarh(height = 0.3) +
+  geom_errorbar(orientation = "y", width = 0.3) +
   facet_wrap(~parameter, ncol = 1, strip.position = "left") +
   labs(x = "Interval relative to the estimate", y = NULL) +
   labs(colour = NULL) +
@@ -209,9 +236,14 @@ emax <- ferx_example("emax_pkpd")
 fit_bad <- ferx_fit(emax$model, emax$data, verbose = FALSE)
 w_bad <- ferx_get_warnings(fit_bad, as_df = TRUE)
 w_bad[w_bad$category %in% c("condition_number", "high_correlation", "inflated_rse"), c("severity", "category")]
+fit_bad$estimates[c("TVE0", "TVEMAX", "TVEC50"), c("estimate", "rse_pct")]
+```
+
+```{r}
+#| label: check-regularized
+#| include: false
 # The sentence above names these warnings, so their absence has to fail the render.
 stopifnot(all(c("condition_number", "high_correlation") %in% w_bad$category))
-fit_bad$estimates[c("TVE0", "TVEMAX", "TVEC50"), c("estimate", "rse_pct")]
 ```
 
 In such a case, fix the model before quantifying uncertainty. `covariance_fallback = "sir"` runs SIR automatically when the covariance step fails.

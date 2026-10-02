@@ -93,7 +93,31 @@ if (!file.exists(stamp_path)) {
 
 # ---- per-file checks ------------------------------------------------------------
 banned <- "\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|Pharmpy|pyDarwin|Phoenix\\s*NLME|NLMIXED|WinBUGS|Stan)\\b"
+# CLAUDE.md rule 6: another engine may be named in an analogy, never in a claim that
+# ferx is better. A sentence naming one with comparative wording is flagged; whether
+# a sentence that passes is an analogy is for review to judge.
+comparative <- paste0("\\b(better|best|faster|fastest|quicker|slower|improv\\w*|outperform\\w*|superior|",
+                      "inferior|beats?|more (accurate|robust|reliable|efficient|stable))\\b")
 strip_urls <- function(x) gsub("https?://[^ )>\"']+", "", x)
+claims_over <- function(line) {
+  sentences <- strsplit(strip_urls(line), "(?<=[.!?])\\s+", perl = TRUE)[[1]]
+  any(grepl(banned, sentences, ignore.case = TRUE) & grepl(comparative, sentences, ignore.case = TRUE))
+}
+
+# CLAUDE.md rule 8: reader code runs as shown. Returns the chunks of a file with their
+# first line, label and whether the reader sees the code.
+chunks_of <- function(lines) {
+  starts <- grep("^\\s*```\\{r", lines)
+  lapply(starts, function(s) {
+    e <- s + 1
+    while (e <= length(lines) && !grepl("^\\s*```\\s*$", lines[e])) e <- e + 1
+    body <- if (e > s + 1) lines[(s + 1):(e - 1)] else character()
+    header <- body[grepl("^\\s*#\\|", body)]
+    list(start = s, body = body,
+         label = sub("^\\s*#\\|\\s*label:\\s*", "", grep("^\\s*#\\|\\s*label:", header, value = TRUE)[1]),
+         visible = !any(grepl("^\\s*#\\|\\s*(echo|include):\\s*(false|FALSE)", header)))
+  })
+}
 
 for (f in files) {
   lines <- src[[f]]
@@ -118,7 +142,36 @@ for (f in files) {
   for (i in grep("^\\s*#>", lines)) note("output", sprintf("%s:%d: hand-written output line", f, i))
   for (i in grep("https?://ferx-nlme\\.github\\.io/", lines)) note("links", sprintf("%s:%d: old site host (use ferx-nlme.org)", f, i))
   for (i in grep("ferx-nlme\\.org/(learn|examples)/", lines)) note("links", sprintf("%s:%d: retired site link", f, i))
-  for (i in grep(banned, strip_urls(lines), ignore.case = TRUE)) note("ferx-only", sprintf("%s:%d: %s", f, i, trimws(lines[i])))
+  for (i in grep(banned, strip_urls(lines), ignore.case = TRUE)) {
+    if (claims_over(lines[i])) note("ferx-only", sprintf("%s:%d: names another engine next to comparative wording: %s",
+                                                         f, i, trimws(lines[i])))
+  }
+
+  chunks <- chunks_of(lines)
+  for (ch in Filter(function(ch) ch$visible, chunks)) {
+    for (k in grep("\\bbook_[a-z_]+\\(", ch$body)) {
+      note("reader-code", sprintf("%s:%d: book helper in a visible chunk (hide it with echo: false)", f, ch$start + k))
+    }
+    for (k in grep("#.*\\b(the render|fail the render|render stops)\\b", ch$body)) {
+      note("reader-code", sprintf("%s:%d: render-check comment in a visible chunk (move the check to an include: false chunk)",
+                                  f, ch$start + k))
+    }
+  }
+  chapter_no <- suppressWarnings(as.integer(sub("^chapters/(\\d+)-.*", "\\1", f)))
+  if (!is.na(chapter_no) && chapter_no >= 2 && chapter_no <= 24) {
+    packages <- Filter(function(ch) identical(ch$label, "packages") && ch$visible, chunks)
+    loads <- if (length(packages)) packages[[1]]$body else character()
+    for (pkg in c("ferx", "dplyr", "ggplot2")) {
+      if (!any(grepl(sprintf("^library\\(%s\\)", pkg), loads))) {
+        note("reader-code", sprintf("%s: no visible `packages` chunk loading %s", f, pkg))
+      }
+    }
+  }
+}
+
+common <- readLines(file.path("chapters", "_common.R"), warn = FALSE)
+for (i in grep("^\\s*(library|require|suppressPackageStartupMessages)\\(", common)) {
+  note("reader-code", sprintf("chapters/_common.R:%d: attaches a package the reader's code would then rely on", i))
 }
 
 # ---- coverage ---------------------------------------------------------------------
