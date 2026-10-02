@@ -449,7 +449,7 @@ The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previ
 
 #### Thetas that no random effect reaches
 
-SAEM moves most thetas through their random effects: a typical value such as `TVCL` follows the mean of its eta, and a covariate exponent is updated together with the typical value it scales. A theta that no such update reaches is left to a numerical M-step instead, which ferx-core describes as noisier and able to settle away from the optimum ([thetas the closed-form update cannot reach](https://ferx-nlme.org/ferx-core/estimation/saem.html#saem-mstep-no-closed-form)). The covariate model of @sec-model-selection has one: `THETA_WT` scales both `CL` and `V1`, it can join only one of the two updates, and the fit says which thetas are left over. Two settings act on that step: `mstep_solver = "score_sa"` replaces its derivative-free solver, and `mstep_draws` averages that solver's objective over several E-step draws instead of one. A SAEM fit's own OFV is a FOCE approximation, so the fits are compared on the importance-sampled −2 log-likelihood at their final estimates (*Importance sampling*, below):
+SAEM moves most thetas through their random effects: a typical value such as `TVCL` follows the mean of its eta, and a covariate exponent is updated together with the typical value it scales. A theta that no such update reaches is left to a numerical M-step instead, which ferx-core describes as noisier and able to settle away from the optimum ([thetas the closed-form update cannot reach](https://ferx-nlme.org/ferx-core/estimation/saem.html#saem-mstep-no-closed-form)). The covariate model of @sec-model-selection runs into this: `THETA_WT` scales both `CL` and `V1` and can join only one of the two updates. It joins `CL`'s; `V1`'s is not used, which leaves `TVV1` to the numerical step, and the fit's note names the thetas involved. Two settings act on that step: `mstep_solver = "score_sa"` replaces its derivative-free solver, and `mstep_draws` averages that solver's objective over several E-step draws instead of one. A SAEM fit's own OFV is a FOCE approximation, so the fits are compared on the importance-sampled −2 log-likelihood at their final estimates (*Importance sampling*, below):
 
 ```{r}
 #| label: saem-mstep
@@ -467,6 +467,7 @@ is_table <- function(fits, thetas) {
 mstep_fits <- list(
   focei = is_fit(cov$model, "focei"),
   saem = is_fit(cov$model, "saem", list(seed = 1)),
+  saem_300_700 = is_fit(cov$model, "saem", list(seed = 1, n_exploration = 300, n_convergence = 700)),
   saem_score_sa = is_fit(cov$model, "saem", list(seed = 1, mstep_solver = "score_sa")),
   saem_4_draws = is_fit(cov$model, "saem", list(seed = 1, mstep_draws = 4))
 )
@@ -483,20 +484,20 @@ wt <- function(f) f$theta[["THETA_WT"]]
 SAEM leaves `THETA_WT` at `r round(wt(mstep_fits$saem), 2)`, where FOCEI finds `r round(wt(mstep_fits$focei), 2)`, and its importance-sampled −2 log-likelihood is `r round(is_gap(mstep_fits$saem), 1)` units above FOCEI's, against a Monte Carlo error of about `r round(mstep_fits$saem$importance_sampling$mc_standard_error, 1)`. `mstep_draws = 4` gives `r round(wt(mstep_fits$saem_4_draws), 2)` and `r if (is_gap(mstep_fits$saem_4_draws) < 1) "closes the gap" else sprintf("leaves the gap at %.1f", is_gap(mstep_fits$saem_4_draws))`; ferx-core expects it to help little while consecutive draws of the default sampler are strongly correlated.
 
 ::: {.callout-warning}
-## `score_sa` pins `THETA_WT` to its bound at this build
+## A shared covariate exponent drifts to its bound at this build
 
-`mstep_solver = "score_sa"` is meant to remove the bias of this step, and the model is inside the scope ferx-core documents for it. Here it drives `THETA_WT` to its lower bound, `r round(wt(mstep_fits$saem_score_sa), 3)`, `r round(is_gap(mstep_fits$saem_score_sa), 1)` units above FOCEI on the importance-sampled objective. A fit with the covariance step reports it as a `boundary_estimate`. Leave `mstep_solver` at its default and change the model instead, as below.
+The declined update is not harmless. The longer SAEM runs, the further `THETA_WT` falls: with the default solver and a schedule of `n_exploration = 300`, `n_convergence = 700` (`saem_300_700` above), it ends at `r round(wt(mstep_fits$saem_300_700), 3)`. `mstep_solver = "score_sa"`, which corrects this step for a theta that is in no group at all, gets there within the default schedule (`r round(wt(mstep_fits$saem_score_sa), 3)`, `r round(is_gap(mstep_fits$saem_score_sa), 1)` units above FOCEI on the importance-sampled objective), and a fit with the covariance step reports it as a `boundary_estimate`. Neither solver setting is the cure; the model is, as below ([ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620)).
 
 ```{r}
-#| label: saem-score-sa-bound
+#| label: saem-shared-exponent-drift
 score_sa_cov <- suppressWarnings(ferx_fit(cov$model, cov$data, method = "saem",
                                           settings = list(seed = 1, mstep_solver = "score_sa"),
                                           verbose = FALSE))
 score_sa_warnings <- ferx_get_warnings(score_sa_cov, as_df = TRUE)
 score_sa_warnings[score_sa_warnings$category == "boundary_estimate", "message"]
-# The callout describes this behaviour; once the engine changes it, the render has to stop.
-# An out-of-scope model would keep the default solver and say so naming score_sa.
-stopifnot(abs(wt(mstep_fits$saem_score_sa) - 0.01) < 1e-6,
+# The callout describes this drift; once the engine fixes it (ferx-core #1620), the render
+# has to stop. An out-of-scope model would keep the default solver and name score_sa.
+stopifnot(wt(mstep_fits$saem_300_700) < 0.1, wt(mstep_fits$saem_score_sa) < 0.1,
           "boundary_estimate" %in% score_sa_warnings$category,
           !any(grepl("score_sa", mstep_fits$saem_score_sa$warnings, fixed = TRUE)))
 ```

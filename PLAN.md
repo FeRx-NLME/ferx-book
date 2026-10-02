@@ -897,21 +897,23 @@ Per-chapter loop:
     #308, ch13); `ferx_simulate()`/`ferx_predict()` pass on `W_CMT_DEFAULTED` and model notes (ch20,
     ch22); the `multi_start` note appears only when a start other than the first wins (ch06); `emax_pkpd`
     RSEs fell to 30-590% (ch20).
-  - **ferx-core: `mstep_solver = score_sa` pins a shared covariate exponent to its bound.** Found
-    while moving ch06's M-step demo off `warfarin_saem` (every theta there has an eta, so
-    `mstep_draws = 4` was bit-identical and the demo showed nothing). On `two_cpt_oral_cov` under SAEM,
-    `THETA_WT` scales CL and V1; the V1 covariate mu-reference is declined ("THETA_WT already belongs
-    to another covariate mu-reference; TVV1, THETA_WT stay on the numerical M-step (#619)").
-    Importance-sampled -2 log L at the final estimates (`imp_eval_only`, MC error about 0.3), seeds 1-3:
-    FOCEI -1199.38 (THETA_WT 0.653); SAEM default -1194.9 / -1195.4 / -1197.4 (0.151 / 0.177 /
-    0.348); `score_sa` -1192.2 / -1191.9 / -1192.1 with THETA_WT at its lower bound 0.010 on every
-    seed (`boundary_estimate` when the covariance step runs); `mstep_draws = 4` -1195.1 / -1194.1 /
-    -1193.4. The data were simulated with THETA_WT = 0.75 (`src/bin/generate_data.rs`). The model is
-    inside the documented `score_sa` scope (no out-of-scope warning). Giving V1 its own exponent
-    removes the problem: SAEM -1199.40 / -1199.38 / -1199.25 against FOCEI -1199.45, THETA_WT 0.73,
-    and `score_sa` -1199.13. ch06 (`saem-mstep`, `saem-score-sa-bound`, `saem-mstep-remedy`) shows
-    the default, both settings and the remedy, with an "at this build" callout for `score_sa`. Not
-    filed yet.
+  - **ferx-core bug: a covariate exponent shared by two typical values drifts to its lower bound
+    under SAEM.** Filed as [ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620).
+    Found while moving ch06's M-step demo off `warfarin_saem` (every theta there has an eta, so
+    `mstep_draws = 4` was bit-identical and the demo showed nothing). In `two_cpt_oral_cov`,
+    `THETA_WT` scales CL and V1; #619 records both covariate mu-references and declines V1's ("THETA_WT
+    already belongs to another covariate mu-reference"). THETA_WT then joins only CL's group step (the
+    numerical M-step pins it; the engine note saying it "stays on the numerical M-step" is wrong for
+    it) and drifts: seed 1, default solver, 0.151 at 150/250 and 0.010 (the bound) at 300/700, 300/1500
+    and 600/3000; `score_sa` reaches 0.010 within 150/250 on seeds 1-3. Importance-sampled -2 log L at
+    the final estimates (MC error about 0.3): FOCEI -1199.38 (0.653); SAEM default 150/250 -1194.9 to
+    -1197.4; 300/700 -1192.4 to -1194.3. Controls: `mu_referencing = false` (no groups) is noisy but
+    does not drift; the exponent routed through an `if` local (plain no-ETA theta) does not drift and
+    `score_sa` is close to FOCEI there; one exponent per typical value stays at FOCEI's optimum
+    (0.73, IS -1199.4 to -1199.5) at every schedule for both solvers. Data simulated with 0.75.
+    So it is not a `score_sa` defect: `score_sa` only gets to the bound sooner. ch06 shows the default,
+    both settings, the longer-schedule drift (`saem-shared-exponent-drift`, "at this build" callout,
+    guarded) and the remedy (`saem-mstep-remedy`).
   - **Book prose defect (pre-existing, fixed at this bump):** ch16 said a refused `ferx_fit()` carries
     "the message but not the code"; since ferx-r #378 the refusal appends `[E_BLOCK_VARIANCE_ONLY]` and
     carries `$code`. `block-sd-fit` now shows and guards the code.
