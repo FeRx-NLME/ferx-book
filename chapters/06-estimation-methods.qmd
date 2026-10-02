@@ -430,16 +430,14 @@ cond
 
 `print()` on a `ferx_conddist` object shows the distribution-based shrinkage and the per-subject conditional mean, SD and mode. `fit$saem_n_subjects_hmc` reports how many subjects used HMC proposals (`n_leapfrog > 0`). It is `r if (is.null(fit_saem$saem_n_subjects_hmc) || is.na(fit_saem$saem_n_subjects_hmc)) "not set" else fit_saem$saem_n_subjects_hmc` here, because this model uses Metropolis-Hastings proposals.
 
-How those proposals are tuned is set by three defaults. `scale_adaptation = "robbins_monro"` adjusts each subject's step scale every iteration towards the target acceptance rate, but leaves it alone while the acceptance rate is inside `scale_deadband`. `n_mh_steps = "auto"` sizes the number of proposals from the data. `mstep_damping` is off except in models with `iiv_on_ruv`. `interval` is the older rule, which rescales only every `adapt_interval` iterations. Passing it with `n_mh_steps = 20` and `mstep_damping = 0.03` gives the previous defaults back. `mstep_solver = "score_sa"` is an alternative solver for the numerical M-step, the step that estimates a theta without a random effect, and `mstep_draws` averages the default `bobyqa` M-step over several E-step draws instead of one:
+How those proposals are tuned is set by three defaults. `scale_adaptation = "robbins_monro"` adjusts each subject's step scale every iteration towards the target acceptance rate, but leaves it alone while the acceptance rate is inside `scale_deadband`. `n_mh_steps = "auto"` sizes the number of proposals from the data. `mstep_damping` is off except in models with `iiv_on_ruv`. `interval` is the older rule, which rescales only every `adapt_interval` iterations. Passing it with `n_mh_steps = 20` and `mstep_damping = 0.03` gives the previous defaults back:
 
 ```{r}
 #| label: saem-adaptation
 saem_variants <- list(
   defaults = NULL,
   previous_defaults = list(scale_adaptation = "interval", n_mh_steps = 20, mstep_damping = 0.03),
-  no_deadband = list(scale_deadband = "none"),
-  score_sa = list(mstep_solver = "score_sa"),
-  bobyqa_4_draws = list(mstep_draws = 4)
+  no_deadband = list(scale_deadband = "none")
 )
 # suppress the R warning that reports overriding the model file's n_mh_steps
 saem_runs <- lapply(saem_variants, function(s) suppressWarnings(
@@ -447,7 +445,83 @@ saem_runs <- lapply(saem_variants, function(s) suppressWarnings(
 t(sapply(saem_runs, function(f) c(ofv = f$ofv, f$theta)))
 ```
 
-The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. `mstep_draws = 4` `r if (identical(saem_runs$bobyqa_4_draws$theta, saem_runs$defaults$theta)) "leaves this fit's estimates exactly as they were" else sprintf("moves this fit's estimates by at most %s%%", signif(max(abs(saem_runs$bobyqa_4_draws$theta / saem_runs$defaults$theta - 1)) * 100, 1))`. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
+The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
+
+#### Thetas that no random effect reaches
+
+SAEM moves most thetas through their random effects: a typical value such as `TVCL` follows the mean of its eta, and a covariate exponent is updated together with the typical value it scales. A theta that no such update reaches is left to a numerical M-step instead, which ferx-core describes as noisier and able to settle away from the optimum ([thetas the closed-form update cannot reach](https://ferx-nlme.org/ferx-core/estimation/saem.html#saem-mstep-no-closed-form)). The covariate model of @sec-model-selection has one: `THETA_WT` scales both `CL` and `V1`, it can join only one of the two updates, and the fit says which thetas are left over. Two settings act on that step: `mstep_solver = "score_sa"` replaces its derivative-free solver, and `mstep_draws` averages that solver's objective over several E-step draws instead of one. A SAEM fit's own OFV is a FOCE approximation, so the fits are compared on the importance-sampled −2 log-likelihood at their final estimates (*Importance sampling*, below):
+
+```{r}
+#| label: saem-mstep
+# Fit, then evaluate the importance-sampled -2 log-likelihood at the final estimates.
+# suppress the R warnings that report overriding the model file's method and covariance setting
+is_fit <- function(model, method, settings = list()) {
+  suppressWarnings(ferx_fit(model, cov$data, method = c(method, "imp"), covariance = FALSE,
+                            settings = c(list(imp_eval_only = TRUE, imp_seed = 1), settings),
+                            verbose = FALSE))
+}
+is_table <- function(fits, thetas) {
+  t(sapply(fits, function(f) c(is_minus2ll = f$importance_sampling$minus2_log_likelihood,
+                               mc_error = f$importance_sampling$mc_standard_error, f$theta[thetas])))
+}
+mstep_fits <- list(
+  focei = is_fit(cov$model, "focei"),
+  saem = is_fit(cov$model, "saem", list(seed = 1)),
+  saem_score_sa = is_fit(cov$model, "saem", list(seed = 1, mstep_solver = "score_sa")),
+  saem_4_draws = is_fit(cov$model, "saem", list(seed = 1, mstep_draws = 4))
+)
+numerical_note <- grep("stay on the numerical M-step", mstep_fits$saem$warnings, value = TRUE, fixed = TRUE)
+# The paragraph above says the fit names the affected thetas, so the note has to exist.
+stopifnot(length(numerical_note) == 1)
+cat(strwrap(numerical_note, 90), sep = "\n")
+round(is_table(mstep_fits, c("TVV1", "THETA_WT", "THETA_CRCL")), 3)
+is_gap <- function(f) f$importance_sampling$minus2_log_likelihood -
+  mstep_fits$focei$importance_sampling$minus2_log_likelihood
+wt <- function(f) f$theta[["THETA_WT"]]
+```
+
+SAEM leaves `THETA_WT` at `r round(wt(mstep_fits$saem), 2)`, where FOCEI finds `r round(wt(mstep_fits$focei), 2)`, and its importance-sampled −2 log-likelihood is `r round(is_gap(mstep_fits$saem), 1)` units above FOCEI's, against a Monte Carlo error of about `r round(mstep_fits$saem$importance_sampling$mc_standard_error, 1)`. `mstep_draws = 4` gives `r round(wt(mstep_fits$saem_4_draws), 2)` and `r if (is_gap(mstep_fits$saem_4_draws) < 1) "closes the gap" else sprintf("leaves the gap at %.1f", is_gap(mstep_fits$saem_4_draws))`; ferx-core expects it to help little while consecutive draws of the default sampler are strongly correlated.
+
+::: {.callout-warning}
+## `score_sa` pins `THETA_WT` to its bound at this build
+
+`mstep_solver = "score_sa"` is meant to remove the bias of this step, and the model is inside the scope ferx-core documents for it. Here it drives `THETA_WT` to its lower bound, `r round(wt(mstep_fits$saem_score_sa), 3)`, `r round(is_gap(mstep_fits$saem_score_sa), 1)` units above FOCEI on the importance-sampled objective. A fit with the covariance step reports it as a `boundary_estimate`. Leave `mstep_solver` at its default and change the model instead, as below.
+
+```{r}
+#| label: saem-score-sa-bound
+score_sa_cov <- suppressWarnings(ferx_fit(cov$model, cov$data, method = "saem",
+                                          settings = list(seed = 1, mstep_solver = "score_sa"),
+                                          verbose = FALSE))
+score_sa_warnings <- ferx_get_warnings(score_sa_cov, as_df = TRUE)
+score_sa_warnings[score_sa_warnings$category == "boundary_estimate", "message"]
+# The callout describes this behaviour; once the engine changes it, the render has to stop.
+# An out-of-scope model would keep the default solver and say so naming score_sa.
+stopifnot(abs(wt(mstep_fits$saem_score_sa) - 0.01) < 1e-6,
+          "boundary_estimate" %in% score_sa_warnings$category,
+          !any(grepl("score_sa", mstep_fits$saem_score_sa$warnings, fixed = TRUE)))
+```
+:::
+
+The structural remedy is to let the regular update reach the exponent. With its own exponent for `V1`, no theta of either covariate group is read anywhere else, and SAEM no longer leaves any of them to the numerical step:
+
+```{r}
+#| label: saem-mstep-remedy
+separate_wt <- file.path(book_tempdir("estimation"), "two_cpt_oral_cov_separate_wt.ferx")
+sep_lines <- sub("V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)",
+                 "V1 = TVV1 * (WT / 70)^THETA_WT_V1 * exp(ETA_V1)", readLines(cov$model), fixed = TRUE)
+sep_lines <- append(sep_lines, "  theta THETA_WT_V1(0.75, 0.01, 5.0)",
+                    after = grep("theta THETA_WT\\(", sep_lines))
+# Both edits have to land, or the comparison below is of the unchanged model.
+stopifnot(sum(grepl("THETA_WT_V1", sep_lines, fixed = TRUE)) == 2)
+writeLines(sep_lines, separate_wt)
+separate_fits <- list(focei = is_fit(separate_wt, "focei"),
+                      saem = is_fit(separate_wt, "saem", list(seed = 1)))
+round(is_table(separate_fits, c("TVV1", "THETA_WT", "THETA_WT_V1", "THETA_CRCL")), 3)
+# The sentence above says no theta is left to the numerical step; its note would say otherwise.
+stopifnot(!any(grepl("numerical M-step", separate_fits$saem$warnings, fixed = TRUE)))
+```
+
+`r sep_gap <- separate_fits$saem$importance_sampling$minus2_log_likelihood - separate_fits$focei$importance_sampling$minus2_log_likelihood; if (abs(sep_gap) < 1) sprintf("Now SAEM and FOCEI agree: the importance-sampled objectives differ by %.2f, within the Monte Carlo error, and SAEM puts the clearance exponent at %.2f against FOCEI's %.2f.", sep_gap, separate_fits$saem$theta[["THETA_WT"]], separate_fits$focei$theta[["THETA_WT"]]) else sprintf("SAEM still ends %.1f units above FOCEI on the importance-sampled objective, so here the separate exponent is not enough.", sep_gap)` Whether to share one exponent between two parameters is a modelling decision; under SAEM it also decides which update estimates it.
 
 ### Laplace and adaptive quadrature
 

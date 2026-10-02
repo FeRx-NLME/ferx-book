@@ -170,11 +170,16 @@ block_sd_check$ok
 block_sd_check$diagnostics[, c("code", "suggestion")]
 ```
 
-`ferx_fit()` refuses the same file, with the message but not the code (@sec-model-files):
+`ferx_fit()` refuses the same file with the same message, and appends the code in square brackets. The error is a `ferx_engine_error` condition that carries the code as `$code`, so a script can branch on it without validating first (@sec-reference):
 
 ```{r}
 #| label: block-sd-fit
-try(ferx_fit(block_sd, block_ex$data, verbose = FALSE))
+refusal <- tryCatch(ferx_fit(block_sd, block_ex$data, verbose = FALSE),
+                    ferx_engine_error = function(e) e)
+cat(strwrap(conditionMessage(refusal), 90), sep = "\n")
+refusal$code
+# The paragraph above says the refusal carries the code, so its absence has to fail the render.
+stopifnot(identical(refusal$code, "E_BLOCK_VARIANCE_ONLY"))
 ```
 
 The `suggestion` depends on which tag you wrote, because the two repairs are not the same edit. After `(sd)` the numbers are wrong and have to change: square each SD into a variance, and write the off-diagonals as covariances rather than as correlations or SD products. After `(variance)` or `(var)` only the tag is wrong -- the lower triangle was already on that scale, so deleting the tag leaves the same model:

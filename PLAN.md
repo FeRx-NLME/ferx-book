@@ -897,6 +897,24 @@ Per-chapter loop:
     #308, ch13); `ferx_simulate()`/`ferx_predict()` pass on `W_CMT_DEFAULTED` and model notes (ch20,
     ch22); the `multi_start` note appears only when a start other than the first wins (ch06); `emax_pkpd`
     RSEs fell to 30-590% (ch20).
+  - **ferx-core: `mstep_solver = score_sa` pins a shared covariate exponent to its bound.** Found
+    while moving ch06's M-step demo off `warfarin_saem` (every theta there has an eta, so
+    `mstep_draws = 4` was bit-identical and the demo showed nothing). On `two_cpt_oral_cov` under SAEM,
+    `THETA_WT` scales CL and V1; the V1 covariate mu-reference is declined ("THETA_WT already belongs
+    to another covariate mu-reference; TVV1, THETA_WT stay on the numerical M-step (#619)").
+    Importance-sampled -2 log L at the final estimates (`imp_eval_only`, MC error about 0.3), seeds 1-3:
+    FOCEI -1199.38 (THETA_WT 0.653); SAEM default -1194.9 / -1195.4 / -1197.4 (0.151 / 0.177 /
+    0.348); `score_sa` -1192.2 / -1191.9 / -1192.1 with THETA_WT at its lower bound 0.010 on every
+    seed (`boundary_estimate` when the covariance step runs); `mstep_draws = 4` -1195.1 / -1194.1 /
+    -1193.4. The data were simulated with THETA_WT = 0.75 (`src/bin/generate_data.rs`). The model is
+    inside the documented `score_sa` scope (no out-of-scope warning). Giving V1 its own exponent
+    removes the problem: SAEM -1199.40 / -1199.38 / -1199.25 against FOCEI -1199.45, THETA_WT 0.73,
+    and `score_sa` -1199.13. ch06 (`saem-mstep`, `saem-score-sa-bound`, `saem-mstep-remedy`) shows
+    the default, both settings and the remedy, with an "at this build" callout for `score_sa`. Not
+    filed yet.
+  - **Book prose defect (pre-existing, fixed at this bump):** ch16 said a refused `ferx_fit()` carries
+    "the message but not the code"; since ferx-r #378 the refusal appends `[E_BLOCK_VARIANCE_ONLY]` and
+    carries `$code`. `block-sd-fit` now shows and guards the code.
   - **Still open, rechecked:** `ferx_model_validate()` still reports compact TTE models invalid (ch22
     callout stays). The SDE docs fix (ferx-core #1426) is in the pin; ch24 links its "What the filter
     does not do" section.

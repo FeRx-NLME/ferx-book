@@ -166,7 +166,7 @@ range(subjects$CRCL)
 spread <- diff(range(multipliers$multiplier)) / mean(multipliers$multiplier)
 ```
 
-`r if (spread < 1e-6) sprintf("The multiplier is the same for every subject to %d significant digits, across the whole range of weight and creatinine clearance: this fit of the network learned no covariate dependence at all, and only rescaled the typical clearance.", floor(-log10(spread))) else sprintf("The multiplier varies by only %s%% across the whole range of weight and creatinine clearance: this fit of the network learned almost no covariate dependence.", signif(spread * 100, 2))` The next section shows that this says more about where the optimizer stopped than about the data.
+`r flat <- "this fit of the network learned no covariate dependence at all, and only rescaled the typical clearance. The next section shows that this says more about where the optimizer stopped than about the data."; if (spread == 0) paste("The multiplier is exactly the same for every subject, across the whole range of weight and creatinine clearance:", flat) else if (spread < 1e-6) sprintf("The multiplier is the same for every subject to %d significant digits, across the whole range of weight and creatinine clearance: %s", as.integer(floor(-log10(spread))), flat) else sprintf("The multiplier varies by %s%% across the range of weight and creatinine clearance.", signif(spread * 100, 2))`
 
 ### Regularizing the network
 
@@ -253,11 +253,11 @@ fit_earlier <- ferx_fit(warf$model, earlier_data, verbose = FALSE)
 saved <- file.path(experimental_dir, "warfarin_earlier.fitrx")
 ferx_save_fit(fit_earlier, saved)
 
+# The model goes next to the saved fit, so from_fit can name it by a relative
+# path, which is resolved against the model file's directory.
 updating_model <- file.path(experimental_dir, "warfarin_from_fit.ferx")
-# normalizePath(): `//` starts a comment in a .ferx file, and R's tempdir()
-# contains one on macOS, which would truncate the path before the engine saw it.
 writeLines(c(readLines(warf$model), "", "[priors]",
-             paste0("  from_fit = ", normalizePath(saved))),
+             paste0("  from_fit = ", basename(saved))),
            updating_model)
 fit_later <- ferx_fit(warf$model, later_data, verbose = FALSE)
 fit_updated <- ferx_fit(updating_model, later_data, verbose = FALSE)
@@ -285,7 +285,7 @@ Each updated estimate sits between those of the two studies. `r if (length(narro
 ## Pitfalls
 
 - **Experimental means validate yourself.** Compare an SDE or network model with its conventional counterpart, as above, before relying on it.
-- **`from_fit` paths in a temporary directory.** `//` starts a comment in a `.ferx` file, so write the path to the saved fit through `normalizePath()`, as above, or keep the saved fit next to the model and give a relative path, which is resolved against the model file's directory.
+- **Absolute `from_fit` paths.** `//` starts a comment in a `.ferx` file, and R's `tempdir()` contains one on macOS, so an absolute path built from it is cut short before the engine sees it. Keep the saved fit next to the model and give a relative path, as above; if you need an absolute one, write it with `normalizePath(path, winslash = "/")`.
 - **Extra flexibility is not extra information.** A diffusion variance or a network with many weights needs data that support it; check standard errors, the OFV change and information criteria.
 - **A converged network fit may be far from its optimum at this build.** Without a penalty, `warfarin_dcm` reports convergence at an OFV above that of a regularized fit of the same model ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Compare fits with and without `nn_l2`.
 - **Standard errors of network weights are not reliable,** and the covariance step with many weights is slow. Skip it with `covariance = FALSE` while exploring.
