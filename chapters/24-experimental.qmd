@@ -63,40 +63,13 @@ substr(ferx_get_warnings(fit_sde, as_df = TRUE)$message[1], 1, 150)
 ```{r}
 #| label: check-sde-warnings
 #| include: false
-# The paragraph below names these categories, so their absence has to fail the render.
-stopifnot(all(c("ebe_start_dependent", "covariance_regularized", "condition_number") %in%
+# The paragraph below names these categories and reads every standard error as inflated, so
+# their absence has to fail the render.
+stopifnot(all(c("covariance_regularized", "condition_number") %in%
               ferx_get_warnings(fit_sde, as_df = TRUE)$category), min(fit_sde$estimates$rse_pct) > 100)
 ```
 
-Every relative standard error above runs to hundreds of percent or more (the smallest is `r format(round(min(fit_sde$estimates$rse_pct)), big.mark = ",")`%), for the structural parameters as much as for `DIFF_CENTRAL`. That is not what the data say about these parameters. The covariance step found a direction of negative curvature and floored it (`covariance_regularized`): the fit stopped at a saddle point, not at a minimum, and standard errors computed there mean nothing. The `ebe_start_dependent` warning (@sec-estimation-methods) comes from the same stopping point. `[diffusion]` needs finite-difference gradients, so the model file sets `gradient_method = fd`, and with it `optimizer = auto` resolves to `bobyqa` (@sec-estimation-methods), which stopped short here. The gradient-based `nlopt_lbfgs` gets further:
-
-```{r}
-#| label: sde-lbfgs
-fit_sde_lbfgs <- ferx_fit(sde$model, sde$data, settings = list(optimizer = "nlopt_lbfgs"), verbose = FALSE)
-sde_fits <- list(bobyqa = fit_sde, nlopt_lbfgs = fit_sde_lbfgs)
-do.call(rbind, lapply(names(sde_fits), function(optimizer) {
-  f <- sde_fits[[optimizer]]
-  data.frame(optimizer = optimizer, ofv = f$ofv, DIFF_CENTRAL = f$theta[["DIFF_CENTRAL"]],
-             max_rse_pct = max(f$estimates$rse_pct),
-             covariance_regularized = "covariance_regularized" %in% ferx_get_warnings(f, as_df = TRUE)$category)
-}))
-round(fit_sde_lbfgs$estimates[, c("estimate", "rse_pct")], 6)
-```
-
-```{r}
-#| label: check-sde-lbfgs
-#| include: false
-# The paragraph below says nlopt_lbfgs gets further, with ordinary standard errors and a
-# diffusion variance of about zero.
-stopifnot(fit_sde_lbfgs$ofv < fit_sde$ofv,
-          !"covariance_regularized" %in% ferx_get_warnings(fit_sde_lbfgs, as_df = TRUE)$category,
-          max(fit_sde_lbfgs$estimates$rse_pct) < 100,
-          fit_sde_lbfgs$theta[["DIFF_CENTRAL"]] < fit_sde$theta[["DIFF_CENTRAL"]])
-```
-
-`nlopt_lbfgs` reaches an OFV `r round(fit_sde$ofv - fit_sde_lbfgs$ofv, 2)` lower, its standard errors are ordinary again, and the diffusion variance falls to `r format(signif(fit_sde_lbfgs$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)`, effectively zero.
-
-The `covariance_regularized` message of the bundled fit suggests another remedy. Its last sentence is about the tolerances of the ODE solver, whose errors finite differences amplify:
+Every relative standard error above runs to hundreds of percent or more (the smallest is `r format(round(min(fit_sde$estimates$rse_pct)), big.mark = ",")`%), for the structural parameters as much as for `DIFF_CENTRAL`. That is not what the data say about these parameters. The covariance step found a direction of negative curvature and floored it (`covariance_regularized`): the fit stopped at a saddle point, not at a minimum, and standard errors computed there mean nothing. `[diffusion]` needs finite-difference gradients, so the model file sets `gradient_method = fd`, and with it `optimizer = auto` resolves to `bobyqa` (@sec-estimation-methods). The last sentence of the `covariance_regularized` message names the cause: finite differences amplify the integration errors of the ODE solver, and the message suggests tighter tolerances than the defaults:
 
 ```{r}
 #| label: sde-tolerance
@@ -104,29 +77,31 @@ regularized <- filter(ferx_get_warnings(fit_sde, as_df = TRUE), category == "cov
 strwrap(sub(".*(Note that)", "\\1", regularized$message), 80)
 fit_sde_tight <- ferx_fit(sde$model, sde$data, settings = list(ode_reltol = 1e-6, ode_abstol = 1e-8),
                           verbose = FALSE)
-data.frame(fit = c("bobyqa (model file)", "nlopt_lbfgs", "bobyqa, tighter tolerances"),
-           ofv = c(fit_sde$ofv, fit_sde_lbfgs$ofv, fit_sde_tight$ofv),
-           max_rse_pct = sapply(list(fit_sde, fit_sde_lbfgs, fit_sde_tight), function(f) round(max(f$estimates$rse_pct), 1)),
-           covariance_regularized = sapply(list(fit_sde, fit_sde_lbfgs, fit_sde_tight), function(f)
-             "covariance_regularized" %in% ferx_get_warnings(f, as_df = TRUE)$category))
+sde_fits <- list(`model file` = fit_sde, `tighter tolerances` = fit_sde_tight)
+do.call(rbind, lapply(names(sde_fits), function(fit) {
+  f <- sde_fits[[fit]]
+  data.frame(fit = fit, ofv = f$ofv, DIFF_CENTRAL = f$theta[["DIFF_CENTRAL"]],
+             covariance_regularized = "covariance_regularized" %in% ferx_get_warnings(f, as_df = TRUE)$category)
+}))
+round(fit_sde_tight$estimates[, c("estimate", "rse_pct")], 6)
 ```
 
 ```{r}
 #| label: check-sde-tolerance
 #| include: false
-# The paragraph below says the tighter tolerances take the model file's own fit below the
-# nlopt_lbfgs one, with no regularized covariance, ordinary standard errors for every parameter
-# but the diffusion variance, and a diffusion variance of about zero.
+# The paragraph below says the tighter tolerances take the model file's own fit to a lower OFV,
+# with no regularized covariance, ordinary standard errors for every parameter but the diffusion
+# variance, and a diffusion variance of about zero.
 tight_rse <- fit_sde_tight$estimates$rse_pct
-stopifnot(fit_sde_tight$ofv < fit_sde_lbfgs$ofv,
+stopifnot(fit_sde_tight$ofv < fit_sde$ofv,
           !"covariance_regularized" %in% ferx_get_warnings(fit_sde_tight, as_df = TRUE)$category,
           max(tight_rse[rownames(fit_sde_tight$estimates) != "DIFF_CENTRAL"]) < 100,
           fit_sde_tight$theta[["DIFF_CENTRAL"]] < 1e-4)
 ```
 
-With the tolerances the message names, the model file's own `bobyqa` fit reaches an OFV `r sprintf("%.2f", fit_sde$ofv - fit_sde_tight$ofv)` below the bundled fit and `r sprintf("%.2f", fit_sde_lbfgs$ofv - fit_sde_tight$ofv)` below the `nlopt_lbfgs` one. Its standard errors are ordinary, except for the diffusion variance: at `r format(signif(fit_sde_tight$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)` it cannot be told apart from zero. Tighter default tolerances for finite-difference fits of ODE models are tracked in [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520). Read the covariance step of an SDE fit before its estimates. When it reports negative curvature, refit with the tolerances it names or with another optimizer, and compare the OFVs.
+With those tolerances the same model, optimizer and data reach an OFV `r sprintf("%.2f", fit_sde$ofv - fit_sde_tight$ofv)` lower, and the covariance step needs no regularization. The standard errors are ordinary, except for the diffusion variance: at `r format(signif(fit_sde_tight$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)` it cannot be told apart from zero. Where the default tolerances leave the fit depends on rounding in the solver, so the bundled fit's OFV and estimates differ from one machine to the next; the refit is the one to read. Tighter default tolerances for finite-difference fits of ODE models are tracked in [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520).
 
-Removing the `[diffusion]` block gives the ordinary ODE model. That model needs no finite differences: with `gradient = "auto"` ferx uses the analytic gradient. With the model file's finite differences it stops short as well:
+Removing the `[diffusion]` block gives the ordinary ODE model. That model needs no finite differences: with `gradient = "auto"` ferx uses the analytic gradient. The table also fits it with the model file's finite differences at the default tolerances:
 
 ```{r}
 #| label: sde-vs-ode
@@ -137,13 +112,13 @@ writeLines(sde_lines[-(start:(start + 2))], ode_model)
 fit_ode_fd <- ferx_fit(ode_model, sde$data, verbose = FALSE)
 # suppress the R warning that reports overriding the model file's gradient
 fit_ode <- suppressWarnings(ferx_fit(ode_model, sde$data, gradient = "auto", verbose = FALSE))
-sde_vs_ode <- list(`with [diffusion], bobyqa` = fit_sde, `with [diffusion], nlopt_lbfgs` = fit_sde_lbfgs,
-                   `with [diffusion], tighter tolerances` = fit_sde_tight,
-                   `without, finite differences` = fit_ode_fd, `without, gradient = "auto"` = fit_ode)
+sde_vs_ode <- list(`SDE, model file` = fit_sde, `SDE, tighter tolerances` = fit_sde_tight,
+                   `ODE, finite differences` = fit_ode_fd, `ODE, gradient = "auto"` = fit_ode)
 do.call(rbind, lapply(names(sde_vs_ode), function(model) {
   f <- sde_vs_ode[[model]]
   data.frame(model = model, ofv = f$ofv, durbin_watson = f$dw_statistic,
-             max_rse_pct = max(f$estimates$rse_pct), seconds = f$wall_time_secs)
+             regularized = "covariance_regularized" %in% ferx_get_warnings(f, as_df = TRUE)$category,
+             seconds = f$wall_time_secs)
 }))
 ```
 
@@ -151,9 +126,10 @@ do.call(rbind, lapply(names(sde_vs_ode), function(model) {
 #| label: check-sde-vs-ode
 #| include: false
 # The paragraph below says the ODE model's analytic fit is the lowest of the four, that its
-# finite-difference fit stopped short, that the Durbin-Watson statistic does not move, and that
-# the two models coincide at a zero diffusion variance: the SDE model with the diffusion fixed at
-# about zero, evaluated at the ODE optimum, scores the ODE fit's OFV.
+# finite-difference fit stopped above it with a regularized covariance step, that the
+# Durbin-Watson statistic does not move, and that the two models coincide at a zero diffusion
+# variance: the SDE model with the diffusion fixed at about zero, evaluated at the ODE optimum,
+# scores the ODE fit's OFV.
 at_ode <- sde_lines
 for (nm in names(fit_ode$theta)) {
   at_ode <- sub(sprintf("theta %s\\(([^,]+),", nm), sprintf("theta %s(%.12g,", nm, fit_ode$theta[[nm]]), at_ode)
@@ -165,14 +141,16 @@ at_ode <- sub("sigma PROP_ERR\\s*~.*$", sprintf("sigma PROP_ERR ~ %.12g (sd)", f
 at_ode <- sub("^(\\s*)central ~ .*$", "\\1central ~ 1e-12 FIX", at_ode)
 at_ode_file <- file.path(experimental_dir, "warfarin_sde_at_ode_optimum.ferx")
 writeLines(at_ode, at_ode_file)
-sde_at_ode <- suppressWarnings(ferx_fit(at_ode_file, sde$data, covariance = FALSE,
-                                        settings = list(maxiter = 0), verbose = FALSE))
-stopifnot(fit_ode$ofv < fit_sde_tight$ofv, fit_ode$ofv < fit_ode_fd$ofv - 1,
+# evaluated at the tighter tolerances: at the defaults the evaluation itself carries solver noise
+sde_at_ode <- suppressWarnings(ferx_fit(at_ode_file, sde$data, covariance = FALSE, verbose = FALSE,
+                                        settings = list(maxiter = 0, ode_reltol = 1e-6, ode_abstol = 1e-8)))
+stopifnot(fit_ode$ofv < fit_sde_tight$ofv, fit_ode$ofv < fit_ode_fd$ofv,
+          "covariance_regularized" %in% ferx_get_warnings(fit_ode_fd, as_df = TRUE)$category,
           abs(sde_at_ode$ofv - fit_ode$ofv) < 0.1, max(fit_ode$estimates$rse_pct) < 100,
           abs(fit_sde_tight$dw_statistic - fit_ode$dw_statistic) < 0.05)
 ```
 
-The diffusion term does not improve on the ordinary ODE model. The SDE fit that gets furthest, with the tighter tolerances, has a diffusion variance of essentially zero and an OFV `r round(fit_sde_tight$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit; at a zero diffusion variance the two models coincide, so even that SDE fit stopped slightly short. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_tight$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
+The diffusion term does not improve on the ordinary ODE model. The SDE fit with the tighter tolerances has a diffusion variance of essentially zero and an OFV `r round(fit_sde_tight$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit; at a zero diffusion variance the two models coincide, so even that SDE fit stopped slightly short. The ODE model's own finite-difference fit also stops above its optimum, with a regularized covariance step: the trouble at the default tolerances comes from the finite differences, not from the diffusion term. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_tight$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
 
 ## Options that matter
 
@@ -264,7 +242,7 @@ range(subjects$CRCL)
 spread <- diff(range(multipliers$multiplier)) / mean(multipliers$multiplier)
 ```
 
-`r flat <- "this fit of the network learned no covariate dependence at all, and only rescaled the typical clearance. The next section shows that this says more about where the optimizer stopped than about the data."; if (spread == 0) paste("The multiplier is exactly the same for every subject, across the whole range of weight and creatinine clearance:", flat) else if (spread < 1e-6) sprintf("The multiplier is the same for every subject to %d significant digits, across the whole range of weight and creatinine clearance: %s", as.integer(floor(-log10(spread))), flat) else sprintf("The multiplier varies by %s%% across the range of weight and creatinine clearance.", signif(spread * 100, 2))`
+`r flat <- "this fit of the network learned no covariate dependence at all, and only rescaled the typical clearance. Whether that reflects the data or where the optimizer stopped is the question of the next section."; if (spread == 0) paste("The multiplier is exactly the same for every subject, across the whole range of weight and creatinine clearance:", flat) else if (spread < 1e-6) sprintf("The multiplier is the same for every subject to %d significant digits, across the whole range of weight and creatinine clearance: %s", as.integer(floor(-log10(spread))), flat) else sprintf("The multiplier varies by %s%% across the range of weight and creatinine clearance.", signif(spread * 100, 2))`
 
 ### Regularizing the network
 
@@ -287,14 +265,13 @@ summary(multipliers_l2)
 ```{r}
 #| label: check-dcm-regularized
 #| include: false
-# The argument below rests on the penalized fit reaching a lower unpenalized OFV than
-# the fit without the penalty; if it does not, the paragraph is wrong and the render stops.
-stopifnot(fit_dcm_l2$ofv < fit_dcm$ofv)
+# The paragraphs below say that neither network fit beats the explicit covariate model on AIC.
+stopifnot(min(fit_dcm$aic, fit_dcm_l2$aic) > fit_cov$aic)
 ```
 
-With the penalty, the network's clearance multipliers range from `r round(min(multipliers_l2), 2)` to `r round(max(multipliers_l2), 2)` across subjects, and the fit reports an unpenalized OFV `r round(fit_dcm$ofv - fit_dcm_l2$ofv)` points below that of the fit without the penalty. A penalty cannot make the unpenalized objective better than its optimum, so the fit without it, although it reports convergence, stopped at least that far above its optimum. ferx-core lists DCM FOCEI fits that report convergence far above a point of their own parameter space as a known issue at this release ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Fit a network more than once, with and without a penalty, and compare the OFVs before reading anything into it.
+With the penalty, the network's clearance multipliers range from `r round(min(multipliers_l2), 2)` to `r round(max(multipliers_l2), 2)` across subjects, and the fit reports an unpenalized OFV of `r sprintf("%.1f", fit_dcm_l2$ofv)`, against `r sprintf("%.1f", fit_dcm$ofv)` without the penalty. A penalty cannot make the unpenalized objective better than its optimum, so whenever the penalized fit scores lower, the fit without it stopped at least that far above its optimum, although it reports convergence. Where an unpenalized network fit stops is fragile at this release: this one stops at a different point from one machine to the next, and ferx-core lists DCM FOCEI fits that report convergence far above a point of their own parameter space as a known issue ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Fit a network more than once, with and without a penalty, and compare the OFVs before reading anything into it.
 
-`r if (fit_dcm_l2$aic > fit_cov$aic) sprintf("Even at its lower OFV, the regularized network does not beat the explicit covariate model on AIC (%.1f against %.1f): %d parameters cost more than the objective gains.", fit_dcm_l2$aic, fit_cov$aic, fit_dcm_l2$n_parameters) else sprintf("On AIC the regularized network beats the explicit covariate model (%.1f against %.1f) despite its %d parameters.", fit_dcm_l2$aic, fit_cov$aic, fit_dcm_l2$n_parameters)`
+Neither network fit beats the explicit covariate model on AIC (`r sprintf("%.1f", fit_dcm$aic)` without the penalty and `r sprintf("%.1f", fit_dcm_l2$aic)` with it, against `r sprintf("%.1f", fit_cov$aic)`): `r fit_dcm_l2$n_parameters` parameters cost more than the objective gains.
 
 ### Parameter priors
 
@@ -395,10 +372,10 @@ Each updated estimate sits between those of the two studies. `r if (length(narro
 - **Experimental means validate yourself.** Compare an SDE or network model with its conventional counterpart, as above, before relying on it.
 - **Absolute `from_fit` paths.** `//` starts a comment in a `.ferx` file, and R's `tempdir()` contains one on macOS, so an absolute path built from it is cut short before the engine sees it. Keep the saved fit next to the model and give a relative path, as above; if you need an absolute one, write it with `normalizePath(path, winslash = "/")`.
 - **Extra flexibility is not extra information.** A diffusion variance or a network with many weights needs data that support it; check standard errors, the OFV change and information criteria.
-- **A converged network fit may be far from its optimum at this build.** Without a penalty, `warfarin_dcm` reports convergence at an OFV above that of a regularized fit of the same model ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Compare fits with and without `nn_l2`.
+- **A converged network fit may be far from its optimum at this build.** DCM fits can report convergence far above a point of their own parameter space ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)), and where `warfarin_dcm` stops without a penalty differs from one machine to the next. Compare fits with and without `nn_l2`.
 - **Standard errors of network weights are not reliable,** and the covariance step with many weights is slow. Skip it with `covariance = FALSE` while exploring.
 - **SDE fits are slow.** The extended Kalman filter uses finite differences; the warfarin SDE fit above took `r round(fit_sde$wall_time_secs / fit_ode_fd$wall_time_secs)` times as long as the same model without `[diffusion]`, both with finite differences.
-- **Check that an SDE fit reached a minimum.** With finite differences the default optimizer can stop at a saddle point, as the bundled fit does at this build. A `covariance_regularized` warning that reports negative curvature is the sign; refit with the ODE tolerances its message names or with another `optimizer`, and compare OFVs.
+- **Check that an SDE fit reached a minimum.** With finite differences the default optimizer can stop at a saddle point, as the bundled fit does at this build. A `covariance_regularized` warning that reports negative curvature is the sign; refit with the ODE tolerances its message names, and compare OFVs.
 
 ### Warnings you may see here
 

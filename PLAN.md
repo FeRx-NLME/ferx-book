@@ -999,6 +999,28 @@ Per-chapter loop:
     nlopt_lbfgs (-279.55), with no regularization, DIFF_CENTRAL 2e-6 (RSE 302%) and ordinary structural
     RSEs. ch24 now prints that sentence of the message and runs the refit (`sde-tolerance`), uses it as
     the furthest SDE fit in `sde-vs-ode` and for the simulation variant, and links #520.
+  - **Platform dependence (2026-10-03): the first Linux CI run of #33 failed.** CI had never run on
+    this PR: it conflicted with `main` (#32) from the start. Its first run (`f37b181`) stopped at ch06
+    `check-ebe-start-dependent`. A local x86_64 Linux container that mirrors the workflow (R 4.4.3,
+    stable Rust, Quarto 1.10.18, ferx-r at the pin) rendered every chapter with failing checks logged
+    instead of fatal. Seven checks failed, all on fits whose stopping point depends on rounding:
+    ch06 `ebe_start_dependent` on the SDE fit (macOS raises it, Linux not) and the `multi_start` note
+    (8 starts tie at -453.3985; Linux names start 3); ch20 a regularized covariance on one FD fit (not
+    stated in the prose); ch24 the SDE fit (model-file OFV -279.15 macOS / -276.31 Linux, both at negative
+    curvature; `nlopt_lbfgs` clean on macOS, regularized with RSEs to 628,000% on Linux; the FD ODE fit
+    3.1 / 0.34 above the analytic one) and the DCM network (penalized fit 208 OFV below the unpenalized
+    one on macOS, 11 above it on Linux, where the unpenalized fit learns a covariate effect). What holds
+    on both: negative curvature at the model-file SDE fit and the FD ODE fit, the tolerance refit (1e-6 /
+    1e-8: -280.15 / -280.24, clean covariance), the analytic ODE fit (-280.36 on both), every analytic
+    PK/PD fit to the printed digit. The chapters now rest only on those: ch06 explains
+    `ebe_start_dependent` without a live fit and reads the multi-start note from the fit; ch24 builds the
+    SDE story on the tolerance refit (the `nlopt_lbfgs` refit is gone), states that the model-file fit
+    and the unpenalized network differ between machines, and its DCM prose and checks hold either way.
+    The probe logged only the first failing condition of each check, so a second render found one more:
+    the SDE model evaluated at the ODE optimum with the diffusion fixed near zero scores -280.48 on
+    Linux at the default tolerances (macOS -280.37, ODE optimum -280.36); at 1e-6 / 1e-8 both give
+    -280.3639, so `check-sde-vs-ode` now evaluates there.
+    Lesson: render on Linux before calling a PR ready; the site is built there.
   - **Review round 4 (2026-10-02): reader-facing fixes.** A review of what a reader can run and learn,
     chapter by chapter, found (a) visible code calling `book_tempdir()` and relying on packages attached
     only by the hidden `_common.R` -- now every chapter loads ferx, dplyr and ggplot2 in a visible

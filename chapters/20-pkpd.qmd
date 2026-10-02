@@ -239,8 +239,7 @@ fd_at_optimum <- suppressWarnings(ferx_fit(at_optimum_file, one_dose, covariance
                                            settings = list(maxiter = 0), verbose = FALSE))
 fd_emax <- sapply(fd_runs[[1]][1:2], function(f) f$theta[["TVEMAX"]])
 stopifnot(all(fd_gap > 2), abs(fd_at_optimum$ofv - fit_one_dose$ofv) < 0.01,
-          all(abs(fd_emax / 40 - 1) < 0.25),
-          "covariance_regularized" %in% ferx_get_warnings(fd_runs[[1]][[1]], as_df = TRUE)$category)
+          all(abs(fd_emax / 40 - 1) < 0.25))
 ```
 
 Every finite-difference fit stops between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above the optimum that the analytic gradient finds. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the fit starts at the simulation values and stops near them, so `TVEMAX` comes out close to 40 and the design looks able to support the model, which it is not. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, pass `gradient = "auto"` until the model file drops its `gradient = fd` ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625)).

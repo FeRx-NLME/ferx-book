@@ -338,25 +338,9 @@ data.frame(seed = c("converged fit", "bobyqa fit"),
            stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
 ```
 
-`ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. Among the bundled examples, the SDE model of @sec-experimental raises it:
+`ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare.
 
-```{r}
-#| label: ebe-start-dependent
-sde <- ferx_example("warfarin_sde")
-fit_sde <- ferx_fit(sde$model, sde$data, verbose = FALSE)
-sde_warnings <- ferx_get_warnings(fit_sde, as_df = TRUE)
-cat(head(strwrap(sde_warnings$message[sde_warnings$category == "ebe_start_dependent"], 90), 4),
-    sep = "\n")
-```
-
-```{r}
-#| label: check-ebe-start-dependent
-#| include: false
-# The section is about this warning, so its absence has to fail the render.
-stopifnot("ebe_start_dependent" %in% sde_warnings$category)
-```
-
-The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare. On this SDE fit it is one problem among several: the fit stops at a saddle point, and its standard errors are not usable either (@sec-experimental).
+"Materially" is a small margin relative to the OFV, so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, which stops at a saddle point, raises it on some machines and not on others.
 
 ::: {.callout-warning}
 ## A starved inner loop is not reported as such at this build
@@ -443,11 +427,12 @@ ferx_get_warnings(fit_multi, as_df = TRUE)[, c("severity", "category", "message"
 ```{r}
 #| label: check-multistart
 #| include: false
-# The paragraph below says the first start won, so a multi_start note has to fail the render.
-stopifnot(!"multi_start" %in% ferx_get_warnings(fit_multi, as_df = TRUE)$category)
+# The paragraph below says the single start already reaches the 8-start OFV; whether a
+# multi_start note names another start is read from the fit (a tie can go either way).
+stopifnot(abs(fit_single$ofv - fit_multi$ofv) < 1e-3)
 ```
 
-On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary -- the alternative is not knowing whether the one start you ran was the good one. When a start other than the first wins, an `info` note in the `multi_start` category says which; here the first start won, so the warnings above have no such note.
+On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary -- the alternative is not knowing whether the one start you ran was the good one. When a start other than the first wins, an `info` note in the `multi_start` category says which. `r if ("multi_start" %in% ferx_get_warnings(fit_multi, as_df = TRUE)$category) "Here one did, by less than the printed precision of the OFV: the starts tie, and the note names the one that came out lowest. Which start wins a tie can differ from one machine to the next." else "Here the first start won, so the warnings above have no such note."`
 
 The two remedies for a stuck fit overlap, and ferx says how it resolves that rather than leaving you to guess. The global pre-search ignores its starting point by design, so running it on every perturbed start would overwrite the perturbation; instead it runs on start 0 only, and the remaining starts are ordinary perturbed local fits:
 
