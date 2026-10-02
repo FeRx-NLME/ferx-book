@@ -661,7 +661,7 @@ book_settings_table(c("impmap_iterations", "impmap_samples", "impmap_proposal_df
 #| label: tbl-settings-bayes
 #| echo: false
 #| tbl-cap: "Bayesian estimation settings."
-book_settings_table(c("bayes_warmup", "bayes_iters", "bayes_chains", "bayes_thin", "bayes_seed"))
+book_settings_table(c("bayes_warmup", "bayes_iters", "bayes_chains", "bayes_thin", "bayes_seed", "n_leapfrog"))
 ```
 
 `method = "bayes"` samples the posterior with several MCMC chains and summarises the draws. On warfarin the default run converges:
@@ -679,15 +679,16 @@ data.frame(converged = fit_bayes$converged, max_rhat = fit_bayes$bayes$max_rhat,
 `fit$bayes` holds the posterior mean, median and 2.5%/97.5% quantiles, split-R-hat, effective sample sizes and Monte Carlo standard errors per parameter. R-hat compares the chains with each other: values near 1 mean they sample the same distribution, and ferx marks a run unconverged when the largest one exceeds 1.01. Here the largest is `r round(fit_bayes$bayes$max_rhat, 3)` and the smallest bulk effective sample size `r round(min(fit_bayes$bayes$ess_bulk))`, so the posterior summaries can be used. @sec-uncertainty discusses posterior intervals as a measure of parameter uncertainty.
 
 ::: {.callout-warning}
-## Bayes does not converge on the two-compartment models at this build
+## Bayes does not converge on the two-compartment models with its defaults at this build
 
-On the base model of this chapter the default run ends unconverged, and its warning recommends longer chains. Four times longer chains do not help:
+On the base model of this chapter the default run ends unconverged, and its warning recommends longer chains. Four times longer chains do not help. HMC proposals for the random effects, which `n_leapfrog` switches on, do:
 
 ```{r}
 #| label: bayes-base
-chain_lengths <- list(default = list(), four_times_longer = list(bayes_warmup = 4000, bayes_iters = 4000))
+bayes_settings <- list(default = list(), four_times_longer = list(bayes_warmup = 4000, bayes_iters = 4000),
+                       four_times_longer_hmc = list(bayes_warmup = 4000, bayes_iters = 4000, n_leapfrog = 10))
 # suppress the R warnings that report overriding the model file's method
-bayes_base <- lapply(chain_lengths, function(s) {
+bayes_base <- lapply(bayes_settings, function(s) {
   suppressWarnings(ferx_fit(base$model, base$data, method = "bayes", settings = s, verbose = FALSE))
 })
 w_bayes <- ferx_get_warnings(bayes_base$default, as_df = TRUE)
@@ -702,12 +703,14 @@ do.call(rbind, lapply(names(bayes_base), function(run) {
 ```{r}
 #| label: check-bayes
 #| include: false
-# The section says warfarin converges and the base model does not, at either chain length.
+# The section says warfarin converges and the base model does not with the default proposals, at
+# either chain length, but does with HMC proposals.
 stopifnot(fit_bayes$converged, fit_bayes$bayes$max_rhat < 1.01,
-          !bayes_base$default$converged, !bayes_base$four_times_longer$converged)
+          !bayes_base$default$converged, !bayes_base$four_times_longer$converged,
+          bayes_base$four_times_longer_hmc$converged)
 ```
 
-With `r bayes_base$four_times_longer$bayes$n_draws_per_chain` draws per chain the largest R-hat is still `r round(bayes_base$four_times_longer$bayes$max_rhat, 2)`, so the chains have not settled on one distribution and the posterior summaries of these fits are not usable. The covariate model of @sec-uncertainty behaves the same way. For parameter uncertainty on these models use the covariance step, SIR or the bootstrap (@sec-uncertainty), and check `max_rhat` before reading any Bayes fit.
+With the default Metropolis-Hastings proposals and `r bayes_base$four_times_longer$bayes$n_draws_per_chain` draws per chain the largest R-hat is still `r round(bayes_base$four_times_longer$bayes$max_rhat, 2)`, so the chains have not settled on one distribution and the posterior summaries of these fits are not usable. Those proposals move the random effects too slowly on this model for longer chains to make up for it ([ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626)). With `n_leapfrog = 10` each subject's random effects get HMC proposals instead, which ferx offers for analytical models without IOV, and the same chain length converges: the largest R-hat is `r round(bayes_base$four_times_longer_hmc$bayes$max_rhat, 3)` and the smallest bulk effective sample size `r round(min(bayes_base$four_times_longer_hmc$bayes$ess_bulk))`. These settings converge on this model, but they are no recipe: read `max_rhat` on every run. The covariate model of @sec-uncertainty converges with neither kind of proposal. For parameter uncertainty on that model use the covariance step, SIR or the bootstrap (@sec-uncertainty).
 :::
 
 ### Variational inference

@@ -950,8 +950,14 @@ Per-chapter loop:
     objective at the simulation values (`maxiter = 0`), a dose-range design recovering them, and the FD
     fits in an "at this build" callout (`pkpd-sim-fd`) whose hidden check also verifies the objective
     agreement. ch09/ch10 keep the model-file fit as their unreliable-fit example (still condition number
-    > 1000 and |r| > 0.95 at the analytic optimum). To file: the stale model comment (ferx-r) and the FD
-    gap (ferx-core) -- not filed yet.
+    > 1000 and |r| > 0.95 at the analytic optimum). Filed as
+    [ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625): the example lives in ferx-core
+    and ferx-r mirrors it byte for byte (plus line 6 of ferx-r's `ex_emax_pkpd.R`); ferx-core's own
+    `scaling_multi_analyte.ferx` already says per-CMT Form C readouts are analytic since #439. The FD gap
+    itself is [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520) (FD stencils reading ODE
+    integration noise at the default tolerances), where the v0.4.0 sweep is posted (comment 2026-10-02):
+    the model-file fit gives -34.133 / -24.001 / -35.694 / -36.775 at `ode_reltol` 1e-4 / 1e-6 / 1e-8 /
+    1e-10, so the level #520 proposes for FD fits (1e-6 / 1e-8) makes this one worse. ch20 links #1625.
   - **ferx-core: Bayes does not converge on the two-compartment models.** Default `method = "bayes"`:
     `two_cpt_oral_base` max R-hat 1.194, `two_cpt_oral_cov` 2.735. Longer chains do not help: base
     1.188 / 1.197 and cov 3.047 / 7.158 at 3000 / 6000 warmup and draws per chain (the cov value grows).
@@ -959,7 +965,18 @@ Per-chapter loop:
     covariate model). `warfarin` converges under the defaults (max R-hat 1.003, min bulk ESS 742). ch06
     now demonstrates Bayes on warfarin and shows the base-model failure in an "at this build" callout
     (`bayes-base`); ch10 shows the covariate model at both chain lengths and leaves Bayes out of the
-    interval comparison. To file -- not filed yet.
+    interval comparison. Filed as [ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626)
+    after isolating three causes (2026-10-02; `bayes.rs` unchanged on main): (1) base model, the block-MH
+    eta kernel stalls: max R-hat 1.194 / 1.197 / 1.201 at 1,000 / 6,000 / 20,000 draws per chain, bulk ESS
+    of OMEGA(2,2) 9 / 7 / 6, `n_mh_steps = 50` no better (1.41 at 6,000), while HMC proposals
+    (`n_leapfrog = 10`) converge at 4,000 (max R-hat 1.003; with 5 leapfrog steps 1.039, at 2,000 draws
+    1.876); (2) covariate model, the random-walk theta block ignores declared bounds (`log = theta_lower
+    >= 0`, no bound check, while the mu-ref move clamps) and the exponents drift towards zero, 2.5%
+    quantiles ~1e-8 against the 0.01 bound (HMC at 4,000: max R-hat 7.33); (3) covariate coefficients
+    barely move at fixed eta even sampled on the natural scale (R-hat ~2 at 6,000). Not #1620's
+    shared-exponent mechanism: separate exponents on CL and V1 do no better. ch06's callout now also runs
+    the base model with HMC proposals (converged); ch10's Bayes section is an "at this build" callout that
+    adds the HMC run and the exponents' 2.5% quantiles below their bound.
   - **ferx-core: the bundled `warfarin_sde` fit stops at a saddle point.** Found while answering why
     ch24's SDE standard errors run to 255,000%. `[diffusion]` needs finite differences
     (`gradient_method = fd`), so `optimizer = auto` resolves to bobyqa, which stops at OFV -279.15 with
@@ -973,7 +990,15 @@ Per-chapter loop:
     nlopt_lbfgs does not leave the starting DIFF 0.01 (OFV -125.0). ch24 now explains the saddle, shows the
     nlopt_lbfgs refit and the four-way comparison (`sde-lbfgs`, `sde-vs-ode`, checks hidden), and drops
     the FOCE-vs-FOCEI variant, which compared two fits that had stopped short. ch06 keeps the bundled fit
-    for its `ebe_start_dependent` demo and says it stops at a saddle. To file -- not filed yet.
+    for its `ebe_start_dependent` demo and says it stops at a saddle. Not filed: it is
+    [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520) (FD stencils at the default ODE
+    tolerances), and the fit's own `covariance_regularized` message already names the remedy (#1508). The
+    v0.4.0 sweep is posted on #520 (2026-10-02): -279.152 (saddle) / -280.147 / -279.264 / -280.184 at
+    `ode_reltol` 1e-4 / 1e-6 / 1e-8 / 1e-10, so the FD/bobyqa stop is not monotone in the tolerance. At the
+    tolerances the message names (1e-6 / 1e-8) the model file's bobyqa fit reaches -280.147, below
+    nlopt_lbfgs (-279.55), with no regularization, DIFF_CENTRAL 2e-6 (RSE 302%) and ordinary structural
+    RSEs. ch24 now prints that sentence of the message and runs the refit (`sde-tolerance`), uses it as
+    the furthest SDE fit in `sde-vs-ode` and for the simulation variant, and links #520.
   - **Review round 4 (2026-10-02): reader-facing fixes.** A review of what a reader can run and learn,
     chapter by chapter, found (a) visible code calling `book_tempdir()` and relying on packages attached
     only by the hidden `_common.R` -- now every chapter loads ferx, dplyr and ggplot2 in a visible

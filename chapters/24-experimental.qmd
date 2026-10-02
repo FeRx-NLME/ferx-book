@@ -94,7 +94,37 @@ stopifnot(fit_sde_lbfgs$ofv < fit_sde$ofv,
           fit_sde_lbfgs$theta[["DIFF_CENTRAL"]] < fit_sde$theta[["DIFF_CENTRAL"]])
 ```
 
-`nlopt_lbfgs` reaches an OFV `r round(fit_sde$ofv - fit_sde_lbfgs$ofv, 2)` lower, its standard errors are ordinary again, and the diffusion variance falls to `r format(signif(fit_sde_lbfgs$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)`, effectively zero. Read the covariance step of an SDE fit before its estimates, and refit with another optimizer when it reports negative curvature.
+`nlopt_lbfgs` reaches an OFV `r round(fit_sde$ofv - fit_sde_lbfgs$ofv, 2)` lower, its standard errors are ordinary again, and the diffusion variance falls to `r format(signif(fit_sde_lbfgs$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)`, effectively zero.
+
+The `covariance_regularized` message of the bundled fit suggests another remedy. Its last sentence is about the tolerances of the ODE solver, whose errors finite differences amplify:
+
+```{r}
+#| label: sde-tolerance
+regularized <- filter(ferx_get_warnings(fit_sde, as_df = TRUE), category == "covariance_regularized")
+strwrap(sub(".*(Note that)", "\\1", regularized$message), 80)
+fit_sde_tight <- ferx_fit(sde$model, sde$data, settings = list(ode_reltol = 1e-6, ode_abstol = 1e-8),
+                          verbose = FALSE)
+data.frame(fit = c("bobyqa (model file)", "nlopt_lbfgs", "bobyqa, tighter tolerances"),
+           ofv = c(fit_sde$ofv, fit_sde_lbfgs$ofv, fit_sde_tight$ofv),
+           max_rse_pct = sapply(list(fit_sde, fit_sde_lbfgs, fit_sde_tight), function(f) round(max(f$estimates$rse_pct), 1)),
+           covariance_regularized = sapply(list(fit_sde, fit_sde_lbfgs, fit_sde_tight), function(f)
+             "covariance_regularized" %in% ferx_get_warnings(f, as_df = TRUE)$category))
+```
+
+```{r}
+#| label: check-sde-tolerance
+#| include: false
+# The paragraph below says the tighter tolerances take the model file's own fit below the
+# nlopt_lbfgs one, with no regularized covariance, ordinary standard errors for every parameter
+# but the diffusion variance, and a diffusion variance of about zero.
+tight_rse <- fit_sde_tight$estimates$rse_pct
+stopifnot(fit_sde_tight$ofv < fit_sde_lbfgs$ofv,
+          !"covariance_regularized" %in% ferx_get_warnings(fit_sde_tight, as_df = TRUE)$category,
+          max(tight_rse[rownames(fit_sde_tight$estimates) != "DIFF_CENTRAL"]) < 100,
+          fit_sde_tight$theta[["DIFF_CENTRAL"]] < 1e-4)
+```
+
+With the tolerances the message names, the model file's own `bobyqa` fit reaches an OFV `r sprintf("%.2f", fit_sde$ofv - fit_sde_tight$ofv)` below the bundled fit and `r sprintf("%.2f", fit_sde_lbfgs$ofv - fit_sde_tight$ofv)` below the `nlopt_lbfgs` one. Its standard errors are ordinary, except for the diffusion variance: at `r format(signif(fit_sde_tight$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)` it cannot be told apart from zero. Tighter default tolerances for finite-difference fits of ODE models are tracked in [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520). Read the covariance step of an SDE fit before its estimates. When it reports negative curvature, refit with the tolerances it names or with another optimizer, and compare the OFVs.
 
 Removing the `[diffusion]` block gives the ordinary ODE model. That model needs no finite differences: with `gradient = "auto"` ferx uses the analytic gradient. With the model file's finite differences it stops short as well:
 
@@ -108,6 +138,7 @@ fit_ode_fd <- ferx_fit(ode_model, sde$data, verbose = FALSE)
 # suppress the R warning that reports overriding the model file's gradient
 fit_ode <- suppressWarnings(ferx_fit(ode_model, sde$data, gradient = "auto", verbose = FALSE))
 sde_vs_ode <- list(`with [diffusion], bobyqa` = fit_sde, `with [diffusion], nlopt_lbfgs` = fit_sde_lbfgs,
+                   `with [diffusion], tighter tolerances` = fit_sde_tight,
                    `without, finite differences` = fit_ode_fd, `without, gradient = "auto"` = fit_ode)
 do.call(rbind, lapply(names(sde_vs_ode), function(model) {
   f <- sde_vs_ode[[model]]
@@ -136,12 +167,12 @@ at_ode_file <- file.path(experimental_dir, "warfarin_sde_at_ode_optimum.ferx")
 writeLines(at_ode, at_ode_file)
 sde_at_ode <- suppressWarnings(ferx_fit(at_ode_file, sde$data, covariance = FALSE,
                                         settings = list(maxiter = 0), verbose = FALSE))
-stopifnot(fit_ode$ofv < fit_sde_lbfgs$ofv, fit_ode$ofv < fit_ode_fd$ofv - 1,
+stopifnot(fit_ode$ofv < fit_sde_tight$ofv, fit_ode$ofv < fit_ode_fd$ofv - 1,
           abs(sde_at_ode$ofv - fit_ode$ofv) < 0.1, max(fit_ode$estimates$rse_pct) < 100,
-          abs(fit_sde_lbfgs$dw_statistic - fit_ode$dw_statistic) < 0.05)
+          abs(fit_sde_tight$dw_statistic - fit_ode$dw_statistic) < 0.05)
 ```
 
-The diffusion term does not improve on the ordinary ODE model. The SDE fit that gets furthest has a diffusion variance of essentially zero and an OFV `r round(fit_sde_lbfgs$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit; at a zero diffusion variance the two models coincide, so even that SDE fit stopped slightly short. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_lbfgs$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
+The diffusion term does not improve on the ordinary ODE model. The SDE fit that gets furthest, with the tighter tolerances, has a diffusion variance of essentially zero and an OFV `r round(fit_sde_tight$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit; at a zero diffusion variance the two models coincide, so even that SDE fit stopped slightly short. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_tight$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
 
 ## Options that matter
 
@@ -164,11 +195,11 @@ Constraints from the ferx-core [diffusion](https://ferx-nlme.org/ferx-core/model
 
 ### Simulating from an SDE fit
 
-Simulation from an SDE fit works like any other simulation (@sec-simulation), here from the fit that reached the lower OFV:
+Simulation from an SDE fit works like any other simulation (@sec-simulation), here from the fit that reached the lowest OFV:
 
 ```{r}
 #| label: sde-simulate
-head(ferx_simulate(sde$model, sde$data, n_sim = 1, seed = 1, fit = fit_sde_lbfgs), 3)
+head(ferx_simulate(sde$model, sde$data, n_sim = 1, seed = 1, fit = fit_sde_tight), 3)
 ```
 
 ### A neural-network covariate model
@@ -367,7 +398,7 @@ Each updated estimate sits between those of the two studies. `r if (length(narro
 - **A converged network fit may be far from its optimum at this build.** Without a penalty, `warfarin_dcm` reports convergence at an OFV above that of a regularized fit of the same model ([ferx-core #1561](https://github.com/FeRx-NLME/ferx-core/issues/1561)). Compare fits with and without `nn_l2`.
 - **Standard errors of network weights are not reliable,** and the covariance step with many weights is slow. Skip it with `covariance = FALSE` while exploring.
 - **SDE fits are slow.** The extended Kalman filter uses finite differences; the warfarin SDE fit above took `r round(fit_sde$wall_time_secs / fit_ode_fd$wall_time_secs)` times as long as the same model without `[diffusion]`, both with finite differences.
-- **Check that an SDE fit reached a minimum.** With finite differences the default optimizer can stop at a saddle point, as the bundled fit does at this build. A `covariance_regularized` warning that reports negative curvature is the sign; refit with another `optimizer` and compare OFVs.
+- **Check that an SDE fit reached a minimum.** With finite differences the default optimizer can stop at a saddle point, as the bundled fit does at this build. A `covariance_regularized` warning that reports negative curvature is the sign; refit with the ODE tolerances its message names or with another `optimizer`, and compare OFVs.
 
 ### Warnings you may see here
 

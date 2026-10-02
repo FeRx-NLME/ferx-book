@@ -171,29 +171,42 @@ head(relaxed$parameters[, c("parameter", "ci_lower", "ci_upper")], 7)
 
 ## Bayesian estimation
 
-`method = "bayes"` returns posterior summaries instead of a covariance step (@sec-estimation-methods). Posterior intervals are only meaningful when the chains have converged, which ferx reports as a largest R-hat at or below 1.01. On this model neither the default run nor one with four times longer chains gets there:
+`method = "bayes"` returns posterior summaries instead of a covariance step (@sec-estimation-methods). Posterior intervals are only meaningful when the chains have converged, which ferx reports as a largest R-hat at or below 1.01.
+
+::: {.callout-warning}
+## Bayes does not converge on this model at this build
+
+Three runs try: the default, four times longer chains, and four times longer chains with HMC proposals for the random effects (`n_leapfrog = 10`), which make the base model converge in @sec-estimation-methods. The table adds the 2.5% posterior quantile of the two covariate exponents (`WT_q025`, `CRCL_q025`), whose lower bounds the first lines print:
 
 ```{r}
 #| label: bayes
-chain_lengths <- list(default = list(), four_times_longer = list(bayes_warmup = 4000, bayes_iters = 4000))
+grep("theta THETA_(WT|CRCL)", readLines(cov$model), value = TRUE)
+bayes_settings <- list(default = list(), four_times_longer = list(bayes_warmup = 4000, bayes_iters = 4000),
+                       four_times_longer_hmc = list(bayes_warmup = 4000, bayes_iters = 4000, n_leapfrog = 10))
 # suppress the R warnings that report overriding the model file's method
-bayes_runs <- lapply(chain_lengths, function(s) {
+bayes_runs <- lapply(bayes_settings, function(s) {
   suppressWarnings(ferx_fit(cov$model, cov$data, method = "bayes", settings = s, verbose = FALSE))
 })
+exponent_q025 <- function(b, name) b$q025[b$param_names == name]
 do.call(rbind, lapply(names(bayes_runs), function(run) {
-  data.frame(run = run, draws_per_chain = bayes_runs[[run]]$bayes$n_draws_per_chain,
-             converged = bayes_runs[[run]]$converged, max_rhat = bayes_runs[[run]]$bayes$max_rhat)
+  b <- bayes_runs[[run]]$bayes
+  data.frame(run = run, draws_per_chain = b$n_draws_per_chain, converged = bayes_runs[[run]]$converged,
+             max_rhat = round(b$max_rhat, 3), WT_q025 = signif(exponent_q025(b, "THETA_WT"), 2),
+             CRCL_q025 = signif(exponent_q025(b, "THETA_CRCL"), 2))
 }))
 ```
 
 ```{r}
 #| label: check-bayes
 #| include: false
-# The text says neither run converges, so a converged one has to fail the render.
-stopifnot(!bayes_runs$default$converged, !bayes_runs$four_times_longer$converged)
+# The text says no run converges, and that with HMC proposals both exponents are drawn below
+# their lower bound of 0.01.
+hmc_q025 <- sapply(c("THETA_WT", "THETA_CRCL"), exponent_q025, b = bayes_runs$four_times_longer_hmc$bayes)
+stopifnot(!any(sapply(bayes_runs, function(f) f$converged)), all(hmc_q025 < 0.01))
 ```
 
-The largest R-hat is `r round(bayes_runs$default$bayes$max_rhat, 2)` with the default chains and `r round(bayes_runs$four_times_longer$bayes$max_rhat, 2)` with the longer ones, so the chains disagree and their intervals are not used below. @sec-estimation-methods shows a Bayes fit that converges, on warfarin, and the same failure on the base model.
+The largest R-hat is `r round(bayes_runs$default$bayes$max_rhat, 2)` with the default chains, `r round(bayes_runs$four_times_longer$bayes$max_rhat, 2)` with the longer ones and `r round(bayes_runs$four_times_longer_hmc$bayes$max_rhat, 2)` with HMC proposals, so the chains disagree and their intervals are not used below. The HMC run also shows a defect of the sampler at this build: it samples the covariate exponents without enforcing their bounds. Both 2.5% quantiles are at most `r format(signif(max(hmc_q025), 2), scientific = TRUE)`, far below the lower bound of 0.01, as the exponents drift towards zero, where the covariate effect vanishes ([ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626)). @sec-estimation-methods shows Bayes fits that converge, on warfarin and on the base model.
+:::
 
 ## Comparing the intervals
 

@@ -51,7 +51,7 @@ invisible(ferx_model_get_section(pkpd$model, "fit_options"))
 fit_pkpd <- ferx_fit(pkpd$model, pkpd$data, gradient = "auto", verbose = FALSE)
 ```
 
-Both endpoints enter one likelihood, so the PK and PD parameters are estimated together. The model file asks for `gradient = fd`, and its comment calls finite differences required for this readout. At this build they are not: ferx computes the analytic gradient for this model (`fit_pkpd$gradient_used` is "`r fit_pkpd$gradient_used`"), and the R warning above reports the override. The fits in this chapter pass `gradient = "auto"`, because the finite-difference fit stops short of the optimum, as the simulation–estimation run below shows.
+Both endpoints enter one likelihood, so the PK and PD parameters are estimated together. The model file asks for `gradient = fd`, and its comment calls finite differences required for this readout. At this build they are not, and the comment is out of date ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625)): ferx computes the analytic gradient for this model (`fit_pkpd$gradient_used` is "`r fit_pkpd$gradient_used`"), and the R warning above reports the override. The fits in this chapter pass `gradient = "auto"`, because the finite-difference fit stops short of the optimum, as the simulation–estimation run below shows.
 
 ## Reading the result
 
@@ -243,7 +243,7 @@ stopifnot(all(fd_gap > 2), abs(fd_at_optimum$ofv - fit_one_dose$ofv) < 0.01,
           "covariance_regularized" %in% ferx_get_warnings(fd_runs[[1]][[1]], as_df = TRUE)$category)
 ```
 
-Every finite-difference fit stops between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above the optimum that the analytic gradient finds. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the fit starts at the simulation values and stops near them, so `TVEMAX` comes out close to 40 and the design looks able to support the model, which it is not. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, pass `gradient = "auto"`.
+Every finite-difference fit stops between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above the optimum that the analytic gradient finds. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the fit starts at the simulation values and stops near them, so `TVEMAX` comes out close to 40 and the design looks able to support the model, which it is not. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, pass `gradient = "auto"` until the model file drops its `gradient = fd` ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625)).
 :::
 
 ### Effects computed from a PK fit
