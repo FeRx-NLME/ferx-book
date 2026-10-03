@@ -427,12 +427,13 @@ ferx_get_warnings(fit_multi, as_df = TRUE)[, c("severity", "category", "message"
 ```{r}
 #| label: check-multistart
 #| include: false
-# The paragraph below says the single start already reaches the 8-start OFV; whether a
-# multi_start note names another start is read from the fit (a tie can go either way).
-stopifnot(abs(fit_single$ofv - fit_multi$ofv) < 1e-3)
+# The paragraph below says the single start already reaches the 8-start OFV, to every digit the
+# table prints; whether a multi_start note names another start is read from the fit (a margin
+# that small can go either way).
+stopifnot(abs(fit_single$ofv - fit_multi$ofv) < 5e-5)
 ```
 
-On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary -- the alternative is not knowing whether the one start you ran was the good one. When a start other than the first wins, an `info` note in the `multi_start` category says which. `r if ("multi_start" %in% ferx_get_warnings(fit_multi, as_df = TRUE)$category) "Here one did, by less than the printed precision of the OFV: the starts tie, and the note names the one that came out lowest. Which start wins a tie can differ from one machine to the next." else "Here the first start won, so the warnings above have no such note."`
+On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary -- the alternative is not knowing whether the one start you ran was the good one. When a start other than the first wins, an `info` note in the `multi_start` category says which. `r if ("multi_start" %in% ferx_get_warnings(fit_multi, as_df = TRUE)$category) "Here one did, but only by less than the printed precision of the OFV, so the single start has the same value to every digit shown; which start comes out lowest by such a margin can differ from one machine to the next." else "Here the first start won, so the warnings above have no such note."`
 
 The two remedies for a stuck fit overlap, and ferx says how it resolves that rather than leaving you to guess. The global pre-search ignores its starting point by design, so running it on every perturbed start would overwrite the perturbation; instead it runs on start 0 only, and the remaining starts are ordinary perturbed local fits:
 

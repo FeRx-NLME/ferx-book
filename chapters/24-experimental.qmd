@@ -63,13 +63,16 @@ substr(ferx_get_warnings(fit_sde, as_df = TRUE)$message[1], 1, 150)
 ```{r}
 #| label: check-sde-warnings
 #| include: false
-# The paragraph below names these categories and reads every standard error as inflated, so
-# their absence has to fail the render.
-stopifnot(all(c("covariance_regularized", "condition_number") %in%
-              ferx_get_warnings(fit_sde, as_df = TRUE)$category), min(fit_sde$estimates$rse_pct) > 100)
+# The paragraph below names these categories, reads every standard error as inflated and the
+# curvature as negative (a saddle point), so a change in any of them has to fail the render.
+sde_warning_table <- ferx_get_warnings(fit_sde, as_df = TRUE)
+stopifnot(all(c("covariance_regularized", "condition_number") %in% sde_warning_table$category),
+          min(fit_sde$estimates$rse_pct) > 100,
+          any(grepl("min eig = -", sde_warning_table$message[sde_warning_table$category == "covariance_regularized"],
+                    fixed = TRUE)))
 ```
 
-Every relative standard error above runs to hundreds of percent or more (the smallest is `r format(round(min(fit_sde$estimates$rse_pct)), big.mark = ",")`%), for the structural parameters as much as for `DIFF_CENTRAL`. That is not what the data say about these parameters. The covariance step found a direction of negative curvature and floored it (`covariance_regularized`): the fit stopped at a saddle point, not at a minimum, and standard errors computed there mean nothing. `[diffusion]` needs finite-difference gradients, so the model file sets `gradient_method = fd`, and with it `optimizer = auto` resolves to `bobyqa` (@sec-estimation-methods). The last sentence of the `covariance_regularized` message names the cause: finite differences amplify the integration errors of the ODE solver, and the message suggests tighter tolerances than the defaults:
+Every relative standard error above runs to hundreds of percent or more (the smallest is `r format(round(min(fit_sde$estimates$rse_pct)), big.mark = ",")`%), for the structural parameters as much as for `DIFF_CENTRAL`. That is not what the data say about these parameters. The covariance step found a direction of negative curvature and floored it (`covariance_regularized`): the fit stopped at a saddle point, not at a minimum, and standard errors computed there mean nothing. `[diffusion]` needs finite-difference gradients, so the model file sets `gradient_method = fd`, and with it `optimizer = auto` resolves to `bobyqa` (@sec-estimation-methods). The last sentence of the `covariance_regularized` message points at the ODE tolerances: the finite differences of the covariance step amplify the integration errors of the solver, and the message suggests tighter tolerances than the defaults:
 
 ```{r}
 #| label: sde-tolerance

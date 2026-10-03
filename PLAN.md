@@ -1005,7 +1005,7 @@ Per-chapter loop:
     stable Rust, Quarto 1.10.18, ferx-r at the pin) rendered every chapter with failing checks logged
     instead of fatal. Seven checks failed, all on fits whose stopping point depends on rounding:
     ch06 `ebe_start_dependent` on the SDE fit (macOS raises it, Linux not) and the `multi_start` note
-    (8 starts tie at -453.3985; Linux names start 3); ch20 a regularized covariance on one FD fit (not
+    (the single start and the best of 8 agree to 2.7e-07 at -453.3985; Linux's note names start 3); ch20 a regularized covariance on one FD fit (not
     stated in the prose); ch24 the SDE fit (model-file OFV -279.15 macOS / -276.31 Linux, both at negative
     curvature; `nlopt_lbfgs` clean on macOS, regularized with RSEs to 628,000% on Linux; the FD ODE fit
     3.1 / 0.34 above the analytic one) and the DCM network (penalized fit 208 OFV below the unpenalized
