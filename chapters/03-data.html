@@ -651,10 +651,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Every analysis starts with a dataset. ferx reads a single CSV file with one row per event: a dose, an observation or another event, per subject and time. Before writing a model it pays to check that the file says what you think it says. Are doses where they should be, are observations and covariates plausible, and are the records you intend to exclude really excluded?</p>
 <p>This chapter covers the column layout ferx expects, checking a dataset in R, and the three ways to exclude records without editing the file. It uses the bundled <code>two_cpt_oral_cov</code> dataset, which the rest of <em>The analysis workflow</em> builds on.</p>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
-<p><code>ferx_get_columns()</code> reads only the header line and sorts the columns into the standard ones ferx recognises and everything else. Columns it doesn’t recognise are treated as covariates:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
-<span><span class="fu">ferx_get_columns</span><span class="op">(</span><span class="va">ex</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_get_columns.html">ferx_get_columns()</a></code> reads only the header line and sorts the columns into the standard ones ferx recognises and everything else. Columns it doesn’t recognise are treated as covariates:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_columns.html">ferx_get_columns</a></span><span class="op">(</span><span class="va">ex</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Data file: /home/runner/work/_temp/Library/ferx/examples/data/two_cpt_oral_cov.csv</span></span>
 <span><span class="co">#&gt; 10 columns</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -662,9 +667,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt;  Optional NONMEM:      [7] RATE  [8] MDV</span></span>
 <span><span class="co">#&gt;  Covariates / other:   [9] WT  [10] CRCL</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>It accepts the list returned by <code>ferx_example()</code>, a path, or a fitted model (it then reads <code>fit$data_path</code>). Read the full file with <code><a href="https://rdrr.io/r/utils/read.table.html">read.csv()</a></code>. <code>.</code> marks an empty cell:</p>
+<p>It accepts the list returned by <code><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example()</a></code>, a path, or a fitted model (it then reads <code>fit$data_path</code>). Read the full file with <code><a href="https://rdrr.io/r/utils/read.table.html">read.csv()</a></code>. <code>.</code> marks an empty cell:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">pk</span>, <span class="fl">12</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    ID TIME     DV EVID AMT CMT RATE MDV   WT CRCL</span></span>
 <span><span class="co">#&gt; 1   1  0.0     NA    1 250   1    0   1 70.6 73.7</span></span>
@@ -752,12 +757,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-column-use-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;3.1: Standard columns beyond the basic eight in some bundled datasets.
 </figcaption><div aria-describedby="tbl-column-use-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">basic</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"TIME"</span>, <span class="st">"DV"</span>, <span class="st">"EVID"</span>, <span class="st">"AMT"</span>, <span class="st">"CMT"</span>, <span class="st">"RATE"</span>, <span class="st">"MDV"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">basic</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"TIME"</span>, <span class="st">"DV"</span>, <span class="st">"EVID"</span>, <span class="st">"AMT"</span>, <span class="st">"CMT"</span>, <span class="st">"RATE"</span>, <span class="st">"MDV"</span><span class="op">)</span></span>
 <span><span class="va">examples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"warfarin_ss"</span>, <span class="st">"warfarin_addl"</span>, <span class="st">"warfarin_bloq"</span>, <span class="st">"warfarin_iov"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span></span>
 <span>  example <span class="op">=</span> <span class="va">examples</span>,</span>
 <span>  extra_columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">vapply</a></span><span class="op">(</span><span class="va">examples</span>, <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sets.html">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="fu">ferx_example</span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, nrows <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="va">basic</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu"><a href="https://generics.r-lib.org/reference/setops.html">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, nrows <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="va">basic</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  row.names <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
@@ -777,9 +782,9 @@ Table&nbsp;3.1: Standard columns beyond the basic eight in some bundled datasets
 </ul></section></section><section id="checking-the-dataset" class="level2"><h2 class="anchored" data-anchor-id="checking-the-dataset">Checking the dataset</h2>
 <p>A few lines of dplyr answer the basic structural questions:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">ID</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">summarise</span><span class="op">(</span>doses <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>, observations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>doses <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>, observations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>,</span>
 <span>            first_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span>, last_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        ID            doses    observations   first_time   last_time </span></span>
@@ -792,19 +797,19 @@ Table&nbsp;3.1: Standard columns beyond the basic eight in some bundled datasets
 </div>
 <p>Every one of the 30 subjects has 1 dose and 10 observations. The observed concentrations range from 0.1185 to 5.4514. Missing <code>DV</code> values occur only on dose rows:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">count</span><span class="op">(</span><span class="va">EVID</span>, <span class="va">MDV</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html">count</a></span><span class="op">(</span><span class="va">EVID</span>, <span class="va">MDV</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   EVID MDV  n</span></span>
 <span><span class="co">#&gt; 1    1   1 30</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Plot the profiles before any modeling. On a log scale the two-phase decline is already visible:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span>, group <span class="op">=</span> <span class="va">ID</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">scale_y_log10</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span>, group <span class="op">=</span> <span class="va">ID</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html">scale_y_log10</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-profiles" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-profiles-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -819,16 +824,16 @@ Figure&nbsp;3.1: Observed concentrations for the 30 subjects (log scale).
 <section id="covariates" class="level3"><h3 class="anchored" data-anchor-id="covariates">Covariates</h3>
 <p><code>WT</code> and <code>CRCL</code> are covariates. Check whether they are constant within subjects, then summarise them one row per subject:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">ID</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">summarise</span><span class="op">(</span>n_wt <span class="op">=</span> <span class="fu">n_distinct</span><span class="op">(</span><span class="va">WT</span><span class="op">)</span>, n_crcl <span class="op">=</span> <span class="fu">n_distinct</span><span class="op">(</span><span class="va">CRCL</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">summarise</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">n_wt</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">n_crcl</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pk</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>n_wt <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/n_distinct.html">n_distinct</a></span><span class="op">(</span><span class="va">WT</span><span class="op">)</span>, n_crcl <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/n_distinct.html">n_distinct</a></span><span class="op">(</span><span class="va">CRCL</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">n_wt</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">n_crcl</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 1 × 2</span></span>
 <span><span class="co">#&gt;   `max(n_wt)` `max(n_crcl)`</span></span>
 <span><span class="co">#&gt;         &lt;int&gt;         &lt;int&gt;</span></span>
 <span><span class="co">#&gt; 1           1             1</span></span>
 <span></span>
-<span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="va">pk</span> <span class="op">|&gt;</span> <span class="fu">distinct</span><span class="op">(</span><span class="va">ID</span>, <span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span></span>
+<span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="va">pk</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span><span class="op">(</span><span class="va">ID</span>, <span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">subjects</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"WT"</span>, <span class="st">"CRCL"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        WT             CRCL       </span></span>
 <span><span class="co">#&gt;  Min.   :45.00   Min.   : 46.50  </span></span>
@@ -839,9 +844,9 @@ Figure&nbsp;3.1: Observed concentrations for the 30 subjects (log scale).
 <span><span class="co">#&gt;  Max.   :93.70   Max.   :150.00</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">subjects</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Body weight (kg)"</span>, y <span class="op">=</span> <span class="st">"Creatinine clearance"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">subjects</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Body weight (kg)"</span>, y <span class="op">=</span> <span class="st">"Creatinine clearance"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-covariates" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-covariates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -878,9 +883,9 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 <code>ignore_ids</code>: all records of these subjects are excluded.</li>
 </ul>
 <section id="preview-the-selection-in-r" class="level3"><h3 class="anchored" data-anchor-id="preview-the-selection-in-r">Preview the selection in R</h3>
-<p><code>ferx_apply_selection()</code> shows what a selection would do before you fit. It returns the retained records as a <code>ferx_data</code> object, and <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on it summarises the exclusions. As an example, exclude observations below 0.2 and, suppose, subjects 3 and 7 after a data review:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code> shows what a selection would do before you fit. It returns the retained records as a <code>ferx_data</code> object, and <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on it summarises the exclusions. As an example, exclude observations below 0.2 and, suppose, subjects 3 and 7 after a data review:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu">ferx_apply_selection</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 0.2"</span>, ignore_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">7</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 0.2"</span>, ignore_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">7</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">sel</span></span>
 <span><span class="co">#&gt; &lt;ferx_data&gt;  300 of 330 records retained  (28 obs, 2 doses, 0 other excluded)</span></span>
 <span><span class="co">#&gt;   Fired ignore: DV &lt; 0.2</span></span>
@@ -898,8 +903,8 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </div>
 <p>With <code>excluded = TRUE</code> you get the excluded records instead, each with the first rule that removed it:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">dropped</span> <span class="op">&lt;-</span> <span class="fu">ferx_apply_selection</span><span class="op">(</span><span class="va">sel</span>, excluded <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">dropped</span> <span class="op">|&gt;</span> <span class="fu">count</span><span class="op">(</span><span class="va">.exclude_reason</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">dropped</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">sel</span>, excluded <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">dropped</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html">count</a></span><span class="op">(</span><span class="va">.exclude_reason</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      .exclude_reason  n</span></span>
 <span><span class="co">#&gt; 1   ignore: DV &lt; 0.2  8</span></span>
 <span><span class="co">#&gt; 2 ignore_subjects: 3 11</span></span>
@@ -907,7 +912,7 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </div>
 <p>An <code>accept</code> condition states what to keep. This one keeps only the first 24 hours:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_apply_selection</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, accept <span class="op">=</span> <span class="st">"TIME &lt;= 24"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, accept <span class="op">=</span> <span class="st">"TIME &lt;= 24"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;ferx_data&gt;  270 of 330 records retained  (60 obs, 0 doses, 0 other excluded)</span></span>
 <span><span class="co">#&gt;   Fired accept: TIME &lt;= 24</span></span>
 <span><span class="co">#&gt;   Pass excluded = TRUE to ferx_apply_selection() to inspect excluded records.</span></span>
@@ -922,9 +927,9 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 <span><span class="co">#&gt;   ... 264 more rows</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="select-at-fit-time" class="level3"><h3 class="anchored" data-anchor-id="select-at-fit-time">Select at fit time</h3>
-<p>The fit applies the same selection in the engine. Pass the conditions to <code>ferx_fit()</code> directly, or pass the previewed <code>ferx_data</code> object as <code>data</code>:</p>
+<p>The fit applies the same selection in the engine. Pass the conditions to <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> directly, or pass the previewed <code>ferx_data</code> object as <code>data</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sel</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 0.2"</span>, ignore_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">7</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 0.2"</span>, ignore_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">7</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">fit_sel</span><span class="op">$</span><span class="va">exclusions</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 7</span></span>
 <span><span class="co">#&gt;  $ n_records_total     : int 330</span></span>
@@ -936,7 +941,7 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 <span><span class="co">#&gt;  $ fired_accept        : chr(0)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sel2</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">sel</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sel2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">sel</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>conditions <span class="op">=</span> <span class="va">fit_sel</span><span class="op">$</span><span class="va">ofv</span>, ferx_data <span class="op">=</span> <span class="va">fit_sel2</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
 <span><span class="co">#&gt; conditions  ferx_data </span></span>
 <span><span class="co">#&gt;  -1044.557  -1044.557</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -945,25 +950,25 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </section><section id="select-in-the-model-file" class="level3"><h3 class="anchored" data-anchor-id="select-in-the-model-file">Select in the model file</h3>
 <p>A selection that belongs to the analysis itself can live in the model file, in a <code>[data_selection]</code> block. The bundled <code>warfarin_data_selection</code> model drops observations below 1.0:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ws</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_data_selection"</span><span class="op">)</span></span>
-<span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">ws</span><span class="op">$</span><span class="va">model</span>, <span class="st">"data_selection"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_data_selection"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">ws</span><span class="op">$</span><span class="va">model</span>, <span class="st">"data_selection"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [data_selection]</span></span>
 <span><span class="co">#&gt;   # Drop observations below a surrogate LLOQ of 1.0 mg/L.</span></span>
 <span><span class="co">#&gt;   ignore = DV &lt; 1.0</span></span>
-<span><span class="va">fit_ws</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ws</span><span class="op">$</span><span class="va">model</span>, <span class="va">ws</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_ws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ws</span><span class="op">$</span><span class="va">model</span>, <span class="va">ws</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_ws</span><span class="op">$</span><span class="va">exclusions</span><span class="op">$</span><span class="va">fired_ignore</span></span>
 <span><span class="co">#&gt; [1] "ignore: DV &lt; 1.0"</span></span>
 <span><span class="va">fit_ws</span><span class="op">$</span><span class="va">exclusions</span><span class="op">$</span><span class="va">n_obs_excluded</span></span>
 <span><span class="co">#&gt; [1] 2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>ferx_apply_selection()</code> on a fit replays the rules that fired, so you can inspect the excluded rows afterwards:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code> on a fit replays the rules that fired, so you can inspect the excluded rows afterwards:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_apply_selection</span><span class="op">(</span><span class="va">fit_ws</span>, excluded <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">fit_ws</span>, excluded <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    ID TIME     DV EVID AMT CMT RATE MDV  .exclude_reason</span></span>
 <span><span class="co">#&gt; 84  7  120 0.9761    0   .   1    0   0 ignore: DV &lt; 1.0</span></span>
 <span><span class="co">#&gt; 96  8  120 0.8700    0   .   1    0   0 ignore: DV &lt; 1.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Conditions given in the <code>ferx_fit()</code> call are merged with those in <code>[data_selection]</code>, not replacing them.</p>
+<p>Conditions given in the <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> call are merged with those in <code>[data_selection]</code>, not replacing them.</p>
 </section></section><section id="naming-the-dataset-in-the-model-file" class="level2"><h2 class="anchored" data-anchor-id="naming-the-dataset-in-the-model-file">Naming the dataset in the model file</h2>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -980,16 +985,36 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </div>
 <p>A <code>[data]</code> block lets a model file name its own dataset, so that model and data travel together. A relative <code>path</code> is resolved from the model file’s directory. None of the bundled models has one, so add one to a copy:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">run_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"data-block"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">run_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"data-block"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">run_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html">file.copy</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"pk.csv"</span><span class="op">)</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">model_with_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"two_cpt_oral_cov.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">""</span>, <span class="st">"[data]"</span>, <span class="st">"  path = pk.csv"</span><span class="op">)</span>, <span class="va">model_with_data</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fit_db</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">model_with_data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_db</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">model_with_data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/basename.html">basename</a></span><span class="op">(</span><span class="va">fit_db</span><span class="op">$</span><span class="va">data_path</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "pk.csv"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>ferx_fit()</code> was called without <code>data</code>, so the file named in <code>[data]</code> was used. An explicit <code>data</code> argument takes precedence over the block. <code>[data]</code> can also rename columns whose headers differ from the standard names. See the ferx-core <a href="https://ferx-nlme.org/ferx-core/model-file/data.html"><code>[data]</code> block</a> page.</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> was called without <code>data</code>, so the file named in <code>[data]</code> was used. An explicit <code>data</code> argument takes precedence over the block.</p>
+<p><code>[data]</code> can also rename columns whose headers differ from the standard names, written <code>new name = header in the file</code>. Suppose the dataset calls the concentration <code>CONC</code>. A selection on <code>DV</code> then refers to a column the file does not have, so to preview it, give <code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code> the model as well; it evaluates the conditions on the renamed columns, as the fit does, and returns the rows with the file’s own headers:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">conc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">conc</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">conc</span><span class="op">)</span> <span class="op">==</span> <span class="st">"DV"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"CONC"</span></span>
+<span><span class="va">conc_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"pk_conc.csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">conc</span>, <span class="va">conc_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span>, quote <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">model_renamed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"two_cpt_oral_cov_conc.ferx"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">""</span>, <span class="st">"[data]"</span>, <span class="st">"  path = pk_conc.csv"</span>, <span class="st">"  DV = CONC"</span><span class="op">)</span>, <span class="va">model_renamed</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">excluded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span></span>
+<span>  without_model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">conc_file</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 0.2"</span><span class="op">)</span>, <span class="st">"exclusions"</span><span class="op">)</span><span class="op">$</span><span class="va">n_obs_excluded</span>,</span>
+<span>  with_model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">conc_file</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 0.2"</span>, model <span class="op">=</span> <span class="va">model_renamed</span><span class="op">)</span>,</span>
+<span>                    <span class="st">"exclusions"</span><span class="op">)</span><span class="op">$</span><span class="va">n_obs_excluded</span>,</span>
+<span>  fit <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">model_renamed</span>, ignore <span class="op">=</span> <span class="st">"DV &lt; 0.2"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">exclusions</span><span class="op">$</span><span class="va">n_obs_excluded</span><span class="op">)</span></span>
+<span><span class="va">excluded</span></span>
+<span><span class="co">#&gt; without_model    with_model           fit </span></span>
+<span><span class="co">#&gt;             0             8             8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Without the model, the preview finds no <code>DV</code> column and excludes nothing (see <em>Pitfalls</em>). With it, the preview agrees with the fit. A fit passed to <code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code> brings its model along. See the ferx-core <a href="https://ferx-nlme.org/ferx-core/model-file/data.html"><code>[data]</code> block</a> page for the rules of renaming.</p>
 </section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
 <table class="caption-top table">
 <colgroup>
@@ -1004,12 +1029,12 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ferx_get_columns()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_get_columns.html">ferx_get_columns()</a></code></td>
 <td><code>data</code></td>
-<td>Path, <code>ferx_example()</code> list or fit</td>
+<td>Path, <code><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example()</a></code> list or fit</td>
 </tr>
 <tr class="even">
-<td><code>ferx_apply_selection()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code></td>
 <td><code>data</code></td>
 <td>Path, data frame, <code>ferx_data</code> object or fit</td>
 </tr>
@@ -1036,14 +1061,19 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </td>
 </tr>
 <tr class="odd">
-<td><code>ferx_fit()</code></td>
+<td></td>
+<td><code>model</code></td>
+<td>Model file or <code>ferx_model</code> whose <code>[data]</code> renames the conditions are evaluated against</td>
+</tr>
+<tr class="even">
+<td><code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code></td>
 <td>
 <code>ignore</code>, <code>accept</code>, <code>ignore_ids</code>
 </td>
 <td>The same selection, applied by the engine and merged with <code>[data_selection]</code>
 </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>settings</code></td>
 <td>
 <code>ignore</code>, <code>accept</code>, <code>ignore_subjects</code>
@@ -1054,12 +1084,12 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </table>
 <p>In a model file the same selection is written in <code>[data_selection]</code>, and the dataset path in <code>[data]</code>.</p>
 </section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
-<p><strong>The R preview is lenient; the fit is strict.</strong> <code>ferx_apply_selection()</code> treats a condition on an unknown column as never matching. It excludes nothing and says nothing. The fit applies the same condition but warns. Here <code>CONC</code> is a misspelling of <code>DV</code>:</p>
+<p><strong>The R preview is lenient; the fit is strict.</strong> <code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code> treats a condition on an unknown column as never matching. It excludes nothing and says nothing. The fit applies the same condition but warns. Here <code>CONC</code> is a misspelling of <code>DV</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="fu">ferx_apply_selection</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"CONC &lt; 0.2"</span><span class="op">)</span>, <span class="st">"exclusions"</span><span class="op">)</span><span class="op">$</span><span class="va">n_obs_excluded</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"CONC &lt; 0.2"</span><span class="op">)</span>, <span class="st">"exclusions"</span><span class="op">)</span><span class="op">$</span><span class="va">n_obs_excluded</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
-<span><span class="va">fit_typo</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"CONC &lt; 0.2"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">typo_warning</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_typo</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">fit_typo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, ignore <span class="op">=</span> <span class="st">"CONC &lt; 0.2"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">typo_warning</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_typo</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">typo_warning</span> <span class="op">&lt;-</span> <span class="va">typo_warning</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"FILTER"</span>, <span class="va">typo_warning</span><span class="op">$</span><span class="va">message</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="va">typo_warning</span><span class="op">$</span><span class="va">severity</span></span>
 <span><span class="co">#&gt; [1] "warning"</span></span>
@@ -1083,8 +1113,8 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 <code>data_quality</code> (warning): the dataset has a problem, such as a missing <code>DV</code>, inconsistent <code>ADDL</code>/<code>II</code> records or a non-positive <code>DV</code>. Fix the data before trusting the fit. See <a href="https://ferx-nlme.org/ferx-core/warnings.html#codes-structure">dataset and model structure warnings</a>.</li>
 </ul></section></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <ul>
-<li>Check the header with <code>ferx_get_columns()</code>, then check structure, missing values, profiles and covariates with ordinary R before modeling.</li>
-<li>Preview exclusions with <code>ferx_apply_selection()</code>. Apply them with <code>ferx_fit(ignore, accept, ignore_ids)</code> or in <code>[data_selection]</code>, and confirm them in <code>fit$exclusions</code>.</li>
+<li>Check the header with <code><a href="https://ferx-nlme.org/reference/ferx_get_columns.html">ferx_get_columns()</a></code>, then check structure, missing values, profiles and covariates with ordinary R before modeling.</li>
+<li>Preview exclusions with <code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">ferx_apply_selection()</a></code>. Apply them with <code>ferx_fit(ignore, accept, ignore_ids)</code> or in <code>[data_selection]</code>, and confirm them in <code>fit$exclusions</code>.</li>
 <li>
 <code>[data]</code> lets a model name its dataset. An explicit <code>data</code> argument wins.</li>
 </ul>
@@ -1100,7 +1130,7 @@ Figure&nbsp;3.2: Body weight and creatinine clearance, one point per subject.
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_get_columns</code>, <code>?ferx_apply_selection</code>, <code>?print.ferx_data</code>, <code>?ferx_fit</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_get_columns.html">?ferx_get_columns</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_apply_selection.html">?ferx_apply_selection</a></code>, <code><a href="https://ferx-nlme.org/reference/print.ferx_data.html">?print.ferx_data</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/data-format.html">data format</a>, <a href="https://ferx-nlme.org/ferx-core/model-file/data.html"><code>[data]</code></a>, <a href="https://ferx-nlme.org/ferx-core/model-file/data-selection.html"><code>[data_selection]</code></a>, <a href="https://ferx-nlme.org/ferx-core/warnings.html">warnings</a>
 </li>

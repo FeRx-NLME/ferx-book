@@ -642,13 +642,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
 <p>In a regular simulation (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>) the dosing regimen is fixed in the dataset before the simulation starts. Therapeutic drug monitoring (TDM) and titration protocols do not work that way. The next dose depends on a measured level: <em>if the trough is below 10 mg/L, increase the dose by 25%</em>.</p>
-<p>ferx simulates such protocols with a <strong>controller</strong> that you declare in the model file’s <code>[adaptive_dosing]</code> block. At each decision time the controller reads the simulated state of each virtual patient, applies the first matching rule, and issues the next dose. <code>ferx_simulate_adaptive()</code> runs the simulation and returns what happened: the concentrations, every decision, the doses given, and one summary row per virtual patient. With those outputs you can compare dosing strategies before using them.</p>
+<p>ferx simulates such protocols with a <strong>controller</strong> that you declare in the model file’s <code>[adaptive_dosing]</code> block. At each decision time the controller reads the simulated state of each virtual patient, applies the first matching rule, and issues the next dose. <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive()</a></code> runs the simulation and returns what happened: the concentrations, every decision, the doses given, and one summary row per virtual patient. With those outputs you can compare dosing strategies before using them.</p>
 <p>This is <em>simulation</em> of a dosing policy under a population model. It does not estimate an individual patient’s parameters from their measured levels.</p>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <p>The bundled <code>adaptive_tdm</code> example titrates a vancomycin-style IV infusion every 12 hours on the measured trough concentration:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"adaptive_tdm"</span><span class="op">)</span></span>
-<span><span class="fu">ferx_model_show</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"adaptive_tdm"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_show.html">ferx_model_show</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # model: adaptive_tdm.ferx </span></span>
 <span><span class="co">#&gt; # Adaptive (feedback) dosing -- TDM trough titration (epic #391)</span></span>
 <span><span class="co">#&gt; #</span></span>
@@ -750,7 +755,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The block supports more than this example uses. <code>observe = &lt;expression&gt;</code> titrates on a latent, noise-free quantity instead of a measured one. <code>levels</code> defines a discrete dose ladder. <code>auc_target</code> reports exposure attainment. The <code>hold</code> and <code>stop</code> actions skip or discontinue dosing. All are specified on the ferx-core <a href="https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html">adaptive dosing page</a>.</p>
 <p>The dataset supplies only the patients and the observation grid. It contains no doses, because the controller issues all of them:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">tdm_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">tdm_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">tdm_data</span>, <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    ID TIME DV EVID AMT CMT RATE MDV</span></span>
 <span><span class="co">#&gt; 1   1    0  0    0  NA   1    0   0</span></span>
@@ -766,8 +771,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section><section id="minimal-runnable-call" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call">Minimal runnable call</h2>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">n_sim</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
-<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">ferx_simulate_adaptive</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="va">n_sim</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">n_sim</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="va">n_sim</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "trajectories" "doses"        "decisions"    "metrics"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="va">res</span>, <span class="va">nrow</span><span class="op">)</span></span>
@@ -777,38 +782,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Each of the 5 subjects in the dataset is simulated 200 times with fresh random effects, giving 1000 virtual patient runs.</p>
 </section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
 <p>The four data frames describe the same runs at different levels of detail. Follow one virtual patient (subject 1 in replicate 1) through them.</p>
-<p><code>decisions</code> has one row per decision time: the signal the controller read and what it did.</p>
+<p><code>decisions</code> has one row per decision time: the signal the controller read and what it did. The signals are rounded here for display; with assay error the “zero” trough at time 0 is a tiny number, which would otherwise push the column into scientific notation.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">decisions</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">ID</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   DRAW SIM ID DECISION TIME           SIGNAL OUTCOME N_DOSED</span></span>
-<span><span class="co">#&gt; 1    1   1  1        0    0  0.0000009259412   dosed       1</span></span>
-<span><span class="co">#&gt; 2    1   1  1        1   12  4.7825015418872   dosed       1</span></span>
-<span><span class="co">#&gt; 3    1   1  1        2   24  8.5653966169902   dosed       1</span></span>
-<span><span class="co">#&gt; 4    1   1  1        3   36 12.0993771281923   dosed       1</span></span>
-<span><span class="co">#&gt; 5    1   1  1        4   48 10.1906451173874   dosed       1</span></span>
-<span><span class="co">#&gt; 6    1   1  1        5   60 10.9744200780901   dosed       1</span></span>
-<span><span class="co">#&gt; 7    1   1  1        6   72  9.8335215498234   dosed       1</span></span>
-<span><span class="co">#&gt; 8    1   1  1        7   84 10.5572865634468   dosed       1</span></span>
-<span><span class="co">#&gt; 9    1   1  1        8   96 12.3888519377360   dosed       1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">decisions</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">ID</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>SIGNAL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">SIGNAL</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   DRAW SIM ID DECISION TIME SIGNAL OUTCOME N_DOSED</span></span>
+<span><span class="co">#&gt; 1    1   1  1        0    0   0.00   dosed       1</span></span>
+<span><span class="co">#&gt; 2    1   1  1        1   12   4.78   dosed       1</span></span>
+<span><span class="co">#&gt; 3    1   1  1        2   24   8.57   dosed       1</span></span>
+<span><span class="co">#&gt; 4    1   1  1        3   36  12.10   dosed       1</span></span>
+<span><span class="co">#&gt; 5    1   1  1        4   48  10.19   dosed       1</span></span>
+<span><span class="co">#&gt; 6    1   1  1        5   60  10.97   dosed       1</span></span>
+<span><span class="co">#&gt; 7    1   1  1        6   72   9.83   dosed       1</span></span>
+<span><span class="co">#&gt; 8    1   1  1        7   84  10.56   dosed       1</span></span>
+<span><span class="co">#&gt; 9    1   1  1        8   96  12.39   dosed       1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>doses</code> is the dose ledger. It records the amount given, the signal and the rule that fired. When no rule matches, the running dose is given again and <code>RULE</code> shows the route (here <code>infuse</code>).</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">doses</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">ID</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">select</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">AMT</span>, <span class="va">RATE</span>, <span class="va">SIGNAL</span>, <span class="va">RULE</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   TIME      AMT     RATE           SIGNAL                       RULE</span></span>
-<span><span class="co">#&gt; 1    0 1250.000 1250.000  0.0000009259412 signal &lt; 10 : increase 25%</span></span>
-<span><span class="co">#&gt; 2   12 1562.500 1562.500  4.7825015418872 signal &lt; 10 : increase 25%</span></span>
-<span><span class="co">#&gt; 3   24 1953.125 1953.125  8.5653966169902 signal &lt; 10 : increase 25%</span></span>
-<span><span class="co">#&gt; 4   36 1953.125 1953.125 12.0993771281923                     infuse</span></span>
-<span><span class="co">#&gt; 5   48 1953.125 1953.125 10.1906451173874                     infuse</span></span>
-<span><span class="co">#&gt; 6   60 1953.125 1953.125 10.9744200780901                     infuse</span></span>
-<span><span class="co">#&gt; 7   72 2000.000 2000.000  9.8335215498234 signal &lt; 10 : increase 25%</span></span>
-<span><span class="co">#&gt; 8   84 2000.000 2000.000 10.5572865634468                     infuse</span></span>
-<span><span class="co">#&gt; 9   96 2000.000 2000.000 12.3888519377360                     infuse</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">doses</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">ID</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">AMT</span>, <span class="va">RATE</span>, <span class="va">SIGNAL</span>, <span class="va">RULE</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>SIGNAL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">SIGNAL</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   TIME      AMT     RATE SIGNAL                       RULE</span></span>
+<span><span class="co">#&gt; 1    0 1250.000 1250.000   0.00 signal &lt; 10 : increase 25%</span></span>
+<span><span class="co">#&gt; 2   12 1562.500 1562.500   4.78 signal &lt; 10 : increase 25%</span></span>
+<span><span class="co">#&gt; 3   24 1953.125 1953.125   8.57 signal &lt; 10 : increase 25%</span></span>
+<span><span class="co">#&gt; 4   36 1953.125 1953.125  12.10                     infuse</span></span>
+<span><span class="co">#&gt; 5   48 1953.125 1953.125  10.19                     infuse</span></span>
+<span><span class="co">#&gt; 6   60 1953.125 1953.125  10.97                     infuse</span></span>
+<span><span class="co">#&gt; 7   72 2000.000 2000.000   9.83 signal &lt; 10 : increase 25%</span></span>
+<span><span class="co">#&gt; 8   84 2000.000 2000.000  10.56                     infuse</span></span>
+<span><span class="co">#&gt; 9   96 2000.000 2000.000  12.39                     infuse</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The first dose is already 1250 mg rather than the <code>start_dose</code> of 1000 mg. At the first decision (time 0) no drug has been given, so the trough is zero and the rule <code>signal &lt; 10 : increase 25%</code> fires immediately.</p>
-<p><code>trajectories</code> holds the simulated concentrations on the dataset’s observation grid, in the same layout as <code>ferx_simulate()</code> output:</p>
+<p><code>trajectories</code> holds the simulated concentrations on the dataset’s observation grid, in the same layout as <code><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate()</a></code> output:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">trajectories</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">ID</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">trajectories</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">ID</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   DRAW SIM ID TIME CMT     IPRED    DV_SIM OBSERVED</span></span>
 <span><span class="co">#&gt; 1    1   1  1    0   1  0.000000  0.000000       NA</span></span>
 <span><span class="co">#&gt; 2    1   1  1   12   1  5.496931  5.496931       NA</span></span>
@@ -822,7 +827,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>metrics</code> has one row per virtual patient run, summarising the whole course:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">metrics</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">metrics</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"SIGNAL"</span><span class="op">)</span>, \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">x</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   DRAW SIM ID  CUM_DOSE N_DOSES N_INCREASES N_DECREASES N_HOLDS DISCONTINUED</span></span>
 <span><span class="co">#&gt; 1    1   1  1 16625.000       9           3           0       0        FALSE</span></span>
 <span><span class="co">#&gt; 2    1   1  2 13750.000       9           1           0       0        FALSE</span></span>
@@ -830,25 +835,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; 4    1   1  4  9687.500       9           0           1       0        FALSE</span></span>
 <span><span class="co">#&gt; 5    1   1  5  7656.250       9           0           2       0        FALSE</span></span>
 <span><span class="co">#&gt; 6    1   2  1 16765.625       9           3           0       0        FALSE</span></span>
-<span><span class="co">#&gt;   TIME_TO_DISCONT       SIGNAL_MIN SIGNAL_MAX SIGNAL_MEAN PCT_TIME_IN_WINDOW</span></span>
-<span><span class="co">#&gt; 1              NA  0.0000009259412   12.38885    8.821333          0.5555556</span></span>
-<span><span class="co">#&gt; 2              NA  0.0000003089598   14.60541   11.210371          0.7777778</span></span>
-<span><span class="co">#&gt; 3              NA -0.0000008515341   20.61276   12.971918          0.5555556</span></span>
-<span><span class="co">#&gt; 4              NA  0.0000005740543   23.54097   15.971713          0.7777778</span></span>
-<span><span class="co">#&gt; 5              NA  0.0000001870968   22.88120   13.327168          0.6666667</span></span>
-<span><span class="co">#&gt; 6              NA  0.0000003473591   11.04271    7.755079          0.2222222</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   TIME_TO_DISCONT SIGNAL_MIN SIGNAL_MAX SIGNAL_MEAN PCT_TIME_IN_WINDOW</span></span>
+<span><span class="co">#&gt; 1              NA          0      12.39        8.82          0.5555556</span></span>
+<span><span class="co">#&gt; 2              NA          0      14.61       11.21          0.7777778</span></span>
+<span><span class="co">#&gt; 3              NA          0      20.61       12.97          0.5555556</span></span>
+<span><span class="co">#&gt; 4              NA          0      23.54       15.97          0.7777778</span></span>
+<span><span class="co">#&gt; 5              NA          0      22.88       13.33          0.6666667</span></span>
+<span><span class="co">#&gt; 6              NA          0      11.04        7.76          0.2222222</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>PCT_TIME_IN_WINDOW</code> is the <em>fraction</em> (between 0 and 1) of that patient’s decisions at which the signal was inside <code>target_window</code>. <code>CUM_DOSE</code> and <code>N_DOSES</code> count the controller’s doses.</p>
 <p>Summaries across all runs show how the policy performs in the population. The trough at each decision time:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">decisions</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">summarise</span><span class="op">(</span>p10 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">SIGNAL</span>, <span class="fl">0.1</span><span class="op">)</span>, p50 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">SIGNAL</span><span class="op">)</span>, p90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">SIGNAL</span>, <span class="fl">0.9</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">p50</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_ribbon</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">p10</span>, ymax <span class="op">=</span> <span class="va">p90</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Measured trough (mg/L)"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">decisions</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>p10 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">SIGNAL</span>, <span class="fl">0.1</span><span class="op">)</span>, p50 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">SIGNAL</span><span class="op">)</span>, p90 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">SIGNAL</span>, <span class="fl">0.9</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">p50</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html">geom_ribbon</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">p10</span>, ymax <span class="op">=</span> <span class="va">p90</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Measured trough (mg/L)"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-trough-by-decision" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-trough-by-decision-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -862,12 +867,12 @@ Figure&nbsp;23.1: Measured trough at each decision time across 1000 virtual pati
 </div>
 <p>And the dose each patient ended up on:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">doses</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">&lt;=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">AMT</span>, group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interaction.html">interaction</a></span><span class="op">(</span><span class="va">SIM</span>, <span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_step</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">250</span>, <span class="fl">2000</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dotted"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Dose (mg)"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">doses</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">&lt;=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">AMT</span>, group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interaction.html">interaction</a></span><span class="op">(</span><span class="va">SIM</span>, <span class="va">ID</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_step</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">250</span>, <span class="fl">2000</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dotted"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Dose (mg)"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-dose-paths" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-dose-paths-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -927,20 +932,21 @@ Figure&nbsp;23.2: Dose issued at each decision for the five subjects in the firs
 </table>
 <p><code>max_decisions</code> is a safety limit, not a way to shorten the schedule. A schedule with more decision points than the limit stops with an error:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_simulate_adaptive</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, max_decisions <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, max_decisions <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_simulate_adaptive(model_path = normalizePath(model),  : </span></span>
 <span><span class="co">#&gt;   ferx_simulate_adaptive: subject '1' (sim 1): decision schedule has 9 points, exceeding max_decisions = 3 (runaway guard); raise `max_decisions` in the simulate options if the schedule is intentional</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>A model without an <code>[adaptive_dosing]</code> block is rejected with an error as well. Use <code>ferx_simulate()</code> for fixed regimens.</p>
+<p>A model without an <code>[adaptive_dosing]</code> block is rejected with an error as well. Use <code><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate()</a></code> for fixed regimens.</p>
 </section><section id="variants" class="level2"><h2 class="anchored" data-anchor-id="variants">Variants</h2>
 <section id="comparing-two-dosing-strategies" class="level3"><h3 class="anchored" data-anchor-id="comparing-two-dosing-strategies">Comparing two dosing strategies</h3>
-<p>The main use of adaptive simulation is comparing policies. Here is a more aggressive version of the same protocol, which changes the dose in 50% steps instead of 25%. Edit a <em>copy</em> of the model: <code>ferx_model_set_section()</code> edits a file path in place, and the example model lives inside the installed package.</p>
+<p>The main use of adaptive simulation is comparing policies. Here is a more aggressive version of the same protocol, which changes the dose in 50% steps instead of 25%. Edit a <em>copy</em> of the model: <code><a href="https://ferx-nlme.org/reference/ferx_model_set_section.html">ferx_model_set_section()</a></code> edits a file path in place, and the example model lives inside the installed package.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">strategy_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"adaptive-strategies"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">strategy_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"adaptive-strategies"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">strategy_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">aggressive</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">strategy_dir</span>, <span class="st">"adaptive_tdm_aggressive.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html">file.copy</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">aggressive</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">rules</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="st">"adaptive_dosing"</span><span class="op">)</span></span>
+<span><span class="va">rules</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="st">"adaptive_dosing"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [adaptive_dosing]</span></span>
 <span><span class="co">#&gt;   with_assay_error = true                 # titrate on the *measured* trough (assay-noised)</span></span>
 <span><span class="co">#&gt;   assay_cmt        = 1                     # output #1 -- the concentration (y = central/V) + its proportional error</span></span>
@@ -954,24 +960,25 @@ Figure&nbsp;23.2: Dose issued at each decision for the five subjects in the firs
 <span><span class="co">#&gt;   when signal &gt; 20 : decrease 25%          # supra-therapeutic trough -&gt; de-escalate</span></span>
 <span><span class="va">rules</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"increase 25%"</span>, <span class="st">"increase 50%"</span>, <span class="va">rules</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">rules</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"decrease 25%"</span>, <span class="st">"decrease 50%"</span>, <span class="va">rules</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">ferx_model_set_section</span><span class="op">(</span><span class="va">aggressive</span>, <span class="st">"adaptive_dosing"</span>, <span class="va">rules</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_set_section.html">ferx_model_set_section</a></span><span class="op">(</span><span class="va">aggressive</span>, <span class="st">"adaptive_dosing"</span>, <span class="va">rules</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Simulate both strategies with the same seed and compare the per-patient metrics:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res_aggressive</span> <span class="op">&lt;-</span> <span class="fu">ferx_simulate_adaptive</span><span class="op">(</span><span class="va">aggressive</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="va">n_sim</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res_aggressive</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive</a></span><span class="op">(</span><span class="va">aggressive</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="va">n_sim</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">bind_rows</span><span class="op">(</span></span>
+<span><span class="va">strategies</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html">bind_rows</a></span><span class="op">(</span></span>
 <span>  `25% steps` <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">metrics</span>,</span>
 <span>  `50% steps` <span class="op">=</span> <span class="va">res_aggressive</span><span class="op">$</span><span class="va">metrics</span>,</span>
 <span>  .id <span class="op">=</span> <span class="st">"strategy"</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">strategy</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">summarise</span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">strategy</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span></span>
 <span>    `mean fraction in window` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">PCT_TIME_IN_WINDOW</span><span class="op">)</span>,</span>
 <span>    `mean cumulative dose (mg)` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">CUM_DOSE</span><span class="op">)</span>,</span>
 <span>    `mean increases` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">N_INCREASES</span><span class="op">)</span>,</span>
 <span>    `mean decreases` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">N_DECREASES</span><span class="op">)</span></span>
-<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="va">strategies</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/gt.html">gt</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/fmt_number.html">fmt_number</a></span><span class="op">(</span>columns <span class="op">=</span> <span class="op">-</span><span class="va">strategy</span>, decimals <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-strategies" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
@@ -979,23 +986,23 @@ Figure&nbsp;23.2: Dose issued at each decision for the five subjects in the firs
 Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 </figcaption><div aria-describedby="tbl-strategies-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="homonpsmao" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#homonpsmao table {
+<div id="dplfubwjzl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#dplfubwjzl table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#homonpsmao thead, #homonpsmao tbody, #homonpsmao tfoot, #homonpsmao tr, #homonpsmao td, #homonpsmao th {
+#dplfubwjzl thead, #dplfubwjzl tbody, #dplfubwjzl tfoot, #dplfubwjzl tr, #dplfubwjzl td, #dplfubwjzl th {
   border-style: none;
 }
 
-#homonpsmao p {
+#dplfubwjzl p {
   margin: 0;
   padding: 0;
 }
 
-#homonpsmao .gt_table {
+#dplfubwjzl .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1021,12 +1028,12 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-left-color: #D3D3D3;
 }
 
-#homonpsmao .gt_caption {
+#dplfubwjzl .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#homonpsmao .gt_title {
+#dplfubwjzl .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1038,7 +1045,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-width: 0;
 }
 
-#homonpsmao .gt_subtitle {
+#dplfubwjzl .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1050,7 +1057,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-top-width: 0;
 }
 
-#homonpsmao .gt_heading {
+#dplfubwjzl .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1062,13 +1069,13 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#homonpsmao .gt_bottom_border {
+#dplfubwjzl .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#homonpsmao .gt_col_headings {
+#dplfubwjzl .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1083,7 +1090,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#homonpsmao .gt_col_heading {
+#dplfubwjzl .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1103,7 +1110,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   overflow-x: hidden;
 }
 
-#homonpsmao .gt_column_spanner_outer {
+#dplfubwjzl .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1115,15 +1122,15 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 4px;
 }
 
-#homonpsmao .gt_column_spanner_outer:first-child {
+#dplfubwjzl .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#homonpsmao .gt_column_spanner_outer:last-child {
+#dplfubwjzl .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#homonpsmao .gt_column_spanner {
+#dplfubwjzl .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1135,11 +1142,11 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   width: 100%;
 }
 
-#homonpsmao .gt_spanner_row {
+#dplfubwjzl .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#homonpsmao .gt_group_heading {
+#dplfubwjzl .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1165,7 +1172,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   text-align: left;
 }
 
-#homonpsmao .gt_empty_group_heading {
+#dplfubwjzl .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1180,15 +1187,15 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   vertical-align: middle;
 }
 
-#homonpsmao .gt_from_md > :first-child {
+#dplfubwjzl .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#homonpsmao .gt_from_md > :last-child {
+#dplfubwjzl .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#homonpsmao .gt_row {
+#dplfubwjzl .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1207,7 +1214,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   overflow-x: hidden;
 }
 
-#homonpsmao .gt_stub {
+#dplfubwjzl .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1220,7 +1227,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#homonpsmao .gt_stub_row_group {
+#dplfubwjzl .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1234,15 +1241,15 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   vertical-align: top;
 }
 
-#homonpsmao .gt_row_group_first td {
+#dplfubwjzl .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#homonpsmao .gt_row_group_first th {
+#dplfubwjzl .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#homonpsmao .gt_summary_row {
+#dplfubwjzl .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1252,16 +1259,16 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#homonpsmao .gt_first_summary_row {
+#dplfubwjzl .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#homonpsmao .gt_first_summary_row.thick {
+#dplfubwjzl .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#homonpsmao .gt_last_summary_row {
+#dplfubwjzl .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1271,7 +1278,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-color: #D3D3D3;
 }
 
-#homonpsmao .gt_grand_summary_row {
+#dplfubwjzl .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1281,7 +1288,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#homonpsmao .gt_first_grand_summary_row {
+#dplfubwjzl .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1291,7 +1298,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-top-color: #D3D3D3;
 }
 
-#homonpsmao .gt_last_grand_summary_row_top {
+#dplfubwjzl .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1301,11 +1308,11 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-color: #D3D3D3;
 }
 
-#homonpsmao .gt_striped {
+#dplfubwjzl .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#homonpsmao .gt_table_body {
+#dplfubwjzl .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1314,7 +1321,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-color: #D3D3D3;
 }
 
-#homonpsmao .gt_footnotes {
+#dplfubwjzl .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1328,7 +1335,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#homonpsmao .gt_footnote {
+#dplfubwjzl .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1337,7 +1344,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#homonpsmao .gt_sourcenotes {
+#dplfubwjzl .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1351,7 +1358,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#homonpsmao .gt_sourcenote {
+#dplfubwjzl .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1359,72 +1366,72 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#homonpsmao .gt_left {
+#dplfubwjzl .gt_left {
   text-align: left;
 }
 
-#homonpsmao .gt_center {
+#dplfubwjzl .gt_center {
   text-align: center;
 }
 
-#homonpsmao .gt_right {
+#dplfubwjzl .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#homonpsmao .gt_font_normal {
+#dplfubwjzl .gt_font_normal {
   font-weight: normal;
 }
 
-#homonpsmao .gt_font_bold {
+#dplfubwjzl .gt_font_bold {
   font-weight: bold;
 }
 
-#homonpsmao .gt_font_italic {
+#dplfubwjzl .gt_font_italic {
   font-style: italic;
 }
 
-#homonpsmao .gt_super {
+#dplfubwjzl .gt_super {
   font-size: 65%;
 }
 
-#homonpsmao .gt_footnote_marks {
+#dplfubwjzl .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#homonpsmao .gt_asterisk {
+#dplfubwjzl .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#homonpsmao .gt_indent_1 {
+#dplfubwjzl .gt_indent_1 {
   text-indent: 5px;
 }
 
-#homonpsmao .gt_indent_2 {
+#dplfubwjzl .gt_indent_2 {
   text-indent: 10px;
 }
 
-#homonpsmao .gt_indent_3 {
+#dplfubwjzl .gt_indent_3 {
   text-indent: 15px;
 }
 
-#homonpsmao .gt_indent_4 {
+#dplfubwjzl .gt_indent_4 {
   text-indent: 20px;
 }
 
-#homonpsmao .gt_indent_5 {
+#dplfubwjzl .gt_indent_5 {
   text-indent: 25px;
 }
 
-#homonpsmao .katex-display {
+#dplfubwjzl .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#homonpsmao div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#dplfubwjzl div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1459,11 +1466,12 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 </figure>
 </div>
 </div>
+<p>The larger steps put slightly more decisions in the target window (0.71 against 0.69) with fewer dose changes per patient (1.39 against 1.62), for about the same cumulative dose. On this population the two policies perform almost alike. A policy is judged by such a comparison, run with the same seed, rather than by either column on its own.</p>
 </section><section id="a-loading-dose-followed-by-titration" class="level3"><h3 class="anchored" data-anchor-id="a-loading-dose-followed-by-titration">A loading dose followed by titration</h3>
 <p>A dataset can also carry a <em>base regimen</em>: ordinary dose rows that the controller adds its own doses to. <code>adaptive_vanco_loading</code> gives one typical patient a 1500 mg loading dose at time 0 and titrates daily maintenance boluses from 24 h. It titrates on the latent concentration, using <code>observe</code> rather than an assay-noised measurement:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex_load</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"adaptive_vanco_loading"</span><span class="op">)</span></span>
-<span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">ex_load</span><span class="op">$</span><span class="va">model</span>, <span class="st">"adaptive_dosing"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex_load</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"adaptive_vanco_loading"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">ex_load</span><span class="op">$</span><span class="va">model</span>, <span class="st">"adaptive_dosing"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [adaptive_dosing]</span></span>
 <span><span class="co">#&gt;   observe       = CENT / V                # titrate on the latent trough concentration</span></span>
 <span><span class="co">#&gt;   at            = every 24 from 24 to 144 # daily MAINTENANCE decisions, after the load</span></span>
@@ -1484,8 +1492,8 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 <span><span class="co">#&gt; 7  1  144  0    0    0   1   0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res_load</span> <span class="op">&lt;-</span> <span class="fu">ferx_simulate_adaptive</span><span class="op">(</span><span class="va">ex_load</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex_load</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">res_load</span><span class="op">$</span><span class="va">doses</span> <span class="op">|&gt;</span> <span class="fu">select</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">AMT</span>, <span class="va">SIGNAL</span>, <span class="va">RULE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res_load</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive</a></span><span class="op">(</span><span class="va">ex_load</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex_load</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">res_load</span><span class="op">$</span><span class="va">doses</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">AMT</span>, <span class="va">SIGNAL</span>, <span class="va">RULE</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   TIME      AMT    SIGNAL                       RULE</span></span>
 <span><span class="co">#&gt; 1   24  937.500  5.647469 signal &lt; 10 : increase 25%</span></span>
 <span><span class="co">#&gt; 2   48 1171.875  5.230676 signal &lt; 10 : increase 25%</span></span>
@@ -1493,7 +1501,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 <span><span class="co">#&gt; 4   96 1831.055  7.318548 signal &lt; 10 : increase 25%</span></span>
 <span><span class="co">#&gt; 5  120 2288.818  9.098217 signal &lt; 10 : increase 25%</span></span>
 <span><span class="co">#&gt; 6  144 2288.818 11.357721                      bolus</span></span>
-<span><span class="va">res_load</span><span class="op">$</span><span class="va">metrics</span> <span class="op">|&gt;</span> <span class="fu">select</span><span class="op">(</span><span class="va">CUM_DOSE</span>, <span class="va">N_DOSES</span>, <span class="va">N_INCREASES</span>, <span class="va">PCT_TIME_IN_WINDOW</span><span class="op">)</span></span>
+<span><span class="va">res_load</span><span class="op">$</span><span class="va">metrics</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">CUM_DOSE</span>, <span class="va">N_DOSES</span>, <span class="va">N_INCREASES</span>, <span class="va">PCT_TIME_IN_WINDOW</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   CUM_DOSE N_DOSES N_INCREASES PCT_TIME_IN_WINDOW</span></span>
 <span><span class="co">#&gt; 1  9982.91       6           4          0.1666667</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1509,10 +1517,10 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 <li>
 <strong><code>target_window</code> does not steer dosing.</strong> Only the <code>when</code> rules change doses. The window only feeds the attainment metric.</li>
 <li>
-<strong>Scope.</strong> The controller runs on ODE models, titrates on one signal per block, and rejects stochastic (<code>[diffusion]</code>) models. Some combinations of base doses with time-varying covariates, IOV or system resets are rejected with an error. <code>?ferx_simulate_adaptive</code> and the ferx-core page list them.</li>
+<strong>Scope.</strong> The controller runs on ODE models, titrates on one signal per block, and rejects stochastic (<code>[diffusion]</code>) models. Some combinations of base doses with time-varying covariates, IOV or system resets are rejected with an error. <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">?ferx_simulate_adaptive</a></code> and the ferx-core page list them.</li>
 </ul></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <ul>
-<li>Declare the dosing policy in <code>[adaptive_dosing]</code> and simulate it with <code>ferx_simulate_adaptive()</code>.</li>
+<li>Declare the dosing policy in <code>[adaptive_dosing]</code> and simulate it with <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive()</a></code>.</li>
 <li>Read <code>decisions</code> and <code>doses</code> to see how individual patients were titrated. Use <code>metrics</code> to compare strategies across the population.</li>
 <li>Compare strategies by editing a copy of the model and simulating each version with the same seed.</li>
 </ul></section><section id="reference" class="level2"><h2 class="anchored" data-anchor-id="reference">Reference</h2>
@@ -1527,7 +1535,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_simulate_adaptive</code>, <code>?ferx_model_get_section</code>, <code>?ferx_model_set_section</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">?ferx_simulate_adaptive</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">?ferx_model_get_section</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_model_set_section.html">?ferx_model_set_section</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html">adaptive (feedback) dosing</a>: all block keys, rule actions, verification and current limits</li>
 </ul>

@@ -646,60 +646,63 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>
 <strong>Bayesian estimation</strong>: posterior intervals.</li>
 </ul>
-<p>This chapter applies each to the covariate model and compares the intervals.</p>
+<p>This chapter applies each to the covariate model and compares the intervals of the first three. Bayesian estimation does not converge on this model at this build, so its intervals are left out (below).</p>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="minimal-runnable-call-the-covariance-step" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call-the-covariance-step">Minimal runnable call: the covariance step</h2>
 <p>The covariance step runs by default (<code>covariance = TRUE</code> in this model file). Its results are the <code>se</code>, <code>rse_pct</code> and 95% interval columns of <code>fit$estimates</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">covariance_status</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">covariance_status</span></span>
 <span><span class="co">#&gt; [1] "computed"</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;               estimate          se   rse_pct    lower_95     upper_95</span></span>
-<span><span class="co">#&gt; TVCL        4.94779587 0.359479681  7.265451  4.24321569   5.65237604</span></span>
-<span><span class="co">#&gt; TVV1       48.58746510 2.952179029  6.076010 42.80119420  54.37373599</span></span>
-<span><span class="co">#&gt; TVQ         9.57692867 0.407841896  4.258588  8.77755856  10.37629879</span></span>
-<span><span class="co">#&gt; TVV2       94.17330801 3.423849490  3.635690 87.46256301 100.88405301</span></span>
-<span><span class="co">#&gt; TVKA        1.25592751 0.098051230  7.807077  1.06374710   1.44810792</span></span>
-<span><span class="co">#&gt; THETA_WT    0.65345631 0.236131062 36.135708  0.19063943   1.11627319</span></span>
-<span><span class="co">#&gt; THETA_CRCL  0.56461277 0.221501060 39.230615  0.13047069   0.99875484</span></span>
-<span><span class="co">#&gt; ETA_CL      0.10753130 0.028096449 26.128623  0.05246226   0.16260034</span></span>
-<span><span class="co">#&gt; ETA_V1      0.10634759 0.028678257 26.966531  0.05013821   0.16255698</span></span>
-<span><span class="co">#&gt; ETA_Q       0.05124930 0.014007561 27.332201  0.02379448   0.07870412</span></span>
-<span><span class="co">#&gt; ETA_V2      0.03793979 0.010328799 27.224185  0.01769535   0.05818424</span></span>
-<span><span class="co">#&gt; ETA_KA      0.17543720 0.048574865 27.687893  0.08023046   0.27064393</span></span>
+<span><span class="co">#&gt; TVCL        4.94779482 0.359479827  7.265455  4.24321436   5.65237528</span></span>
+<span><span class="co">#&gt; TVV1       48.58746724 2.952177713  6.076007 42.80119893  54.37373556</span></span>
+<span><span class="co">#&gt; TVQ         9.57692766 0.407841890  4.258588  8.77755756  10.37629777</span></span>
+<span><span class="co">#&gt; TVV2       94.17331232 3.423849854  3.635690 87.46256661 100.88405803</span></span>
+<span><span class="co">#&gt; TVKA        1.25592773 0.098051292  7.807081  1.06374719   1.44810826</span></span>
+<span><span class="co">#&gt; THETA_WT    0.65345844 0.236130767 36.135545  0.19064214   1.11627475</span></span>
+<span><span class="co">#&gt; THETA_CRCL  0.56461083 0.221501535 39.230834  0.13046782   0.99875384</span></span>
+<span><span class="co">#&gt; ETA_CL      0.10753128 0.028096440 26.128620  0.05246226   0.16260030</span></span>
+<span><span class="co">#&gt; ETA_V1      0.10634748 0.028678215 26.966519  0.05013818   0.16255679</span></span>
+<span><span class="co">#&gt; ETA_Q       0.05124931 0.014007566 27.332204  0.02379448   0.07870414</span></span>
+<span><span class="co">#&gt; ETA_V2      0.03793980 0.010328801 27.224186  0.01769535   0.05818424</span></span>
+<span><span class="co">#&gt; ETA_KA      0.17543737 0.048574932 27.687905  0.08023050   0.27064424</span></span>
 <span><span class="co">#&gt; PROP_ERR    0.01961856 0.001123479  5.726613  0.01741654   0.02182058</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The full variance-covariance matrix of the estimates is <code>fit$cov_matrix</code>, and its correlation form is <code>fit$cor_matrix</code> (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>).</p>
 <section id="choosing-the-covariance-estimator" class="level3"><h3 class="anchored" data-anchor-id="choosing-the-covariance-estimator">Choosing the covariance estimator</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"covariance_method"</span>, <span class="st">"covariance_fallback"</span>, <span class="st">"analytic_cov_hessian"</span>,</span>
-<span>                      <span class="st">"cov_inner_tol"</span>, <span class="st">"fd_hessian_step"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-covariance" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
-<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-covariance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table&nbsp;10.1
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-settings-covariance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;10.1: Covariance step settings.
 </figcaption><div aria-describedby="tbl-settings-covariance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="ojkckarehf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ojkckarehf table {
+<div id="axtaivxswr" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#axtaivxswr table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ojkckarehf thead, #ojkckarehf tbody, #ojkckarehf tfoot, #ojkckarehf tr, #ojkckarehf td, #ojkckarehf th {
+#axtaivxswr thead, #axtaivxswr tbody, #axtaivxswr tfoot, #axtaivxswr tr, #axtaivxswr td, #axtaivxswr th {
   border-style: none;
 }
 
-#ojkckarehf p {
+#axtaivxswr p {
   margin: 0;
   padding: 0;
 }
 
-#ojkckarehf .gt_table {
+#axtaivxswr .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -725,12 +728,12 @@ Table&nbsp;10.1
   border-left-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_caption {
+#axtaivxswr .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ojkckarehf .gt_title {
+#axtaivxswr .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -742,7 +745,7 @@ Table&nbsp;10.1
   border-bottom-width: 0;
 }
 
-#ojkckarehf .gt_subtitle {
+#axtaivxswr .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -754,7 +757,7 @@ Table&nbsp;10.1
   border-top-width: 0;
 }
 
-#ojkckarehf .gt_heading {
+#axtaivxswr .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -766,13 +769,13 @@ Table&nbsp;10.1
   border-right-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_bottom_border {
+#axtaivxswr .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_col_headings {
+#axtaivxswr .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -787,7 +790,7 @@ Table&nbsp;10.1
   border-right-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_col_heading {
+#axtaivxswr .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -807,7 +810,7 @@ Table&nbsp;10.1
   overflow-x: hidden;
 }
 
-#ojkckarehf .gt_column_spanner_outer {
+#axtaivxswr .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -819,15 +822,15 @@ Table&nbsp;10.1
   padding-right: 4px;
 }
 
-#ojkckarehf .gt_column_spanner_outer:first-child {
+#axtaivxswr .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ojkckarehf .gt_column_spanner_outer:last-child {
+#axtaivxswr .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ojkckarehf .gt_column_spanner {
+#axtaivxswr .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -839,11 +842,11 @@ Table&nbsp;10.1
   width: 100%;
 }
 
-#ojkckarehf .gt_spanner_row {
+#axtaivxswr .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ojkckarehf .gt_group_heading {
+#axtaivxswr .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -869,7 +872,7 @@ Table&nbsp;10.1
   text-align: left;
 }
 
-#ojkckarehf .gt_empty_group_heading {
+#axtaivxswr .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -884,15 +887,15 @@ Table&nbsp;10.1
   vertical-align: middle;
 }
 
-#ojkckarehf .gt_from_md > :first-child {
+#axtaivxswr .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ojkckarehf .gt_from_md > :last-child {
+#axtaivxswr .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ojkckarehf .gt_row {
+#axtaivxswr .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -911,7 +914,7 @@ Table&nbsp;10.1
   overflow-x: hidden;
 }
 
-#ojkckarehf .gt_stub {
+#axtaivxswr .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -924,7 +927,7 @@ Table&nbsp;10.1
   padding-right: 5px;
 }
 
-#ojkckarehf .gt_stub_row_group {
+#axtaivxswr .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -938,15 +941,15 @@ Table&nbsp;10.1
   vertical-align: top;
 }
 
-#ojkckarehf .gt_row_group_first td {
+#axtaivxswr .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ojkckarehf .gt_row_group_first th {
+#axtaivxswr .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ojkckarehf .gt_summary_row {
+#axtaivxswr .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -956,16 +959,16 @@ Table&nbsp;10.1
   padding-right: 5px;
 }
 
-#ojkckarehf .gt_first_summary_row {
+#axtaivxswr .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_first_summary_row.thick {
+#axtaivxswr .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ojkckarehf .gt_last_summary_row {
+#axtaivxswr .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -975,7 +978,7 @@ Table&nbsp;10.1
   border-bottom-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_grand_summary_row {
+#axtaivxswr .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -985,7 +988,7 @@ Table&nbsp;10.1
   padding-right: 5px;
 }
 
-#ojkckarehf .gt_first_grand_summary_row {
+#axtaivxswr .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -995,7 +998,7 @@ Table&nbsp;10.1
   border-top-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_last_grand_summary_row_top {
+#axtaivxswr .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1005,11 +1008,11 @@ Table&nbsp;10.1
   border-bottom-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_striped {
+#axtaivxswr .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ojkckarehf .gt_table_body {
+#axtaivxswr .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1018,7 +1021,7 @@ Table&nbsp;10.1
   border-bottom-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_footnotes {
+#axtaivxswr .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1032,7 +1035,7 @@ Table&nbsp;10.1
   border-right-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_footnote {
+#axtaivxswr .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1041,7 +1044,7 @@ Table&nbsp;10.1
   padding-right: 5px;
 }
 
-#ojkckarehf .gt_sourcenotes {
+#axtaivxswr .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1055,7 +1058,7 @@ Table&nbsp;10.1
   border-right-color: #D3D3D3;
 }
 
-#ojkckarehf .gt_sourcenote {
+#axtaivxswr .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1063,76 +1066,76 @@ Table&nbsp;10.1
   padding-right: 5px;
 }
 
-#ojkckarehf .gt_left {
+#axtaivxswr .gt_left {
   text-align: left;
 }
 
-#ojkckarehf .gt_center {
+#axtaivxswr .gt_center {
   text-align: center;
 }
 
-#ojkckarehf .gt_right {
+#axtaivxswr .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ojkckarehf .gt_font_normal {
+#axtaivxswr .gt_font_normal {
   font-weight: normal;
 }
 
-#ojkckarehf .gt_font_bold {
+#axtaivxswr .gt_font_bold {
   font-weight: bold;
 }
 
-#ojkckarehf .gt_font_italic {
+#axtaivxswr .gt_font_italic {
   font-style: italic;
 }
 
-#ojkckarehf .gt_super {
+#axtaivxswr .gt_super {
   font-size: 65%;
 }
 
-#ojkckarehf .gt_footnote_marks {
+#axtaivxswr .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ojkckarehf .gt_asterisk {
+#axtaivxswr .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ojkckarehf .gt_indent_1 {
+#axtaivxswr .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ojkckarehf .gt_indent_2 {
+#axtaivxswr .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ojkckarehf .gt_indent_3 {
+#axtaivxswr .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ojkckarehf .gt_indent_4 {
+#axtaivxswr .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ojkckarehf .gt_indent_5 {
+#axtaivxswr .gt_indent_5 {
   text-indent: 25px;
 }
 
-#ojkckarehf .katex-display {
+#axtaivxswr .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#ojkckarehf div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#axtaivxswr div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
-<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<table class="gt_table cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <colgroup>
 <col style="width: 22%">
 <col style="width: 18%">
@@ -1152,7 +1155,7 @@ Table&nbsp;10.1
 <code>r</code>, <code>s</code>, <code>rsr</code>
 </td>
 <td class="gt_row gt_left" headers="Default"><code>r</code></td>
-<td class="gt_row gt_left" headers="Description">See <code>?ferx_fit</code> and the ferx-core fit options page.</td>
+<td class="gt_row gt_left" headers="Description">See <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code> and the ferx-core fit options page.</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="Setting"><code>covariance_fallback</code></td>
@@ -1191,13 +1194,13 @@ Table&nbsp;10.1
 </figure>
 </div>
 </div>
-<p><code>fd_hessian_step</code> is also a dedicated <code>ferx_fit()</code> argument. <code>ferx_covariance()</code> runs the covariance step on an existing fit: to add standard errors to a fit made without them, or to try another estimator without re-estimating. It takes the fitted model as <code>fit</code>, re-reads the model and data files, and stops if they changed since the fit:</p>
+<p><code>fd_hessian_step</code> is also a dedicated <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> argument. <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> runs the covariance step on an existing fit: to add standard errors to a fit made without them, or to try another estimator without re-estimating. It takes the fitted model as <code>fit</code>, re-reads the model and data files, and stops if they changed since the fit:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nocov</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nocov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `covariance = true` but ferx_fit()</span></span>
 <span><span class="co">#&gt; argument overrides it with `false`. The call-time value will be used.</span></span>
 <span><span class="va">se_by_method</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>r <span class="op">=</span> <span class="st">"r"</span>, s <span class="op">=</span> <span class="st">"s"</span>, rsr <span class="op">=</span> <span class="st">"rsr"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">ferx_covariance</span><span class="op">(</span><span class="va">fit_nocov</span>, covariance_method <span class="op">=</span> <span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">se_theta</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance</a></span><span class="op">(</span><span class="va">fit_nocov</span>, covariance_method <span class="op">=</span> <span class="va">m</span><span class="op">)</span><span class="op">$</span><span class="va">se_theta</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">se_by_method</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                 r      s    rsr</span></span>
@@ -1209,48 +1212,47 @@ Table&nbsp;10.1
 <span><span class="co">#&gt; THETA_WT   0.2361 0.2322 0.3255</span></span>
 <span><span class="co">#&gt; THETA_CRCL 0.2215 0.3284 0.2159</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>"r"</code> (inverse Hessian, the default) reproduces the inline standard errors, <code>"s"</code> is the inverse cross-product and <code>"rsr"</code> the sandwich estimator. <code>ferx_covariance()</code> also takes <code>mu_referencing</code> (match the original fit) and <code>verbose</code>.</p>
+<p><code>"r"</code> (inverse Hessian, the default) reproduces the inline standard errors, <code>"s"</code> is the inverse cross-product and <code>"rsr"</code> the sandwich estimator. <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> also takes <code>mu_referencing</code> (match the original fit) and <code>verbose</code>.</p>
 </section></section><section id="sir" class="level2"><h2 class="anchored" data-anchor-id="sir">SIR</h2>
-<p>SIR draws parameter vectors from the asymptotic distribution, weights them by how well they fit the data, and resamples according to the weights. The resampled vectors give intervals that need not be symmetric. Run it inline with <code>ferx_fit(sir = TRUE)</code>, or afterwards with <code>ferx_sir()</code>, which takes the fitted model as <code>fit</code>:</p>
+<p>SIR draws parameter vectors from the asymptotic distribution, weights them by how well they fit the data, and resamples according to the weights. The resampled vectors give intervals that need not be symmetric. Run it inline with <code>ferx_fit(sir = TRUE)</code>, or afterwards with <code><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir()</a></code>, which takes the fitted model as <code>fit</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sir</span> <span class="op">&lt;-</span> <span class="fu">ferx_sir</span><span class="op">(</span><span class="va">fit</span>, sir_samples <span class="op">=</span> <span class="fl">1000</span>, sir_resamples <span class="op">=</span> <span class="fl">250</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir</a></span><span class="op">(</span><span class="va">fit</span>, sir_samples <span class="op">=</span> <span class="fl">1000</span>, sir_resamples <span class="op">=</span> <span class="fl">250</span><span class="op">)</span></span>
 <span><span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ess</span></span>
-<span><span class="co">#&gt; [1] 139.1451</span></span>
+<span><span class="co">#&gt; [1] 139.1456</span></span>
 <span><span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ci_theta</span></span>
 <span><span class="co">#&gt;                 lower      upper</span></span>
-<span><span class="co">#&gt; TVCL        4.5718176   5.763030</span></span>
-<span><span class="co">#&gt; TVV1       41.4399336  56.180391</span></span>
-<span><span class="co">#&gt; TVQ         8.4433396  10.287684</span></span>
-<span><span class="co">#&gt; TVV2       86.3826286 100.823310</span></span>
-<span><span class="co">#&gt; TVKA        1.0614647   1.488455</span></span>
-<span><span class="co">#&gt; THETA_WT    0.2833786   1.166469</span></span>
-<span><span class="co">#&gt; THETA_CRCL  0.2839566   1.051120</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL        4.5718164   5.763030</span></span>
+<span><span class="co">#&gt; TVV1       41.4399387  56.180390</span></span>
+<span><span class="co">#&gt; TVQ         8.4433386  10.287683</span></span>
+<span><span class="co">#&gt; TVV2       86.3826320 100.823315</span></span>
+<span><span class="co">#&gt; TVKA        1.0614648   1.488455</span></span>
+<span><span class="co">#&gt; THETA_WT    0.2833806   1.166470</span></span>
+<span><span class="co">#&gt; THETA_CRCL  0.2839547   1.051120</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>sir_ci_omega</code> and <code>sir_ci_sigma</code> hold the intervals for the variances and residual error. <code>sir_ess</code> is the effective sample size of the resampled set; the closer it is to <code>sir_resamples</code>, the better the proposal matches the data. <code>sir_keep_samples = TRUE</code> keeps the resampled vectors on the fit, which <code>ferx_simulate_with_uncertainty()</code> needs (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>). <code>verbose = TRUE</code> prints progress.</p>
+<p><code>sir_ci_omega</code> and <code>sir_ci_sigma</code> hold the intervals for the variances and residual error. <code>sir_ess</code> is the effective sample size of the resampled set; the closer it is to <code>sir_resamples</code>, the better the proposal matches the data. <code>sir_keep_samples = TRUE</code> keeps the resampled vectors on the fit, which <code><a href="https://ferx-nlme.org/reference/ferx_simulate_with_uncertainty.html">ferx_simulate_with_uncertainty()</a></code> needs (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>). <code>verbose = TRUE</code> prints progress.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"sir_samples"</span>, <span class="st">"sir_resamples"</span>, <span class="st">"sir_seed"</span>, <span class="st">"sir_keep_samples"</span>, <span class="st">"sir_df"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-sir" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
-<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-sir-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table&nbsp;10.2
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-settings-sir-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;10.2: SIR settings.
 </figcaption><div aria-describedby="tbl-settings-sir-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="pswsejvgjm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#pswsejvgjm table {
+<div id="gspdpzhtam" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#gspdpzhtam table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#pswsejvgjm thead, #pswsejvgjm tbody, #pswsejvgjm tfoot, #pswsejvgjm tr, #pswsejvgjm td, #pswsejvgjm th {
+#gspdpzhtam thead, #gspdpzhtam tbody, #gspdpzhtam tfoot, #gspdpzhtam tr, #gspdpzhtam td, #gspdpzhtam th {
   border-style: none;
 }
 
-#pswsejvgjm p {
+#gspdpzhtam p {
   margin: 0;
   padding: 0;
 }
 
-#pswsejvgjm .gt_table {
+#gspdpzhtam .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1276,12 +1278,12 @@ Table&nbsp;10.2
   border-left-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_caption {
+#gspdpzhtam .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#pswsejvgjm .gt_title {
+#gspdpzhtam .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1293,7 +1295,7 @@ Table&nbsp;10.2
   border-bottom-width: 0;
 }
 
-#pswsejvgjm .gt_subtitle {
+#gspdpzhtam .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1305,7 +1307,7 @@ Table&nbsp;10.2
   border-top-width: 0;
 }
 
-#pswsejvgjm .gt_heading {
+#gspdpzhtam .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1317,13 +1319,13 @@ Table&nbsp;10.2
   border-right-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_bottom_border {
+#gspdpzhtam .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_col_headings {
+#gspdpzhtam .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1338,7 +1340,7 @@ Table&nbsp;10.2
   border-right-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_col_heading {
+#gspdpzhtam .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1358,7 +1360,7 @@ Table&nbsp;10.2
   overflow-x: hidden;
 }
 
-#pswsejvgjm .gt_column_spanner_outer {
+#gspdpzhtam .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1370,15 +1372,15 @@ Table&nbsp;10.2
   padding-right: 4px;
 }
 
-#pswsejvgjm .gt_column_spanner_outer:first-child {
+#gspdpzhtam .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#pswsejvgjm .gt_column_spanner_outer:last-child {
+#gspdpzhtam .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#pswsejvgjm .gt_column_spanner {
+#gspdpzhtam .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1390,11 +1392,11 @@ Table&nbsp;10.2
   width: 100%;
 }
 
-#pswsejvgjm .gt_spanner_row {
+#gspdpzhtam .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#pswsejvgjm .gt_group_heading {
+#gspdpzhtam .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1420,7 +1422,7 @@ Table&nbsp;10.2
   text-align: left;
 }
 
-#pswsejvgjm .gt_empty_group_heading {
+#gspdpzhtam .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1435,15 +1437,15 @@ Table&nbsp;10.2
   vertical-align: middle;
 }
 
-#pswsejvgjm .gt_from_md > :first-child {
+#gspdpzhtam .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#pswsejvgjm .gt_from_md > :last-child {
+#gspdpzhtam .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#pswsejvgjm .gt_row {
+#gspdpzhtam .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1462,7 +1464,7 @@ Table&nbsp;10.2
   overflow-x: hidden;
 }
 
-#pswsejvgjm .gt_stub {
+#gspdpzhtam .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1475,7 +1477,7 @@ Table&nbsp;10.2
   padding-right: 5px;
 }
 
-#pswsejvgjm .gt_stub_row_group {
+#gspdpzhtam .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1489,15 +1491,15 @@ Table&nbsp;10.2
   vertical-align: top;
 }
 
-#pswsejvgjm .gt_row_group_first td {
+#gspdpzhtam .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#pswsejvgjm .gt_row_group_first th {
+#gspdpzhtam .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#pswsejvgjm .gt_summary_row {
+#gspdpzhtam .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1507,16 +1509,16 @@ Table&nbsp;10.2
   padding-right: 5px;
 }
 
-#pswsejvgjm .gt_first_summary_row {
+#gspdpzhtam .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_first_summary_row.thick {
+#gspdpzhtam .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#pswsejvgjm .gt_last_summary_row {
+#gspdpzhtam .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1526,7 +1528,7 @@ Table&nbsp;10.2
   border-bottom-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_grand_summary_row {
+#gspdpzhtam .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1536,7 +1538,7 @@ Table&nbsp;10.2
   padding-right: 5px;
 }
 
-#pswsejvgjm .gt_first_grand_summary_row {
+#gspdpzhtam .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1546,7 +1548,7 @@ Table&nbsp;10.2
   border-top-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_last_grand_summary_row_top {
+#gspdpzhtam .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1556,11 +1558,11 @@ Table&nbsp;10.2
   border-bottom-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_striped {
+#gspdpzhtam .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#pswsejvgjm .gt_table_body {
+#gspdpzhtam .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1569,7 +1571,7 @@ Table&nbsp;10.2
   border-bottom-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_footnotes {
+#gspdpzhtam .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1583,7 +1585,7 @@ Table&nbsp;10.2
   border-right-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_footnote {
+#gspdpzhtam .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1592,7 +1594,7 @@ Table&nbsp;10.2
   padding-right: 5px;
 }
 
-#pswsejvgjm .gt_sourcenotes {
+#gspdpzhtam .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1606,7 +1608,7 @@ Table&nbsp;10.2
   border-right-color: #D3D3D3;
 }
 
-#pswsejvgjm .gt_sourcenote {
+#gspdpzhtam .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1614,76 +1616,76 @@ Table&nbsp;10.2
   padding-right: 5px;
 }
 
-#pswsejvgjm .gt_left {
+#gspdpzhtam .gt_left {
   text-align: left;
 }
 
-#pswsejvgjm .gt_center {
+#gspdpzhtam .gt_center {
   text-align: center;
 }
 
-#pswsejvgjm .gt_right {
+#gspdpzhtam .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#pswsejvgjm .gt_font_normal {
+#gspdpzhtam .gt_font_normal {
   font-weight: normal;
 }
 
-#pswsejvgjm .gt_font_bold {
+#gspdpzhtam .gt_font_bold {
   font-weight: bold;
 }
 
-#pswsejvgjm .gt_font_italic {
+#gspdpzhtam .gt_font_italic {
   font-style: italic;
 }
 
-#pswsejvgjm .gt_super {
+#gspdpzhtam .gt_super {
   font-size: 65%;
 }
 
-#pswsejvgjm .gt_footnote_marks {
+#gspdpzhtam .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#pswsejvgjm .gt_asterisk {
+#gspdpzhtam .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#pswsejvgjm .gt_indent_1 {
+#gspdpzhtam .gt_indent_1 {
   text-indent: 5px;
 }
 
-#pswsejvgjm .gt_indent_2 {
+#gspdpzhtam .gt_indent_2 {
   text-indent: 10px;
 }
 
-#pswsejvgjm .gt_indent_3 {
+#gspdpzhtam .gt_indent_3 {
   text-indent: 15px;
 }
 
-#pswsejvgjm .gt_indent_4 {
+#gspdpzhtam .gt_indent_4 {
   text-indent: 20px;
 }
 
-#pswsejvgjm .gt_indent_5 {
+#gspdpzhtam .gt_indent_5 {
   text-indent: 25px;
 }
 
-#pswsejvgjm .katex-display {
+#gspdpzhtam .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#pswsejvgjm div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#gspdpzhtam div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
-<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<table class="gt_table cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <colgroup>
 <col style="width: 22%">
 <col style="width: 18%">
@@ -1738,77 +1740,76 @@ Table&nbsp;10.2
 </div>
 <p>The effective sample size depends strongly on the random seed:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>seed_1 <span class="op">=</span> <span class="fl">1</span>, seed_2 <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">ferx_sir</span><span class="op">(</span><span class="va">fit</span>, sir_samples <span class="op">=</span> <span class="fl">1000</span>, sir_resamples <span class="op">=</span> <span class="fl">250</span>, sir_seed <span class="op">=</span> <span class="va">s</span><span class="op">)</span><span class="op">$</span><span class="va">sir_ess</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>seed_1 <span class="op">=</span> <span class="fl">1</span>, seed_2 <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir</a></span><span class="op">(</span><span class="va">fit</span>, sir_samples <span class="op">=</span> <span class="fl">1000</span>, sir_resamples <span class="op">=</span> <span class="fl">250</span>, sir_seed <span class="op">=</span> <span class="va">s</span><span class="op">)</span><span class="op">$</span><span class="va">sir_ess</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   seed_1   seed_2 </span></span>
-<span><span class="co">#&gt; 17.86333 68.17320</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 17.86330 68.17286</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Check <code>sir_ess</code> on every run. When it is low, increase <code>sir_samples</code> and confirm that the intervals are stable across seeds before using them.</p>
 </section><section id="bootstrap" class="level2"><h2 class="anchored" data-anchor-id="bootstrap">Bootstrap</h2>
-<p><code>ferx_bootstrap()</code> resamples whole subjects with replacement, refits the model to each replicate and summarises the spread of the estimates. It needs the model and data rather than a fit, because every replicate is a new fit. With a <code>directory</code> it writes its tables to disk, so a run can be re-summarised or resumed later:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_bootstrap.html">ferx_bootstrap()</a></code> resamples whole subjects with replacement, refits the model to each replicate and summarises the spread of the estimates. It needs the model and data rather than a fit, because every replicate is a new fit. With a <code>directory</code> it writes its tables to disk, so a run can be re-summarised or resumed later:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">boot_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"bootstrap"</span><span class="op">)</span></span>
-<span><span class="va">boot</span> <span class="op">&lt;-</span> <span class="fu">ferx_bootstrap</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, samples <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="fl">1</span>, directory <span class="op">=</span> <span class="va">boot_dir</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">boot_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"bootstrap"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">boot_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_bootstrap.html">ferx_bootstrap</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, samples <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="fl">1</span>, directory <span class="op">=</span> <span class="va">boot_dir</span><span class="op">)</span></span>
 <span><span class="va">boot</span></span>
 <span><span class="co">#&gt; ferx bootstrap</span></span>
 <span><span class="co">#&gt;   Model:  /home/runner/work/_temp/Library/ferx/examples/models/two_cpt_oral_cov.ferx</span></span>
 <span><span class="co">#&gt;   Data:   /home/runner/work/_temp/Library/ferx/examples/data/two_cpt_oral_cov.csv</span></span>
-<span><span class="co">#&gt;   Samples: 100 completed of 100 requested; 96 included</span></span>
+<span><span class="co">#&gt;   Samples: 100 completed of 100 requested; 99 included</span></span>
 <span><span class="co">#&gt;     excluded 1: estimate near boundary</span></span>
-<span><span class="co">#&gt;     excluded 3: minimization terminated</span></span>
-<span><span class="co">#&gt;   Wrote:  /tmp/RtmpqyEfTz/bootstrap</span></span>
+<span><span class="co">#&gt;   Wrote:  /tmp/RtmpHakydr/bootstrap</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 95% confidence intervals (percentile / normal approximation):</span></span>
 <span><span class="co">#&gt;             parameter original     mean       bias standard_error   median</span></span>
-<span><span class="co">#&gt;                  TVCL  4.94800  4.94700 -0.0008091      0.2960000  4.97300</span></span>
-<span><span class="co">#&gt;                  TVV1 48.59000 48.71000  0.1265000      2.8520000 48.75000</span></span>
-<span><span class="co">#&gt;                   TVQ  9.57700  9.54800 -0.0290400      0.3984000  9.53700</span></span>
-<span><span class="co">#&gt;                  TVV2 94.17000 94.64000  0.4632000      3.2470000 94.99000</span></span>
-<span><span class="co">#&gt;                  TVKA  1.25600  1.26400  0.0082320      0.0894700  1.25300</span></span>
-<span><span class="co">#&gt;              THETA_WT  0.65350  0.69330  0.0398100      0.2338000  0.67900</span></span>
-<span><span class="co">#&gt;            THETA_CRCL  0.56460  0.55550 -0.0090700      0.2119000  0.54190</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_CL,ETA_CL)  0.10750  0.10000 -0.0075130      0.0246800  0.09761</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_V1,ETA_V1)  0.10630  0.09839 -0.0079560      0.0298000  0.09374</span></span>
-<span><span class="co">#&gt;    OMEGA(ETA_Q,ETA_Q)  0.05125  0.04872 -0.0025250      0.0147400  0.04855</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_V2,ETA_V2)  0.03794  0.03857  0.0006253      0.0100600  0.03828</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_KA,ETA_KA)  0.17540  0.16830 -0.0071040      0.0589800  0.16000</span></span>
-<span><span class="co">#&gt;              PROP_ERR  0.01962  0.01948 -0.0001430      0.0009443  0.01951</span></span>
+<span><span class="co">#&gt;                  TVCL  4.94800  4.94200 -0.0059400      0.2980000  4.97200</span></span>
+<span><span class="co">#&gt;                  TVV1 48.59000 48.60000  0.0102800      2.9010000 48.69000</span></span>
+<span><span class="co">#&gt;                   TVQ  9.57700  9.54700 -0.0295700      0.4053000  9.54100</span></span>
+<span><span class="co">#&gt;                  TVV2 94.17000 94.60000  0.4314000      3.2620000 94.99000</span></span>
+<span><span class="co">#&gt;                  TVKA  1.25600  1.26500  0.0089870      0.0891300  1.25300</span></span>
+<span><span class="co">#&gt;              THETA_WT  0.65350  0.69630  0.0428400      0.2355000  0.67730</span></span>
+<span><span class="co">#&gt;            THETA_CRCL  0.56460  0.55130 -0.0132800      0.2110000  0.54180</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_CL,ETA_CL)  0.10750  0.09935 -0.0081840      0.0246800  0.09537</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_V1,ETA_V1)  0.10630  0.09880 -0.0075510      0.0299100  0.09476</span></span>
+<span><span class="co">#&gt;    OMEGA(ETA_Q,ETA_Q)  0.05125  0.04854 -0.0027050      0.0146800  0.04815</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_V2,ETA_V2)  0.03794  0.03858  0.0006417      0.0102200  0.03828</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_KA,ETA_KA)  0.17540  0.16820 -0.0072740      0.0590500  0.16190</span></span>
+<span><span class="co">#&gt;              PROP_ERR  0.01962  0.01947 -0.0001450      0.0009439  0.01952</span></span>
 <span><span class="co">#&gt;  ci_lower  ci_upper ci_lower_normal ci_upper_normal</span></span>
-<span><span class="co">#&gt;   4.24200   5.55100         4.36800         5.52800</span></span>
-<span><span class="co">#&gt;  42.40000  54.80000        43.00000        54.18000</span></span>
-<span><span class="co">#&gt;   8.95400  10.56000         8.79600        10.36000</span></span>
-<span><span class="co">#&gt;  88.43000 101.40000        87.81000       100.50000</span></span>
+<span><span class="co">#&gt;   4.25800   5.54300         4.36400         5.53200</span></span>
+<span><span class="co">#&gt;  42.40000  54.75000        42.90000        54.27000</span></span>
+<span><span class="co">#&gt;   8.85300  10.56000         8.78300        10.37000</span></span>
+<span><span class="co">#&gt;  88.47000 101.40000        87.78000       100.60000</span></span>
 <span><span class="co">#&gt;   1.12800   1.51000         1.08100         1.43100</span></span>
-<span><span class="co">#&gt;   0.23850   1.14400         0.19520         1.11200</span></span>
-<span><span class="co">#&gt;   0.13220   1.00200         0.14940         0.97990</span></span>
-<span><span class="co">#&gt;   0.06054   0.15790         0.05917         0.15590</span></span>
-<span><span class="co">#&gt;   0.05669   0.16720         0.04793         0.16480</span></span>
-<span><span class="co">#&gt;   0.02403   0.08200         0.02236         0.08014</span></span>
-<span><span class="co">#&gt;   0.01733   0.05806         0.01821         0.05766</span></span>
-<span><span class="co">#&gt;   0.07201   0.30790         0.05985         0.29100</span></span>
-<span><span class="co">#&gt;   0.01736   0.02139         0.01777         0.02147</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   0.24290   1.17100         0.19190         1.11500</span></span>
+<span><span class="co">#&gt;   0.13230   0.99130         0.15110         0.97810</span></span>
+<span><span class="co">#&gt;   0.06062   0.15770         0.05916         0.15590</span></span>
+<span><span class="co">#&gt;   0.05682   0.16650         0.04772         0.16500</span></span>
+<span><span class="co">#&gt;   0.02407   0.08183         0.02248         0.08001</span></span>
+<span><span class="co">#&gt;   0.01755   0.05804         0.01792         0.05796</span></span>
+<span><span class="co">#&gt;   0.07277   0.30700         0.05970         0.29120</span></span>
+<span><span class="co">#&gt;   0.01737   0.02137         0.01777         0.02147</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on the <code>ferx_bootstrap</code> result shows the run summary and the <code>boot$parameters</code> table: original estimate, bootstrap mean, bias, standard error, median, and the percentile and normal-approximation intervals. <code>boot$raw</code> has one row per fitted replicate, and <code>boot$diagnostics</code> records the counts and exclusions:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">boot</span><span class="op">$</span><span class="va">diagnostics</span></span>
-<span><span class="co">#&gt;                            statistic        value</span></span>
-<span><span class="co">#&gt; 1                  samples_requested   100.000000</span></span>
-<span><span class="co">#&gt; 2                  samples_completed   100.000000</span></span>
-<span><span class="co">#&gt; 3                   samples_included    96.000000</span></span>
-<span><span class="co">#&gt; 4                      chi_square_df    13.000000</span></span>
-<span><span class="co">#&gt; 5   excluded: estimate near boundary     1.000000</span></span>
-<span><span class="co">#&gt; 6  excluded: minimization terminated     3.000000</span></span>
-<span><span class="co">#&gt; 7      mean: minimization_successful     0.970000</span></span>
-<span><span class="co">#&gt; 8       mean: estimate_near_boundary     0.010000</span></span>
-<span><span class="co">#&gt; 9   mean: covariance_step_successful     0.000000</span></span>
-<span><span class="co">#&gt; 10    mean: covariance_step_warnings     0.000000</span></span>
-<span><span class="co">#&gt; 11                         mean: ofv -1214.723795</span></span>
-<span><span class="co">#&gt; 12         mean: subproblem_est_time     1.060082</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">boot</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span><span class="co">#&gt;                           statistic        value</span></span>
+<span><span class="co">#&gt; 1                 samples_requested   100.000000</span></span>
+<span><span class="co">#&gt; 2                 samples_completed   100.000000</span></span>
+<span><span class="co">#&gt; 3                  samples_included    99.000000</span></span>
+<span><span class="co">#&gt; 4                     chi_square_df    13.000000</span></span>
+<span><span class="co">#&gt; 5  excluded: estimate near boundary     1.000000</span></span>
+<span><span class="co">#&gt; 6     mean: minimization_successful     1.000000</span></span>
+<span><span class="co">#&gt; 7      mean: estimate_near_boundary     0.010000</span></span>
+<span><span class="co">#&gt; 8  mean: covariance_step_successful     0.000000</span></span>
+<span><span class="co">#&gt; 9    mean: covariance_step_warnings     0.000000</span></span>
+<span><span class="co">#&gt; 10                        mean: ofv -1214.722701</span></span>
+<span><span class="co">#&gt; 11        mean: subproblem_est_time     0.274644</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>By default, replicates whose minimization terminated or whose estimate lies on a boundary are fitted but excluded from the statistics. <code><a href="https://rdrr.io/r/graphics/plot.default.html">plot()</a></code> on a <code>ferx_bootstrap</code> object draws one histogram per parameter, with the original estimate and the interval:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">boot</span>, parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"THETA_WT"</span>, <span class="st">"THETA_CRCL"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">boot</span>, parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"THETA_WT"</span>, <span class="st">"THETA_CRCL"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-bootstrap" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-bootstrap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1820,22 +1821,22 @@ Figure&nbsp;10.1: Bootstrap distributions of the covariate exponents.
 </div>
 </div>
 </div>
-<p><code>ferx_bootstrap_summarize()</code> recomputes the statistics from the run directory under different exclusion criteria or a different <code>ci</code> level, without refitting:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_bootstrap_summarize.html">ferx_bootstrap_summarize()</a></code> recomputes the statistics from the run directory under different exclusion criteria or a different <code>ci</code> level, without refitting:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">relaxed</span> <span class="op">&lt;-</span> <span class="fu">ferx_bootstrap_summarize</span><span class="op">(</span><span class="va">boot_dir</span>, skip_estimate_near_boundary <span class="op">=</span> <span class="cn">FALSE</span>, ci <span class="op">=</span> <span class="fl">90</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">relaxed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_bootstrap_summarize.html">ferx_bootstrap_summarize</a></span><span class="op">(</span><span class="va">boot_dir</span>, skip_estimate_near_boundary <span class="op">=</span> <span class="cn">FALSE</span>, ci <span class="op">=</span> <span class="fl">90</span><span class="op">)</span></span>
 <span><span class="va">relaxed</span><span class="op">$</span><span class="va">n_included</span></span>
-<span><span class="co">#&gt; [1] 97</span></span>
+<span><span class="co">#&gt; [1] 100</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">relaxed</span><span class="op">$</span><span class="va">parameters</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"parameter"</span>, <span class="st">"ci_lower"</span>, <span class="st">"ci_upper"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">7</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    parameter   ci_lower   ci_upper</span></span>
-<span><span class="co">#&gt; 1       TVCL  4.3922034   5.455515</span></span>
-<span><span class="co">#&gt; 2       TVV1 43.7777937  53.194542</span></span>
-<span><span class="co">#&gt; 3        TVQ  8.9953717  10.291399</span></span>
-<span><span class="co">#&gt; 4       TVV2 89.4531726 100.678700</span></span>
-<span><span class="co">#&gt; 5       TVKA  1.1386823   1.442725</span></span>
-<span><span class="co">#&gt; 6   THETA_WT  0.2963447   1.069042</span></span>
-<span><span class="co">#&gt; 7 THETA_CRCL  0.1761630   0.892184</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1       TVCL  4.3820535   5.451840</span></span>
+<span><span class="co">#&gt; 2       TVV1 43.0752187  53.125780</span></span>
+<span><span class="co">#&gt; 3        TVQ  8.9843222  10.280689</span></span>
+<span><span class="co">#&gt; 4       TVV2 89.1504974 100.587940</span></span>
+<span><span class="co">#&gt; 5       TVKA  1.1390219   1.439372</span></span>
+<span><span class="co">#&gt; 6   THETA_WT  0.2968746   1.096910</span></span>
+<span><span class="co">#&gt; 7 THETA_CRCL  0.1816332   0.890411</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>ferx_bootstrap()</code> arguments:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_bootstrap.html">ferx_bootstrap()</a></code> arguments:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -1944,22 +1945,48 @@ Figure&nbsp;10.1: Bootstrap distributions of the covariate exponents.
 </tr>
 </tbody>
 </table>
-<p><code>ferx_bootstrap_summarize()</code> takes the run <code>directory</code> plus the four <code>skip_*</code> filters and <code>ci</code>.</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_bootstrap_summarize.html">ferx_bootstrap_summarize()</a></code> takes the run <code>directory</code> plus the four <code>skip_*</code> filters and <code>ci</code>.</p>
 </section><section id="bayesian-estimation" class="level2"><h2 class="anchored" data-anchor-id="bayesian-estimation">Bayesian estimation</h2>
-<p><code>method = "bayes"</code> returns posterior summaries instead of a covariance step (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). Posterior intervals are only meaningful when the chains have converged:</p>
-<div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_bayes</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"bayes"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = focei` but ferx_fit() argument</span></span>
-<span><span class="co">#&gt; overrides it with `bayes`. The call-time value will be used.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>converged <span class="op">=</span> <span class="va">fit_bayes</span><span class="op">$</span><span class="va">converged</span>, max_rhat <span class="op">=</span> <span class="va">fit_bayes</span><span class="op">$</span><span class="va">bayes</span><span class="op">$</span><span class="va">max_rhat</span><span class="op">)</span></span>
-<span><span class="co">#&gt; converged  max_rhat </span></span>
-<span><span class="co">#&gt;  0.000000  2.735054</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>method = "bayes"</code> returns posterior summaries instead of a covariance step (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). Posterior intervals are only meaningful when the chains have converged, which ferx reports as a largest R-hat at or below 1.01.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
 </div>
-<p>On this model the default run has not converged (R-hat far above 1.01), so its intervals are not used below.</p>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Bayes does not converge on this model at this build
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Three runs try: the default, four times longer chains, and four times longer chains with HMC proposals for the random effects (<code>n_leapfrog = 10</code>), which make the base model converge in <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>. The table adds the 2.5% posterior quantile of the two covariate exponents (<code>WT_q025</code>, <code>CRCL_q025</code>), whose lower bounds the first lines print:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"theta THETA_(WT|CRCL)"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "  theta THETA_WT(0.75, 0.01, 5.0)"   "  theta THETA_CRCL(0.50, 0.01, 5.0)"</span></span>
+<span><span class="va">bayes_settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>default <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="op">)</span>, four_times_longer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>bayes_warmup <span class="op">=</span> <span class="fl">4000</span>, bayes_iters <span class="op">=</span> <span class="fl">4000</span><span class="op">)</span>,</span>
+<span>                       four_times_longer_hmc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>bayes_warmup <span class="op">=</span> <span class="fl">4000</span>, bayes_iters <span class="op">=</span> <span class="fl">4000</span>, n_leapfrog <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># suppress the R warnings that report overriding the model file's method</span></span>
+<span><span class="va">bayes_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="va">bayes_settings</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"bayes"</span>, settings <span class="op">=</span> <span class="va">s</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">exponent_q025</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">b</span>, <span class="va">name</span><span class="op">)</span> <span class="va">b</span><span class="op">$</span><span class="va">q025</span><span class="op">[</span><span class="va">b</span><span class="op">$</span><span class="va">param_names</span> <span class="op">==</span> <span class="va">name</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">bayes_runs</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">run</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">b</span> <span class="op">&lt;-</span> <span class="va">bayes_runs</span><span class="op">[[</span><span class="va">run</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">bayes</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>run <span class="op">=</span> <span class="va">run</span>, draws_per_chain <span class="op">=</span> <span class="va">b</span><span class="op">$</span><span class="va">n_draws_per_chain</span>, converged <span class="op">=</span> <span class="va">bayes_runs</span><span class="op">[[</span><span class="va">run</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">converged</span>,</span>
+<span>             max_rhat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">b</span><span class="op">$</span><span class="va">max_rhat</span>, <span class="fl">3</span><span class="op">)</span>, WT_q025 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">signif</a></span><span class="op">(</span><span class="fu">exponent_q025</span><span class="op">(</span><span class="va">b</span>, <span class="st">"THETA_WT"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>             CRCL_q025 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">signif</a></span><span class="op">(</span><span class="fu">exponent_q025</span><span class="op">(</span><span class="va">b</span>, <span class="st">"THETA_CRCL"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                     run draws_per_chain converged max_rhat WT_q025 CRCL_q025</span></span>
+<span><span class="co">#&gt; 1               default            1000     FALSE    2.735 0.20000   3.5e-01</span></span>
+<span><span class="co">#&gt; 2     four_times_longer            4000     FALSE    2.217 0.36000   2.1e-01</span></span>
+<span><span class="co">#&gt; 3 four_times_longer_hmc            4000     FALSE    4.796 0.00012   2.2e-08</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The largest R-hat is 2.74 with the default chains, 2.22 with the longer ones and 4.8 with HMC proposals, so the chains disagree and their intervals are not used below. The HMC run also shows a defect of the sampler at this build: it samples the covariate exponents without enforcing their bounds. Both 2.5% quantiles are at most 1.2e-04, far below the lower bound of 0.01, as the exponents drift towards zero, where the covariate effect vanishes (<a href="https://github.com/FeRx-NLME/ferx-core/issues/1626">ferx-core #1626</a>). <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a> shows Bayes fits that converge, on warfarin and on the base model.</p>
+</div>
+</div>
 </section><section id="comparing-the-intervals" class="level2"><h2 class="anchored" data-anchor-id="comparing-the-intervals">Comparing the intervals</h2>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">thetas</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
-<span><span class="va">intervals</span> <span class="op">&lt;-</span> <span class="fu">bind_rows</span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">thetas</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="va">intervals</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html">bind_rows</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"covariance step"</span>, parameter <span class="op">=</span> <span class="va">thetas</span>,</span>
 <span>             lower <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="va">thetas</span>, <span class="st">"lower_95"</span><span class="op">]</span>, upper <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="va">thetas</span>, <span class="st">"upper_95"</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"SIR"</span>, parameter <span class="op">=</span> <span class="va">thetas</span>,</span>
@@ -1968,20 +1995,17 @@ Figure&nbsp;10.1: Bootstrap distributions of the covariate exponents.
 <span>             lower <span class="op">=</span> <span class="va">boot</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">ci_lower</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html">match</a></span><span class="op">(</span><span class="va">thetas</span>, <span class="va">boot</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span><span class="op">]</span>,</span>
 <span>             upper <span class="op">=</span> <span class="va">boot</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">ci_upper</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html">match</a></span><span class="op">(</span><span class="va">thetas</span>, <span class="va">boot</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">left_join</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>parameter <span class="op">=</span> <span class="va">thetas</span>, estimate <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"parameter"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span>lower_rel <span class="op">=</span> <span class="va">lower</span> <span class="op">/</span> <span class="va">estimate</span>, upper_rel <span class="op">=</span> <span class="va">upper</span> <span class="op">/</span> <span class="va">estimate</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>parameter <span class="op">=</span> <span class="va">thetas</span>, estimate <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"parameter"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>lower_rel <span class="op">=</span> <span class="va">lower</span> <span class="op">/</span> <span class="va">estimate</span>, upper_rel <span class="op">=</span> <span class="va">upper</span> <span class="op">/</span> <span class="va">estimate</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">intervals</span>, <span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">method</span>, xmin <span class="op">=</span> <span class="va">lower_rel</span>, xmax <span class="op">=</span> <span class="va">upper_rel</span>, colour <span class="op">=</span> <span class="va">method</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_vline</span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fl">1</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_errorbarh</span><span class="op">(</span>height <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">parameter</span>, ncol <span class="op">=</span> <span class="fl">1</span>, strip.position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Interval relative to the estimate"</span>, y <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>colour <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, strip.text.y.left <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
-<span>        axis.text.y <span class="op">=</span> <span class="fu">element_blank</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: `geom_errorbarh()` was deprecated in ggplot2 4.0.0.</span></span>
-<span><span class="co">#&gt; ℹ Please use the `orientation` argument of `geom_errorbar()` instead.</span></span>
-<span><span class="co">#&gt; `height` was translated to `width`.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">intervals</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">method</span>, xmin <span class="op">=</span> <span class="va">lower_rel</span>, xmax <span class="op">=</span> <span class="va">upper_rel</span>, colour <span class="op">=</span> <span class="va">method</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fl">1</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_linerange.html">geom_errorbar</a></span><span class="op">(</span>orientation <span class="op">=</span> <span class="st">"y"</span>, width <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">parameter</span>, ncol <span class="op">=</span> <span class="fl">1</span>, strip.position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Interval relative to the estimate"</span>, y <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, strip.text.y.left <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>        axis.text.y <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-intervals" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-intervals-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1995,21 +2019,27 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
 </div>
 <p>The structural parameters are precisely estimated by every route. The covariate exponents <code>THETA_WT</code> and <code>THETA_CRCL</code> have wide intervals, and the three routes differ in how wide. For a small dataset like this one, report the method you used and, where it matters, check that the conclusions hold under a second method.</p>
 </section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
-<p><strong>An unreliable covariance step.</strong> A fit can report standard errors that should not be trusted. The fit from NCA-based starting values in <a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a> is an example: its covariance matrix had to be regularised.</p>
+<p><strong>An unreliable covariance step.</strong> A fit can report standard errors that should not be trusted. The bundled <code>emax_pkpd</code> model is an example: a joint PK/PD model fitted to three subjects (<a href="20-pkpd.html" class="quarto-xref"><span>PK/PD and multiple endpoints</span></a>), whose covariance matrix is ill-conditioned and whose PD parameters are almost perfectly correlated.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
-<span><span class="va">fit_bad</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">w_bad</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_bad</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">w_bad</span><span class="op">[</span><span class="va">w_bad</span><span class="op">$</span><span class="va">category</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"covariance_regularized"</span>, <span class="st">"condition_number"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   severity               category</span></span>
-<span><span class="co">#&gt; 3  warning covariance_regularized</span></span>
-<span><span class="co">#&gt; 7 critical       condition_number</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">emax</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"emax_pkpd"</span><span class="op">)</span></span>
+<span><span class="va">fit_bad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">emax</span><span class="op">$</span><span class="va">model</span>, <span class="va">emax</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">w_bad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_bad</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">w_bad</span><span class="op">[</span><span class="va">w_bad</span><span class="op">$</span><span class="va">category</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"condition_number"</span>, <span class="st">"high_correlation"</span>, <span class="st">"inflated_rse"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   severity         category</span></span>
+<span><span class="co">#&gt; 2  warning     inflated_rse</span></span>
+<span><span class="co">#&gt; 3  warning high_correlation</span></span>
+<span><span class="co">#&gt; 4 critical condition_number</span></span>
+<span><span class="va">fit_bad</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVE0"</span>, <span class="st">"TVEMAX"</span>, <span class="st">"TVEC50"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;         estimate  rse_pct</span></span>
+<span><span class="co">#&gt; TVE0    3.960341 55.67463</span></span>
+<span><span class="co">#&gt; TVEMAX 42.975171 19.15200</span></span>
+<span><span class="co">#&gt; TVEC50  3.896946 15.25861</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>In such a case, fix the model before quantifying uncertainty. <code>covariance_fallback = "sir"</code> runs SIR automatically when the covariance step fails.</p>
 <p><strong>Other points</strong>:</p>
 <ul>
 <li>
-<code>ferx_sir()</code> and <code>ferx_covariance()</code> check that the model and data files are unchanged since the fit, and stop otherwise.</li>
+<code><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> check that the model and data files are unchanged since the fit, and stop otherwise.</li>
 <li>A bootstrap is <code>samples</code> complete fits. Set <code>directory</code> for long runs, so an interrupted run can be resumed and re-summarised.</li>
 <li>Bayesian intervals require converged chains. Check <code>fit$bayes$rhat</code> and the effective sample sizes.</li>
 </ul>
@@ -2026,11 +2056,11 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
 <code>sir</code> (warning): SIR failed or was requested without a covariance matrix, or its proposal did not cover some directions (named in the message).</li>
 </ul></section></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <ul>
-<li>The covariance step gives asymptotic standard errors in <code>fit$estimates</code>. <code>ferx_covariance()</code> reruns it with another estimator.</li>
+<li>The covariance step gives asymptotic standard errors in <code>fit$estimates</code>. <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> reruns it with another estimator.</li>
 <li>
-<code>ferx_sir()</code> (or <code>sir = TRUE</code>) gives resampling intervals. Check <code>sir_ess</code>.</li>
+<code><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir()</a></code> (or <code>sir = TRUE</code>) gives resampling intervals. Check <code>sir_ess</code>.</li>
 <li>
-<code>ferx_bootstrap()</code> refits resampled datasets. <code>ferx_bootstrap_summarize()</code> and <code><a href="https://rdrr.io/r/graphics/plot.default.html">plot()</a></code> work on its results.</li>
+<code><a href="https://ferx-nlme.org/reference/ferx_bootstrap.html">ferx_bootstrap()</a></code> refits resampled datasets. <code><a href="https://ferx-nlme.org/reference/ferx_bootstrap_summarize.html">ferx_bootstrap_summarize()</a></code> and <code><a href="https://rdrr.io/r/graphics/plot.default.html">plot()</a></code> work on its results.</li>
 <li>Compare routes for poorly determined parameters such as covariate effects.</li>
 </ul>
 <p>Next: <a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a> simulates scenarios with the final model, including parameter uncertainty.</p>
@@ -2045,7 +2075,7 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_covariance</code>, <code>?ferx_sir</code>, <code>?ferx_bootstrap</code>, <code>?ferx_bootstrap_summarize</code>, <code>?plot.ferx_bootstrap</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">?ferx_covariance</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_sir.html">?ferx_sir</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_bootstrap.html">?ferx_bootstrap</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_bootstrap_summarize.html">?ferx_bootstrap_summarize</a></code>, <code><a href="https://ferx-nlme.org/reference/plot.ferx_bootstrap.html">?plot.ferx_bootstrap</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/model-file/fit-options.html#covariance-and-standard-errors">covariance and standard errors</a>, <a href="https://ferx-nlme.org/ferx-core/estimation/sir.html">SIR</a>, <a href="https://ferx-nlme.org/ferx-core/tools/bootstrap.html">bootstrap</a>
 </li>

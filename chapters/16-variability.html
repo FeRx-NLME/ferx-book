@@ -671,26 +671,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <p>Most examples use the warfarin data (10 subjects, one oral dose each). <code>warfarin_block_omega</code>, <code>warfarin_additive_eta</code> and <code>warfarin_ltbs</code> ship their own copies of it, with the same concentrations:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
-<span><span class="va">variability_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"variability"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<span><span class="va">variability_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"variability"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">variability_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">warfarin_dv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span><span class="op">$</span><span class="va">DV</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"warfarin_block_omega"</span>, <span class="st">"warfarin_additive_eta"</span>, <span class="st">"warfarin_ltbs"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/Logic.html">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="fu">ferx_example</span><span class="op">(</span><span class="va">name</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span><span class="op">$</span><span class="va">DV</span>, <span class="va">warfarin_dv</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Logic.html">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="va">name</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span><span class="op">$</span><span class="va">DV</span>, <span class="va">warfarin_dv</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  warfarin_block_omega warfarin_additive_eta         warfarin_ltbs </span></span>
 <span><span class="co">#&gt;                  TRUE                  TRUE                  TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The IOV examples use <code>warfarin_iov.csv</code>: the same 10 subjects dosed twice, 120 hours apart, with an <code>OCC</code> column that numbers the occasions:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iov</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_iov"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_iov"</span><span class="op">)</span></span>
 <span><span class="va">iov_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">iov_data</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">iov_data</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME DV EVID AMT CMT RATE MDV OCC</span></span>
 <span><span class="co">#&gt; 1  1    0 NA    1 100   1    0   1   1</span></span>
 <span><span class="co">#&gt; 2  1  120 NA    1 100   1    0   1   2</span></span>
-<span><span class="fu">count</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">iov_data</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>, <span class="va">OCC</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html">count</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">iov_data</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>, <span class="va">OCC</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   OCC   n</span></span>
 <span><span class="co">#&gt; 1   1 110</span></span>
 <span><span class="co">#&gt; 2   2 110</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -698,7 +704,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section><section id="minimal-runnable-call-between-subject-variability" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call-between-subject-variability">Minimal runnable call: between-subject variability</h2>
 <p>The warfarin model gives each individual parameter a log-normal random effect: <code>CL = TVCL * exp(ETA_CL)</code>. Each eta has a variance declared with <code>omega</code>, and the residual error is proportional:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [parameters]</span></span>
 <span><span class="co">#&gt;   theta TVCL(0.134, 0.001, 10.0)</span></span>
 <span><span class="co">#&gt;   theta TVV(8.1, 0.1, 500.0)</span></span>
@@ -709,20 +715,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt;   omega ETA_KA ~ 0.40</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   sigma PROP_ERR ~ 0.01 (sd)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL = TVCL * exp(ETA_CL)</span></span>
 <span><span class="co">#&gt;   V  = TVV  * exp(ETA_V)</span></span>
 <span><span class="co">#&gt;   KA = TVKA * exp(ETA_KA)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="st">"error_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="st">"error_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [error_model]</span></span>
 <span><span class="co">#&gt;   DV ~ proportional(PROP_ERR)</span></span>
-<span><span class="va">fit_w</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">fit_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
 <p>The variability part of the printout shows each omega as a variance with its coefficient of variation, the sigma on the standard-deviation scale, and shrinkage:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">printout</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit_w</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">printout</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit_w</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">printout</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"^OMEGA"</span>, <span class="va">printout</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"^DIAGNOSTICS"</span>, <span class="va">printout</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;  [1] "OMEGA  (between-subject variability)"                                                                               </span></span>
 <span><span class="co">#&gt;  [2] "------------------------------------------------------------"                                                       </span></span>
@@ -741,20 +747,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>As data, the same numbers are <code>fit$omega</code> (the covariance matrix), <code>fit$sigma</code>, <code>fit$shrinkage_eta</code> and the individual random effects <code>fit$ebe_etas</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_w</span><span class="op">$</span><span class="va">omega</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_w</span><span class="op">$</span><span class="va">omega</span></span>
 <span><span class="co">#&gt;            ETA_CL       ETA_V    ETA_KA</span></span>
-<span><span class="co">#&gt; ETA_CL 0.02859495 0.000000000 0.0000000</span></span>
-<span><span class="co">#&gt; ETA_V  0.00000000 0.009576924 0.0000000</span></span>
+<span><span class="co">#&gt; ETA_CL 0.02859496 0.000000000 0.0000000</span></span>
+<span><span class="co">#&gt; ETA_V  0.00000000 0.009576927 0.0000000</span></span>
 <span><span class="co">#&gt; ETA_KA 0.00000000 0.000000000 0.3489642</span></span>
 <span><span class="va">fit_w</span><span class="op">$</span><span class="va">sigma</span></span>
 <span><span class="co">#&gt; [1] 0.01074853</span></span>
 <span><span class="va">fit_w</span><span class="op">$</span><span class="va">shrinkage_eta</span></span>
-<span><span class="co">#&gt; [1] 0.0003815202 0.0010733922 0.0016059600</span></span>
+<span><span class="co">#&gt; [1] 0.0003815667 0.0010735480 0.0016058828</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_w</span><span class="op">$</span><span class="va">ebe_etas</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID      ETA_CL       ETA_V     ETA_KA</span></span>
-<span><span class="co">#&gt; 1  1  0.02794924  0.06598698  0.4815703</span></span>
-<span><span class="co">#&gt; 2  2  0.01537051 -0.06325551 -0.3010812</span></span>
-<span><span class="co">#&gt; 3  3 -0.02470858  0.09101450  0.2638643</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1  1  0.02794921  0.06598698  0.4815703</span></span>
+<span><span class="co">#&gt; 2  2  0.01537048 -0.06325551 -0.3010811</span></span>
+<span><span class="co">#&gt; 3  3 -0.02470861  0.09101450  0.2638644</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><a href="12-tables-figures.html" class="quarto-xref"><span>Tables and figures</span></a> turns these into a report table. <a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a> covers shrinkage and eta diagnostics.</p>
 </section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
@@ -914,12 +920,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ferx_fit()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code></td>
 <td><code>mu_referencing =</code></td>
 <td>Re-centre the individual random-effect search on the population value (default from the model file, engine default <code>TRUE</code>)</td>
 </tr>
 <tr class="even">
-<td><code>ferx_fit()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code></td>
 <td><code>scale_params =</code></td>
 <td>Legacy switch for <code>parameter_scaling = "abs"</code>
 </td>
@@ -927,29 +933,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"iov_column"</span>, <span class="st">"iov_occasion"</span>, <span class="st">"mu_referencing"</span>, <span class="st">"parameter_scaling"</span>, <span class="st">"scale_params"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-variability" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
-<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-variability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table&nbsp;16.1
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-settings-variability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;16.1: Occasion, mu-referencing and parameter scaling settings.
 </figcaption><div aria-describedby="tbl-settings-variability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="qcgnyqabep" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#qcgnyqabep table {
+<div id="bpseazzxsv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#bpseazzxsv table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#qcgnyqabep thead, #qcgnyqabep tbody, #qcgnyqabep tfoot, #qcgnyqabep tr, #qcgnyqabep td, #qcgnyqabep th {
+#bpseazzxsv thead, #bpseazzxsv tbody, #bpseazzxsv tfoot, #bpseazzxsv tr, #bpseazzxsv td, #bpseazzxsv th {
   border-style: none;
 }
 
-#qcgnyqabep p {
+#bpseazzxsv p {
   margin: 0;
   padding: 0;
 }
 
-#qcgnyqabep .gt_table {
+#bpseazzxsv .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -975,12 +980,12 @@ Table&nbsp;16.1
   border-left-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_caption {
+#bpseazzxsv .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#qcgnyqabep .gt_title {
+#bpseazzxsv .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -992,7 +997,7 @@ Table&nbsp;16.1
   border-bottom-width: 0;
 }
 
-#qcgnyqabep .gt_subtitle {
+#bpseazzxsv .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1004,7 +1009,7 @@ Table&nbsp;16.1
   border-top-width: 0;
 }
 
-#qcgnyqabep .gt_heading {
+#bpseazzxsv .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1016,13 +1021,13 @@ Table&nbsp;16.1
   border-right-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_bottom_border {
+#bpseazzxsv .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_col_headings {
+#bpseazzxsv .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1037,7 +1042,7 @@ Table&nbsp;16.1
   border-right-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_col_heading {
+#bpseazzxsv .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1057,7 +1062,7 @@ Table&nbsp;16.1
   overflow-x: hidden;
 }
 
-#qcgnyqabep .gt_column_spanner_outer {
+#bpseazzxsv .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1069,15 +1074,15 @@ Table&nbsp;16.1
   padding-right: 4px;
 }
 
-#qcgnyqabep .gt_column_spanner_outer:first-child {
+#bpseazzxsv .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#qcgnyqabep .gt_column_spanner_outer:last-child {
+#bpseazzxsv .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#qcgnyqabep .gt_column_spanner {
+#bpseazzxsv .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1089,11 +1094,11 @@ Table&nbsp;16.1
   width: 100%;
 }
 
-#qcgnyqabep .gt_spanner_row {
+#bpseazzxsv .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#qcgnyqabep .gt_group_heading {
+#bpseazzxsv .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1119,7 +1124,7 @@ Table&nbsp;16.1
   text-align: left;
 }
 
-#qcgnyqabep .gt_empty_group_heading {
+#bpseazzxsv .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1134,15 +1139,15 @@ Table&nbsp;16.1
   vertical-align: middle;
 }
 
-#qcgnyqabep .gt_from_md > :first-child {
+#bpseazzxsv .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#qcgnyqabep .gt_from_md > :last-child {
+#bpseazzxsv .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#qcgnyqabep .gt_row {
+#bpseazzxsv .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1161,7 +1166,7 @@ Table&nbsp;16.1
   overflow-x: hidden;
 }
 
-#qcgnyqabep .gt_stub {
+#bpseazzxsv .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1174,7 +1179,7 @@ Table&nbsp;16.1
   padding-right: 5px;
 }
 
-#qcgnyqabep .gt_stub_row_group {
+#bpseazzxsv .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1188,15 +1193,15 @@ Table&nbsp;16.1
   vertical-align: top;
 }
 
-#qcgnyqabep .gt_row_group_first td {
+#bpseazzxsv .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#qcgnyqabep .gt_row_group_first th {
+#bpseazzxsv .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#qcgnyqabep .gt_summary_row {
+#bpseazzxsv .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1206,16 +1211,16 @@ Table&nbsp;16.1
   padding-right: 5px;
 }
 
-#qcgnyqabep .gt_first_summary_row {
+#bpseazzxsv .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_first_summary_row.thick {
+#bpseazzxsv .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#qcgnyqabep .gt_last_summary_row {
+#bpseazzxsv .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1225,7 +1230,7 @@ Table&nbsp;16.1
   border-bottom-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_grand_summary_row {
+#bpseazzxsv .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1235,7 +1240,7 @@ Table&nbsp;16.1
   padding-right: 5px;
 }
 
-#qcgnyqabep .gt_first_grand_summary_row {
+#bpseazzxsv .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1245,7 +1250,7 @@ Table&nbsp;16.1
   border-top-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_last_grand_summary_row_top {
+#bpseazzxsv .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1255,11 +1260,11 @@ Table&nbsp;16.1
   border-bottom-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_striped {
+#bpseazzxsv .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#qcgnyqabep .gt_table_body {
+#bpseazzxsv .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1268,7 +1273,7 @@ Table&nbsp;16.1
   border-bottom-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_footnotes {
+#bpseazzxsv .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1282,7 +1287,7 @@ Table&nbsp;16.1
   border-right-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_footnote {
+#bpseazzxsv .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1291,7 +1296,7 @@ Table&nbsp;16.1
   padding-right: 5px;
 }
 
-#qcgnyqabep .gt_sourcenotes {
+#bpseazzxsv .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1305,7 +1310,7 @@ Table&nbsp;16.1
   border-right-color: #D3D3D3;
 }
 
-#qcgnyqabep .gt_sourcenote {
+#bpseazzxsv .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1313,76 +1318,76 @@ Table&nbsp;16.1
   padding-right: 5px;
 }
 
-#qcgnyqabep .gt_left {
+#bpseazzxsv .gt_left {
   text-align: left;
 }
 
-#qcgnyqabep .gt_center {
+#bpseazzxsv .gt_center {
   text-align: center;
 }
 
-#qcgnyqabep .gt_right {
+#bpseazzxsv .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#qcgnyqabep .gt_font_normal {
+#bpseazzxsv .gt_font_normal {
   font-weight: normal;
 }
 
-#qcgnyqabep .gt_font_bold {
+#bpseazzxsv .gt_font_bold {
   font-weight: bold;
 }
 
-#qcgnyqabep .gt_font_italic {
+#bpseazzxsv .gt_font_italic {
   font-style: italic;
 }
 
-#qcgnyqabep .gt_super {
+#bpseazzxsv .gt_super {
   font-size: 65%;
 }
 
-#qcgnyqabep .gt_footnote_marks {
+#bpseazzxsv .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#qcgnyqabep .gt_asterisk {
+#bpseazzxsv .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#qcgnyqabep .gt_indent_1 {
+#bpseazzxsv .gt_indent_1 {
   text-indent: 5px;
 }
 
-#qcgnyqabep .gt_indent_2 {
+#bpseazzxsv .gt_indent_2 {
   text-indent: 10px;
 }
 
-#qcgnyqabep .gt_indent_3 {
+#bpseazzxsv .gt_indent_3 {
   text-indent: 15px;
 }
 
-#qcgnyqabep .gt_indent_4 {
+#bpseazzxsv .gt_indent_4 {
   text-indent: 20px;
 }
 
-#qcgnyqabep .gt_indent_5 {
+#bpseazzxsv .gt_indent_5 {
   text-indent: 25px;
 }
 
-#qcgnyqabep .katex-display {
+#bpseazzxsv .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#qcgnyqabep div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#bpseazzxsv div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
-<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<table class="gt_table cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <colgroup>
 <col style="width: 22%">
 <col style="width: 18%">
@@ -1452,9 +1457,9 @@ Table&nbsp;16.1
 <span><span class="va">explicit_variance</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="st">"warfarin_omega_variance_tag.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"  omega ETA_CL ~ 0.07"</span>, <span class="st">"  omega ETA_CL ~ 0.07 (variance)"</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">explicit_variance</span><span class="op">)</span></span>
-<span><span class="va">fit_as_sd</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">as_sd</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_sigma_var</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">sigma_as_variance</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_explicit_var</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">explicit_variance</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_as_sd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">as_sd</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_sigma_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">sigma_as_variance</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_explicit_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">explicit_variance</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>bundled <span class="op">=</span> <span class="va">fit_w</span><span class="op">$</span><span class="va">ofv</span>, omega_as_sd <span class="op">=</span> <span class="va">fit_as_sd</span><span class="op">$</span><span class="va">ofv</span>,</span>
 <span>  sigma_as_variance <span class="op">=</span> <span class="va">fit_sigma_var</span><span class="op">$</span><span class="va">ofv</span>, omega_variance_tag <span class="op">=</span> <span class="va">fit_explicit_var</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            bundled        omega_as_sd  sigma_as_variance omega_variance_tag </span></span>
@@ -1466,24 +1471,24 @@ Table&nbsp;16.1
 <span><span class="co">#&gt; [1] "  PROP_ERR         [proportional] = 0.010749  (var = 0.000116, CV% = 1.1)  SE = 0.000942  [initial specified as SD]"</span></span>
 <span><span class="va">fit_w</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"transform"</span>, <span class="st">"estimate"</span>, <span class="st">"init_as_sd"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             transform    estimate init_as_sd</span></span>
-<span><span class="co">#&gt; TVCL         identity 0.132969030      FALSE</span></span>
-<span><span class="co">#&gt; TVV          identity 7.730699888      FALSE</span></span>
-<span><span class="co">#&gt; TVKA         identity 0.725207009      FALSE</span></span>
-<span><span class="co">#&gt; ETA_CL       variance 0.028594955      FALSE</span></span>
-<span><span class="co">#&gt; ETA_V        variance 0.009576924      FALSE</span></span>
-<span><span class="co">#&gt; ETA_KA       variance 0.348964240      FALSE</span></span>
-<span><span class="co">#&gt; PROP_ERR proportional 0.010748528       TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL         identity 0.132969034      FALSE</span></span>
+<span><span class="co">#&gt; TVV          identity 7.730699883      FALSE</span></span>
+<span><span class="co">#&gt; TVKA         identity 0.725206990      FALSE</span></span>
+<span><span class="co">#&gt; ETA_CL       variance 0.028594957      FALSE</span></span>
+<span><span class="co">#&gt; ETA_V        variance 0.009576927      FALSE</span></span>
+<span><span class="co">#&gt; ETA_KA       variance 0.348964191      FALSE</span></span>
+<span><span class="co">#&gt; PROP_ERR proportional 0.010748529       TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>init_as_sd</code> is the declaration, not the reported scale (<a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a>): it is <code>TRUE</code> for the bundled <code>sigma PROP_ERR ~ 0.01 (sd)</code> and <code>FALSE</code> for every variance-scale row.</p>
 </section><section id="a-scale-tag-on-a-block-is-rejected" class="level3"><h3 class="anchored" data-anchor-id="a-scale-tag-on-a-block-is-rejected">A scale tag on a block is rejected</h3>
-<p><code>block_omega</code>, <code>block_kappa</code> and <code>block_sigma</code> have no scale to choose: every entry of the lower triangle is a variance or a covariance, always. A single <code>(sd)</code> cannot say which of those entries it applies to, so a scale tag on a block is refused rather than interpreted. <code>ferx_model_validate()</code> reports the file invalid, with a code and the repair:</p>
+<p><code>block_omega</code>, <code>block_kappa</code> and <code>block_sigma</code> have no scale to choose: every entry of the lower triangle is a variance or a covariance, always. A single <code>(sd)</code> cannot say which of those entries it applies to, so a scale tag on a block is refused rather than interpreted. <code><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate()</a></code> reports the file invalid, with a code and the repair:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">block_sd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="st">"warfarin_block_sd.ferx"</span><span class="op">)</span></span>
-<span><span class="va">block_ex</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_block_omega"</span><span class="op">)</span></span>
+<span><span class="va">block_ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_block_omega"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02]"</span>,</span>
 <span>               <span class="st">"block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02] (sd)"</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">block_ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">block_sd</span><span class="op">)</span></span>
-<span><span class="va">block_sd_check</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="va">block_sd</span><span class="op">)</span></span>
+<span><span class="va">block_sd_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">block_sd</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating: warfarin_block_sd.ferx </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Sections present:</span></span>
@@ -1504,11 +1509,18 @@ Table&nbsp;16.1
 <span><span class="co">#&gt;                                                                  suggestion</span></span>
 <span><span class="co">#&gt; 1 square each SD into a variance and write the off-diagonals as covariances</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>ferx_fit()</code> refuses the same file, with the message but not the code (<a href="04-model-files.html" class="quarto-xref"><span>Writing and managing model files</span></a>):</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> refuses the same file with the same message, and appends the code in square brackets. The error is a <code>ferx_engine_error</code> condition that carries the code as <code>$code</code>, so a script can branch on it without validating first (<a href="25-reference.html" class="quarto-xref"><span>Function, option and example index</span></a>):</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">block_sd</span>, <span class="va">block_ex</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
-<span><span class="co">#&gt;   Error parsing model: [parameters]: `block_omega` is variance-only — the scale tag `(sd)` is not accepted on a block declaration, since the lower triangle mixes variances and covariances and one tag cannot say which entry is on which scale. Square each SD into a variance and write the off-diagonals as covariances. Offending line: `block_omega (ETA_CL, ETA_V) = [0.07, 0.02, 0.02] (sd)`. [E_BLOCK_VARIANCE_ONLY]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">refusal</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">block_sd</span>, <span class="va">block_ex</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>                    ferx_engine_error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strwrap.html">strwrap</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html">conditionMessage</a></span><span class="op">(</span><span class="va">refusal</span><span class="op">)</span>, <span class="fl">90</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error parsing model: [parameters]: `block_omega` is variance-only — the scale tag `(sd)`</span></span>
+<span><span class="co">#&gt; is not accepted on a block declaration, since the lower triangle mixes variances and</span></span>
+<span><span class="co">#&gt; covariances and one tag cannot say which entry is on which scale. Square each SD into a</span></span>
+<span><span class="co">#&gt; variance and write the off-diagonals as covariances. Offending line: `block_omega</span></span>
+<span><span class="co">#&gt; (ETA_CL, ETA_V) = [0.07, 0.02, 0.02] (sd)`. [E_BLOCK_VARIANCE_ONLY]</span></span>
+<span><span class="va">refusal</span><span class="op">$</span><span class="va">code</span></span>
+<span><span class="co">#&gt; [1] "E_BLOCK_VARIANCE_ONLY"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The <code>suggestion</code> depends on which tag you wrote, because the two repairs are not the same edit. After <code>(sd)</code> the numbers are wrong and have to change: square each SD into a variance, and write the off-diagonals as covariances rather than as correlations or SD products. After <code>(variance)</code> or <code>(var)</code> only the tag is wrong – the lower triangle was already on that scale, so deleting the tag leaves the same model:</p>
 <div class="cell" data-layout-align="center">
@@ -1519,7 +1531,7 @@ Table&nbsp;16.1
 <span>                 <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">block_ex</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">tagged</span><span class="op">)</span></span>
 <span>  <span class="co"># The full check report is printed above for (sd); here only the repair differs,</span></span>
 <span>  <span class="co"># so the report itself is captured away and just the diagnostic is shown.</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="va">tagged</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">tagged</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>tag <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"("</span>, <span class="va">tag</span>, <span class="st">")"</span><span class="op">)</span>, <span class="va">check</span><span class="op">$</span><span class="va">diagnostics</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"code"</span>, <span class="st">"suggestion"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          tag                  code</span></span>
@@ -1537,7 +1549,7 @@ Table&nbsp;16.1
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">no_iiv_on_ka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="st">"warfarin_no_iiv_ka.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"  omega ETA_KA ~ 0.40"</span>, <span class="st">"  omega ETA_KA ~ 0.0 FIX"</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">no_iiv_on_ka</span><span class="op">)</span></span>
-<span><span class="va">fit_no_iiv_ka</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">no_iiv_on_ka</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_no_iiv_ka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">no_iiv_on_ka</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in .ferx_compute_cor_matrix(result$cov_matrix): One or more diagonal</span></span>
 <span><span class="co">#&gt; elements are non-positive; correlation matrix may not be meaningful.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>all_three <span class="op">=</span> <span class="va">fit_w</span><span class="op">$</span><span class="va">n_parameters</span>, ka_fixed <span class="op">=</span> <span class="va">fit_no_iiv_ka</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span></span>
@@ -1551,17 +1563,17 @@ Table&nbsp;16.1
 <p>A fixed parameter still has a row in <code>fit$estimates</code>. It carries the value the engine stores for a declared zero, with a standard error of 0, and it no longer counts towards <code>n_parameters</code>:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_no_iiv_ka</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ETA_CL"</span>, <span class="st">"ETA_KA"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;          estimate        se rse_pct</span></span>
-<span><span class="co">#&gt; ETA_CL 1.27417294 0.5930408 46.5432</span></span>
-<span><span class="co">#&gt; ETA_KA 0.00000001 0.0000000  0.0000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;          estimate        se  rse_pct</span></span>
+<span><span class="co">#&gt; ETA_CL 1.27417120 0.5930397 46.54317</span></span>
+<span><span class="co">#&gt; ETA_KA 0.00000001 0.0000000  0.00000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Leaving the same zero <strong>free</strong> is refused rather than fitted: the optimizer would start on its lower rail and could not move off it (<a href="18-dosing.html" class="quarto-xref"><span>Dosing regimens and exposure metrics</span></a> shows the message).</p>
 </section></section><section id="variants" class="level2"><h2 class="anchored" data-anchor-id="variants">Variants</h2>
 <section id="correlated-random-effects" class="level3"><h3 class="anchored" data-anchor-id="correlated-random-effects">Correlated random effects</h3>
 <p><code>warfarin_block_omega</code> estimates a covariance between <code>ETA_CL</code> and <code>ETA_V</code>, and keeps <code>ETA_KA</code> as a separate diagonal omega:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">block</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_block_omega"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">block</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">block</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_block_omega"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">block</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [parameters]</span></span>
 <span><span class="co">#&gt;   theta TVCL(0.134, 0.001, 10.0)</span></span>
 <span><span class="co">#&gt;   theta TVV(8.1, 0.1, 500.0)</span></span>
@@ -1571,13 +1583,13 @@ Table&nbsp;16.1
 <span><span class="co">#&gt;   omega ETA_KA ~ 0.40</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   sigma PROP_ERR ~ 0.01 (sd)</span></span>
-<span><span class="va">fit_block</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">block</span><span class="op">$</span><span class="va">model</span>, <span class="va">block</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_block</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">block</span><span class="op">$</span><span class="va">model</span>, <span class="va">block</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in .ferx_compute_cor_matrix(result$cov_matrix): One or more diagonal</span></span>
 <span><span class="co">#&gt; elements are non-positive; correlation matrix may not be meaningful.</span></span>
 <span><span class="va">fit_block</span><span class="op">$</span><span class="va">omega</span></span>
 <span><span class="co">#&gt;             ETA_CL       ETA_V    ETA_KA</span></span>
-<span><span class="co">#&gt; ETA_CL 0.028598598 0.001825408 0.0000000</span></span>
-<span><span class="co">#&gt; ETA_V  0.001825408 0.009577901 0.0000000</span></span>
+<span><span class="co">#&gt; ETA_CL 0.028598607 0.001825406 0.0000000</span></span>
+<span><span class="co">#&gt; ETA_V  0.001825406 0.009577901 0.0000000</span></span>
 <span><span class="co">#&gt; ETA_KA 0.000000000 0.000000000 0.3488793</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The printout reports each covariance with the correlation of the parameters themselves. For two log-normal random effects that is <code>(exp(ω_ij) − 1) / √((exp(ω_ii) − 1)(exp(ω_jj) − 1))</code>. <code>fit$omega_param_corr</code> holds the matrix:</p>
@@ -1594,7 +1606,7 @@ Table&nbsp;16.1
 <p>A partial block estimates only what it declares. <code>ETA_KA</code> keeps a variance of its own, but the model gives it no covariance with the other two, so those two off-diagonal entries stay exactly 0, and so do their standard errors. <code>fit$se_omega</code> is the lower triangle read column by column — (1,1), (2,1), (3,1), (2,2), (3,2), (3,3) — so the third and fifth entries are the held covariances, while the sixth is the standard error of the estimated <code>ETA_KA</code> variance:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_block</span><span class="op">$</span><span class="va">se_omega</span></span>
-<span><span class="co">#&gt; [1] 0.012799626 0.005278263 0.000000000 0.004297678 0.000000000 0.160753224</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; [1] 0.012799632 0.005278264 0.000000000 0.004297678 0.000000000 0.160753262</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Those two structural zeros are also the reason the fit prints an R warning that one or more diagonal elements of the correlation matrix are non-positive: ferx-r derives that matrix from <code>fit$cov_matrix</code>, which carries a zero variance for every held entry.</p>
 <p>To estimate those covariances, declare them. A copy of the model with one full 3 × 3 block, and no separate diagonal <code>omega</code>:</p>
@@ -1604,12 +1616,12 @@ Table&nbsp;16.1
 <span>                  <span class="st">"block_omega (ETA_CL, ETA_V, ETA_KA) = [0.07, 0.02, 0.02, 0, 0, 0.40]"</span>,</span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">block</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">full_lines</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"^  omega ETA_KA"</span>, <span class="va">full_lines</span><span class="op">)</span><span class="op">]</span>, <span class="va">full_block</span><span class="op">)</span></span>
-<span><span class="va">fit_full_block</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">full_block</span>, <span class="va">block</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_full_block</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">full_block</span>, <span class="va">block</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_full_block</span><span class="op">$</span><span class="va">omega</span></span>
 <span><span class="co">#&gt;              ETA_CL       ETA_V      ETA_KA</span></span>
-<span><span class="co">#&gt; ETA_CL  0.028695094 0.001753564 -0.03165909</span></span>
-<span><span class="co">#&gt; ETA_V   0.001753564 0.009629482  0.02068634</span></span>
-<span><span class="co">#&gt; ETA_KA -0.031659091 0.020686341  0.35018945</span></span>
+<span><span class="co">#&gt; ETA_CL  0.028695099 0.001753565 -0.03165909</span></span>
+<span><span class="co">#&gt; ETA_V   0.001753565 0.009629482  0.02068635</span></span>
+<span><span class="co">#&gt; ETA_KA -0.031659088 0.020686346  0.35018942</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"partial block"</span>, <span class="st">"full block"</span><span class="op">)</span>,</span>
 <span>           n_parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_block</span><span class="op">$</span><span class="va">n_parameters</span>, <span class="va">fit_full_block</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span>,</span>
 <span>           ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_block</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_full_block</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span>,</span>
@@ -1623,21 +1635,21 @@ Table&nbsp;16.1
 </section><section id="additive-random-effects" class="level3"><h3 class="anchored" data-anchor-id="additive-random-effects">Additive random effects</h3>
 <p><code>warfarin_additive_eta</code> gives the lag time an additive random effect, <code>TLAG = TVTLAG + ETA_TLAG</code>, so its variance is in squared hours:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">additive</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_additive_eta"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">additive</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">additive</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_additive_eta"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">additive</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL   = TVCL  * exp(ETA_CL)</span></span>
 <span><span class="co">#&gt;   V    = TVV   * exp(ETA_V)</span></span>
 <span><span class="co">#&gt;   KA   = TVKA</span></span>
 <span><span class="co">#&gt;   TLAG = TVTLAG + ETA_TLAG</span></span>
-<span><span class="va">fit_additive</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">additive</span><span class="op">$</span><span class="va">model</span>, <span class="va">additive</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_additive</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">additive</span><span class="op">$</span><span class="va">model</span>, <span class="va">additive</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_additive</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVTLAG"</span>, <span class="st">"ETA_TLAG"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                 estimate     rse_pct</span></span>
-<span><span class="co">#&gt; TVTLAG   0.0000001979303 83184.64655</span></span>
-<span><span class="co">#&gt; ETA_TLAG 0.4764398317029    53.73498</span></span>
+<span><span class="co">#&gt;              estimate      rse_pct</span></span>
+<span><span class="co">#&gt; TVTLAG   5.089784e-08 164045.54732</span></span>
+<span><span class="co">#&gt; ETA_TLAG 4.764669e-01     53.73626</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit_additive</span><span class="op">$</span><span class="va">individual_estimates</span><span class="op">$</span><span class="va">TLAG</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. </span></span>
-<span><span class="co">#&gt; -1.84258 -0.47863 -0.20734 -0.33790  0.07737  0.15992</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; -1.84258 -0.47863 -0.20734 -0.33789  0.07737  0.15992</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>These data carry no lag time: the typical value goes to its lower bound near 0. The additive random effect then produces negative individual lag times. A log-normal random effect keeps a positive parameter positive.</p>
 </section><section id="residual-error-models" class="level3"><h3 class="anchored" data-anchor-id="residual-error-models">Residual error models</h3>
@@ -1668,7 +1680,7 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <span><span class="va">error_fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">error_models</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"warfarin_"</span>, <span class="va">name</span>, <span class="st">".ferx"</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">error_models</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span>, <span class="va">path</span><span class="op">)</span></span>
-<span>  <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">path</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">path</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">error_fits</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">error_models</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">error_fits</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
@@ -1676,20 +1688,26 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <span>  <span class="va">lines</span> <span class="op">&lt;-</span> <span class="va">error_models</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">name</span>, error_model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html">trimws</a></span><span class="op">(</span><span class="va">lines</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"^\\[error_model\\]"</span>, <span class="va">lines</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>             parameters <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">n_parameters</span>, ofv <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">ofv</span>, aic <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">aic</span>,</span>
-<span>             warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
+<span>             warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                 model                      error_model parameters       ofv</span></span>
 <span><span class="co">#&gt; 1        proportional      DV ~ proportional(PROP_ERR)          7 -280.3640</span></span>
 <span><span class="co">#&gt; 2            additive           DV ~ additive(ADD_ERR)          7 -234.2689</span></span>
 <span><span class="co">#&gt; 3            combined DV ~ combined(PROP_ERR, ADD_ERR)          8 -280.3634</span></span>
 <span><span class="co">#&gt; 4               power    DV ~ power(PROP_ERR, RUV_POW)          8 -280.6655</span></span>
-<span><span class="co">#&gt; 5 correlated_combined DV ~ combined(PROP_ERR, ADD_ERR)          9 -280.7510</span></span>
-<span><span class="co">#&gt;         aic                                       warnings</span></span>
-<span><span class="co">#&gt; 1 -266.3640                             dw_autocorrelation</span></span>
-<span><span class="co">#&gt; 2 -220.2689                             dw_autocorrelation</span></span>
-<span><span class="co">#&gt; 3 -264.3634 parameter_at_runaway_guard, dw_autocorrelation</span></span>
-<span><span class="co">#&gt; 4 -264.6655                             dw_autocorrelation</span></span>
-<span><span class="co">#&gt; 5 -262.7510                             dw_autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 5 correlated_combined DV ~ combined(PROP_ERR, ADD_ERR)          9 -280.3075</span></span>
+<span><span class="co">#&gt;         aic</span></span>
+<span><span class="co">#&gt; 1 -266.3640</span></span>
+<span><span class="co">#&gt; 2 -220.2689</span></span>
+<span><span class="co">#&gt; 3 -264.3634</span></span>
+<span><span class="co">#&gt; 4 -264.6655</span></span>
+<span><span class="co">#&gt; 5 -262.3075</span></span>
+<span><span class="co">#&gt;                                                                 warnings</span></span>
+<span><span class="co">#&gt; 1                                                     dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 2                                                     dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 3                         parameter_at_runaway_guard, dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 4                                                     dw_autocorrelation</span></span>
+<span><span class="co">#&gt; 5 covariance_regularized, parameter_at_runaway_guard, dw_autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>
@@ -1697,8 +1715,8 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">error_fits</span><span class="op">$</span><span class="va">combined</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"PROP_ERR"</span>, <span class="st">"ADD_ERR"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;              estimate     rse_pct</span></span>
-<span><span class="co">#&gt; PROP_ERR 0.0107483303    8.762397</span></span>
-<span><span class="co">#&gt; ADD_ERR  0.0003354626 2925.132115</span></span>
+<span><span class="co">#&gt; PROP_ERR 0.0107483309    8.762397</span></span>
+<span><span class="co">#&gt; ADD_ERR  0.0003354626 2925.132349</span></span>
 <span><span class="va">error_fits</span><span class="op">$</span><span class="va">power</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"RUV_POW"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         estimate  rse_pct</span></span>
 <span><span class="co">#&gt; RUV_POW 1.084875 14.76553</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1708,8 +1726,8 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">small_start</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="st">"warfarin_combined_small_start.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu">set_error_model</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"  sigma PROP_ERR ~ 0.1 (sd)"</span>, <span class="st">"  sigma ADD_ERR ~ 0.001 (sd)"</span><span class="op">)</span>,</span>
 <span>                           <span class="st">"  DV ~ combined(PROP_ERR, ADD_ERR)"</span><span class="op">)</span>, <span class="va">small_start</span><span class="op">)</span></span>
-<span><span class="va">fit_small_start</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">small_start</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span><span class="op">(</span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_small_start</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">message</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span>, <span class="fl">160</span><span class="op">)</span></span>
+<span><span class="va">fit_small_start</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">small_start</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_small_start</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">message</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span>, <span class="fl">160</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Combined error model on all observations: additive SD initial estimate 'ADD_ERR' = 0.0010 is negligible (&lt; 1%) relative to the data scale (median |DV| = 7.0715)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>In a single <code>DV ~</code> line, the sigmas are taken in the order they are declared in <code>[parameters]</code>, and the names in the call must match that order:</p>
@@ -1717,34 +1735,34 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">wrong_order</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="st">"warfarin_sigma_order.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu">set_error_model</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"  sigma ADD_ERR ~ 0.5 (sd)"</span>, <span class="st">"  sigma PROP_ERR ~ 0.1 (sd)"</span><span class="op">)</span>,</span>
 <span>                           <span class="st">"  DV ~ combined(PROP_ERR, ADD_ERR)"</span><span class="op">)</span>, <span class="va">wrong_order</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">wrong_order</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">wrong_order</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
 <span><span class="co">#&gt;   Error parsing model: [error_model] argument 1 names sigma 'PROP_ERR', but a single-endpoint [error_model] has its sigmas consumed positionally from the [parameters] declaration order, which supplies 'ADD_ERR' in that position. Reorder the sigma declarations to match the [error_model] argument order — if a block_sigma supplies them, permute its lower triangle to match the new name order. Reordering the arguments instead also parses, but for `combined` it swaps which sigma is the proportional component, so it changes the model rather than fixing the spelling. [E_SIGMA_ORDER_MISMATCH]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="log-transform-both-sides" class="level3"><h3 class="anchored" data-anchor-id="log-transform-both-sides">Log-transform-both-sides</h3>
 <p><code>warfarin_ltbs</code> fits additive error to the logarithms of the observations and predictions:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ltbs</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_ltbs"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">ltbs</span><span class="op">$</span><span class="va">model</span>, <span class="st">"error_model"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ltbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_ltbs"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">ltbs</span><span class="op">$</span><span class="va">model</span>, <span class="st">"error_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [error_model]</span></span>
 <span><span class="co">#&gt;   log(DV) ~ additive(SIGMA_LOG)</span></span>
-<span><span class="va">fit_ltbs</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ltbs</span><span class="op">$</span><span class="va">model</span>, <span class="va">ltbs</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_ltbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ltbs</span><span class="op">$</span><span class="va">model</span>, <span class="va">ltbs</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>proportional <span class="op">=</span> <span class="va">fit_w</span><span class="op">$</span><span class="va">theta</span>, ltbs <span class="op">=</span> <span class="va">fit_ltbs</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  TVCL      TVV      TVKA</span></span>
 <span><span class="co">#&gt; proportional 0.132969 7.730700 0.7252070</span></span>
-<span><span class="co">#&gt; ltbs         0.132697 7.738255 0.8109482</span></span>
+<span><span class="co">#&gt; ltbs         0.132697 7.738252 0.8109524</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>proportional_sigma <span class="op">=</span> <span class="va">fit_w</span><span class="op">$</span><span class="va">sigma</span>, ltbs_sigma <span class="op">=</span> <span class="va">fit_ltbs</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span></span>
 <span><span class="co">#&gt; proportional_sigma         ltbs_sigma </span></span>
-<span><span class="co">#&gt;         0.01074853         0.01056404</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;         0.01074853         0.01056405</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The structural estimates are close to the proportional model’s, and the log-scale sigma is close to the proportional CV. The OFV is on the log scale, so it is not comparable with the OFVs above. Predictions, residuals and simulated values are also on the log scale. Back-transform them with <code><a href="https://rdrr.io/r/base/Log.html">exp()</a></code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">select</span><span class="op">(</span><span class="va">fit_ltbs</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">DV</span>, <span class="va">PRED</span>, <span class="va">IPRED</span>, <span class="va">IWRES</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   ID TIME      DV     PRED    IPRED       IWRES</span></span>
-<span><span class="co">#&gt; 1  1  0.5  5.3653 1.455827 1.677672  0.21587411</span></span>
-<span><span class="co">#&gt; 2  1  1.0  8.2578 1.961513 2.114356 -0.30265802</span></span>
-<span><span class="co">#&gt; 3  1  2.0 10.7063 2.317392 2.370938 -0.01003281</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">mutate</span><span class="op">(</span><span class="fu">select</span><span class="op">(</span><span class="va">fit_ltbs</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">DV</span>, <span class="va">IPRED</span><span class="op">)</span>, IPRED_natural <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">IPRED</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">fit_ltbs</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">DV</span>, <span class="va">PRED</span>, <span class="va">IPRED</span>, <span class="va">IWRES</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID TIME      DV     PRED    IPRED      IWRES</span></span>
+<span><span class="co">#&gt; 1  1  0.5  5.3653 1.455831 1.677672  0.2158739</span></span>
+<span><span class="co">#&gt; 2  1  1.0  8.2578 1.961517 2.114356 -0.3026577</span></span>
+<span><span class="co">#&gt; 3  1  2.0 10.7063 2.317394 2.370938 -0.0100329</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">fit_ltbs</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">DV</span>, <span class="va">IPRED</span><span class="op">)</span>, IPRED_natural <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">IPRED</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME      DV    IPRED IPRED_natural</span></span>
 <span><span class="co">#&gt; 1  1  0.5  5.3653 1.677672      5.353078</span></span>
 <span><span class="co">#&gt; 2  1  1.0  8.2578 2.114356      8.284245</span></span>
@@ -1755,7 +1773,7 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ltbs_proportional</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="st">"warfarin_ltbs_proportional.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"log(DV) ~ additive(SIGMA_LOG)"</span>, <span class="st">"log(DV) ~ proportional(SIGMA_LOG)"</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">ltbs</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">ltbs_proportional</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ltbs_proportional</span>, <span class="va">ltbs</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ltbs_proportional</span>, <span class="va">ltbs</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
 <span><span class="co">#&gt;   Error parsing model: [error_model] log-transform-both-sides supports only additive error on the log scale; use `log(DV) ~ additive(...)` or `DV ~ log_additive(...)`: log(DV) ~ proportional(SIGMA_LOG) [E_PARSE]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1766,21 +1784,21 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ruv_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="st">"warfarin_iiv_on_ruv.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu">set_error_model</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"  omega ETA_RUV ~ 0.05"</span>, <span class="st">"  sigma PROP_ERR ~ 0.1 (sd)"</span><span class="op">)</span>,</span>
 <span>                           <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"  DV ~ proportional(PROP_ERR)"</span>, <span class="st">"  iiv_on_ruv = ETA_RUV"</span><span class="op">)</span><span class="op">)</span>, <span class="va">ruv_model</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">ruv_model</span>, <span class="st">"error_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">ruv_model</span>, <span class="st">"error_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [error_model]</span></span>
 <span><span class="co">#&gt;   DV ~ proportional(PROP_ERR)</span></span>
 <span><span class="co">#&gt;   iiv_on_ruv = ETA_RUV</span></span>
 <span><span class="co"># the model file uses FOCE, without interaction</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"\\)\\..*"</span>, <span class="st">")"</span>, <span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ruv_model</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, error <span class="op">=</span> <span class="va">conditionMessage</span><span class="op">)</span><span class="op">)</span>  <span class="co"># first sentence</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"\\)\\..*"</span>, <span class="st">")"</span>, <span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ruv_model</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, error <span class="op">=</span> <span class="va">conditionMessage</span><span class="op">)</span><span class="op">)</span>  <span class="co"># first sentence</span></span>
 <span><span class="co">#&gt; [1] "Fit error: IIV on residual error (iiv_on_ruv) requires an interaction or Monte-Carlo method: use method = focei, imp, impmap, or saem (got Foce with interaction = false)"</span></span>
-<span><span class="va">fit_ruv</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ruv_model</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_ruv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ruv_model</span>, <span class="va">w</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = foce` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `focei`. The call-time value will be used.</span></span>
 <span><span class="va">fit_ruv</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ETA_RUV"</span>, <span class="st">"PROP_ERR"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                estimate     rse_pct</span></span>
-<span><span class="co">#&gt; ETA_RUV  0.000006144212 4442.608422</span></span>
-<span><span class="co">#&gt; PROP_ERR 0.010564986655    7.903861</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_ruv</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;              estimate     rse_pct</span></span>
+<span><span class="co">#&gt; ETA_RUV  6.144212e-06 4444.914952</span></span>
+<span><span class="co">#&gt; PROP_ERR 1.056498e-02    7.903859</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_ruv</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity                   category</span></span>
 <span><span class="co">#&gt; 1  warning              eta_shrinkage</span></span>
 <span><span class="co">#&gt; 2  warning parameter_at_runaway_guard</span></span>
@@ -1797,7 +1815,7 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 </section><section id="inter-occasion-variability" class="level3"><h3 class="anchored" data-anchor-id="inter-occasion-variability">Inter-occasion variability</h3>
 <p><code>warfarin_iov</code> adds a kappa to clearance: each subject gets one <code>KAPPA_CL</code> per occasion, on top of its <code>ETA_CL</code>. <code>iov_column = OCC</code> tells ferx where the occasions are:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [parameters]</span></span>
 <span><span class="co">#&gt;   theta TVCL(0.134, 0.001, 10.0)</span></span>
 <span><span class="co">#&gt;   theta TVV(8.1, 0.1, 500.0)</span></span>
@@ -1807,12 +1825,12 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <span><span class="co">#&gt;   omega ETA_KA ~ 0.40</span></span>
 <span><span class="co">#&gt;   kappa KAPPA_CL ~ 0.04</span></span>
 <span><span class="co">#&gt;   sigma PROP_ERR ~ 0.01 (sd)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL = TVCL * exp(ETA_CL + KAPPA_CL)</span></span>
 <span><span class="co">#&gt;   V  = TVV  * exp(ETA_V)</span></span>
 <span><span class="co">#&gt;   KA = TVKA * exp(ETA_KA)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"fit_options"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"fit_options"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [fit_options]</span></span>
 <span><span class="co">#&gt;   method     = foce</span></span>
 <span><span class="co">#&gt;   iov_column = OCC</span></span>
@@ -1823,12 +1841,12 @@ Table&nbsp;16.2: Residual error models for the warfarin model (FOCE).
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-iov-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.3: The warfarin IOV model with different estimation methods.
 </figcaption><div aria-describedby="tbl-iov-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iov_saem</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_iov_saem"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iov_saem</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_iov_saem"</span><span class="op">)</span></span>
 <span><span class="va">iov_fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
-<span>  foce <span class="op">=</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  focei <span class="op">=</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  saem <span class="op">=</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">iov_saem</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov_saem</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  saem_then_focei <span class="op">=</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">iov_saem</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov_saem</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"saem"</span>, <span class="st">"focei"</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  foce <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  focei <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  saem <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">iov_saem</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov_saem</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  saem_then_focei <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">iov_saem</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov_saem</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"saem"</span>, <span class="st">"focei"</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = foce` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `focei`. The call-time value will be used.</span></span>
@@ -1842,12 +1860,12 @@ Table&nbsp;16.3: The warfarin IOV model with different estimation methods.
 <span><span class="co">#&gt;               run method      ofv      TVCL     TVKA   omega_CL   kappa_CL</span></span>
 <span><span class="co">#&gt; 1            foce   FOCE 203.5575 0.3226566 2.476479 0.47204747 0.03903501</span></span>
 <span><span class="co">#&gt; 2           focei  FOCEI 308.8305 0.1727767 1.178559 0.03993581 0.03570809</span></span>
-<span><span class="co">#&gt; 3            saem   SAEM 310.6889 0.1709340 1.200470 0.01185184 0.05152043</span></span>
-<span><span class="co">#&gt; 4 saem_then_focei  FOCEI 308.8305 0.1727767 1.178559 0.03993581 0.03570809</span></span>
+<span><span class="co">#&gt; 3            saem   SAEM 310.0028 0.1716977 1.244394 0.03583333 0.03598740</span></span>
+<span><span class="co">#&gt; 4 saem_then_focei  FOCEI 308.8305 0.1727767 1.178559 0.03993580 0.03570809</span></span>
 <span><span class="co">#&gt;       sigma</span></span>
 <span><span class="co">#&gt; 1 0.2006693</span></span>
 <span><span class="co">#&gt; 2 0.1881154</span></span>
-<span><span class="co">#&gt; 3 0.1906719</span></span>
+<span><span class="co">#&gt; 3 0.1906066</span></span>
 <span><span class="co">#&gt; 4 0.1881154</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
@@ -1874,7 +1892,7 @@ Table&nbsp;16.3: The warfarin IOV model with different estimation methods.
 <span><span class="co">#&gt; 2  1   2 -0.08893739</span></span>
 <span><span class="co">#&gt; 3  2   1 -0.26486637</span></span>
 <span><span class="co">#&gt; 4  2   2  0.08047400</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">select</span><span class="op">(</span><span class="va">fit_iov</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">OCC</span>, <span class="va">DV</span>, <span class="va">IPRED</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">fit_iov</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">OCC</span>, <span class="va">DV</span>, <span class="va">IPRED</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME OCC     DV    IPRED</span></span>
 <span><span class="co">#&gt; 1  1  0.5   1 4.3571 4.466412</span></span>
 <span><span class="co">#&gt; 2  1  1.0   1 6.9057 7.007888</span></span>
@@ -1882,7 +1900,7 @@ Table&nbsp;16.3: The warfarin IOV model with different estimation methods.
 </div>
 <p><code>fit$ebe_kappas</code> has one row per subject and occasion. <code>sdtab</code> gains the <code>OCC</code> column. Compare with the same model without the kappa, fitted to the same data:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_no_iov</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_no_iov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">w</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = foce` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `focei`. The call-time value will be used.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>without_iov <span class="op">=</span> <span class="va">fit_no_iov</span><span class="op">$</span><span class="va">ofv</span>, with_iov <span class="op">=</span> <span class="va">fit_iov</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
@@ -1892,7 +1910,7 @@ Table&nbsp;16.3: The warfarin IOV model with different estimation methods.
 <p>The kappa lowers the OFV by 57.8 units for one extra parameter.</p>
 <p>Simulation draws a new kappa for each occasion, so a VPC of an IOV model includes the occasion-to-occasion spread:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sim_iov</span> <span class="op">&lt;-</span> <span class="fu">ferx_simulate</span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_iov</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sim_iov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate</a></span><span class="op">(</span><span class="va">iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_iov</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">sim_iov</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   DRAW SIM ID TIME CMT    IPRED    DV_SIM OBSERVED</span></span>
 <span><span class="co">#&gt; 1    1   1  1  0.5   1 4.678298  6.366642       NA</span></span>
@@ -1913,7 +1931,7 @@ Table&nbsp;16.3: The warfarin IOV model with different estimation methods.
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">occasion_variants</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span>, <span class="va">path</span><span class="op">)</span></span>
 <span>  <span class="va">settings</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"^settings"</span>, <span class="va">name</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>iov_column <span class="op">=</span> <span class="st">"OCC"</span><span class="op">)</span> <span class="kw">else</span> <span class="cn">NULL</span></span>
 <span>  <span class="co"># suppress the R warning that reports overriding the model file's method</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">path</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, settings <span class="op">=</span> <span class="va">settings</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">ofv</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">path</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, settings <span class="op">=</span> <span class="va">settings</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">ofv</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                 iov_occasion = dose            iov_occasion = time(120) </span></span>
 <span><span class="co">#&gt;                            308.8305                            308.8305 </span></span>
@@ -1923,7 +1941,7 @@ Table&nbsp;16.3: The warfarin IOV model with different estimation methods.
 <p>Without any occasion source, a model with kappas stops:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">no_occasion_source</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/make.names.html">make.names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">occasion_variants</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span>, <span class="st">".ferx"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">no_occasion_source</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">no_occasion_source</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
 <span><span class="co">#&gt;   Fit error: Model declares kappa (IOV) parameters but no occasion labels were found. Either set `iov_column = "OCC"` (or the relevant column name) to read occasions from the dataset, or set `iov_occasion = dose` / `iov_occasion = time(...)` to derive them in the model — both in [fit_options] — so that per-occasion kappas can be estimated. [E_IOV_MISSING_OCC]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1943,18 +1961,18 @@ Table&nbsp;16.4: IOV on clearance and volume (FOCEI).
 <span>  <span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">variability_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"warfarin_iov_"</span>, <span class="va">name</span>, <span class="st">".ferx"</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">iov_structures</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span>, <span class="va">path</span><span class="op">)</span></span>
 <span>  <span class="co"># suppress the R warning that reports overriding the model file's method</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">path</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">path</span>, <span class="va">iov</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iov_structure_fits</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iov_structures</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iov_structure_fits</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">f</span> <span class="op">&lt;-</span> <span class="va">iov_structure_fits</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">name</span>, parameters <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">n_parameters</span>, ofv <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">ofv</span>, omega_V <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">omega</span><span class="op">[</span><span class="st">"ETA_V"</span>, <span class="st">"ETA_V"</span><span class="op">]</span>,</span>
-<span>             sigma <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">sigma</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
+<span>             sigma <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">sigma</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;            model parameters      ofv        omega_V     sigma</span></span>
-<span><span class="co">#&gt; 1       kappa_CL          8 308.8305 0.010777732526 0.1881154</span></span>
-<span><span class="co">#&gt; 2 kappa_CL_and_V          9 206.2059 0.000006144212 0.1305205</span></span>
-<span><span class="co">#&gt; 3    block_kappa         10 202.1861 0.000006144212 0.1304248</span></span>
+<span><span class="co">#&gt;            model parameters      ofv      omega_V     sigma</span></span>
+<span><span class="co">#&gt; 1       kappa_CL          8 308.8305 1.077773e-02 0.1881154</span></span>
+<span><span class="co">#&gt; 2 kappa_CL_and_V          9 206.2059 6.144212e-06 0.1305205</span></span>
+<span><span class="co">#&gt; 3    block_kappa         10 202.1861 6.144212e-06 0.1304248</span></span>
 <span><span class="co">#&gt;                                                        warnings</span></span>
 <span><span class="co">#&gt; 1                             eta_shrinkage, dw_autocorrelation</span></span>
 <span><span class="co">#&gt; 2 eta_shrinkage, parameter_at_runaway_guard, dw_autocorrelation</span></span>
@@ -1970,14 +1988,14 @@ Table&nbsp;16.4: IOV on clearance and volume (FOCEI).
 </section></section><section id="iov-with-analytical-absorption-models" class="level3"><h3 class="anchored" data-anchor-id="iov-with-analytical-absorption-models">IOV with analytical absorption models</h3>
 <p>IOV works with every structural model. <code>one_cpt_transit_iov</code> puts a kappa on clearance in the analytical transit model of <a href="15-absorption.html" class="quarto-xref"><span>Absorption and bioavailability</span></a>. ferx evaluates subjects with IOV through the equivalent ODE model. According to its model file, the data were simulated with <code>TVCL</code> 9, <code>TVV</code> 30, <code>TVMTT</code> 1, <code>TVN</code> 3 and a kappa variance of 0.04:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">transit_iov</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"one_cpt_transit_iov"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">transit_iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">transit_iov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"one_cpt_transit_iov"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">transit_iov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL  = TVCL * exp(KAPPA_CL)</span></span>
 <span><span class="co">#&gt;   V   = TVV  * exp(ETA_V)</span></span>
 <span><span class="co">#&gt;   MTT = TVMTT</span></span>
 <span><span class="co">#&gt;   NTR = TVN</span></span>
-<span><span class="va">fit_transit_iov</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">transit_iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">transit_iov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_transit_iov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">transit_iov</span><span class="op">$</span><span class="va">model</span>, <span class="va">transit_iov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_transit_iov</span><span class="op">$</span><span class="va">theta</span></span>
 <span><span class="co">#&gt;       TVCL        TVV      TVMTT        TVN </span></span>
 <span><span class="co">#&gt;  9.9636094 25.8915920  0.9938112  2.9755746</span></span>
@@ -1991,21 +2009,21 @@ Table&nbsp;16.4: IOV on clearance and volume (FOCEI).
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-mu-referencing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;16.5: Fits with and without mu-referencing.
 </figcaption><div aria-describedby="tbl-mu-referencing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
-<span><span class="va">saem</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_saem"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
+<span><span class="va">saem</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_saem"</span><span class="op">)</span></span>
 <span><span class="va">mu_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html">expand.grid</a></span><span class="op">(</span>model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span>, <span class="st">"warfarin_saem"</span><span class="op">)</span>, mu_referencing <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>                       stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">mu_runs</span><span class="op">$</span><span class="va">ofv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mapply.html">mapply</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">model</span>, <span class="va">mu</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">ex</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">model</span> <span class="op">==</span> <span class="st">"warfarin_saem"</span><span class="op">)</span> <span class="va">saem</span> <span class="kw">else</span> <span class="va">cov</span></span>
 <span>  <span class="co"># suppress the R warning that reports overriding the model file's covariance setting</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, mu_referencing <span class="op">=</span> <span class="va">mu</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">ofv</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, mu_referencing <span class="op">=</span> <span class="va">mu</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">ofv</span></span>
 <span><span class="op">}</span>, <span class="va">mu_runs</span><span class="op">$</span><span class="va">model</span>, <span class="va">mu_runs</span><span class="op">$</span><span class="va">mu_referencing</span><span class="op">)</span></span>
-<span><span class="fu">arrange</span><span class="op">(</span><span class="va">mu_runs</span>, <span class="va">model</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span><span class="op">(</span><span class="va">mu_runs</span>, <span class="va">model</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              model mu_referencing        ofv</span></span>
 <span><span class="co">#&gt; 1 two_cpt_oral_cov           TRUE -1199.3264</span></span>
 <span><span class="co">#&gt; 2 two_cpt_oral_cov          FALSE -1199.3264</span></span>
-<span><span class="co">#&gt; 3    warfarin_saem           TRUE  -285.9865</span></span>
-<span><span class="co">#&gt; 4    warfarin_saem          FALSE  -277.8816</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 3    warfarin_saem           TRUE  -285.9997</span></span>
+<span><span class="co">#&gt; 4    warfarin_saem          FALSE  -283.6520</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>
@@ -2022,10 +2040,10 @@ Table&nbsp;16.6: Parameter scaling with the <code>nlopt_lbfgs</code> optimizer.
 <span>  parameter_scaling <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scaling_runs</span><span class="op">)</span>,</span>
 <span>  ofv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="va">scaling_runs</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="co"># suppress the R warning that reports overriding the model file's covariance setting</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                              settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="st">"nlopt_lbfgs"</span><span class="op">)</span>, <span class="va">s</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">ofv</span></span>
 <span>  <span class="op">}</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span><span class="va">fit_scale_params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, scale_params <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span><span class="va">fit_scale_params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, scale_params <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                                              verbose <span class="op">=</span> <span class="cn">FALSE</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>optimizer <span class="op">=</span> <span class="st">"nlopt_lbfgs"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="va">scaling_table</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>parameter_scaling <span class="op">=</span> <span class="st">"scale_params = TRUE"</span>, ofv <span class="op">=</span> <span class="va">fit_scale_params</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     parameter_scaling       ofv</span></span>
@@ -2064,10 +2082,10 @@ Table&nbsp;16.6: Parameter scaling with the <code>nlopt_lbfgs</code> optimizer.
 <span><span class="va">mixed_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^  omega ETA_CL   ~ 0.07.*"</span>, <span class="st">"  block_omega (ETA_CL, ETA_TLAG) = [0.07, 0.01, 0.04]"</span>,</span>
 <span>                   <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">additive</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">mixed_lines</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"^  omega ETA_TLAG"</span>, <span class="va">mixed_lines</span><span class="op">)</span><span class="op">]</span>, <span class="va">mixed_block</span><span class="op">)</span></span>
-<span><span class="va">fit_mixed_block</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">mixed_block</span>, <span class="va">additive</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_mixed_block</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">mixed_block</span>, <span class="va">additive</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in .ferx_compute_cor_matrix(result$cov_matrix): One or more diagonal</span></span>
 <span><span class="co">#&gt; elements are non-positive; correlation matrix may not be meaningful.</span></span>
-<span><span class="va">warnings_mixed</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_mixed_block</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">warnings_mixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_mixed_block</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">warnings_mixed</span><span class="op">[</span><span class="va">warnings_mixed</span><span class="op">$</span><span class="va">category</span> <span class="op">==</span> <span class="st">"omega_structure"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"message"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity</span></span>
 <span><span class="co">#&gt; 2  warning</span></span>
@@ -2097,7 +2115,7 @@ Table&nbsp;16.6: Parameter scaling with the <code>nlopt_lbfgs</code> optimizer.
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_fit</code> (<code>mu_referencing</code>, <code>scale_params</code>, <code>settings</code>), <code>?ferx_simulate</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code> (<code>mu_referencing</code>, <code>scale_params</code>, <code>settings</code>), <code><a href="https://ferx-nlme.org/reference/ferx_simulate.html">?ferx_simulate</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/model-file/parameters.html">parameters</a>, <a href="https://ferx-nlme.org/ferx-core/model-file/individual-parameters.html">individual parameters</a>, <a href="https://ferx-nlme.org/ferx-core/model-file/error-model.html">error model</a>, <a href="https://ferx-nlme.org/ferx-core/model-file/iov.html">IOV</a>, <a href="https://ferx-nlme.org/ferx-core/estimation/mixture.html">mixture models</a>, <a href="https://ferx-nlme.org/ferx-core/estimation/parameterization.html">packed parameter space</a>
 </li>

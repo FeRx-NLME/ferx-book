@@ -653,13 +653,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The base model is fitted (<a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a>) and evaluated (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>, <a href="08-vpc.html" class="quarto-xref"><span>Simulation-based evaluation: VPC</span></a>). The diagnostics hinted at covariate relationships (<code>ETA_CL</code> correlated with <code>CRCL</code> and <code>WT</code>) and flagged autocorrelated residuals. Model development means fitting alternatives and choosing between them. You can do that by hand: write a candidate, fit it and compare. Or let ferx’s search tools generate, fit, gate and rank candidates from a search space. This chapter shows both.</p>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
-<span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
+<span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
+<span><span class="co"># Search runs and the files this chapter writes go to a scratch directory, one</span></span>
+<span><span class="co"># subdirectory per run; the search tools create a run directory that does not exist yet.</span></span>
+<span><span class="va">search_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"searches"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">search_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="comparing-fitted-models" class="level2"><h2 class="anchored" data-anchor-id="comparing-fitted-models">Comparing fitted models</h2>
 <p><code>two_cpt_oral_cov</code> is a prespecified covariate model for the same data. Body weight scales <code>CL</code> and <code>V1</code> through a shared exponent <code>THETA_WT</code>, and creatinine clearance scales <code>CL</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL = TVCL * (WT / 70)^THETA_WT * (CRCL / 100)^THETA_CRCL * exp(ETA_CL)</span></span>
 <span><span class="co">#&gt;   V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)</span></span>
@@ -668,19 +677,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt;   KA = TVKA * exp(ETA_KA)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="likelihood-ratio-test-and-information-criteria" class="level3"><h3 class="anchored" data-anchor-id="likelihood-ratio-test-and-information-criteria">Likelihood ratio test and information criteria</h3>
 <p>Both are FOCEI fits to the same data, and the base model is nested in the covariate model (fix both exponents at 0). The difference in OFV is therefore a likelihood ratio statistic, with degrees of freedom equal to the number of added parameters:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">d_ofv</span> <span class="op">&lt;-</span> <span class="va">fit_base</span><span class="op">$</span><span class="va">ofv</span> <span class="op">-</span> <span class="va">fit_cov</span><span class="op">$</span><span class="va">ofv</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">d_ofv</span> <span class="op">&lt;-</span> <span class="va">fit_base</span><span class="op">$</span><span class="va">ofv</span> <span class="op">-</span> <span class="va">fit_cov</span><span class="op">$</span><span class="va">ofv</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="va">fit_cov</span><span class="op">$</span><span class="va">n_parameters</span> <span class="op">-</span> <span class="va">fit_base</span><span class="op">$</span><span class="va">n_parameters</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>d_ofv <span class="op">=</span> <span class="va">d_ofv</span>, df <span class="op">=</span> <span class="va">df</span>, p_value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Chisquare.html">pchisq</a></span><span class="op">(</span><span class="va">d_ofv</span>, <span class="va">df</span>, lower.tail <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         d_ofv            df       p_value </span></span>
-<span><span class="co">#&gt; 13.9235928014  2.0000000000  0.0009473931</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>d_ofv <span class="op">=</span> <span class="va">d_ofv</span>, df <span class="op">=</span> <span class="va">df</span>, p_value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Chisquare.html">pchisq</a></span><span class="op">(</span><span class="va">d_ofv</span>, <span class="va">df</span>, lower.tail <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      d_ofv df      p_value</span></span>
+<span><span class="co">#&gt; 1 13.92359  2 0.0009473931</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>For non-nested models, use information criteria. <code>fit$aic</code> and <code>fit$bic</code> are the classical AIC and BIC. <code>ferx_bic()</code> computes four BIC variants that differ in how parameters are penalised:</p>
+<p>For non-nested models, use information criteria. <code>fit$aic</code> and <code>fit$bic</code> are the classical AIC and BIC. <code><a href="https://ferx-nlme.org/reference/ferx_bic.html">ferx_bic()</a></code> computes four BIC variants that differ in how parameters are penalised:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -715,10 +724,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-criteria-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;9.1: Base and covariate model compared on OFV and information criteria (lower is better).
 </figcaption><div aria-describedby="tbl-criteria-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">criteria</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">criteria</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">ofv</span>, parameters <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">n_parameters</span>, aic <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">aic</span>, bic <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">bic</span>,</span>
-<span>    bic_mixed <span class="op">=</span> <span class="fu">ferx_bic</span><span class="op">(</span><span class="va">f</span>, <span class="st">"mixed"</span><span class="op">)</span>, bic_iiv <span class="op">=</span> <span class="fu">ferx_bic</span><span class="op">(</span><span class="va">f</span>, type <span class="op">=</span> <span class="st">"iiv"</span><span class="op">)</span>,</span>
-<span>    bic_random <span class="op">=</span> <span class="fu">ferx_bic</span><span class="op">(</span><span class="va">f</span>, <span class="st">"random"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    bic_mixed <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_bic.html">ferx_bic</a></span><span class="op">(</span><span class="va">f</span>, <span class="st">"mixed"</span><span class="op">)</span>, bic_iiv <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_bic.html">ferx_bic</a></span><span class="op">(</span><span class="va">f</span>, type <span class="op">=</span> <span class="st">"iiv"</span><span class="op">)</span>,</span>
+<span>    bic_random <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_bic.html">ferx_bic</a></span><span class="op">(</span><span class="va">f</span>, <span class="st">"random"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>base <span class="op">=</span> <span class="fu">criteria</span><span class="op">(</span><span class="va">fit_base</span><span class="op">)</span>, covariate <span class="op">=</span> <span class="fu">criteria</span><span class="op">(</span><span class="va">fit_cov</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                ofv parameters      aic      bic bic_mixed  bic_iiv bic_random</span></span>
@@ -729,9 +738,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </div>
 <p>Here the covariate model is better on every criterion.</p>
 </section><section id="is-the-fit-eligible-at-all" class="level3"><h3 class="anchored" data-anchor-id="is-the-fit-eligible-at-all">Is the fit eligible at all?</h3>
-<p>A converged fit can still be unfit for comparison: it may never have left its initial estimates, have a parameter at a bound, or have an ill-conditioned covariance matrix. <code>check_strictness()</code> applies such gates and returns the reasons for failure:</p>
+<p>A converged fit can still be unfit for comparison: it may never have left its initial estimates, have a parameter at a bound, or have an ill-conditioned covariance matrix. <code><a href="https://ferx-nlme.org/reference/check_strictness.html">check_strictness()</a></code> applies such gates and returns the reasons for failure:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">check_strictness</span><span class="op">(</span><span class="va">fit_cov</span>, require_covariance <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/check_strictness.html">check_strictness</a></span><span class="op">(</span><span class="va">fit_cov</span>, require_covariance <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $passed</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -741,20 +750,19 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; $skipped</span></span>
 <span><span class="co">#&gt; character(0)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The fit from NCA-based starting values in <a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a> converged to a much worse OFV. The gates reject it:</p>
+<p>The gates judge whether a fit is healthy, not whether it found the best optimum. Here they are applied to the fit from NCA-based starting values in <a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a>, and to the <code>emax_pkpd</code> example of <a href="20-pkpd.html" class="quarto-xref"><span>PK/PD and multiple endpoints</span></a>, three subjects fitted with a joint PK/PD model:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nca</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu">check_strictness</span><span class="op">(</span><span class="va">fit_nca</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $passed</span></span>
-<span><span class="co">#&gt; [1] FALSE</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $failures</span></span>
-<span><span class="co">#&gt; [1] "condition number 5.7691e+09 exceeds 1.0000e+03"   </span></span>
-<span><span class="co">#&gt; [2] "parameter correlation |r| = 1.0000 exceeds 0.9500"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $skipped</span></span>
-<span><span class="co">#&gt; character(0)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">nca_gate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/check_strictness.html">check_strictness</a></span><span class="op">(</span><span class="va">fit_nca</span><span class="op">)</span></span>
+<span><span class="va">nca_gate</span><span class="op">$</span><span class="va">passed</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="va">emax</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"emax_pkpd"</span><span class="op">)</span></span>
+<span><span class="va">emax_gate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/check_strictness.html">check_strictness</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">emax</span><span class="op">$</span><span class="va">model</span>, <span class="va">emax</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">emax_gate</span><span class="op">$</span><span class="va">failures</span></span>
+<span><span class="co">#&gt; [1] "condition number 4.7916e+03 exceeds 1.0000e+03"   </span></span>
+<span><span class="co">#&gt; [2] "parameter correlation |r| = 0.9850 exceeds 0.9500"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p>The NCA-start fit passes every gate, although its OFV is 33 points worse than <code>fit_base</code>: only comparing OFVs shows that it stopped at a worse point. The <code>emax_pkpd</code> fit is refused because its parameters cannot be told apart.</p>
 <p>The gates and their defaults: <code>require_converged = TRUE</code>, <code>require_covariance = FALSE</code>, <code>max_condition_number = 1000</code>, <code>max_correlation = 0.95</code>, <code>reject_on_boundary = TRUE</code> and <code>reject_init_stall = TRUE</code>. Set a threshold to <code>NULL</code>, or a flag to <code>FALSE</code>, to disable that gate. <code>reject_init_stall</code> assumes a cold start from the model file’s initial values, so turn it off when candidates start from a previous model’s estimates.</p>
 </section></section><section id="search-configurations" class="level2"><h2 class="anchored" data-anchor-id="search-configurations">Search configurations</h2>
 <div class="callout callout-style-default callout-warning callout-titled">
@@ -799,9 +807,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </tr>
 </tbody>
 </table>
-<p><code>ferx_search_config()</code> loads a file with the engine’s own strict loader, so an invalid space or a misspelt section fails before anything is fitted:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_search_config.html">ferx_search_config()</a></code> loads a file with the engine’s own strict loader, so an invalid space or a misspelt section fails before anything is fitted:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cfg</span> <span class="op">&lt;-</span> <span class="fu">ferx_search_config</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cfg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_config.html">ferx_search_config</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
 <span><span class="va">cfg</span></span>
 <span><span class="co">#&gt; &lt;ferx search configuration&gt;</span></span>
 <span><span class="co">#&gt;   file:  two_cpt_oral_base.ferxsearch</span></span>
@@ -825,22 +833,22 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </div>
 <p>The file’s sections, as shown in the printout: <code>base</code> and <code>data</code> (paths relative to the file); <code>[space]</code> with the search space as <code>mfl</code>; <code>[rank]</code> with the ranking criterion; <code>[strictness]</code> with the gates from above; <code>[run]</code> with <code>threads</code>, <code>retries</code> and <code>resume</code>; and a section per tool. The object returned holds the same information as a list:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cfg_cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_search_config</span><span class="op">(</span><span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cfg_cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_config.html">ferx_search_config</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
 <span><span class="va">cfg_cov</span><span class="op">$</span><span class="va">rank</span><span class="op">$</span><span class="va">type</span></span>
 <span><span class="co">#&gt; [1] "bic"</span></span>
 <span><span class="va">cfg</span><span class="op">$</span><span class="va">tools</span></span>
 <span><span class="co">#&gt; [1] "allometry" "covsearch"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="the-search-space" class="level3"><h3 class="anchored" data-anchor-id="the-search-space">The search space</h3>
-<p>The space is written in the Model Feature Language (MFL). <code>COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])</code> means: every parameter with a random effect, crossed with every continuous covariate, as a power or linear effect, each optional (<code>?</code>). The <code>?</code> is accepted on four keywords only – <code>COVARIATE</code>, <code>IIV</code>, <code>IOV</code> and <code>COVARIANCE</code> – and marks that statement as something the search may decline; written without it, every candidate carries the feature. The other keywords, <code>ABSORPTION</code> and <code>PERIPHERALS</code> among them, enumerate the alternatives to try instead. The <code>@</code> symbols resolve against the model’s <code>[covariates]</code> block and its random effects, so one space travels between models: <code>@CATEGORICAL</code> selects the categorical covariates as <code>@CONTINUOUS</code> selects the continuous ones. <code>ferx_search_space()</code> parses MFL text and, given a model and data, expands the symbols into the concrete candidates:</p>
+<p>The space is written in the Model Feature Language (MFL). <code>COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])</code> means: every parameter with a random effect, crossed with every continuous covariate, as a power or linear effect, each optional (<code>?</code>). The <code>?</code> is accepted on four keywords only – <code>COVARIATE</code>, <code>IIV</code>, <code>IOV</code> and <code>COVARIANCE</code> – and marks that statement as something the search may decline; written without it, every candidate carries the feature. The other keywords, <code>ABSORPTION</code> and <code>PERIPHERALS</code> among them, enumerate the alternatives to try instead. The <code>@</code> symbols resolve against the model’s <code>[covariates]</code> block and its random effects, so one space travels between models: <code>@CATEGORICAL</code> selects the categorical covariates as <code>@CONTINUOUS</code> selects the continuous ones. <code><a href="https://ferx-nlme.org/reference/ferx_search_space.html">ferx_search_space()</a></code> parses MFL text and, given a model and data, expands the symbols into the concrete candidates:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_search_space</span><span class="op">(</span><span class="st">"COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_space.html">ferx_search_space</a></span><span class="op">(</span><span class="st">"COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;ferx search space&gt; (as written)</span></span>
 <span><span class="co">#&gt;   mfl = COVARIATE?(@IIV, @CONTINUOUS, [pow, lin])</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                                  feature   keyword optional</span></span>
 <span><span class="co">#&gt; 1 COVARIATE?(@IIV,@CONTINUOUS,[pow,lin]) COVARIATE     TRUE</span></span>
-<span><span class="va">space</span> <span class="op">&lt;-</span> <span class="fu">ferx_search_space</span><span class="op">(</span><span class="va">cfg</span><span class="op">$</span><span class="va">mfl</span>, model <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="va">space</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_space.html">ferx_search_space</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">$</span><span class="va">mfl</span>, model <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="va">space</span>, <span class="st">"covariate_effects"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 20</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="va">space</span>, <span class="st">"covariate_effects"</span><span class="op">)</span><span class="op">)</span></span>
@@ -852,12 +860,12 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; 5        V1        WT    pow  *     TRUE</span></span>
 <span><span class="co">#&gt; 6        V1        WT    lin  *     TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>ferx_search_coverage()</code> reports, without fitting, whether the engine can build candidates for each feature of a space:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_search_coverage.html">ferx_search_coverage()</a></code> reports, without fitting, whether the engine can build candidates for each feature of a space:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_search_coverage</span><span class="op">(</span><span class="va">space</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_coverage.html">ferx_search_coverage</a></span><span class="op">(</span><span class="va">space</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                                  feature covered reason</span></span>
 <span><span class="co">#&gt; 1 COVARIATE?(@IIV,@CONTINUOUS,[pow,lin])    TRUE   &lt;NA&gt;</span></span>
-<span><span class="fu">ferx_search_coverage</span><span class="op">(</span><span class="st">"ABSORPTION(SEQ-ZO-FO)"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_coverage.html">ferx_search_coverage</a></span><span class="op">(</span><span class="st">"ABSORPTION(SEQ-ZO-FO)"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                 feature covered</span></span>
 <span><span class="co">#&gt; 1 ABSORPTION(SEQ-ZO-FO)   FALSE</span></span>
 <span><span class="co">#&gt;                                                                                                                                                                                                                                                                                                                       reason</span></span>
@@ -866,21 +874,21 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <p>Sequential zero- then first-order absorption is not generated by the search. <a href="15-absorption.html" class="quarto-xref"><span>Absorption and bioavailability</span></a> shows the bundled model for it, which you can use as a base model instead.</p>
 <p>An uncovered feature is not quietly dropped. Asking for one in a configuration file is an error at load, before anything is fitted, because a search that silently narrowed its space would answer a different question than the one you posed:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">uncovered</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"search-space"</span><span class="op">)</span>, <span class="st">"uncovered.ferxsearch"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">uncovered</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"uncovered.ferxsearch"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">'mfl = .*'</span>, <span class="st">'mfl = "ABSORPTION([FO,SEQ-ZO-FO])"'</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">search</span><span class="op">)</span><span class="op">)</span>, <span class="va">uncovered</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu">ferx_search_config</span><span class="op">(</span><span class="va">uncovered</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">".*mfl: "</span>, <span class="st">""</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_config.html">ferx_search_config</a></span><span class="op">(</span><span class="va">uncovered</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">".*mfl: "</span>, <span class="st">""</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "the search space asks for 1 feature ferx cannot build a candidate for:\n  - ABSORPTION(SEQ-ZO-FO): sequential zero-order-then-first-order absorption is not one input term on a standard disposition but a depot of its own, filled at a constant rate and emptied by `ka`; there is no template for it and the search does not generate one. Write it by hand — `examples/sequential_absorption.ferx` — and search around it\nSee the coverage table at https://ferx-nlme.github.io/ferx-core/tools/search.html#coverage"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>That is what <code>ferx_search_coverage()</code> is for: check a space before you file it.</p>
+<p>That is what <code><a href="https://ferx-nlme.org/reference/ferx_search_coverage.html">ferx_search_coverage()</a></code> is for: check a space before you file it.</p>
 </section></section><section id="covariate-search" class="level2"><h2 class="anchored" data-anchor-id="covariate-search">Covariate search</h2>
-<p><code>ferx_covsearch()</code> runs a stepwise covariate search. In each forward step it fits every remaining candidate effect and adds the one with the largest significant OFV drop at <code>p_forward</code>. The backward phase then removes effects whose removal is not significant at the stricter <code>p_backward</code>. The bundled configuration uses <code>p_forward = 0.01</code> and <code>p_backward = 0.001</code>:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_covsearch.html">ferx_covsearch()</a></code> runs a stepwise covariate search. In each forward step it fits every remaining candidate effect and adds the one with the largest significant OFV drop at <code>p_forward</code>. The backward phase then removes effects whose removal is not significant at the stricter <code>p_backward</code>. The bundled configuration uses <code>p_forward = 0.01</code> and <code>p_backward = 0.001</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cs_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"covsearch"</span><span class="op">)</span></span>
-<span><span class="va">cs</span> <span class="op">&lt;-</span> <span class="fu">ferx_covsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="va">cs_dir</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cs_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"covsearch"</span><span class="op">)</span></span>
+<span><span class="va">cs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_covsearch.html">ferx_covsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="va">cs_dir</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">cs</span></span>
 <span><span class="co">#&gt; ferx covariate search (scm-forward-then-backward)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/two_cpt_oral_cov.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpJuwo6H/covsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpdyBZsW/searches/covsearch</span></span>
 <span><span class="co">#&gt;   OFV:   -1185 (base) -&gt; -1185 (step 3)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Steps (the candidate selected at each step):</span></span>
@@ -893,35 +901,32 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; Final covariate relations:</span></span>
 <span><span class="co">#&gt;   (none - the base model was not improved on)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The forward phase added <code>CL ~ CRCL</code> (linear) at p = 0.0097, below <code>p_forward</code>. That p-value is above <code>p_backward</code>, so the backward phase removed the effect again. The search returns the base model. Candidates excluded by the strictness gate are kept in the step table with their reason:</p>
+<p>The forward phase added <code>CL ~ CRCL</code> (linear) at p = 0.0097, below <code>p_forward</code>. That p-value is above <code>p_backward</code>, so the backward phase removed the effect again. The search returns the base model. Candidates excluded by the strictness gate are kept in the step table with their reasons; here is the first reason of each, without its detail:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cs</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span><span class="op">!</span><span class="va">cs</span><span class="op">$</span><span class="va">steps</span><span class="op">$</span><span class="va">passed</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"step"</span>, <span class="st">"parameter"</span>, <span class="st">"covariate"</span>, <span class="st">"form"</span>, <span class="st">"failures"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;    step parameter covariate   form</span></span>
-<span><span class="co">#&gt; 8     1        V1      CRCL linear</span></span>
-<span><span class="co">#&gt; 20    1        KA      CRCL linear</span></span>
-<span><span class="co">#&gt; 22    2        CL        WT linear</span></span>
-<span><span class="co">#&gt; 38    2        KA      CRCL linear</span></span>
-<span><span class="co">#&gt;                                                                                                                         failures</span></span>
-<span><span class="co">#&gt; 8           condition number 8.1386e8 exceeds 1.0000e3; parameter correlation |r| = 1.0000 exceeds 0.9500 (TVKA ~ THETA_V1_CRCL)</span></span>
-<span><span class="co">#&gt; 20     condition number 1.3933e10 exceeds 1.0000e3; parameter correlation |r| = 1.0000 exceeds 0.9500 (THETA_KA_CRCL ~ PROP_ERR)</span></span>
-<span><span class="co">#&gt; 22          condition number 7.7525e8 exceeds 1.0000e3; parameter correlation |r| = 1.0000 exceeds 0.9500 (TVV1 ~ THETA_CL_CRCL)</span></span>
-<span><span class="co">#&gt; 38 condition number 2.9288e9 exceeds 1.0000e3; parameter correlation |r| = 1.0000 exceeds 0.9500 (THETA_CL_CRCL ~ THETA_KA_CRCL)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">excluded</span> <span class="op">&lt;-</span> <span class="va">cs</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span><span class="op">!</span><span class="va">cs</span><span class="op">$</span><span class="va">steps</span><span class="op">$</span><span class="va">passed</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"step"</span>, <span class="st">"parameter"</span>, <span class="st">"covariate"</span>, <span class="st">"form"</span>, <span class="st">"failures"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">excluded</span><span class="op">$</span><span class="va">failures</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html">trimws</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"[;(].*"</span>, <span class="st">""</span>, <span class="va">excluded</span><span class="op">$</span><span class="va">failures</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">excluded</span></span>
+<span><span class="co">#&gt;    step parameter covariate   form                                    failures</span></span>
+<span><span class="co">#&gt; 8     1        V1      CRCL linear  condition number 8.1386e8 exceeds 1.0000e3</span></span>
+<span><span class="co">#&gt; 20    1        KA      CRCL linear condition number 1.3933e10 exceeds 1.0000e3</span></span>
+<span><span class="co">#&gt; 22    2        CL        WT linear  condition number 7.7525e8 exceeds 1.0000e3</span></span>
+<span><span class="co">#&gt; 38    2        KA      CRCL linear  condition number 2.9288e9 exceeds 1.0000e3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> shows the selected step of each phase. <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> on the result adds every candidate of every step; the same table is <code>cs$steps</code>. The run directory holds the per-step journals, <code>steps.csv</code> and <code>final.ferx</code>. <code>ferx_search_results()</code> reads the step table back from disk:</p>
+<p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> shows the selected step of each phase. <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> on the result adds every candidate of every step; the same table is <code>cs$steps</code>. The run directory holds the per-step journals, <code>steps.csv</code> and <code>final.ferx</code>. <code><a href="https://ferx-nlme.org/reference/ferx_search_results.html">ferx_search_results()</a></code> reads the step table back from disk:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span><span class="op">(</span><span class="va">cs_dir</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span><span class="op">(</span><span class="va">cs_dir</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "backward-3" "base"       "final.ferx" "forward-1"  "forward-2" </span></span>
 <span><span class="co">#&gt; [6] "steps.csv"</span></span>
-<span><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fu">ferx_search_results</span><span class="op">(</span><span class="va">cs_dir</span>, type <span class="op">=</span> <span class="st">"steps"</span><span class="op">)</span></span>
+<span><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_results.html">ferx_search_results</a></span><span class="op">(</span><span class="va">cs_dir</span>, type <span class="op">=</span> <span class="st">"steps"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="va">steps</span>, <span class="st">"tool"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "covsearch"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The search can also be stated inline. Here it is restricted to <code>CL</code>, with a less strict backward level:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cs_cl</span> <span class="op">&lt;-</span> <span class="fu">ferx_covsearch</span><span class="op">(</span>model <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cs_cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_covsearch.html">ferx_covsearch</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">base</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>                        search_space <span class="op">=</span> <span class="st">"COVARIATE?(CL, [WT, CRCL], [pow, lin])"</span>,</span>
 <span>                        p_forward <span class="op">=</span> <span class="fl">0.01</span>, p_backward <span class="op">=</span> <span class="fl">0.01</span>,</span>
-<span>                        directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"covsearch-cl"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                        directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"covsearch-cl"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">cs_cl</span><span class="op">$</span><span class="va">included</span></span>
 <span><span class="co">#&gt;   parameter covariate   form         origin</span></span>
 <span><span class="co">#&gt; 1        CL      CRCL linear forward step 1</span></span>
@@ -931,15 +936,15 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </div>
 <p>The selected covariate model depends on the search space and the significance levels. A search result is evidence, not a decision. The rest of <em>The analysis workflow</em> continues with the prespecified <code>two_cpt_oral_cov</code> model, which the comparison above supports.</p>
 </section><section id="structural-search" class="level2"><h2 class="anchored" data-anchor-id="structural-search">Structural search</h2>
-<p><code>ferx_modelsearch()</code> searches structural features: absorption, elimination, peripheral and transit compartments, and lag time. It ranks the candidates on a criterion, the mixed BIC by default. The warfarin configuration searches a peripheral compartment and a lag time:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_modelsearch.html">ferx_modelsearch()</a></code> searches structural features: absorption, elimination, peripheral and transit compartments, and lag time. It ranks the candidates on a criterion, the mixed BIC by default. The warfarin configuration searches a peripheral compartment and a lag time:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ms_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"modelsearch"</span><span class="op">)</span></span>
-<span><span class="va">warf</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
-<span><span class="va">ms</span> <span class="op">&lt;-</span> <span class="fu">ferx_modelsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">warf</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="va">ms_dir</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ms_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"modelsearch"</span><span class="op">)</span></span>
+<span><span class="va">warf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<span><span class="va">ms</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_modelsearch.html">ferx_modelsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">warf</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="va">ms_dir</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">ms</span></span>
 <span><span class="co">#&gt; ferx structural model search (reduced_stepwise, ranked on bic_mixed)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpJuwo6H/modelsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpdyBZsW/searches/modelsearch</span></span>
 <span><span class="co">#&gt;   Base:  base - FO, 0 peripherals</span></span>
 <span><span class="co">#&gt;   bic_mixed:   -261.8 (base) -&gt; -261.8 (base)</span></span>
 <span><span class="co">#&gt;   5 models over 2 layers</span></span>
@@ -948,21 +953,20 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;  rank   id              structure    ofv criterion d_criterion converged passed</span></span>
 <span><span class="co">#&gt;     1 base      FO, 0 peripherals -280.4    -261.8       0.000      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;     2 run1 FO, 0 peripherals, lag -282.7    -259.6       2.258      TRUE   TRUE</span></span>
-<span><span class="co">#&gt;     3 run2       FO, 1 peripheral -282.5    -254.6       7.254      TRUE   TRUE</span></span>
-<span><span class="co">#&gt;     4 run4  FO, 1 peripheral, lag -283.6    -251.1      10.730      TRUE   TRUE</span></span>
-<span><span class="co">#&gt;     5 run3  FO, 1 peripheral, lag -282.7    -250.2      11.660      TRUE   TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 3 models excluded by the strictness gate; summary() lists them.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The base structure ranks best on the mixed BIC. The lag-time model has a lower OFV, but not by enough to pay for its extra parameters. Every candidate’s model text is kept, so the runner-up can be inspected or refitted:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">runner_up</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">ms_dir</span>, <span class="st">"runner_up.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">runner_up</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">ms_dir</span>, <span class="st">"runner_up.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">ms</span><span class="op">$</span><span class="va">model_text</span><span class="op">[[</span><span class="st">"run1"</span><span class="op">]</span><span class="op">]</span>, <span class="va">runner_up</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">runner_up</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">runner_up</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   pk one_cpt_oral(cl=CL, v=V, ka=KA, lagtime=ALAG)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>With <code>resume = TRUE</code> and the same <code>directory</code>, a search reuses the fits it already journalled:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ms_again</span> <span class="op">&lt;-</span> <span class="fu">ferx_modelsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">warf</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="va">ms_dir</span>, resume <span class="op">=</span> <span class="cn">TRUE</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ms_again</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_modelsearch.html">ferx_modelsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">warf</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="va">ms_dir</span>, resume <span class="op">=</span> <span class="cn">TRUE</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">ms_again</span><span class="op">$</span><span class="va">models</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"structure"</span>, <span class="st">"reused"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     id              structure reused</span></span>
 <span><span class="co">#&gt; 1 base      FO, 0 peripherals   TRUE</span></span>
@@ -970,11 +974,11 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; 3 run2       FO, 1 peripheral   TRUE</span></span>
 <span><span class="co">#&gt; 4 run3  FO, 1 peripheral, lag   TRUE</span></span>
 <span><span class="co">#&gt; 5 run4  FO, 1 peripheral, lag   TRUE</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="fu">ferx_search_results</span><span class="op">(</span><span class="va">ms_dir</span>, type <span class="op">=</span> <span class="st">"models"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_results.html">ferx_search_results</a></span><span class="op">(</span><span class="va">ms_dir</span>, type <span class="op">=</span> <span class="st">"models"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="residual-error-search" class="level2"><h2 class="anchored" data-anchor-id="residual-error-search">Residual error search</h2>
-<p><code>ferx_ruvsearch()</code> tests four families of residual error extensions against the current error model, using the likelihood ratio test at <code>p_value</code>:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_ruvsearch.html">ferx_ruvsearch()</a></code> tests four families of residual error extensions against the current error model, using the likelihood ratio test at <code>p_value</code>:</p>
 <ul>
 <li>
 <code>IIV_on_RUV</code>: a random effect on the residual error magnitude. It needs an estimation method with interaction.</li>
@@ -987,12 +991,12 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </ul>
 <p>Up to <code>max_iter</code> accepted features are stacked. The bundled configuration searches the analytic transit model <code>one_cpt_transit</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">transit</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"one_cpt_transit"</span><span class="op">)</span></span>
-<span><span class="va">rs</span> <span class="op">&lt;-</span> <span class="fu">ferx_ruvsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">transit</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"ruvsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">transit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"one_cpt_transit"</span><span class="op">)</span></span>
+<span><span class="va">rs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_ruvsearch.html">ferx_ruvsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">transit</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"ruvsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">rs</span></span>
 <span><span class="co">#&gt; ferx residual-error search (likelihood-ratio test at p = 0.05)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/transit_oral.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpJuwo6H/ruvsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpdyBZsW/searches/ruvsearch</span></span>
 <span><span class="co">#&gt;   OFV:   -1063.880 (input) -&gt; -1070.083 (time_varying1-1, dOFV 6.203)</span></span>
 <span><span class="co">#&gt;   2 iterations, 10 models fitted</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1024,12 +1028,13 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">rs</span><span class="op">$</span><span class="va">final_features</span></span>
 <span><span class="co">#&gt; [1] "time_varying1"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>cwres_prescreen</code> changes what those numbers are. With it on, candidates are screened against the parent’s CWRES rather than fitted to the data, which is cheaper but puts the criterion on a different scale. Two runs that differ only in that flag, everything else held equal:</p>
+<p>The search accepted <code>time_varying1</code> (time-varying) in iteration 1, and nothing further in iteration 2. The base model of this workflow, which carried a residual autocorrelation warning in <a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>, can be searched the same way with the inline arguments (<code>model</code>, <code>data</code>, <code>p_value</code>, <code>max_iter</code>, …).</p>
+<p><code>cwres_prescreen</code> changes what the candidates are scored on. With it on, candidates are screened against the parent’s CWRES rather than fitted to the data, which is cheaper but puts the criterion on a different scale. Two runs that differ only in that flag, everything else held equal:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ruv</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">prescreen</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">ferx_ruvsearch</span><span class="op">(</span>model <span class="op">=</span> <span class="va">transit</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">transit</span><span class="op">$</span><span class="va">data</span>, p_value <span class="op">=</span> <span class="fl">0.05</span>, max_iter <span class="op">=</span> <span class="fl">1</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ruv</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">prescreen</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_ruvsearch.html">ferx_ruvsearch</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">transit</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">transit</span><span class="op">$</span><span class="va">data</span>, p_value <span class="op">=</span> <span class="fl">0.05</span>, max_iter <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                 retries <span class="op">=</span> <span class="fl">0</span>, cwres_prescreen <span class="op">=</span> <span class="va">prescreen</span>,</span>
-<span>                 directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"ruvsearch-"</span>, <span class="va">prescreen</span><span class="op">)</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                 directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"ruvsearch-"</span>, <span class="va">prescreen</span><span class="op">)</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">rs_data</span> <span class="op">&lt;-</span> <span class="fu">ruv</span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">rs_screen</span> <span class="op">&lt;-</span> <span class="fu">ruv</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span></span>
@@ -1038,125 +1043,122 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span>      screened_on_cwres <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html">range</a></span><span class="op">(</span><span class="va">rs_screen</span><span class="op">$</span><span class="va">candidates</span><span class="op">$</span><span class="va">criterion</span><span class="op">[</span><span class="va">screened</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                         [,1]       [,2]</span></span>
 <span><span class="co">#&gt; fitted_to_data    -1070.0829 -1058.8200</span></span>
-<span><span class="co">#&gt; screened_on_cwres   236.6697   240.6815</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>selected_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">rs_data</span><span class="op">$</span><span class="va">final_features</span><span class="op">)</span>, selected_screened <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">rs_screen</span><span class="op">$</span><span class="va">final_features</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;     selected_data selected_screened </span></span>
-<span><span class="co">#&gt;                 1                 1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; screened_on_cwres   236.6696   240.6814</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>fitted_to_data <span class="op">=</span> <span class="va">rs_data</span><span class="op">$</span><span class="va">final_features</span>, screened_on_cwres <span class="op">=</span> <span class="va">rs_screen</span><span class="op">$</span><span class="va">final_features</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $fitted_to_data</span></span>
+<span><span class="co">#&gt; [1] "time_varying1"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $screened_on_cwres</span></span>
+<span><span class="co">#&gt; [1] "time_varying1"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The two sets of numbers are not comparable, and the screening rows are the ones whose <code>id</code> starts with <code>cwres</code>. Note that the cheaper pass also selected differently here, so treat prescreening as a different search rather than a faster one. The engine default is <code>cwres_prescreen = FALSE</code>, which is what the configuration run above used.</p>
-<p>The search accepted a time-varying residual error in the first iteration, and nothing further in the second. The base model of this workflow, which carried a residual autocorrelation warning in <a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>, can be searched the same way with the inline arguments (<code>model</code>, <code>data</code>, <code>p_value</code>, <code>max_iter</code>, …).</p>
+<p>The two sets of numbers are not comparable, and the screening rows are the ones whose <code>id</code> starts with <code>cwres</code>. Here both passes select the same feature, but they rank candidates on different quantities and need not agree, so treat prescreening as a different search rather than a faster one. The engine default is <code>cwres_prescreen = FALSE</code>, which is what the configuration run above used.</p>
 </section><section id="variability-search" class="level2"><h2 class="anchored" data-anchor-id="variability-search">Variability search</h2>
-<p><code>ferx_iivsearch()</code> decides the random-effect structure: which parameters carry an eta, and which etas share a covariance block. The space is written with <code>IIV</code> and <code>COVARIANCE</code> statements, and <code>?</code> marks what the search may decide. The bundled <code>warfarin_block_omega</code> configuration makes every PK parameter’s eta exploratory and offers a block over whichever survive:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_iivsearch.html">ferx_iivsearch()</a></code> decides the random-effect structure: which parameters carry an eta, and which etas share a covariance block. The space is written with <code>IIV</code> and <code>COVARIANCE</code> statements, and <code>?</code> marks what the search may decide. The bundled <code>warfarin_block_omega</code> configuration makes every PK parameter’s eta exploratory and offers a block over whichever survive:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">bo</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_block_omega"</span><span class="op">)</span></span>
-<span><span class="va">iiv</span> <span class="op">&lt;-</span> <span class="fu">ferx_iivsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">bo</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"iivsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in .ferx_compute_cor_matrix(result$cov_matrix): One or more diagonal</span></span>
-<span><span class="co">#&gt; elements are non-positive; correlation matrix may not be meaningful.</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">bo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_block_omega"</span><span class="op">)</span></span>
+<span><span class="va">iiv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_iivsearch.html">ferx_iivsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">bo</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"iivsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">iiv</span></span>
 <span><span class="co">#&gt; ferx variability-structure search (top_down_exhaustive + block structure, ranked on bic_iiv)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin_block_omega.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpJuwo6H/iivsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpdyBZsW/searches/iivsearch</span></span>
 <span><span class="co">#&gt;   Input: [ETA_CL,ETA_V]+[ETA_KA]</span></span>
-<span><span class="co">#&gt;   bic_iiv:   -271.3 (input) -&gt; -272.5 (run10)</span></span>
+<span><span class="co">#&gt;   bic_iiv:   -271.3 (input) -&gt; -273.5 (run8)</span></span>
 <span><span class="co">#&gt;   12 models over 3 steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 1 (no_of_etas), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
 <span><span class="co">#&gt;  rank    id               structure criterion d_criterion  best</span></span>
 <span><span class="co">#&gt;     1 input [ETA_CL,ETA_V]+[ETA_KA]   -271.30         0.0  TRUE</span></span>
-<span><span class="co">#&gt;     2  run1       [ETA_CL]+[ETA_KA]    -14.16      -257.1 FALSE</span></span>
-<span><span class="co">#&gt;     3  run5                [ETA_KA]     96.90      -368.2 FALSE</span></span>
-<span><span class="co">#&gt;     4  run4                [ETA_CL]    108.60      -379.9 FALSE</span></span>
-<span><span class="co">#&gt;     5  run6                 [ETA_V]    178.10      -449.4 FALSE</span></span>
-<span><span class="co">#&gt;     6  run7                            181.70      -453.0 FALSE</span></span>
+<span><span class="co">#&gt;     2  run3        [ETA_KA]+[ETA_V]    -20.95      -250.3 FALSE</span></span>
+<span><span class="co">#&gt;     3  run1       [ETA_CL]+[ETA_KA]    -14.16      -257.1 FALSE</span></span>
+<span><span class="co">#&gt;     4  run5                [ETA_KA]     96.90      -368.2 FALSE</span></span>
+<span><span class="co">#&gt;     5  run4                [ETA_CL]    108.60      -379.9 FALSE</span></span>
+<span><span class="co">#&gt;     6  run6                 [ETA_V]    178.10      -449.4 FALSE</span></span>
+<span><span class="co">#&gt;     7  run7                            181.70      -453.0 FALSE</span></span>
 <span><span class="co">#&gt;    NA  run2          [ETA_CL,ETA_V]     86.80      -358.1 FALSE</span></span>
-<span><span class="co">#&gt;    NA  run3        [ETA_KA]+[ETA_V]     27.38      -298.7 FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 2 (block_structure), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
 <span><span class="co">#&gt;  rank    id                 structure criterion d_criterion  best</span></span>
-<span><span class="co">#&gt;     1 run10   [ETA_KA,ETA_V]+[ETA_CL]    -272.5      1.1930  TRUE</span></span>
-<span><span class="co">#&gt;     2  run9   [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9037 FALSE</span></span>
-<span><span class="co">#&gt;     3 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
-<span><span class="co">#&gt;     4 run11     [ETA_CL,ETA_KA,ETA_V]    -269.5     -1.7740 FALSE</span></span>
-<span><span class="co">#&gt;    NA  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5      2.1810 FALSE</span></span>
+<span><span class="co">#&gt;     1  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5      2.1810  TRUE</span></span>
+<span><span class="co">#&gt;     2 run10   [ETA_KA,ETA_V]+[ETA_CL]    -272.5      1.1930 FALSE</span></span>
+<span><span class="co">#&gt;     3  run9   [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9037 FALSE</span></span>
+<span><span class="co">#&gt;     4 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
+<span><span class="co">#&gt;     5 run11     [ETA_CL,ETA_KA,ETA_V]    -269.5     -1.7740 FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 3 (compare_to_input), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
-<span><span class="co">#&gt;  rank    id               structure criterion d_criterion  best</span></span>
-<span><span class="co">#&gt;     1 run10 [ETA_KA,ETA_V]+[ETA_CL]    -272.5       1.193  TRUE</span></span>
-<span><span class="co">#&gt;     2 input [ETA_CL,ETA_V]+[ETA_KA]    -271.3       0.000 FALSE</span></span>
+<span><span class="co">#&gt;  rank    id                 structure criterion d_criterion  best</span></span>
+<span><span class="co">#&gt;     1  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5       2.181  TRUE</span></span>
+<span><span class="co">#&gt;     2 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3       0.000 FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 3 models excluded by the strictness gate; summary() lists them.</span></span>
+<span><span class="co">#&gt; 1 model excluded by the strictness gate; summary() lists them.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Selected variability structure (run10):</span></span>
+<span><span class="co">#&gt; Selected variability structure (run8):</span></span>
 <span><span class="co">#&gt;   IIV:         ETA_CL, ETA_KA, ETA_V</span></span>
-<span><span class="co">#&gt;   Correlated:  ETA_V ~ ETA_KA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   Correlated:  (none - every eta is diagonal)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The printed output has three steps. The eta-count stage removes etas from the input structure – <code>top_down_exhaustive</code> tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. The third step, <code>compare_to_input</code>, puts the winner of the block stage back against the input structure, and it is there that the selection is made. Candidates are ranked on the BIC(iiv), which is what <code>rank = "bic"</code> means for this tool.</p>
-<p>Read the printed output carefully. The input model is a candidate in its own right: the step tables rank it, and in the eta-count stage it ranks first. The strictness gate is separate from that ranking. It rejected 3 of the fitted models, and one of them reached a better criterion than the winner did:</p>
+<p>Read the printed output carefully. The input model is a candidate in its own right, and the step tables rank it beside the candidates. The strictness gate is separate from that ranking; <code>$models</code> shows both:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"structure"</span>, <span class="st">"criterion"</span>, <span class="st">"rank"</span>, <span class="st">"passed"</span><span class="op">)</span><span class="op">]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"structure"</span>, <span class="st">"criterion"</span>, <span class="st">"rank"</span>, <span class="st">"passed"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;       id                 structure  criterion rank passed</span></span>
 <span><span class="co">#&gt; 1  input   [ETA_CL,ETA_V]+[ETA_KA] -271.27544   NA   TRUE</span></span>
-<span><span class="co">#&gt; 2   run1         [ETA_CL]+[ETA_KA]  -14.16006    2   TRUE</span></span>
+<span><span class="co">#&gt; 2   run1         [ETA_CL]+[ETA_KA]  -14.16006    3   TRUE</span></span>
 <span><span class="co">#&gt; 3   run2            [ETA_CL,ETA_V]   86.79536   NA  FALSE</span></span>
-<span><span class="co">#&gt; 4   run3          [ETA_KA]+[ETA_V]   27.37871   NA  FALSE</span></span>
-<span><span class="co">#&gt; 5   run4                  [ETA_CL]  108.64292    4   TRUE</span></span>
-<span><span class="co">#&gt; 6   run5                  [ETA_KA]   96.89883    3   TRUE</span></span>
-<span><span class="co">#&gt; 7   run6                   [ETA_V]  178.10690    5   TRUE</span></span>
-<span><span class="co">#&gt; 8   run7                            181.73650    6   TRUE</span></span>
-<span><span class="co">#&gt; 9   run8 [ETA_CL]+[ETA_KA]+[ETA_V] -273.45621   NA  FALSE</span></span>
-<span><span class="co">#&gt; 10  run9   [ETA_CL,ETA_KA]+[ETA_V] -272.17910    2   TRUE</span></span>
-<span><span class="co">#&gt; 11 run10   [ETA_KA,ETA_V]+[ETA_CL] -272.46800    1   TRUE</span></span>
-<span><span class="co">#&gt; 12 run11     [ETA_CL,ETA_KA,ETA_V] -269.50116    4   TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 4   run3          [ETA_KA]+[ETA_V]  -20.94555    2   TRUE</span></span>
+<span><span class="co">#&gt; 5   run4                  [ETA_CL]  108.64292    5   TRUE</span></span>
+<span><span class="co">#&gt; 6   run5                  [ETA_KA]   96.89883    4   TRUE</span></span>
+<span><span class="co">#&gt; 7   run6                   [ETA_V]  178.10690    6   TRUE</span></span>
+<span><span class="co">#&gt; 8   run7                            181.73650    7   TRUE</span></span>
+<span><span class="co">#&gt; 9   run8 [ETA_CL]+[ETA_KA]+[ETA_V] -273.45621    1   TRUE</span></span>
+<span><span class="co">#&gt; 10  run9   [ETA_CL,ETA_KA]+[ETA_V] -272.17910    3   TRUE</span></span>
+<span><span class="co">#&gt; 11 run10   [ETA_KA,ETA_V]+[ETA_CL] -272.46800    2   TRUE</span></span>
+<span><span class="co">#&gt; 12 run11     [ETA_CL,ETA_KA,ETA_V] -269.50116    5   TRUE</span></span>
+<span><span class="va">eta_stage</span> <span class="op">&lt;-</span> <span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">$</span><span class="va">kind</span> <span class="op">==</span> <span class="st">"no_of_etas"</span>, <span class="op">]</span></span>
+<span><span class="va">input_rank</span> <span class="op">&lt;-</span> <span class="va">eta_stage</span><span class="op">$</span><span class="va">rank</span><span class="op">[</span><span class="va">eta_stage</span><span class="op">$</span><span class="va">id</span> <span class="op">==</span> <span class="st">"input"</span><span class="op">]</span></span>
+<span><span class="va">gated</span> <span class="op">&lt;-</span> <span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">[</span><span class="op">!</span><span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">passed</span>, <span class="op">]</span></span>
+<span><span class="va">diagonal</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">","</span>, <span class="va">iiv</span><span class="op">$</span><span class="va">final_structure</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>run8</code> scores -273.46 against the selected -272.47, and is out because it did not pass. Note where that verdict lives: <code>converged</code> and <code>passed</code> are columns of the tables that report on fitted candidates – <code>$models</code> here, <code>$candidates</code> and <code>$steps</code> elsewhere – and not of the per-stage ranking summary, which ranks models those rows already judged:</p>
+<p>In the eta-count stage the input ranks first: removing any eta costs more than it saves. The search selects the diagonal structure [ETA_CL]+[ETA_KA]+[ETA_V]: the block stage drops the covariance block, and <code>compare_to_input</code> confirms it. The gate rejected <code>run2</code>, which carries no rank. Its criterion was worse than the winner’s anyway, but a gated model is excluded whatever it scores. Note where that verdict lives: <code>converged</code> and <code>passed</code> are columns of the tables that report on fitted candidates – <code>$models</code> here, <code>$candidates</code> and <code>$steps</code> elsewhere – and not of the per-stage ranking summary, which ranks models those rows already judged:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "step"        "kind"        "parent"      "id"          "criterion"  </span></span>
 <span><span class="co">#&gt; [6] "d_criterion" "rank"        "best"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"converged"</span>, <span class="st">"passed"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://generics.r-lib.org/reference/setops.html">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"converged"</span>, <span class="st">"passed"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; character(0)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The input carries no rank in the combined table above because it is the parent each stage starts from. A search result is a ranking of what passed, not proof that the winner is the best model fitted.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv</span><span class="op">$</span><span class="va">final_structure</span></span>
-<span><span class="co">#&gt; [1] "[ETA_KA,ETA_V]+[ETA_CL]"</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv</span><span class="op">$</span><span class="va">final_structure</span></span>
+<span><span class="co">#&gt; [1] "[ETA_CL]+[ETA_KA]+[ETA_V]"</span></span>
 <span><span class="va">iiv</span><span class="op">$</span><span class="va">final_etas</span></span>
 <span><span class="co">#&gt; [1] "ETA_CL" "ETA_KA" "ETA_V"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>With <code>algorithm = "skip"</code> the eta-count stage is left out and only the block stage runs, which is the cheap way to ask one question: should <code>CL</code> and <code>V</code> share a covariance block? Skipping the eta-count stage means naming the block stage explicitly – asking for neither is an error rather than a search with nothing left to do. The statements name parameters, not etas:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv_block</span> <span class="op">&lt;-</span> <span class="fu">ferx_iivsearch</span><span class="op">(</span>model <span class="op">=</span> <span class="va">bo</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">bo</span><span class="op">$</span><span class="va">data</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv_block</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_iivsearch.html">ferx_iivsearch</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">bo</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">bo</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>                            search_space <span class="op">=</span> <span class="st">"COVARIANCE?(IIV, [CL, V])"</span>,</span>
 <span>                            algorithm <span class="op">=</span> <span class="st">"skip"</span>,</span>
 <span>                            correlation_algorithm <span class="op">=</span> <span class="st">"top_down_exhaustive"</span>,</span>
 <span>                            block_retries <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>                            directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"iivsearch-block"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in .ferx_compute_cor_matrix(result$cov_matrix): One or more diagonal</span></span>
-<span><span class="co">#&gt; elements are non-positive; correlation matrix may not be meaningful.</span></span>
+<span>                            directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"iivsearch-block"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">iiv_block</span><span class="op">$</span><span class="va">input_structure</span>, final <span class="op">=</span> <span class="va">iiv_block</span><span class="op">$</span><span class="va">final_structure</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                     input                     final </span></span>
-<span><span class="co">#&gt; "[ETA_CL,ETA_V]+[ETA_KA]" "[ETA_CL,ETA_V]+[ETA_KA]"</span></span>
+<span><span class="co">#&gt;                       input                       final </span></span>
+<span><span class="co">#&gt;   "[ETA_CL,ETA_V]+[ETA_KA]" "[ETA_CL]+[ETA_KA]+[ETA_V]"</span></span>
 <span><span class="va">iiv_block</span><span class="op">$</span><span class="va">models</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"structure"</span>, <span class="st">"criterion"</span>, <span class="st">"rank"</span>, <span class="st">"passed"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;      id                 structure criterion rank passed</span></span>
 <span><span class="co">#&gt; 1 input   [ETA_CL,ETA_V]+[ETA_KA] -271.2754   NA   TRUE</span></span>
-<span><span class="co">#&gt; 2  run1 [ETA_CL]+[ETA_KA]+[ETA_V] -273.4562   NA  FALSE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2  run1 [ETA_CL]+[ETA_KA]+[ETA_V] -273.4562    1   TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Two structures are compared here: the input’s <code>block_omega (ETA_CL, ETA_V)</code> and the diagonal alternative. The input is kept – but read why. The diagonal candidate reaches the better criterion of the two, and it is out because it fails the strictness gate. The <code>failures</code> column gives the reason:</p>
-<div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/with.html">with</a></span><span class="op">(</span><span class="va">iiv_block</span><span class="op">$</span><span class="va">models</span>, <span class="va">failures</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">failures</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "stalled at the initial estimates: no free parameter moved more than 1% of its initial value (#751)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>No free parameter moved more than 1% of its initial value, so <code>reject_init_stall</code> refused the fit. Whether that is the right call here depends on where the candidate started, which the printed output does not say: a candidate handed its parent’s optimum can sit still because it is already converged, which is why <code>ferx_amd()</code> turns this gate off inside its steps (below). Read a gated-out candidate as unjudged rather than as rejected on merit, and refit it yourself if it matters. A selection is only as meaningful as the gate that produced it.</p>
+<p>Two structures are compared here: the input’s <code>block_omega (ETA_CL, ETA_V)</code> and the diagonal alternative. The diagonal one is selected, the same answer as the full search above, from 2 fits instead of 12. When a candidate does fail the gate, the <code>failures</code> column of <code>$models</code> gives the reason, as <code>$steps</code> does for the covariate search above.</p>
 </section><section id="inter-occasion-variability-search" class="level2"><h2 class="anchored" data-anchor-id="inter-occasion-variability-search">Inter-occasion variability search</h2>
-<p><code>ferx_iovsearch()</code> decides which parameters carry an occasion random effect. It reads the occasion column from the base model’s <code>iov_column</code>, so a model without one has nothing to search. The bundled <code>warfarin_iov</code> configuration offers a kappa on every parameter that has an eta:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_iovsearch.html">ferx_iovsearch()</a></code> decides which parameters carry an occasion random effect. It reads the occasion column from the base model’s <code>iov_column</code>, so a model without one has nothing to search. The bundled <code>warfarin_iov</code> configuration offers a kappa on every parameter that has an eta:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iov_ex</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_iov"</span><span class="op">)</span></span>
-<span><span class="va">iov</span> <span class="op">&lt;-</span> <span class="fu">ferx_iovsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">iov_ex</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"iovsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iov_ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_iov"</span><span class="op">)</span></span>
+<span><span class="va">iov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_iovsearch.html">ferx_iovsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">iov_ex</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"iovsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">iov</span></span>
 <span><span class="co">#&gt; ferx inter-occasion variability search (same-as-iiv, ranked on bic_random)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin_iov.csv</span></span>
 <span><span class="co">#&gt;   Occasions: OCC</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpJuwo6H/iovsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpdyBZsW/searches/iovsearch</span></span>
 <span><span class="co">#&gt;   Input: IIV([ETA_CL]+[ETA_KA]+[ETA_V]);IOV([KAPPA_CL])</span></span>
 <span><span class="co">#&gt;   bic_random:   222 (input) -&gt; -313.9 (run5)</span></span>
 <span><span class="co">#&gt;   7 models over 2 steps</span></span>
@@ -1200,17 +1202,17 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; [1] "IIV([ETA_CL]+[ETA_KA]);IOV([KAPPA_CL]+[KAPPA_KA]+[KAPPA_V])"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="all-axes-at-once" class="level2"><h2 class="anchored" data-anchor-id="all-axes-at-once">All axes at once</h2>
-<p>Every tool so far walks one axis with the others held fixed: <code>ferx_modelsearch()</code> decides the structure with the covariate model fixed, <code>ferx_covsearch()</code> the covariates with the structure fixed. That is what keeps them cheap, and it is blind to one thing – an effect that only earns its place after another decision has gone the other way. A clearance covariate that pays off only once the distribution phase has a compartment of its own is invisible to a forward step taken on the one-compartment model.</p>
-<p><code>ferx_globalsearch()</code> lays both kinds of decision out as one <strong>grid</strong> and searches it whole. Each structural category in the space becomes an axis with its values as alleles; each optional <code>COVARIATE?</code> pair becomes an axis whose alleles are <code>none</code> and each of its forms. <code>algorithm = "exhaustive"</code> fits every point; <code>algorithm = "ga"</code>, the default, runs a genetic algorithm and fits a fraction of them.</p>
+<p>Every tool so far walks one axis with the others held fixed: <code><a href="https://ferx-nlme.org/reference/ferx_modelsearch.html">ferx_modelsearch()</a></code> decides the structure with the covariate model fixed, <code><a href="https://ferx-nlme.org/reference/ferx_covsearch.html">ferx_covsearch()</a></code> the covariates with the structure fixed. That is what keeps them cheap, and it is blind to one thing – an effect that only earns its place after another decision has gone the other way. A clearance covariate that pays off only once the distribution phase has a compartment of its own is invisible to a forward step taken on the one-compartment model.</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch()</a></code> lays both kinds of decision out as one <strong>grid</strong> and searches it whole. Each structural category in the space becomes an axis with its values as alleles; each optional <code>COVARIATE?</code> pair becomes an axis whose alleles are <code>none</code> and each of its forms. <code>algorithm = "exhaustive"</code> fits every point; <code>algorithm = "ga"</code>, the default, runs a genetic algorithm and fits a fraction of them.</p>
 <p>The bundled <code>two_cpt_oral_global</code> example is built to have something to find: a <em>one</em>-compartment, covariate-free model on data carrying <code>WT</code> and <code>CRCL</code> that were simulated from two compartments, so all four axes are live.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">gs_ex</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_global"</span><span class="op">)</span></span>
-<span><span class="va">gs</span> <span class="op">&lt;-</span> <span class="fu">ferx_globalsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">gs_ex</span><span class="op">$</span><span class="va">search</span>,</span>
-<span>                        directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"globalsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">gs_ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_global"</span><span class="op">)</span></span>
+<span><span class="va">gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">gs_ex</span><span class="op">$</span><span class="va">search</span>,</span>
+<span>                        directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"globalsearch"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">gs</span></span>
 <span><span class="co">#&gt; ferx global model search (exhaustive, ranked on penalized)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/two_cpt_oral_cov.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpJuwo6H/globalsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpdyBZsW/searches/globalsearch</span></span>
 <span><span class="co">#&gt;   Grid:  16 points over 4 axes</span></span>
 <span><span class="co">#&gt;     LAGTIME: OFF | ON</span></span>
 <span><span class="co">#&gt;     PERIPHERALS: 0 | 1</span></span>
@@ -1229,12 +1231,11 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;     5 run13    LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=none -887.4</span></span>
 <span><span class="co">#&gt;     6 run14   LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=power -895.7</span></span>
 <span><span class="co">#&gt;     7 run15   LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=none -894.6</span></span>
-<span><span class="co">#&gt;     8 run16  LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=power -900.9</span></span>
-<span><span class="co">#&gt;     9  run1   LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=none -172.2</span></span>
-<span><span class="co">#&gt;    10 input                                                &lt;NA&gt; -171.3</span></span>
-<span><span class="co">#&gt;    11  run2  LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=power -179.3</span></span>
-<span><span class="co">#&gt;    12  run3  LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=none -179.2</span></span>
-<span><span class="co">#&gt;    13  run4 LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=power -185.4</span></span>
+<span><span class="co">#&gt;     8  run1   LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=none -172.2</span></span>
+<span><span class="co">#&gt;     9 input                                                &lt;NA&gt; -171.3</span></span>
+<span><span class="co">#&gt;    10  run2  LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=power -179.3</span></span>
+<span><span class="co">#&gt;    11  run3  LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=none -179.2</span></span>
+<span><span class="co">#&gt;    12  run4 LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=power -185.4</span></span>
 <span><span class="co">#&gt;  criterion fitness converged passed</span></span>
 <span><span class="co">#&gt;    -799.50 -799.50      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -796.10 -796.10      TRUE   TRUE</span></span>
@@ -1243,7 +1244,6 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;    -777.40 -777.40      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -775.70 -775.70      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -774.60 -774.60      TRUE   TRUE</span></span>
-<span><span class="co">#&gt;    -770.90 -770.90      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -102.20 -102.20      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -101.30 -101.30      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;     -99.32  -99.32      TRUE   TRUE</span></span>
@@ -1256,15 +1256,18 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;  run10  LAGTIME=ON;PERIPHERALS=0;CL-WT=none;CL-CRCL=power     19.31</span></span>
 <span><span class="co">#&gt;  run11  LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=none     19.53</span></span>
 <span><span class="co">#&gt;  run12 LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=power     23.38</span></span>
+<span><span class="co">#&gt;  run16 LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=power   -770.90</span></span>
 <span><span class="co">#&gt;  charge_non_influential charge_gate charge_crash fitness</span></span>
 <span><span class="co">#&gt;                       0         100            0   116.7</span></span>
 <span><span class="co">#&gt;                       0         100            0   119.3</span></span>
 <span><span class="co">#&gt;                       0         100            0   119.5</span></span>
-<span><span class="co">#&gt;                       0         100            0   123.4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                       0         100            0   123.4</span></span>
+<span><span class="co">#&gt;                       0         100            0  -670.9</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Read the top two rows before anything else. The runner-up has the <em>better</em> OFV and still ranks second, because it carries one more covariate relation and the criterion charges it for the parameter. A table showing only the OFV would name the wrong winner, which is why the criterion and the OFV are separate columns:</p>
+<p>Read the top rows with both columns in view. The ranking is on the criterion, which charges each model for its parameters and for an unhealthy fit, so the best OFV need not win:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">fitness</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"genome"</span>, <span class="st">"ofv"</span>, <span class="st">"criterion"</span>, <span class="st">"fitness"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">top</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">fitness</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"genome"</span>, <span class="st">"ofv"</span>, <span class="st">"criterion"</span>, <span class="st">"fitness"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">top</span></span>
 <span><span class="co">#&gt;     id                                             genome       ofv criterion</span></span>
 <span><span class="co">#&gt; 6 run5  LAGTIME=OFF;PERIPHERALS=1;CL-WT=none;CL-CRCL=none -889.4714 -799.4714</span></span>
 <span><span class="co">#&gt; 7 run6 LAGTIME=OFF;PERIPHERALS=1;CL-WT=none;CL-CRCL=power -896.1283 -796.1283</span></span>
@@ -1272,8 +1275,10 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;     fitness</span></span>
 <span><span class="co">#&gt; 6 -799.4714</span></span>
 <span><span class="co">#&gt; 7 -796.1283</span></span>
-<span><span class="co">#&gt; 8 -795.5592</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 8 -795.5592</span></span>
+<span><span class="va">charge</span> <span class="op">&lt;-</span> <span class="va">top</span><span class="op">$</span><span class="va">criterion</span> <span class="op">-</span> <span class="va">top</span><span class="op">$</span><span class="va">ofv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p>Here the runner-up has the <em>better</em> OFV (-896.1 against -889.5) and still ranks second, because the criterion charges it 100.0 for its parameters and fit health against 90.0 for the winner. A table showing only the OFV would name the wrong winner, which is why the criterion and the OFV are separate columns.</p>
 <section id="the-criterion-is-not-the-whole-of-the-ranking" class="level3"><h3 class="anchored" data-anchor-id="the-criterion-is-not-the-whole-of-the-ranking">The criterion is not the whole of the ranking</h3>
 <p><code>[rank] type</code> defaults to <code>"penalized"</code> here – the objective function plus a charge per estimated parameter and per unhealthy fit – where every other tool defaults to a BIC. Whatever criterion you name, the global search then charges three things the criterion cannot see, and ranks on the sum:</p>
 <table class="caption-top table">
@@ -1304,36 +1309,38 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">charged</span> <span class="op">&lt;-</span> <span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">[</span><span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">charge_gate</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="op">]</span></span>
 <span><span class="va">charged</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"genome"</span>, <span class="st">"criterion"</span>, <span class="st">"charge_gate"</span>, <span class="st">"fitness"</span>, <span class="st">"passed"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;       id                                             genome criterion</span></span>
-<span><span class="co">#&gt; 10  run9   LAGTIME=ON;PERIPHERALS=0;CL-WT=none;CL-CRCL=none  16.69030</span></span>
-<span><span class="co">#&gt; 11 run10  LAGTIME=ON;PERIPHERALS=0;CL-WT=none;CL-CRCL=power  19.30548</span></span>
-<span><span class="co">#&gt; 12 run11  LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=none  19.52656</span></span>
-<span><span class="co">#&gt; 13 run12 LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=power  23.38225</span></span>
-<span><span class="co">#&gt;    charge_gate  fitness passed</span></span>
-<span><span class="co">#&gt; 10         100 116.6903  FALSE</span></span>
-<span><span class="co">#&gt; 11         100 119.3055  FALSE</span></span>
-<span><span class="co">#&gt; 12         100 119.5266  FALSE</span></span>
-<span><span class="co">#&gt; 13         100 123.3823  FALSE</span></span>
+<span><span class="co">#&gt;       id                                             genome  criterion</span></span>
+<span><span class="co">#&gt; 10  run9   LAGTIME=ON;PERIPHERALS=0;CL-WT=none;CL-CRCL=none   16.69030</span></span>
+<span><span class="co">#&gt; 11 run10  LAGTIME=ON;PERIPHERALS=0;CL-WT=none;CL-CRCL=power   19.30548</span></span>
+<span><span class="co">#&gt; 12 run11  LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=none   19.52656</span></span>
+<span><span class="co">#&gt; 13 run12 LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=power   23.38225</span></span>
+<span><span class="co">#&gt; 17 run16 LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=power -770.89753</span></span>
+<span><span class="co">#&gt;    charge_gate   fitness passed</span></span>
+<span><span class="co">#&gt; 10         100  116.6903  FALSE</span></span>
+<span><span class="co">#&gt; 11         100  119.3055  FALSE</span></span>
+<span><span class="co">#&gt; 12         100  119.5266  FALSE</span></span>
+<span><span class="co">#&gt; 13         100  123.3823  FALSE</span></span>
+<span><span class="co">#&gt; 17         100 -670.8975  FALSE</span></span>
 <span><span class="va">gs</span><span class="op">$</span><span class="va">penalties</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"non_influential"</span>, <span class="st">"gate"</span>, <span class="st">"crash"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; non_influential            gate           crash </span></span>
-<span><span class="co">#&gt;         0.00001       100.00000  99999999.00000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;           1e-05           1e+02           1e+08</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Without that column the first of those rows reads as a model that simply fitted worse than the winner, rather than one the gate refused and that sits 100 units away because of it.</p>
 </section><section id="the-genetic-algorithm" class="level3"><h3 class="anchored" data-anchor-id="the-genetic-algorithm">The genetic algorithm</h3>
 <p>Sixteen points is small enough to enumerate, which is what makes the bundled file a reference: on a grid this size the algorithm has to find the same winner. On a grid of thousands, enumerating is not an option and finding it at all is the point.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ga_config</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"globalsearch-ga-config"</span><span class="op">)</span>, <span class="st">"global.ferxsearch"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ga_config</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"global_ga.ferxsearch"</span><span class="op">)</span></span>
 <span><span class="va">ga_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">gs_ex</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
 <span><span class="va">ga_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^base = .*"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">'base = "%s"'</span>, <span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html">normalizePath</a></span><span class="op">(</span><span class="va">gs_ex</span><span class="op">$</span><span class="va">model</span>, winslash <span class="op">=</span> <span class="st">"/"</span><span class="op">)</span><span class="op">)</span>, <span class="va">ga_lines</span><span class="op">)</span></span>
 <span><span class="va">ga_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^data = .*"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">'data = "%s"'</span>, <span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html">normalizePath</a></span><span class="op">(</span><span class="va">gs_ex</span><span class="op">$</span><span class="va">data</span>, winslash <span class="op">=</span> <span class="st">"/"</span><span class="op">)</span><span class="op">)</span>, <span class="va">ga_lines</span><span class="op">)</span></span>
 <span><span class="va">ga_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">'algorithm = "exhaustive"'</span>, <span class="st">'algorithm = "ga"'</span>, <span class="va">ga_lines</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">ga_lines</span>, <span class="va">ga_config</span><span class="op">)</span></span>
-<span><span class="va">gs_ga</span> <span class="op">&lt;-</span> <span class="fu">ferx_globalsearch</span><span class="op">(</span>config <span class="op">=</span> <span class="va">ga_config</span>,</span>
-<span>                           directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"globalsearch-ga"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">gs_ga</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">ga_config</span>,</span>
+<span>                           directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"globalsearch-ga"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">gs_ga</span><span class="op">$</span><span class="va">generations</span></span>
 <span><span class="co">#&gt;   index best best_fitness mean_fitness polished</span></span>
-<span><span class="co">#&gt; 1     0 run5    -799.4714    -384.6412        0</span></span>
-<span><span class="co">#&gt; 2     1 run5    -799.4714    -499.5705        0</span></span>
+<span><span class="co">#&gt; 1     0 run5    -799.4714    -372.1412        0</span></span>
+<span><span class="co">#&gt; 2     1 run5    -799.4714    -487.0705        0</span></span>
 <span><span class="co">#&gt; 3     2 run5    -799.4714    -504.5793        0</span></span>
 <span><span class="co">#&gt; 4     3 run5    -799.4714    -617.1745        1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span></span>
@@ -1353,19 +1360,19 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Warning</span><code>ferx_globalsearch()</code> is not <code>ferx_fit(settings = list(global_search = TRUE))</code>
+<span class="screen-reader-only">Warning</span><code><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch()</a></code> is not <code>ferx_fit(settings = list(global_search = TRUE))</code>
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>That setting is a global <em>optimizer</em> phase inside the estimation of one model: a wider search for the parameter values of a fixed model. <code>ferx_globalsearch()</code> is a global search over <em>models</em>. The name is shared by the engine, the <code>.ferxsearch</code> file (<code>[globalsearch]</code>) and the <code>ferx globalsearch</code> command, so a search stays portable between R and the command line.</p>
+<p>That setting is a global <em>optimizer</em> phase inside the estimation of one model: a wider search for the parameter values of a fixed model. <code><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch()</a></code> is a global search over <em>models</em>. The name is shared by the engine, the <code>.ferxsearch</code> file (<code>[globalsearch]</code>) and the <code>ferx globalsearch</code> command, so a search stays portable between R and the command line.</p>
 </div>
 </div>
 </section></section><section id="the-whole-pipeline-at-once" class="level2"><h2 class="anchored" data-anchor-id="the-whole-pipeline-at-once">The whole pipeline at once</h2>
-<p><code>ferx_amd()</code> runs the tools above in order as one automatic model-development pipeline: structural, IIV, residual, IOV, allometry, covariates. One search space describes the whole pipeline, and the engine hands each step only the statements its tool can read. A step the space says nothing about is skipped, and says so.</p>
-<p><code>ferx_amd_plan()</code> shows that plan without fitting anything, which is the cheap way to check a configuration before spending the run:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_amd.html">ferx_amd()</a></code> runs the tools above in order as one automatic model-development pipeline: structural, IIV, residual, IOV, allometry, covariates. One search space describes the whole pipeline, and the engine hands each step only the statements its tool can read. A step the space says nothing about is skipped, and says so.</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_amd_plan.html">ferx_amd_plan()</a></code> shows that plan without fitting anything, which is the cheap way to check a configuration before spending the run:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">amd_ex</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_amd"</span><span class="op">)</span></span>
-<span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu">ferx_amd_plan</span><span class="op">(</span>config <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">amd_ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_amd"</span><span class="op">)</span></span>
+<span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_amd_plan.html">ferx_amd_plan</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">search</span><span class="op">)</span></span>
 <span><span class="va">plan</span></span>
 <span><span class="co">#&gt;   index       step        tool rerun      directory</span></span>
 <span><span class="co">#&gt; 1     1 structural modelsearch FALSE 01-modelsearch</span></span>
@@ -1384,30 +1391,30 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </div>
 <p>3 of the 6 steps are already ruled out by the model and the space, and the <code>skipped</code> column says why: the model declares no <code>iov_column</code>, and the space carries no <code>ALLOMETRY</code> or <code>COVARIATE</code> statement because <code>warfarin.csv</code> has no covariate column. Running it fits the rest:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">amd</span> <span class="op">&lt;-</span> <span class="fu">ferx_amd</span><span class="op">(</span>config <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"amd"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">amd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_amd.html">ferx_amd</a></span><span class="op">(</span>config <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">search</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"amd"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">amd</span></span>
 <span><span class="co">#&gt; ferx AMD pipeline (default strategy, retries all_final)</span></span>
 <span><span class="co">#&gt;   Model: /home/runner/work/_temp/Library/ferx/examples/search/../models/warfarin_amd.ferx</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpJuwo6H/amd</span></span>
-<span><span class="co">#&gt;   OFV:   -286.004 (start) -&gt; -286.004 (final, dOFV -0.000)</span></span>
-<span><span class="co">#&gt;   3 of 6 steps ran, 28 models fitted, 8.6 s across the steps</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpdyBZsW/searches/amd</span></span>
+<span><span class="co">#&gt;   OFV:   -286.004 (start) -&gt; -286.004 (final, dOFV 0.000)</span></span>
+<span><span class="co">#&gt;   3 of 6 steps ran, 28 models fitted, 3.5 s across the steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Pipeline:</span></span>
-<span><span class="co">#&gt;  index       step  status criterion value_before value_after          d_value</span></span>
-<span><span class="co">#&gt;      1 structural     ran bic_mixed       -267.5      -267.5  0.0000000008589</span></span>
-<span><span class="co">#&gt;      2  iivsearch     ran   bic_iiv       -279.1      -279.1 -0.0000000011280</span></span>
-<span><span class="co">#&gt;      3   residual     ran       ofv       -286.0      -286.0  0.0000000001716</span></span>
-<span><span class="co">#&gt;      4  iovsearch skipped      &lt;NA&gt;           NA          NA               NA</span></span>
-<span><span class="co">#&gt;      5  allometry skipped      &lt;NA&gt;           NA          NA               NA</span></span>
-<span><span class="co">#&gt;      6 covariates skipped      &lt;NA&gt;           NA          NA               NA</span></span>
-<span><span class="co">#&gt;             d_ofv candidates converged passed seconds</span></span>
-<span><span class="co">#&gt;   0.0000000008589          5      TRUE   TRUE   1.765</span></span>
-<span><span class="co">#&gt;  -0.0000000011280         12      TRUE   TRUE   1.648</span></span>
-<span><span class="co">#&gt;   0.0000000001716          7        NA     NA   5.142</span></span>
-<span><span class="co">#&gt;                NA          0        NA     NA   0.000</span></span>
-<span><span class="co">#&gt;                NA          0        NA     NA   0.000</span></span>
-<span><span class="co">#&gt;                NA          0        NA     NA   0.000</span></span>
+<span><span class="co">#&gt;  index       step  status criterion value_before value_after    d_value</span></span>
+<span><span class="co">#&gt;      1 structural     ran bic_mixed       -267.5      -267.5  1.221e-09</span></span>
+<span><span class="co">#&gt;      2  iivsearch     ran   bic_iiv       -279.1      -279.1 -1.201e-09</span></span>
+<span><span class="co">#&gt;      3   residual     ran       ofv       -286.0      -286.0  7.974e-10</span></span>
+<span><span class="co">#&gt;      4  iovsearch skipped      &lt;NA&gt;           NA          NA         NA</span></span>
+<span><span class="co">#&gt;      5  allometry skipped      &lt;NA&gt;           NA          NA         NA</span></span>
+<span><span class="co">#&gt;      6 covariates skipped      &lt;NA&gt;           NA          NA         NA</span></span>
+<span><span class="co">#&gt;       d_ofv candidates converged passed seconds</span></span>
+<span><span class="co">#&gt;   1.221e-09          5      TRUE   TRUE  0.7308</span></span>
+<span><span class="co">#&gt;  -1.201e-09         12      TRUE   TRUE  0.6795</span></span>
+<span><span class="co">#&gt;   7.974e-10          7      TRUE   TRUE  2.0400</span></span>
+<span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
+<span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
+<span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Steps that did not run:</span></span>
 <span><span class="co">#&gt;   4 iovsearch    skipped: the starting model declares no `iov_column` in [fit_options], so the dataset's occasions were not read</span></span>
@@ -1419,9 +1426,11 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;   iivsearch    [CL]+[KA]+[V]</span></span>
 <span><span class="co">#&gt;   residual     no residual-error feature added</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 1 candidate excluded by the strictness gate; summary() lists them.</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Notes:</span></span>
 <span><span class="co">#&gt;   - [strictness] reject_init_stall is off inside every step: the model a step is handed starts at its own optimum, where "did not leave the initial estimates" (#751) is the expected outcome rather than a failed fit. It still applies to the pipeline's own start fit, and every other gate applies throughout</span></span>
-<span><span class="co">#&gt;   - the retries pass on `03-ruvsearch-retries` did not improve the fit (OFV -286.004 against -286.004); the selected model was kept</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   - the retries pass on `02-iivsearch-retries` did not improve the fit (OFV -286.004 against -286.004); the selected model was kept</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The pipeline improved nothing: <code>warfarin_amd.ferx</code> is already the model these three steps would choose, so each step re-selected its own input and the final OFV equals the starting one. That is a useful result to see printed rather than hidden – the step table carries each step’s criterion before and after, its candidate count, the strictness verdict and its wall clock, so a step that “won” by having its siblings rejected looks different from one that found something. <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> adds every candidate of every step, and the same two tables are written to the run directory as <code>steps.csv</code> and <code>candidates.csv</code>.</p>
 <p>Getting the result out of an AMD run takes a little care, because two fields both look final and are not the same thing. <code>$final_model</code> is the model <em>text</em> the pipeline ended on, written to <code>$final_model_path</code>; the fitted object is <code>$fit</code>. <code>$final_ofv</code> and <code>$d_ofv</code> give the end point and the change from the start, negative being an improvement:</p>
@@ -1429,9 +1438,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>final_model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">amd</span><span class="op">$</span><span class="va">final_model</span><span class="op">)</span>, fit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">amd</span><span class="op">$</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; final_model         fit </span></span>
 <span><span class="co">#&gt; "character"  "ferx_fit"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>input_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">input_ofv</span>, final_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">final_ofv</span>, d_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">d_ofv</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              input_ofv              final_ofv                  d_ofv </span></span>
-<span><span class="co">#&gt; -286.00421950648029679 -286.00421950657749903   -0.00000000009720225</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>input_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">input_ofv</span>, final_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">final_ofv</span>, d_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">d_ofv</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   input_ofv final_ofv        d_ofv</span></span>
+<span><span class="co">#&gt; 1 -286.0042 -286.0042 8.175789e-10</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/basename.html">basename</a></span><span class="op">(</span><span class="va">amd</span><span class="op">$</span><span class="va">final_model_path</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "final.ferx"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1449,11 +1458,11 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; [13] "input_model_path" "final_model_path" "model_paths"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>An entry is a plain list, not the object the tool would return on its own: it carries what the step decided (<code>status</code>, <code>reason</code>, <code>criterion</code>, <code>selected</code>, <code>seconds</code>), its slice of the candidates, and the engine’s own table read back from the run directory. Run a tool directly when you want its fit and its own options.</p>
-<p>The pipeline can also be stated inline, with a shorter order and steps left out. <code>strategy</code> chooses which steps run and in what order, and <code>ferx_amd_plan()</code> will show you each without fitting anything:</p>
+<p>The pipeline can also be stated inline, with a shorter order and steps left out. <code>strategy</code> chooses which steps run and in what order, and <code><a href="https://ferx-nlme.org/reference/ferx_amd_plan.html">ferx_amd_plan()</a></code> will show you each without fitting anything:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">strategies</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"default"</span>, <span class="st">"reevaluation"</span>, <span class="st">"SIR"</span>, <span class="st">"SRI"</span>, <span class="st">"RSI"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>strategy <span class="op">=</span> <span class="va">strategies</span>, order <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">vapply</a></span><span class="op">(</span><span class="va">strategies</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu">ferx_amd_plan</span><span class="op">(</span>model <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">data</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_amd_plan.html">ferx_amd_plan</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>                      search_space <span class="op">=</span> <span class="st">"PERIPHERALS(0..1); IIV?(@PK, exp)"</span>,</span>
 <span>                      strategy <span class="op">=</span> <span class="va">s</span><span class="op">)</span><span class="op">$</span><span class="va">step</span>, collapse <span class="op">=</span> <span class="st">" -&gt; "</span><span class="op">)</span></span>
 <span><span class="op">}</span>, <span class="st">""</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
@@ -1472,30 +1481,29 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </div>
 <p><code>reevaluation</code> is the default order with a second iivsearch and residual pass at the end. The three-letter names are shorter pipelines, not reorderings of the same six: they run the three steps their initials spell and leave out iovsearch, allometry and covariates entirely. <code>skip</code> drops a step from whichever order was chosen; <code>retries_on</code> says when the extra perturbed-restart pass runs:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">amd_sir</span> <span class="op">&lt;-</span> <span class="fu">ferx_amd</span><span class="op">(</span>model <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">data</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">amd_sir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_amd.html">ferx_amd</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">amd_ex</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>                    search_space <span class="op">=</span> <span class="st">"PERIPHERALS(0..1); IIV?(@PK, exp)"</span>,</span>
 <span>                    strategy <span class="op">=</span> <span class="st">"SIR"</span>, skip <span class="op">=</span> <span class="st">"residual"</span>, retries_on <span class="op">=</span> <span class="st">"final"</span>,</span>
-<span>                    retries <span class="op">=</span> <span class="fl">0</span>, directory <span class="op">=</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"amd-sir"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                    retries <span class="op">=</span> <span class="fl">0</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"amd-sir"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">amd_sir</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"step"</span>, <span class="st">"status"</span>, <span class="st">"criterion"</span>, <span class="st">"candidates"</span>, <span class="st">"seconds"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         step  status criterion candidates   seconds</span></span>
-<span><span class="co">#&gt; 1 structural     ran bic_mixed          2 0.2819569</span></span>
-<span><span class="co">#&gt; 2  iivsearch     ran   bic_iiv          8 0.1606043</span></span>
+<span><span class="co">#&gt; 1 structural     ran bic_mixed          2 0.1294599</span></span>
+<span><span class="co">#&gt; 2  iivsearch     ran   bic_iiv         33 1.3800027</span></span>
 <span><span class="co">#&gt; 3   residual skipped      &lt;NA&gt;          0 0.0000000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="configuration-sections-with-no-r-tool" class="level2"><h2 class="anchored" data-anchor-id="configuration-sections-with-no-r-tool">Configuration sections with no R tool</h2>
 <p>A <code>.ferxsearch</code> file may carry a section addressed to a tool this package does not bind. The loader validates section names against a fixed vocabulary, which runs ahead of what ferx-r binds and, in the case of <code>[structsearch]</code>, ahead of the engine itself; a name outside that list is an error. The file loads, and ferx warns rather than running a search that quietly ignores part of its own configuration:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sections_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"search-sections"</span><span class="op">)</span></span>
-<span><span class="va">unconsumed</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">section</span>, <span class="va">body</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">sections_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">"\\[|\\]"</span>, <span class="st">""</span>, <span class="va">section</span><span class="op">)</span>, <span class="st">".ferxsearch"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">unconsumed</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">section</span>, <span class="va">body</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">gsub</a></span><span class="op">(</span><span class="st">"\\[|\\]"</span>, <span class="st">""</span>, <span class="va">section</span><span class="op">)</span>, <span class="st">".ferxsearch"</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">search</span><span class="op">)</span>, <span class="st">""</span>, <span class="va">section</span>, <span class="va">body</span><span class="op">)</span>, <span class="va">path</span><span class="op">)</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu">ferx_search_config</span><span class="op">(</span><span class="va">path</span><span class="op">)</span>, warning <span class="op">=</span> <span class="va">conditionMessage</span><span class="op">)</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_search_config.html">ferx_search_config</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span>, warning <span class="op">=</span> <span class="va">conditionMessage</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu">unconsumed</span><span class="op">(</span><span class="st">"[structsearch]"</span>, <span class="st">"  x = 1"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "ferx_search_config: [structsearch] has no R tool in this package, so it is ignored - a search run from this file does what its other sections say."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>[structsearch]</code> is accepted vocabulary with no engine module yet, so it is reported without a remediation that would name a command nobody can run.</p>
-<p>What the warning reports is the <em>complement</em> of the sections ferx-r has a tool for, not a list of known-bad names. So a section a later ferx-core adds is named from the day a file can carry it, and stops being named on the day a binding lands – which is what happened to <code>[globalsearch]</code>, warned about until <code>ferx_globalsearch()</code> shipped and silent since. See the ferx-core <a href="https://ferx-nlme.org/ferx-core/tools/index.html">tools</a> pages for what the engine knows.</p>
+<p>What the warning reports is the <em>complement</em> of the sections ferx-r has a tool for, not a list of known-bad names. So a section a later ferx-core adds is named from the day a file can carry it, and stops being named on the day a binding lands – which is what happened to <code>[globalsearch]</code>, warned about until <code><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch()</a></code> shipped and silent since. See the ferx-core <a href="https://ferx-nlme.org/ferx-core/tools/index.html">tools</a> pages for what the engine knows.</p>
 </section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
 <table class="caption-top table">
 <colgroup>
@@ -1508,33 +1516,33 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ferx_bic()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_bic.html">ferx_bic()</a></code></td>
 <td>
 <code>fit</code>, <code>type</code> (<code>"mixed"</code>, <code>"fixed"</code>, <code>"iiv"</code>, <code>"random"</code>)</td>
 </tr>
 <tr class="even">
-<td><code>check_strictness()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/check_strictness.html">check_strictness()</a></code></td>
 <td>
 <code>fit</code>, <code>require_converged</code>, <code>require_covariance</code>, <code>max_condition_number</code>, <code>max_correlation</code>, <code>reject_on_boundary</code>, <code>reject_init_stall</code>
 </td>
 </tr>
 <tr class="odd">
-<td><code>ferx_search_config()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_search_config.html">ferx_search_config()</a></code></td>
 <td><code>path</code></td>
 </tr>
 <tr class="even">
-<td><code>ferx_search_space()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_search_space.html">ferx_search_space()</a></code></td>
 <td>
 <code>mfl</code> (text, config or space), <code>model</code>, <code>data</code>
 </td>
 </tr>
 <tr class="odd">
-<td><code>ferx_search_coverage()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_search_coverage.html">ferx_search_coverage()</a></code></td>
 <td>
 <code>space</code> (space, config or MFL text)</td>
 </tr>
 <tr class="even">
-<td><code>ferx_search_results()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_search_results.html">ferx_search_results()</a></code></td>
 <td>
 <code>directory</code>, <code>partial</code> (<code>NULL</code> prefers the complete table), <code>type</code> (<code>"candidates"</code>, <code>"models"</code>, <code>"steps"</code>)</td>
 </tr>
@@ -1552,40 +1560,40 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ferx_covsearch()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_covsearch.html">ferx_covsearch()</a></code></td>
 <td>
 <code>algorithm</code> (<code>"scm-forward-then-backward"</code> or <code>"scm-forward"</code>), <code>p_forward</code>, <code>p_backward</code>, <code>max_steps</code>, <code>adaptive_scope_reduction</code>
 </td>
 </tr>
 <tr class="even">
-<td><code>ferx_modelsearch()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_modelsearch.html">ferx_modelsearch()</a></code></td>
 <td>
 <code>algorithm</code> (<code>"reduced_stepwise"</code>, <code>"exhaustive_stepwise"</code>, <code>"exhaustive"</code>), <code>iiv_strategy</code> (<code>"absorption_delay"</code>, <code>"add_diagonal"</code>, <code>"no_add"</code>)</td>
 </tr>
 <tr class="odd">
-<td><code>ferx_ruvsearch()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_ruvsearch.html">ferx_ruvsearch()</a></code></td>
 <td>
 <code>groups</code>, <code>p_value</code>, <code>skip</code> (families not to test), <code>max_iter</code> (1 to 3), <code>cwres_prescreen</code> (screen candidates on the parent’s CWRES before refitting)</td>
 </tr>
 <tr class="even">
-<td><code>ferx_iivsearch()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_iivsearch.html">ferx_iivsearch()</a></code></td>
 <td>
 <code>algorithm</code> (<code>"top_down_exhaustive"</code>, <code>"bottom_up_stepwise"</code>, <code>"simultaneous_stepwise"</code>, <code>"skip"</code>), <code>correlation_algorithm</code> (the block stage: <code>"top_down_exhaustive"</code> or <code>"skip"</code>), <code>as_fullblock</code> (a bottom-up candidate blocks every eta it carries), <code>block_retries</code> (extra starts per eta in the largest block)</td>
 </tr>
 <tr class="odd">
-<td><code>ferx_iovsearch()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_iovsearch.html">ferx_iovsearch()</a></code></td>
 <td>
 <code>column</code> (the occasion column; defaults to the model’s <code>iov_column</code>, and disagreeing with it is an error), <code>distribution</code> (<code>"same-as-iiv"</code>, <code>"disjoint"</code>, <code>"joint"</code>, <code>"explicit"</code>), <code>groups</code> (the blocks <code>"explicit"</code> names), <code>block_retries</code>
 </td>
 </tr>
 <tr class="even">
-<td><code>ferx_globalsearch()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch()</a></code></td>
 <td>
 <code>algorithm</code> (<code>"ga"</code> or <code>"exhaustive"</code>, matched exactly), <code>iiv_strategy</code>, <code>max_models</code> (the cap on an exhaustive grid), <code>ga</code> (a named list of <code>[globalsearch.ga]</code> knobs), <code>penalties</code> (a named list of <code>[rank.penalties]</code> charges)</td>
 </tr>
 <tr class="odd">
 <td>
-<code>ferx_amd()</code>, <code>ferx_amd_plan()</code>
+<code><a href="https://ferx-nlme.org/reference/ferx_amd.html">ferx_amd()</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_amd_plan.html">ferx_amd_plan()</a></code>
 </td>
 <td>
 <code>strategy</code> (<code>"default"</code>, <code>"reevaluation"</code>, <code>"SIR"</code>, <code>"SRI"</code>, <code>"RSI"</code>), <code>skip</code> (steps to leave out), <code>retries_on</code> (<code>"all_final"</code>, <code>"final"</code>, <code>"skip"</code>)</td>
@@ -1599,19 +1607,19 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <li>
 <strong>Keep search directories.</strong> The book writes them to a temporary directory. In a project, write them next to the analysis: they hold every candidate model, the tables and <code>final.ferx</code>, and they make <code>resume</code> possible.</li>
 <li>
-<strong><code>ferx_search_results()</code> needs the right <code>type</code>.</strong> The covariate and residual error searches write <code>steps.csv</code>, the structural search <code>models.csv</code>. Neither wrote a <code>candidates.csv</code> here, so the default <code>type = "candidates"</code> finds no table for these runs.</li>
+<strong><code><a href="https://ferx-nlme.org/reference/ferx_search_results.html">ferx_search_results()</a></code> needs the right <code>type</code>.</strong> The covariate and residual error searches write <code>steps.csv</code>, the structural search <code>models.csv</code>. Neither wrote a <code>candidates.csv</code> here, so the default <code>type = "candidates"</code> finds no table for these runs.</li>
 <li>
 <strong>Compare like with like.</strong> OFV differences and likelihood ratio tests need the same data, the same estimation method and nested models.</li>
 <li>
 <strong>Thresholds change the answer.</strong> Record the space, the significance levels and the criterion together with the selected model. The <code>.ferxsearch</code> file is that record.</li>
 </ul></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <ul>
-<li>Compare fitted models by likelihood ratio test (nested) or with <code>fit$aic</code>, <code>fit$bic</code> and <code>ferx_bic()</code>. Gate candidates with <code>check_strictness()</code>.</li>
-<li>Describe searches in <code>.ferxsearch</code> files; check them with <code>ferx_search_config()</code>, <code>ferx_search_space()</code> and <code>ferx_search_coverage()</code>.</li>
-<li>Run covariate, structural and residual error searches with <code>ferx_covsearch()</code>, <code>ferx_modelsearch()</code> and <code>ferx_ruvsearch()</code>, and read their tables with <code>ferx_search_results()</code>.</li>
-<li>Search the random-effect structure with <code>ferx_iivsearch()</code> and the occasion structure with <code>ferx_iovsearch()</code>; both can change the IIV structure, so read what they selected rather than only the criterion.</li>
-<li>Decide structure and covariates <em>together</em> with <code>ferx_globalsearch()</code>, which searches them as one grid rather than one axis at a time. It ranks on penalized fitness by default, and the charges it adds to the criterion are columns beside it.</li>
-<li>Run the whole order as one pipeline with <code>ferx_amd()</code>, after checking it with <code>ferx_amd_plan()</code>. A step the space says nothing about is skipped, and the step table says why.</li>
+<li>Compare fitted models by likelihood ratio test (nested) or with <code>fit$aic</code>, <code>fit$bic</code> and <code><a href="https://ferx-nlme.org/reference/ferx_bic.html">ferx_bic()</a></code>. Gate candidates with <code><a href="https://ferx-nlme.org/reference/check_strictness.html">check_strictness()</a></code>.</li>
+<li>Describe searches in <code>.ferxsearch</code> files; check them with <code><a href="https://ferx-nlme.org/reference/ferx_search_config.html">ferx_search_config()</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_search_space.html">ferx_search_space()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_search_coverage.html">ferx_search_coverage()</a></code>.</li>
+<li>Run covariate, structural and residual error searches with <code><a href="https://ferx-nlme.org/reference/ferx_covsearch.html">ferx_covsearch()</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_modelsearch.html">ferx_modelsearch()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_ruvsearch.html">ferx_ruvsearch()</a></code>, and read their tables with <code><a href="https://ferx-nlme.org/reference/ferx_search_results.html">ferx_search_results()</a></code>.</li>
+<li>Search the random-effect structure with <code><a href="https://ferx-nlme.org/reference/ferx_iivsearch.html">ferx_iivsearch()</a></code> and the occasion structure with <code><a href="https://ferx-nlme.org/reference/ferx_iovsearch.html">ferx_iovsearch()</a></code>; both can change the IIV structure, so read what they selected rather than only the criterion.</li>
+<li>Decide structure and covariates <em>together</em> with <code><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">ferx_globalsearch()</a></code>, which searches them as one grid rather than one axis at a time. It ranks on penalized fitness by default, and the charges it adds to the criterion are columns beside it.</li>
+<li>Run the whole order as one pipeline with <code><a href="https://ferx-nlme.org/reference/ferx_amd.html">ferx_amd()</a></code>, after checking it with <code><a href="https://ferx-nlme.org/reference/ferx_amd_plan.html">ferx_amd_plan()</a></code>. A step the space says nothing about is skipped, and the step table says why.</li>
 </ul>
 <p>Next: <a href="10-uncertainty.html" class="quarto-xref"><span>Parameter uncertainty</span></a> quantifies the uncertainty of the selected covariate model.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
@@ -1625,7 +1633,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_bic</code>, <code>?check_strictness</code>, <code>?ferx_search_config</code>, <code>?ferx_search_space</code>, <code>?ferx_search_coverage</code>, <code>?ferx_search_results</code>, <code>?ferx_covsearch</code>, <code>?ferx_modelsearch</code>, <code>?ferx_ruvsearch</code>, <code>?ferx_iivsearch</code>, <code>?ferx_iovsearch</code>, <code>?ferx_globalsearch</code>, <code>?ferx_amd</code>, <code>?ferx_amd_plan</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_bic.html">?ferx_bic</a></code>, <code><a href="https://ferx-nlme.org/reference/check_strictness.html">?check_strictness</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_search_config.html">?ferx_search_config</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_search_space.html">?ferx_search_space</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_search_coverage.html">?ferx_search_coverage</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_search_results.html">?ferx_search_results</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_covsearch.html">?ferx_covsearch</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_modelsearch.html">?ferx_modelsearch</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_ruvsearch.html">?ferx_ruvsearch</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_iivsearch.html">?ferx_iivsearch</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_iovsearch.html">?ferx_iovsearch</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_globalsearch.html">?ferx_globalsearch</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_amd.html">?ferx_amd</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_amd_plan.html">?ferx_amd_plan</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/tools/search.html">search configuration</a>, <a href="https://ferx-nlme.org/ferx-core/tools/covsearch.html">covsearch</a>, <a href="https://ferx-nlme.org/ferx-core/tools/modelsearch.html">modelsearch</a>, <a href="https://ferx-nlme.org/ferx-core/tools/ruvsearch.html">ruvsearch</a>, <a href="https://ferx-nlme.org/ferx-core/tools/iivsearch.html">iivsearch</a>, <a href="https://ferx-nlme.org/ferx-core/tools/iovsearch.html">iovsearch</a>, <a href="https://ferx-nlme.org/ferx-core/tools/global-search.html">global search</a>, <a href="https://ferx-nlme.org/ferx-core/tools/amd.html">amd</a>, <a href="https://ferx-nlme.org/ferx-core/tools/index.html">tools</a>
 </li>

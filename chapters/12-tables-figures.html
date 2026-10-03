@@ -630,29 +630,34 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The analysis is done: the final covariate model is fitted, evaluated and its uncertainty known. A report needs a parameter table, a record of the models compared, exposure metrics for the subjects, and a small set of figures. ferx returns all results as ordinary R data frames and lists, so reporting is plain R (dplyr, gt, ggplot2). The one ferx-specific tool is the model file’s <code>[derived]</code> and <code>[output]</code> blocks, which let the engine compute per-subject exposure metrics.</p>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
-<span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_cov"</span><span class="op">)</span></span>
+<span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="minimal-runnable-call-the-parameter-table" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call-the-parameter-table">Minimal runnable call: the parameter table</h2>
 <p><code>fit$estimates</code> holds everything a parameter table needs. Between-subject variances are reported as coefficients of variation. For the log-normal random effects of this model, CV% = 100 × sqrt(exp(ω²) − 1), the value <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on the fit shows. Shrinkage comes from <code>fit$shrinkage_eta</code>.</p>
 <p>That formula belongs to the log-normal form, so check what the etas are before applying it to every omega row (<a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a>):</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html">table</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">eta_param_types</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html">table</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">eta_param_types</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; log_normal </span></span>
 <span><span class="co">#&gt;          5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>All of them here. A logit-normal parameter is the case to watch: its distribution is asymmetric, so a CV% computed this way would misdescribe it. Report the variance on the logit scale, or a percentile range on the natural scale, instead.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">estimates</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="va">omega_rows</span> <span class="op">&lt;-</span> <span class="va">est</span><span class="op">$</span><span class="va">transform</span> <span class="op">==</span> <span class="st">"variance"</span></span>
 <span><span class="va">shrinkage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eta</span>, <span class="va">fit</span><span class="op">$</span><span class="va">eta_names</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">param_table</span> <span class="op">&lt;-</span> <span class="va">est</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span></span>
-<span>    type <span class="op">=</span> <span class="fu">case_when</span><span class="op">(</span><span class="va">omega_rows</span> <span class="op">~</span> <span class="st">"Between-subject variability (CV%)"</span>,</span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span></span>
+<span>    type <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html">case_when</a></span><span class="op">(</span><span class="va">omega_rows</span> <span class="op">~</span> <span class="st">"Between-subject variability (CV%)"</span>,</span>
 <span>                     <span class="va">transform</span> <span class="op">==</span> <span class="st">"identity"</span> <span class="op">~</span> <span class="st">"Fixed effects"</span>,</span>
 <span>                     <span class="cn">TRUE</span> <span class="op">~</span> <span class="st">"Residual error"</span><span class="op">)</span>,</span>
 <span>    value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">omega_rows</span>, <span class="fl">100</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">estimate</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span>, <span class="va">estimate</span><span class="op">)</span>,</span>
@@ -660,7 +665,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span>                <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"%s – %s"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html">signif</a></span><span class="op">(</span><span class="va">lower_95</span>, <span class="fl">3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html">signif</a></span><span class="op">(</span><span class="va">upper_95</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    shrinkage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">omega_rows</span>, <span class="va">shrinkage</span><span class="op">[</span><span class="va">param</span><span class="op">]</span>, <span class="cn">NA</span><span class="op">)</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">select</span><span class="op">(</span><span class="va">type</span>, <span class="va">param</span>, <span class="va">value</span>, <span class="va">rse_pct</span>, <span class="va">ci</span>, <span class="va">shrinkage</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">type</span>, <span class="va">param</span>, <span class="va">value</span>, <span class="va">rse_pct</span>, <span class="va">ci</span>, <span class="va">shrinkage</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">param_table</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/gt.html">gt</a></span><span class="op">(</span>groupname_col <span class="op">=</span> <span class="st">"type"</span>, rowname_col <span class="op">=</span> <span class="st">"param"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -673,23 +678,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Table&nbsp;12.1: Parameter estimates of the final covariate model.
 </figcaption><div aria-describedby="tbl-parameters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="nbgjtstlwo" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#nbgjtstlwo table {
+<div id="houegvxacx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#houegvxacx table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#nbgjtstlwo thead, #nbgjtstlwo tbody, #nbgjtstlwo tfoot, #nbgjtstlwo tr, #nbgjtstlwo td, #nbgjtstlwo th {
+#houegvxacx thead, #houegvxacx tbody, #houegvxacx tfoot, #houegvxacx tr, #houegvxacx td, #houegvxacx th {
   border-style: none;
 }
 
-#nbgjtstlwo p {
+#houegvxacx p {
   margin: 0;
   padding: 0;
 }
 
-#nbgjtstlwo .gt_table {
+#houegvxacx .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -715,12 +720,12 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-left-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_caption {
+#houegvxacx .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#nbgjtstlwo .gt_title {
+#houegvxacx .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -732,7 +737,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-width: 0;
 }
 
-#nbgjtstlwo .gt_subtitle {
+#houegvxacx .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -744,7 +749,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-top-width: 0;
 }
 
-#nbgjtstlwo .gt_heading {
+#houegvxacx .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -756,13 +761,13 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_bottom_border {
+#houegvxacx .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_col_headings {
+#houegvxacx .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -777,7 +782,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_col_heading {
+#houegvxacx .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -797,7 +802,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   overflow-x: hidden;
 }
 
-#nbgjtstlwo .gt_column_spanner_outer {
+#houegvxacx .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -809,15 +814,15 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 4px;
 }
 
-#nbgjtstlwo .gt_column_spanner_outer:first-child {
+#houegvxacx .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#nbgjtstlwo .gt_column_spanner_outer:last-child {
+#houegvxacx .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#nbgjtstlwo .gt_column_spanner {
+#houegvxacx .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -829,11 +834,11 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   width: 100%;
 }
 
-#nbgjtstlwo .gt_spanner_row {
+#houegvxacx .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#nbgjtstlwo .gt_group_heading {
+#houegvxacx .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -859,7 +864,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   text-align: left;
 }
 
-#nbgjtstlwo .gt_empty_group_heading {
+#houegvxacx .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -874,15 +879,15 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   vertical-align: middle;
 }
 
-#nbgjtstlwo .gt_from_md > :first-child {
+#houegvxacx .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#nbgjtstlwo .gt_from_md > :last-child {
+#houegvxacx .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#nbgjtstlwo .gt_row {
+#houegvxacx .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -901,7 +906,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   overflow-x: hidden;
 }
 
-#nbgjtstlwo .gt_stub {
+#houegvxacx .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -914,7 +919,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#nbgjtstlwo .gt_stub_row_group {
+#houegvxacx .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -928,15 +933,15 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   vertical-align: top;
 }
 
-#nbgjtstlwo .gt_row_group_first td {
+#houegvxacx .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#nbgjtstlwo .gt_row_group_first th {
+#houegvxacx .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#nbgjtstlwo .gt_summary_row {
+#houegvxacx .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -946,16 +951,16 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#nbgjtstlwo .gt_first_summary_row {
+#houegvxacx .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_first_summary_row.thick {
+#houegvxacx .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#nbgjtstlwo .gt_last_summary_row {
+#houegvxacx .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -965,7 +970,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_grand_summary_row {
+#houegvxacx .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -975,7 +980,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#nbgjtstlwo .gt_first_grand_summary_row {
+#houegvxacx .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -985,7 +990,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-top-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_last_grand_summary_row_top {
+#houegvxacx .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -995,11 +1000,11 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_striped {
+#houegvxacx .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#nbgjtstlwo .gt_table_body {
+#houegvxacx .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1008,7 +1013,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_footnotes {
+#houegvxacx .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1022,7 +1027,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_footnote {
+#houegvxacx .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1031,7 +1036,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#nbgjtstlwo .gt_sourcenotes {
+#houegvxacx .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1045,7 +1050,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#nbgjtstlwo .gt_sourcenote {
+#houegvxacx .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1053,72 +1058,72 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#nbgjtstlwo .gt_left {
+#houegvxacx .gt_left {
   text-align: left;
 }
 
-#nbgjtstlwo .gt_center {
+#houegvxacx .gt_center {
   text-align: center;
 }
 
-#nbgjtstlwo .gt_right {
+#houegvxacx .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#nbgjtstlwo .gt_font_normal {
+#houegvxacx .gt_font_normal {
   font-weight: normal;
 }
 
-#nbgjtstlwo .gt_font_bold {
+#houegvxacx .gt_font_bold {
   font-weight: bold;
 }
 
-#nbgjtstlwo .gt_font_italic {
+#houegvxacx .gt_font_italic {
   font-style: italic;
 }
 
-#nbgjtstlwo .gt_super {
+#houegvxacx .gt_super {
   font-size: 65%;
 }
 
-#nbgjtstlwo .gt_footnote_marks {
+#houegvxacx .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#nbgjtstlwo .gt_asterisk {
+#houegvxacx .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#nbgjtstlwo .gt_indent_1 {
+#houegvxacx .gt_indent_1 {
   text-indent: 5px;
 }
 
-#nbgjtstlwo .gt_indent_2 {
+#houegvxacx .gt_indent_2 {
   text-indent: 10px;
 }
 
-#nbgjtstlwo .gt_indent_3 {
+#houegvxacx .gt_indent_3 {
   text-indent: 15px;
 }
 
-#nbgjtstlwo .gt_indent_4 {
+#houegvxacx .gt_indent_4 {
   text-indent: 20px;
 }
 
-#nbgjtstlwo .gt_indent_5 {
+#houegvxacx .gt_indent_5 {
   text-indent: 25px;
 }
 
-#nbgjtstlwo .katex-display {
+#houegvxacx .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#nbgjtstlwo div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#houegvxacx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1248,19 +1253,19 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
 </div>
 <p>Check the CV% column against the printout of the fit, which reports the same values:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">param_table</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">omega_rows</span><span class="op">]</span>, <span class="fl">1</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">param_table</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">omega_rows</span><span class="op">]</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 33.7 33.5 22.9 19.7 43.8</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"CV%"</span>, <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "  ETA_CL                   [log-normal]  = 0.107531  CV% = 33.7  SE = 0.028096"</span></span>
-<span><span class="co">#&gt; [2] "  ETA_V1                   [log-normal]  = 0.106348  CV% = 33.5  SE = 0.028678"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; [2] "  ETA_V1                   [log-normal]  = 0.106347  CV% = 33.5  SE = 0.028678"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="reading-the-result-a-model-comparison-table" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result-a-model-comparison-table">Reading the result: a model comparison table</h2>
 <p>A report also records the models that led to the final one. The fit objects carry all the numbers:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">run_row</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">description</span><span class="op">)</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">run_row</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">description</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">model_name</span>, description <span class="op">=</span> <span class="va">description</span>, method <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">method</span>,</span>
 <span>             converged <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">converged</span>, parameters <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">n_parameters</span>, ofv <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">ofv</span>,</span>
-<span>             aic <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">aic</span>, bic_mixed <span class="op">=</span> <span class="fu">ferx_bic</span><span class="op">(</span><span class="va">f</span>, <span class="st">"mixed"</span><span class="op">)</span><span class="op">)</span></span>
+<span>             aic <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">aic</span>, bic_mixed <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_bic.html">ferx_bic</a></span><span class="op">(</span><span class="va">f</span>, <span class="st">"mixed"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="fu">run_row</span><span class="op">(</span><span class="va">fit_base</span>, <span class="st">"two-compartment, no covariates"</span><span class="op">)</span>,</span>
 <span>              <span class="fu">run_row</span><span class="op">(</span><span class="va">fit</span>, <span class="st">"WT on CL and V1, CRCL on CL"</span><span class="op">)</span><span class="op">)</span></span>
@@ -1271,23 +1276,23 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
 Table&nbsp;12.2: Models compared during development.
 </figcaption><div aria-describedby="tbl-runs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="hfryqqdcqs" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#hfryqqdcqs table {
+<div id="dfyuveidbh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#dfyuveidbh table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#hfryqqdcqs thead, #hfryqqdcqs tbody, #hfryqqdcqs tfoot, #hfryqqdcqs tr, #hfryqqdcqs td, #hfryqqdcqs th {
+#dfyuveidbh thead, #dfyuveidbh tbody, #dfyuveidbh tfoot, #dfyuveidbh tr, #dfyuveidbh td, #dfyuveidbh th {
   border-style: none;
 }
 
-#hfryqqdcqs p {
+#dfyuveidbh p {
   margin: 0;
   padding: 0;
 }
 
-#hfryqqdcqs .gt_table {
+#dfyuveidbh .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1313,12 +1318,12 @@ Table&nbsp;12.2: Models compared during development.
   border-left-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_caption {
+#dfyuveidbh .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#hfryqqdcqs .gt_title {
+#dfyuveidbh .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1330,7 +1335,7 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-width: 0;
 }
 
-#hfryqqdcqs .gt_subtitle {
+#dfyuveidbh .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1342,7 +1347,7 @@ Table&nbsp;12.2: Models compared during development.
   border-top-width: 0;
 }
 
-#hfryqqdcqs .gt_heading {
+#dfyuveidbh .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1354,13 +1359,13 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_bottom_border {
+#dfyuveidbh .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_col_headings {
+#dfyuveidbh .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1375,7 +1380,7 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_col_heading {
+#dfyuveidbh .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1395,7 +1400,7 @@ Table&nbsp;12.2: Models compared during development.
   overflow-x: hidden;
 }
 
-#hfryqqdcqs .gt_column_spanner_outer {
+#dfyuveidbh .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1407,15 +1412,15 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 4px;
 }
 
-#hfryqqdcqs .gt_column_spanner_outer:first-child {
+#dfyuveidbh .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#hfryqqdcqs .gt_column_spanner_outer:last-child {
+#dfyuveidbh .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#hfryqqdcqs .gt_column_spanner {
+#dfyuveidbh .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1427,11 +1432,11 @@ Table&nbsp;12.2: Models compared during development.
   width: 100%;
 }
 
-#hfryqqdcqs .gt_spanner_row {
+#dfyuveidbh .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#hfryqqdcqs .gt_group_heading {
+#dfyuveidbh .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1457,7 +1462,7 @@ Table&nbsp;12.2: Models compared during development.
   text-align: left;
 }
 
-#hfryqqdcqs .gt_empty_group_heading {
+#dfyuveidbh .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1472,15 +1477,15 @@ Table&nbsp;12.2: Models compared during development.
   vertical-align: middle;
 }
 
-#hfryqqdcqs .gt_from_md > :first-child {
+#dfyuveidbh .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#hfryqqdcqs .gt_from_md > :last-child {
+#dfyuveidbh .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#hfryqqdcqs .gt_row {
+#dfyuveidbh .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1499,7 +1504,7 @@ Table&nbsp;12.2: Models compared during development.
   overflow-x: hidden;
 }
 
-#hfryqqdcqs .gt_stub {
+#dfyuveidbh .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1512,7 +1517,7 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#hfryqqdcqs .gt_stub_row_group {
+#dfyuveidbh .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1526,15 +1531,15 @@ Table&nbsp;12.2: Models compared during development.
   vertical-align: top;
 }
 
-#hfryqqdcqs .gt_row_group_first td {
+#dfyuveidbh .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#hfryqqdcqs .gt_row_group_first th {
+#dfyuveidbh .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#hfryqqdcqs .gt_summary_row {
+#dfyuveidbh .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1544,16 +1549,16 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#hfryqqdcqs .gt_first_summary_row {
+#dfyuveidbh .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_first_summary_row.thick {
+#dfyuveidbh .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#hfryqqdcqs .gt_last_summary_row {
+#dfyuveidbh .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1563,7 +1568,7 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_grand_summary_row {
+#dfyuveidbh .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1573,7 +1578,7 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#hfryqqdcqs .gt_first_grand_summary_row {
+#dfyuveidbh .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1583,7 +1588,7 @@ Table&nbsp;12.2: Models compared during development.
   border-top-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_last_grand_summary_row_top {
+#dfyuveidbh .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1593,11 +1598,11 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_striped {
+#dfyuveidbh .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#hfryqqdcqs .gt_table_body {
+#dfyuveidbh .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1606,7 +1611,7 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_footnotes {
+#dfyuveidbh .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1620,7 +1625,7 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_footnote {
+#dfyuveidbh .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1629,7 +1634,7 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#hfryqqdcqs .gt_sourcenotes {
+#dfyuveidbh .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1643,7 +1648,7 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#hfryqqdcqs .gt_sourcenote {
+#dfyuveidbh .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1651,72 +1656,72 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#hfryqqdcqs .gt_left {
+#dfyuveidbh .gt_left {
   text-align: left;
 }
 
-#hfryqqdcqs .gt_center {
+#dfyuveidbh .gt_center {
   text-align: center;
 }
 
-#hfryqqdcqs .gt_right {
+#dfyuveidbh .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#hfryqqdcqs .gt_font_normal {
+#dfyuveidbh .gt_font_normal {
   font-weight: normal;
 }
 
-#hfryqqdcqs .gt_font_bold {
+#dfyuveidbh .gt_font_bold {
   font-weight: bold;
 }
 
-#hfryqqdcqs .gt_font_italic {
+#dfyuveidbh .gt_font_italic {
   font-style: italic;
 }
 
-#hfryqqdcqs .gt_super {
+#dfyuveidbh .gt_super {
   font-size: 65%;
 }
 
-#hfryqqdcqs .gt_footnote_marks {
+#dfyuveidbh .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#hfryqqdcqs .gt_asterisk {
+#dfyuveidbh .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#hfryqqdcqs .gt_indent_1 {
+#dfyuveidbh .gt_indent_1 {
   text-indent: 5px;
 }
 
-#hfryqqdcqs .gt_indent_2 {
+#dfyuveidbh .gt_indent_2 {
   text-indent: 10px;
 }
 
-#hfryqqdcqs .gt_indent_3 {
+#dfyuveidbh .gt_indent_3 {
   text-indent: 15px;
 }
 
-#hfryqqdcqs .gt_indent_4 {
+#dfyuveidbh .gt_indent_4 {
   text-indent: 20px;
 }
 
-#hfryqqdcqs .gt_indent_5 {
+#dfyuveidbh .gt_indent_5 {
   text-indent: 25px;
 }
 
-#hfryqqdcqs .katex-display {
+#dfyuveidbh .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#hfryqqdcqs div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#dfyuveidbh div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1780,8 +1785,8 @@ Table&nbsp;12.2: Models compared during development.
 </div>
 <p>A <code>[derived]</code> block defines extra columns that the engine computes from each subject’s fitted profile and writes to <code>fit$sdtab</code>. <code>[output]</code> adds individual parameters or covariates to <code>sdtab</code>. The bundled <code>two_cpt_oral_derived</code> example shows the kinds of expression: per-row values (rate constants), per-subject aggregates (<code>max</code>, <code>tmax</code>) and integrals, including a periodic AUC per dosing window:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">drv</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_derived"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">drv</span><span class="op">$</span><span class="va">model</span>, <span class="st">"derived"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">drv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_derived"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">drv</span><span class="op">$</span><span class="va">model</span>, <span class="st">"derived"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [derived]</span></span>
 <span><span class="co">#&gt;   K10 = CL / V1</span></span>
 <span><span class="co">#&gt;   K12 = Q  / V1</span></span>
@@ -1791,30 +1796,31 @@ Table&nbsp;12.2: Models compared during development.
 <span><span class="co">#&gt;   TMAX       = tmax(IPRED)</span></span>
 <span><span class="co">#&gt;   AUC_0_168  = integral(IPRED, from=0, to=168, step=0.2)</span></span>
 <span><span class="co">#&gt;   AUC_TAU    = integral(IPRED, window=24, anchor=0, step=0.2)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">drv</span><span class="op">$</span><span class="va">model</span>, <span class="st">"output"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">drv</span><span class="op">$</span><span class="va">model</span>, <span class="st">"output"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [output]</span></span>
 <span><span class="co">#&gt;   CL V1 Q V2 KA</span></span>
-<span><span class="va">fit_drv</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">drv</span><span class="op">$</span><span class="va">model</span>, <span class="va">drv</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit_drv</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fit_drv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">drv</span><span class="op">$</span><span class="va">model</span>, <span class="va">drv</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://generics.r-lib.org/reference/setops.html">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit_drv</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "CL"        "V1"        "Q"         "V2"        "KA"        "K10"      </span></span>
 <span><span class="co">#&gt;  [7] "K12"       "K21"       "CMAX"      "TMAX"      "AUC_0_168" "AUC_TAU"</span></span>
-<span><span class="va">fit_drv</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">select</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">K10</span>, <span class="va">CMAX</span>, <span class="va">TMAX</span>, <span class="va">AUC_TAU</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    TIME       K10     CMAX TMAX  AUC_TAU</span></span>
-<span><span class="co">#&gt; 1   0.5 0.1245657 4.214751    1 35.68941</span></span>
-<span><span class="co">#&gt; 2   1.0 0.1245657 4.214751    1 35.68941</span></span>
-<span><span class="co">#&gt; 3   2.0 0.1245657 4.214751    1 35.68941</span></span>
-<span><span class="co">#&gt; 4   4.0 0.1245657 4.214751    1 35.68941</span></span>
-<span><span class="co">#&gt; 5   6.0 0.1245657 4.214751    1 35.68941</span></span>
-<span><span class="co">#&gt; 6   8.0 0.1245657 4.214751    1 35.68941</span></span>
-<span><span class="co">#&gt; 7  12.0 0.1245657 4.214751    1 35.68941</span></span>
-<span><span class="co">#&gt; 8  24.0 0.1245657 4.214751    1 11.63592</span></span>
-<span><span class="co">#&gt; 9  36.0 0.1245657 4.214751    1 11.63592</span></span>
-<span><span class="co">#&gt; 10 48.0 0.1245657 4.214751    1  8.20865</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">fit_drv</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">K10</span>, <span class="va">CMAX</span>, <span class="va">TMAX</span>, <span class="va">AUC_TAU</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    TIME       K10    CMAX TMAX   AUC_TAU</span></span>
+<span><span class="co">#&gt; 1   0.5 0.1245657 4.21475    1 35.689406</span></span>
+<span><span class="co">#&gt; 2   1.0 0.1245657 4.21475    1 35.689406</span></span>
+<span><span class="co">#&gt; 3   2.0 0.1245657 4.21475    1 35.689406</span></span>
+<span><span class="co">#&gt; 4   4.0 0.1245657 4.21475    1 35.689406</span></span>
+<span><span class="co">#&gt; 5   6.0 0.1245657 4.21475    1 35.689406</span></span>
+<span><span class="co">#&gt; 6   8.0 0.1245657 4.21475    1 35.689406</span></span>
+<span><span class="co">#&gt; 7  12.0 0.1245657 4.21475    1 35.689406</span></span>
+<span><span class="co">#&gt; 8  24.0 0.1245657 4.21475    1 11.635928</span></span>
+<span><span class="co">#&gt; 9  36.0 0.1245657 4.21475    1 11.635928</span></span>
+<span><span class="co">#&gt; 10 48.0 0.1245657 4.21475    1  8.208649</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>CMAX</code> and <code>TMAX</code> have one value per subject, repeated on every row. <code>AUC_TAU</code> has one value per 24-hour window.</p>
-<p>The same blocks can be added to the final model. <code>ferx_model_set_section()</code> only replaces existing blocks, so append them to a copy of the model file:</p>
+<p>The same blocks can be added to the final model. <code><a href="https://ferx-nlme.org/reference/ferx_model_set_section.html">ferx_model_set_section()</a></code> only replaces existing blocks, so append them to a copy of the model file:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">report_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"report"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">report_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"report"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">report_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">exposure_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"final_with_exposure.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">cov</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">""</span>,</span>
 <span>             <span class="st">"[derived]"</span>,</span>
@@ -1824,14 +1830,14 @@ Table&nbsp;12.2: Models compared during development.
 <span>             <span class="st">""</span>,</span>
 <span>             <span class="st">"[output]"</span>,</span>
 <span>             <span class="st">"  CL V1 WT CRCL"</span><span class="op">)</span>, <span class="va">exposure_model</span><span class="op">)</span></span>
-<span><span class="va">fit_exposure</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">exposure_model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_exposure</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">exposure_model</span>, <span class="va">cov</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">fit_exposure</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Derived columns do not change the estimation. The OFV is identical. One row per subject gives the exposure table:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">exposure</span> <span class="op">&lt;-</span> <span class="va">fit_exposure</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">distinct</span><span class="op">(</span><span class="va">ID</span>, <span class="va">CL</span>, <span class="va">V1</span>, <span class="va">WT</span>, <span class="va">CRCL</span>, <span class="va">CMAX</span>, <span class="va">TMAX</span>, <span class="va">AUC_0_48</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">exposure</span> <span class="op">&lt;-</span> <span class="va">fit_exposure</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span><span class="op">(</span><span class="va">ID</span>, <span class="va">CL</span>, <span class="va">V1</span>, <span class="va">WT</span>, <span class="va">CRCL</span>, <span class="va">CMAX</span>, <span class="va">TMAX</span>, <span class="va">AUC_0_48</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">exposure</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID       CL       V1   WT  CRCL     CMAX TMAX AUC_0_48</span></span>
 <span><span class="co">#&gt; 1  1 4.360698 42.75776 70.6  73.7 4.134007    1 46.05033</span></span>
@@ -1842,9 +1848,9 @@ Table&nbsp;12.2: Models compared during development.
 <span><span class="co">#&gt; 6  6 7.727280 45.64974 71.2 129.5 3.434671    1 29.04905</span></span>
 <span></span>
 <span><span class="va">exposure</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span>weight_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html">cut</a></span><span class="op">(</span><span class="va">WT</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">60</span>, <span class="fl">80</span>, <span class="cn">Inf</span><span class="op">)</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"&lt; 60 kg"</span>, <span class="st">"60–80 kg"</span>, <span class="st">"&gt; 80 kg"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">weight_group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">summarise</span><span class="op">(</span>n <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span>, <span class="fu">across</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">CMAX</span>, <span class="va">AUC_0_48</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>median <span class="op">=</span> <span class="va">median</span>, min <span class="op">=</span> <span class="va">min</span>, max <span class="op">=</span> <span class="va">max</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>weight_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html">cut</a></span><span class="op">(</span><span class="va">WT</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">60</span>, <span class="fl">80</span>, <span class="cn">Inf</span><span class="op">)</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"&lt; 60 kg"</span>, <span class="st">"60–80 kg"</span>, <span class="st">"&gt; 80 kg"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">weight_group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html">n</a></span><span class="op">(</span><span class="op">)</span>, <span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">CMAX</span>, <span class="va">AUC_0_48</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>median <span class="op">=</span> <span class="va">median</span>, min <span class="op">=</span> <span class="va">min</span>, max <span class="op">=</span> <span class="va">max</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/gt.html">gt</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/fmt_number.html">fmt_number</a></span><span class="op">(</span>columns <span class="op">=</span> <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">weight_group</span>, <span class="va">n</span><span class="op">)</span>, n_sigfig <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-exposure" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
@@ -1852,23 +1858,23 @@ Table&nbsp;12.2: Models compared during development.
 Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by body weight group.
 </figcaption><div aria-describedby="tbl-exposure-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="vwnhgdmxmh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#vwnhgdmxmh table {
+<div id="czbpyovpxu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#czbpyovpxu table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#vwnhgdmxmh thead, #vwnhgdmxmh tbody, #vwnhgdmxmh tfoot, #vwnhgdmxmh tr, #vwnhgdmxmh td, #vwnhgdmxmh th {
+#czbpyovpxu thead, #czbpyovpxu tbody, #czbpyovpxu tfoot, #czbpyovpxu tr, #czbpyovpxu td, #czbpyovpxu th {
   border-style: none;
 }
 
-#vwnhgdmxmh p {
+#czbpyovpxu p {
   margin: 0;
   padding: 0;
 }
 
-#vwnhgdmxmh .gt_table {
+#czbpyovpxu .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1894,12 +1900,12 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-left-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_caption {
+#czbpyovpxu .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#vwnhgdmxmh .gt_title {
+#czbpyovpxu .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1911,7 +1917,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-width: 0;
 }
 
-#vwnhgdmxmh .gt_subtitle {
+#czbpyovpxu .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1923,7 +1929,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-top-width: 0;
 }
 
-#vwnhgdmxmh .gt_heading {
+#czbpyovpxu .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1935,13 +1941,13 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_bottom_border {
+#czbpyovpxu .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_col_headings {
+#czbpyovpxu .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1956,7 +1962,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_col_heading {
+#czbpyovpxu .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1976,7 +1982,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   overflow-x: hidden;
 }
 
-#vwnhgdmxmh .gt_column_spanner_outer {
+#czbpyovpxu .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1988,15 +1994,15 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 4px;
 }
 
-#vwnhgdmxmh .gt_column_spanner_outer:first-child {
+#czbpyovpxu .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#vwnhgdmxmh .gt_column_spanner_outer:last-child {
+#czbpyovpxu .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#vwnhgdmxmh .gt_column_spanner {
+#czbpyovpxu .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2008,11 +2014,11 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   width: 100%;
 }
 
-#vwnhgdmxmh .gt_spanner_row {
+#czbpyovpxu .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#vwnhgdmxmh .gt_group_heading {
+#czbpyovpxu .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2038,7 +2044,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   text-align: left;
 }
 
-#vwnhgdmxmh .gt_empty_group_heading {
+#czbpyovpxu .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2053,15 +2059,15 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   vertical-align: middle;
 }
 
-#vwnhgdmxmh .gt_from_md > :first-child {
+#czbpyovpxu .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#vwnhgdmxmh .gt_from_md > :last-child {
+#czbpyovpxu .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#vwnhgdmxmh .gt_row {
+#czbpyovpxu .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2080,7 +2086,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   overflow-x: hidden;
 }
 
-#vwnhgdmxmh .gt_stub {
+#czbpyovpxu .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2093,7 +2099,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#vwnhgdmxmh .gt_stub_row_group {
+#czbpyovpxu .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2107,15 +2113,15 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   vertical-align: top;
 }
 
-#vwnhgdmxmh .gt_row_group_first td {
+#czbpyovpxu .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#vwnhgdmxmh .gt_row_group_first th {
+#czbpyovpxu .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#vwnhgdmxmh .gt_summary_row {
+#czbpyovpxu .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2125,16 +2131,16 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#vwnhgdmxmh .gt_first_summary_row {
+#czbpyovpxu .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_first_summary_row.thick {
+#czbpyovpxu .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#vwnhgdmxmh .gt_last_summary_row {
+#czbpyovpxu .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2144,7 +2150,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_grand_summary_row {
+#czbpyovpxu .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2154,7 +2160,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#vwnhgdmxmh .gt_first_grand_summary_row {
+#czbpyovpxu .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2164,7 +2170,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-top-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_last_grand_summary_row_top {
+#czbpyovpxu .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2174,11 +2180,11 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_striped {
+#czbpyovpxu .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#vwnhgdmxmh .gt_table_body {
+#czbpyovpxu .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2187,7 +2193,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_footnotes {
+#czbpyovpxu .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2201,7 +2207,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_footnote {
+#czbpyovpxu .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2210,7 +2216,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#vwnhgdmxmh .gt_sourcenotes {
+#czbpyovpxu .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2224,7 +2230,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#vwnhgdmxmh .gt_sourcenote {
+#czbpyovpxu .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2232,72 +2238,72 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#vwnhgdmxmh .gt_left {
+#czbpyovpxu .gt_left {
   text-align: left;
 }
 
-#vwnhgdmxmh .gt_center {
+#czbpyovpxu .gt_center {
   text-align: center;
 }
 
-#vwnhgdmxmh .gt_right {
+#czbpyovpxu .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#vwnhgdmxmh .gt_font_normal {
+#czbpyovpxu .gt_font_normal {
   font-weight: normal;
 }
 
-#vwnhgdmxmh .gt_font_bold {
+#czbpyovpxu .gt_font_bold {
   font-weight: bold;
 }
 
-#vwnhgdmxmh .gt_font_italic {
+#czbpyovpxu .gt_font_italic {
   font-style: italic;
 }
 
-#vwnhgdmxmh .gt_super {
+#czbpyovpxu .gt_super {
   font-size: 65%;
 }
 
-#vwnhgdmxmh .gt_footnote_marks {
+#czbpyovpxu .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#vwnhgdmxmh .gt_asterisk {
+#czbpyovpxu .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#vwnhgdmxmh .gt_indent_1 {
+#czbpyovpxu .gt_indent_1 {
   text-indent: 5px;
 }
 
-#vwnhgdmxmh .gt_indent_2 {
+#czbpyovpxu .gt_indent_2 {
   text-indent: 10px;
 }
 
-#vwnhgdmxmh .gt_indent_3 {
+#czbpyovpxu .gt_indent_3 {
   text-indent: 15px;
 }
 
-#vwnhgdmxmh .gt_indent_4 {
+#czbpyovpxu .gt_indent_4 {
   text-indent: 20px;
 }
 
-#vwnhgdmxmh .gt_indent_5 {
+#czbpyovpxu .gt_indent_5 {
   text-indent: 25px;
 }
 
-#vwnhgdmxmh .katex-display {
+#czbpyovpxu .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#vwnhgdmxmh div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#czbpyovpxu div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2354,19 +2360,19 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
 </section><section id="figures-for-a-report" class="level2"><h2 class="anchored" data-anchor-id="figures-for-a-report">Figures for a report</h2>
 <p>Plot figures with one consistent style. A four-panel goodness-of-fit figure:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com">patchwork</a></span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com">patchwork</a></span><span class="op">)</span></span>
 <span><span class="va">sd</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span></span>
 <span><span class="va">identity_panel</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">xlab</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="va">sd</span>, <span class="fu">aes</span><span class="op">(</span><span class="op">{</span><span class="op">{</span> <span class="va">x</span> <span class="op">}</span><span class="op">}</span>, <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_abline</span><span class="op">(</span>linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_point</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_smooth</span><span class="op">(</span>method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, se <span class="op">=</span> <span class="cn">FALSE</span>, linewidth <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">scale_x_log10</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">scale_y_log10</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="va">xlab</span>, y <span class="op">=</span> <span class="st">"Observed"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sd</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="op">{</span><span class="op">{</span> <span class="va">x</span> <span class="op">}</span><span class="op">}</span>, <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_abline</a></span><span class="op">(</span>linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, se <span class="op">=</span> <span class="cn">FALSE</span>, linewidth <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html">scale_x_log10</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html">scale_y_log10</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">xlab</span>, y <span class="op">=</span> <span class="st">"Observed"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">residual_panel</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">xlab</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="va">sd</span>, <span class="fu">aes</span><span class="op">(</span><span class="op">{</span><span class="op">{</span> <span class="va">x</span> <span class="op">}</span><span class="op">}</span>, <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"dotted"</span>, <span class="st">"dashed"</span>, <span class="st">"dotted"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_point</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_smooth</span><span class="op">(</span>method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, se <span class="op">=</span> <span class="cn">FALSE</span>, linewidth <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span> <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="va">xlab</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">sd</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="op">{</span><span class="op">{</span> <span class="va">x</span> <span class="op">}</span><span class="op">}</span>, <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"dotted"</span>, <span class="st">"dashed"</span>, <span class="st">"dotted"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span>, size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, se <span class="op">=</span> <span class="cn">FALSE</span>, linewidth <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">xlab</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">gof</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu">identity_panel</span><span class="op">(</span><span class="va">PRED</span>, <span class="st">"Population prediction"</span><span class="op">)</span> <span class="op">|</span> <span class="fu">identity_panel</span><span class="op">(</span><span class="va">IPRED</span>, <span class="st">"Individual prediction"</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span></span>
 <span>  <span class="op">(</span><span class="fu">residual_panel</span><span class="op">(</span><span class="va">TIME</span>, <span class="st">"Time (h)"</span><span class="op">)</span> <span class="op">|</span> <span class="fu">residual_panel</span><span class="op">(</span><span class="va">PRED</span>, <span class="st">"Population prediction"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -2385,13 +2391,13 @@ Figure&nbsp;12.1: Goodness of fit of the final model.
 </div>
 <p>And the covariate relationship the final model contains, with individual clearances against creatinine clearance and the typical curve for a 70 kg subject from the estimates:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">theta</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">theta</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span></span>
 <span><span class="va">typical_cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>CRCL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">40</span>, <span class="fl">160</span>, length.out <span class="op">=</span> <span class="fl">100</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span>CL <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"TVCL"</span><span class="op">]</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">CRCL</span> <span class="op">/</span> <span class="fl">100</span><span class="op">)</span><span class="op">^</span><span class="va">theta</span><span class="op">[[</span><span class="st">"THETA_CRCL"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">cl_plot</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span><span class="va">exposure</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">CRCL</span>, <span class="va">CL</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_point</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>size <span class="op">=</span> <span class="va">WT</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span>data <span class="op">=</span> <span class="va">typical_cl</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Creatinine clearance"</span>, y <span class="op">=</span> <span class="st">"Clearance (individual)"</span>, size <span class="op">=</span> <span class="st">"Weight (kg)"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>CL <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"TVCL"</span><span class="op">]</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">CRCL</span> <span class="op">/</span> <span class="fl">100</span><span class="op">)</span><span class="op">^</span><span class="va">theta</span><span class="op">[[</span><span class="st">"THETA_CRCL"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">cl_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">exposure</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">CRCL</span>, <span class="va">CL</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>size <span class="op">=</span> <span class="va">WT</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">typical_cl</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Creatinine clearance"</span>, y <span class="op">=</span> <span class="st">"Clearance (individual)"</span>, size <span class="op">=</span> <span class="st">"Weight (kg)"</span><span class="op">)</span></span>
 <span><span class="va">cl_plot</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-cl-crcl" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
@@ -2407,8 +2413,8 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
 <p>The typical curve uses the model’s <code>CL = TVCL * (WT / 70)^THETA_WT * (CRCL / 100)^THETA_CRCL</code> at WT = 70 (see <code>ferx_model_get_section(cov$model, "individual_parameters")</code>).</p>
 <p>Save figures and tables in the formats your report needs:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ggsave</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"gof.png"</span><span class="op">)</span>, <span class="va">gof</span>, width <span class="op">=</span> <span class="fl">8</span>, height <span class="op">=</span> <span class="fl">6.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
-<span><span class="fu">ggsave</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"cl_crcl.pdf"</span><span class="op">)</span>, <span class="va">cl_plot</span>, width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html">ggsave</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"gof.png"</span><span class="op">)</span>, <span class="va">gof</span>, width <span class="op">=</span> <span class="fl">8</span>, height <span class="op">=</span> <span class="fl">6.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html">ggsave</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"cl_crcl.pdf"</span><span class="op">)</span>, <span class="va">cl_plot</span>, width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">exposure</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"exposure.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span><span class="op">(</span><span class="va">report_dir</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "cl_crcl.pdf"              "exposure.csv"            </span></span>
@@ -2461,9 +2467,9 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
 </table>
 <p><code>[output]</code> lists individual parameters, covariates or <code>[derived]</code> expressions to add to <code>sdtab</code> (ferx-core <a href="https://ferx-nlme.org/ferx-core/model-file/output.html">output</a> page). A theta is none of those, and asking for one stops the fit:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">theta_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"output_theta.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">theta_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">report_dir</span>, <span class="st">"output_theta.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">""</span>, <span class="st">"[output]"</span>, <span class="st">"  TVCL"</span><span class="op">)</span>, <span class="va">theta_out</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">theta_out</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">theta_out</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
 <span><span class="co">#&gt;   Fit error: [output] column `TVCL` is not recognised as a covariate, individual parameter, or derived expression. Known: WT, CRCL, CL, V1, Q, V2, KA, ID, TIME, DV, CENS, OCC, CMT, PRED, IPRED, CWRES, IWRES, NPDE, NPD, EBE_OFV, N_OBS, TAFD, TAD [E_OUTPUT_UNKNOWN_COLUMN]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -2479,7 +2485,7 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
 <ul>
 <li>Build parameter and model comparison tables from <code>fit$estimates</code> and the fit’s scalars with gt.</li>
 <li>Let the engine compute exposure metrics with <code>[derived]</code>, and add individual parameters and covariates to <code>sdtab</code> with <code>[output]</code>.</li>
-<li>Draw report figures from <code>fit$sdtab</code> and derived data frames, and save them with <code>ggsave()</code>.</li>
+<li>Draw report figures from <code>fit$sdtab</code> and derived data frames, and save them with <code><a href="https://ggplot2.tidyverse.org/reference/ggsave.html">ggsave()</a></code>.</li>
 </ul>
 <p>Next: <a href="13-reproducibility.html" class="quarto-xref"><span>Reproducibility and sharing</span></a> saves the fit and makes the analysis reproducible.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
@@ -2493,7 +2499,7 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_fit</code> (<code>estimates</code>, <code>sdtab</code>, <code>shrinkage_eta</code>), <code>?ferx_bic</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code> (<code>estimates</code>, <code>sdtab</code>, <code>shrinkage_eta</code>), <code><a href="https://ferx-nlme.org/reference/ferx_bic.html">?ferx_bic</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/model-file/derived.html"><code>[derived]</code></a>, <a href="https://ferx-nlme.org/ferx-core/model-file/output.html"><code>[output]</code></a>
 </li>

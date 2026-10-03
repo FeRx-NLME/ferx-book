@@ -649,13 +649,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A converged fit with a sensible OFV is only a candidate. Before trusting it, check whether the model describes the data: are predictions unbiased, are residuals structureless, are the random effects well behaved and informed by the data, and are the parameters identifiable? This chapter works through these checks for the base model. It uses the fit object’s tables and plain ggplot2, plus the simulation-based NPDE.</p>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="minimal-runnable-call" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call">Minimal runnable call</h2>
 <p>Most diagnostics come straight from <code>fit$sdtab</code>, which has one row per observation:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME     DV     PRED    IPRED      CWRES      IWRES   EBE_OFV N_OBS TAFD</span></span>
 <span><span class="co">#&gt; 1  1  0.5 3.5262 2.223319 3.538980  0.8812067 -0.1840541 -40.00822    10  0.5</span></span>
 <span><span class="co">#&gt; 2  1  1.0 4.1950 3.124361 4.134356  0.9840705  0.7476190 -40.00822    10  1.0</span></span>
@@ -675,15 +680,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
 <section id="observations-against-predictions" class="level3"><h3 class="anchored" data-anchor-id="observations-against-predictions">Observations against predictions</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html">pivot_longer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">PRED</span>, <span class="va">IPRED</span><span class="op">)</span>, names_to <span class="op">=</span> <span class="st">"prediction"</span>, values_to <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">value</span>, <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_abline</span><span class="op">(</span>linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_point</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_smooth</span><span class="op">(</span>se <span class="op">=</span> <span class="cn">FALSE</span>, method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">scale_x_log10</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">scale_y_log10</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">prediction</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Prediction"</span>, y <span class="op">=</span> <span class="st">"Observation"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">value</span>, <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_abline</a></span><span class="op">(</span>linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html">geom_smooth</a></span><span class="op">(</span>se <span class="op">=</span> <span class="cn">FALSE</span>, method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html">scale_x_log10</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html">scale_y_log10</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">prediction</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Prediction"</span>, y <span class="op">=</span> <span class="st">"Observation"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-dv-pred" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-dv-pred-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -698,13 +703,13 @@ Figure&nbsp;7.1: Observations against population and individual predictions (log
 <p>Points should scatter around the identity line, and the smooth should follow it. Scatter around <code>PRED</code> also includes between-subject variability, so it is wider than around <code>IPRED</code>.</p>
 </section><section id="residuals" class="level3"><h3 class="anchored" data-anchor-id="residuals">Residuals</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com">patchwork</a></span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com">patchwork</a></span><span class="op">)</span></span>
 <span><span class="va">res_plot</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, <span class="va">xlab</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu">aes</span><span class="op">(</span><span class="op">{</span><span class="op">{</span> <span class="va">x</span> <span class="op">}</span><span class="op">}</span>, <span class="op">{</span><span class="op">{</span> <span class="va">y</span> <span class="op">}</span><span class="op">}</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_point</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">geom_smooth</span><span class="op">(</span>se <span class="op">=</span> <span class="cn">FALSE</span>, method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="va">xlab</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="op">{</span><span class="op">{</span> <span class="va">x</span> <span class="op">}</span><span class="op">}</span>, <span class="op">{</span><span class="op">{</span> <span class="va">y</span> <span class="op">}</span><span class="op">}</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html">geom_smooth</a></span><span class="op">(</span>se <span class="op">=</span> <span class="cn">FALSE</span>, method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">xlab</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu">res_plot</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">CWRES</span>, <span class="st">"Time (h)"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">res_plot</span><span class="op">(</span><span class="va">PRED</span>, <span class="va">CWRES</span>, <span class="st">"PRED"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">res_plot</span><span class="op">(</span><span class="va">IPRED</span>, <span class="va">IWRES</span>, <span class="st">"IPRED"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
@@ -720,10 +725,10 @@ Figure&nbsp;7.2: CWRES against time and against population prediction; IWRES aga
 </div>
 <p>Residuals should be centred on zero with no trend over time or predictions. Most should fall within ±2, and the spread should not change with the prediction. Under a correct model CWRES are roughly standard normal:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu">aes</span><span class="op">(</span>sample <span class="op">=</span> <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">stat_qq</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">stat_qq_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Theoretical quantile"</span>, y <span class="op">=</span> <span class="st">"CWRES"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>sample <span class="op">=</span> <span class="va">CWRES</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_qq.html">stat_qq</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_qq.html">stat_qq_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Theoretical quantile"</span>, y <span class="op">=</span> <span class="st">"CWRES"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-qq-cwres" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-qq-cwres-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -766,9 +771,18 @@ Figure&nbsp;7.3: Normal quantile plot of CWRES.
 </tbody>
 </table>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ferx fit warnings  (two_cpt_oral_base)</span></span>
 <span><span class="co">#&gt; -------------------------------------------------</span></span>
+<span><span class="co">#&gt; [WARNING]  general</span></span>
+<span><span class="co">#&gt;             gradient = fd also changed the outer optimizer: with optimizer = auto</span></span>
+<span><span class="co">#&gt;             left in place it resolved to bobyqa rather than the nlopt_lbfgs this</span></span>
+<span><span class="co">#&gt;             model would have used under gradient = auto, because auto picks the</span></span>
+<span><span class="co">#&gt;             derivative-free optimizer when there is no exact analytic gradient to</span></span>
+<span><span class="co">#&gt;             feed a gradient-based one. Two factors moved, not one — if you are</span></span>
+<span><span class="co">#&gt;             comparing an fd arm against an auto arm, pin optimizer = bobyqa in</span></span>
+<span><span class="co">#&gt;             both so the difference you measure is the gradient.</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [WARNING]  dw_autocorrelation</span></span>
 <span><span class="co">#&gt;             Negative IWRES autocorrelation detected (Durbin-Watson = 2.91).</span></span>
 <span><span class="co">#&gt;             Possible over-parameterization or misspecified error model.</span></span>
@@ -777,20 +791,20 @@ Figure&nbsp;7.3: Normal quantile plot of CWRES.
 <span><span class="co">#&gt;             simplifying the residual model.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; -------------------------------------------------</span></span>
-<span><span class="co">#&gt; 0 CRITICAL   1 WARNING   0 INFO</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 0 CRITICAL   2 WARNING   0 INFO</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>ferx suggests over-parameterisation or a misspecified residual error model as possible causes. <a href="09-model-selection.html" class="quarto-xref"><span>Model development and selection</span></a> tests alternative residual error models systematically with <code>ferx_ruvsearch()</code>.</p>
+<p>The first entry is the note about the model file’s <code>gradient = fd</code> that <a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a> explains. The second is the residual warning: ferx suggests over-parameterisation or a misspecified residual error model as possible causes. <a href="09-model-selection.html" class="quarto-xref"><span>Model development and selection</span></a> tests alternative residual error models systematically with <code><a href="https://ferx-nlme.org/reference/ferx_ruvsearch.html">ferx_ruvsearch()</a></code>.</p>
 </section><section id="individual-fits" class="level3"><h3 class="anchored" data-anchor-id="individual-fits">Individual fits</h3>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">ID</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_point</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">IPRED</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">PRED</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">scale_y_log10</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">ID</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">ID</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">DV</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">IPRED</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">PRED</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html">scale_y_log10</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">ID</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-individual" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-individual-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -802,16 +816,16 @@ Figure&nbsp;7.4: Observations (points) with individual (solid) and population (d
 </div>
 </div>
 </div>
-<p>These lines connect predictions at the observation times only. For smooth curves between samples, predict on a dense time grid with <code>ferx_predict()</code> (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>).</p>
+<p>These lines connect predictions at the observation times only. For smooth curves between samples, predict on a dense time grid with <code><a href="https://ferx-nlme.org/reference/ferx_predict.html">ferx_predict()</a></code> (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>).</p>
 </section><section id="random-effects-and-shrinkage" class="level3"><h3 class="anchored" data-anchor-id="random-effects-and-shrinkage">Random effects and shrinkage</h3>
 <p><code>fit$ebe_etas</code> holds each subject’s estimated random effects:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span> <span class="op">|&gt;</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html">pivot_longer</a></span><span class="op">(</span><span class="op">-</span><span class="va">ID</span>, names_to <span class="op">=</span> <span class="st">"eta"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_histogram</span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_vline</span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">eta</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_histogram.html">geom_histogram</a></span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">eta</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-etas" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-etas-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -825,7 +839,7 @@ Figure&nbsp;7.5: Distribution of the estimated random effects.
 </div>
 <p>Shrinkage measures how strongly the individual estimates are pulled towards zero. High eta shrinkage means the data carry little information about that random effect for individual subjects, which makes eta-based plots (including the covariate plots below) unreliable for that parameter:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>eta <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">eta_names</span>, shrinkage_pct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eta</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>eta <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">eta_names</span>, shrinkage_pct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eta</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      eta shrinkage_pct</span></span>
 <span><span class="co">#&gt; 1 ETA_CL          -0.2</span></span>
 <span><span class="co">#&gt; 2 ETA_V1           3.6</span></span>
@@ -838,7 +852,7 @@ Figure&nbsp;7.5: Distribution of the estimated random effects.
 </div>
 <p><code>fit$eta_normality</code> holds a Shapiro-Wilk test per eta. A flag marks p &lt; 0.05:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">eta_normality</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">eta_normality</span></span>
 <span><span class="co">#&gt;      eta     W  p_val flag</span></span>
 <span><span class="co">#&gt; 1 ETA_CL 0.964 0.3878     </span></span>
 <span><span class="co">#&gt; 2 ETA_V1 0.975 0.6775     </span></span>
@@ -849,7 +863,7 @@ Figure&nbsp;7.5: Distribution of the estimated random effects.
 </section><section id="random-effects-and-covariates" class="level3"><h3 class="anchored" data-anchor-id="random-effects-and-covariates">Random effects and covariates</h3>
 <p><code>fit$eta_cov</code> correlates each eta with each subject-level numeric covariate in the dataset, sorted by descending |r|, and marks the pairs worth following up in its <code>flag</code> column at |r| &gt;= 0.3. It is a quick first look for covariate relationships, and it is <code>NULL</code> when the model declares no etas, the dataset carries no usable numeric covariate, or the data file can no longer be read from <code>fit$data_path</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">eta_cov</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">eta_cov</span></span>
 <span><span class="co">#&gt;       eta covariate      r  p_val flag</span></span>
 <span><span class="co">#&gt; 1  ETA_CL      CRCL  0.469 0.0090  [!]</span></span>
 <span><span class="co">#&gt; 2  ETA_CL        WT  0.382 0.0371  [!]</span></span>
@@ -865,17 +879,17 @@ Figure&nbsp;7.5: Distribution of the estimated random effects.
 <span><span class="co">#&gt; [1] 0.305 0.469</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">distinct</span><span class="op">(</span><span class="va">ID</span>, <span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span><span class="op">(</span><span class="va">ID</span>, <span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">ebe_etas</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span>ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">left_join</span><span class="op">(</span><span class="va">subjects</span>, by <span class="op">=</span> <span class="st">"ID"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="va">subjects</span>, by <span class="op">=</span> <span class="st">"ID"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html">pivot_longer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">WT</span>, <span class="va">CRCL</span><span class="op">)</span>, names_to <span class="op">=</span> <span class="st">"covariate"</span>, values_to <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">value</span>, <span class="va">ETA_CL</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_smooth</span><span class="op">(</span>method <span class="op">=</span> <span class="st">"lm"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, se <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">covariate</span>, scales <span class="op">=</span> <span class="st">"free_x"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">value</span>, <span class="va">ETA_CL</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"lm"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, se <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">covariate</span>, scales <span class="op">=</span> <span class="st">"free_x"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-eta-cov" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-eta-cov-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -891,12 +905,12 @@ Figure&nbsp;7.6: Clearance random effect against body weight and creatinine clea
 </section><section id="parameter-identifiability" class="level3"><h3 class="anchored" data-anchor-id="parameter-identifiability">Parameter identifiability</h3>
 <p>The covariance step yields the parameter correlation matrix. Correlations near ±1 point to parameters the data cannot separate:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html">as.table</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">cor_matrix</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">Var1</span>, <span class="va">Var2</span>, fill <span class="op">=</span> <span class="va">Freq</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">scale_fill_gradient2</span><span class="op">(</span>limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="cn">NULL</span>, fill <span class="op">=</span> <span class="st">"r"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">theme</span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu">element_text</span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html">as.table</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">cor_matrix</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">Var1</span>, <span class="va">Var2</span>, fill <span class="op">=</span> <span class="va">Freq</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html">geom_tile</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html">scale_fill_gradient2</a></span><span class="op">(</span>limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="cn">NULL</span>, fill <span class="op">=</span> <span class="st">"r"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-cor" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-cor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -909,15 +923,15 @@ Figure&nbsp;7.7: Correlation matrix of the parameter estimates.
 </div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>max_abs_correlation <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">max_abs_correlation</span>, condition_number <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">condition_number</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>max_abs_correlation <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">max_abs_correlation</span>, condition_number <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">condition_number</span><span class="op">)</span></span>
 <span><span class="co">#&gt; max_abs_correlation    condition_number </span></span>
 <span><span class="co">#&gt;          0.05013899          1.23482058</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The condition number is the ratio of the largest to the smallest eigenvalue of this correlation matrix (<code>fit$eigenvalues</code>). ferx flags values above 1000.</p>
 </section><section id="npde" class="level3"><h3 class="anchored" data-anchor-id="npde">NPDE</h3>
-<p>Normalized prediction distribution errors (NPDE) compare each observation with its distribution simulated under the fitted model. Unlike CWRES, they do not rely on a linearisation, and under a correct model they follow a standard normal distribution. <code>ferx_calc_npde()</code> computes them after the fit and returns the fit with <code>NPDE</code> and <code>NPD</code> columns added to <code>sdtab</code>:</p>
+<p>Normalized prediction distribution errors (NPDE) compare each observation with its distribution simulated under the fitted model. Unlike CWRES, they do not rely on a linearisation, and under a correct model they follow a standard normal distribution. <code><a href="https://ferx-nlme.org/reference/ferx_calc_npde.html">ferx_calc_npde()</a></code> computes them after the fit and returns the fit with <code>NPDE</code> and <code>NPD</code> columns added to <code>sdtab</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ferx_calc_npde</span><span class="op">(</span><span class="va">fit</span>, nsim <span class="op">=</span> <span class="fl">1000</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_calc_npde.html">ferx_calc_npde</a></span><span class="op">(</span><span class="va">fit</span>, nsim <span class="op">=</span> <span class="fl">1000</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"NPDE"</span>, <span class="st">"NPD"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       NPDE               NPD           </span></span>
 <span><span class="co">#&gt;  Min.   :-3.29053   Min.   :-2.575829  </span></span>
@@ -928,13 +942,13 @@ Figure&nbsp;7.7: Correlation matrix of the parameter estimates.
 <span><span class="co">#&gt;  Max.   : 2.57583   Max.   : 3.290527</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="op">(</span><span class="fu">ggplot</span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">NPDE</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.96</span>, <span class="fl">0</span>, <span class="fl">1.96</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"dotted"</span>, <span class="st">"dashed"</span>, <span class="st">"dotted"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu">geom_point</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu">geom_smooth</span><span class="op">(</span>se <span class="op">=</span> <span class="cn">FALSE</span>, method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="op">(</span><span class="fu">ggplot</span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu">aes</span><span class="op">(</span>sample <span class="op">=</span> <span class="va">NPDE</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">stat_qq</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">stat_qq_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>     <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Theoretical quantile"</span>, y <span class="op">=</span> <span class="st">"NPDE"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">NPDE</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.96</span>, <span class="fl">0</span>, <span class="fl">1.96</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"dotted"</span>, <span class="st">"dashed"</span>, <span class="st">"dotted"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span>   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html">geom_smooth</a></span><span class="op">(</span>se <span class="op">=</span> <span class="cn">FALSE</span>, method <span class="op">=</span> <span class="st">"loess"</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span> <span class="op">+</span></span>
+<span>   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>sample <span class="op">=</span> <span class="va">NPDE</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_qq.html">stat_qq</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_qq.html">stat_qq_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>     <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Theoretical quantile"</span>, y <span class="op">=</span> <span class="st">"NPDE"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-npde" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-npde-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -948,29 +962,28 @@ Figure&nbsp;7.8: NPDE against time and their normal quantile plot.
 </div>
 <p><code>nsim</code> must exceed each subject’s number of observations; subjects that don’t get <code>NA</code> NPDE. <code>seed</code> makes the result reproducible. <code>model</code> and <code>data</code> default to the paths stored in the fit. NPDE can also be computed during the fit with the <code>npde_nsim</code> and <code>npde_seed</code> settings:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">book_settings_table</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"npde_nsim"</span>, <span class="st">"npde_seed"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-settings-npde" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
-<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl quarto-uncaptioned" id="tbl-settings-npde-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table&nbsp;7.1
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-settings-npde-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;7.1: NPDE settings.
 </figcaption><div aria-describedby="tbl-settings-npde-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="vmlhovqtya" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#vmlhovqtya table {
+<div id="ocqsbhofmx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ocqsbhofmx table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#vmlhovqtya thead, #vmlhovqtya tbody, #vmlhovqtya tfoot, #vmlhovqtya tr, #vmlhovqtya td, #vmlhovqtya th {
+#ocqsbhofmx thead, #ocqsbhofmx tbody, #ocqsbhofmx tfoot, #ocqsbhofmx tr, #ocqsbhofmx td, #ocqsbhofmx th {
   border-style: none;
 }
 
-#vmlhovqtya p {
+#ocqsbhofmx p {
   margin: 0;
   padding: 0;
 }
 
-#vmlhovqtya .gt_table {
+#ocqsbhofmx .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -996,12 +1009,12 @@ Table&nbsp;7.1
   border-left-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_caption {
+#ocqsbhofmx .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#vmlhovqtya .gt_title {
+#ocqsbhofmx .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1013,7 +1026,7 @@ Table&nbsp;7.1
   border-bottom-width: 0;
 }
 
-#vmlhovqtya .gt_subtitle {
+#ocqsbhofmx .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1025,7 +1038,7 @@ Table&nbsp;7.1
   border-top-width: 0;
 }
 
-#vmlhovqtya .gt_heading {
+#ocqsbhofmx .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1037,13 +1050,13 @@ Table&nbsp;7.1
   border-right-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_bottom_border {
+#ocqsbhofmx .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_col_headings {
+#ocqsbhofmx .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1058,7 +1071,7 @@ Table&nbsp;7.1
   border-right-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_col_heading {
+#ocqsbhofmx .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1078,7 +1091,7 @@ Table&nbsp;7.1
   overflow-x: hidden;
 }
 
-#vmlhovqtya .gt_column_spanner_outer {
+#ocqsbhofmx .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1090,15 +1103,15 @@ Table&nbsp;7.1
   padding-right: 4px;
 }
 
-#vmlhovqtya .gt_column_spanner_outer:first-child {
+#ocqsbhofmx .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#vmlhovqtya .gt_column_spanner_outer:last-child {
+#ocqsbhofmx .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#vmlhovqtya .gt_column_spanner {
+#ocqsbhofmx .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1110,11 +1123,11 @@ Table&nbsp;7.1
   width: 100%;
 }
 
-#vmlhovqtya .gt_spanner_row {
+#ocqsbhofmx .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#vmlhovqtya .gt_group_heading {
+#ocqsbhofmx .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1140,7 +1153,7 @@ Table&nbsp;7.1
   text-align: left;
 }
 
-#vmlhovqtya .gt_empty_group_heading {
+#ocqsbhofmx .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1155,15 +1168,15 @@ Table&nbsp;7.1
   vertical-align: middle;
 }
 
-#vmlhovqtya .gt_from_md > :first-child {
+#ocqsbhofmx .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#vmlhovqtya .gt_from_md > :last-child {
+#ocqsbhofmx .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#vmlhovqtya .gt_row {
+#ocqsbhofmx .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1182,7 +1195,7 @@ Table&nbsp;7.1
   overflow-x: hidden;
 }
 
-#vmlhovqtya .gt_stub {
+#ocqsbhofmx .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1195,7 +1208,7 @@ Table&nbsp;7.1
   padding-right: 5px;
 }
 
-#vmlhovqtya .gt_stub_row_group {
+#ocqsbhofmx .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1209,15 +1222,15 @@ Table&nbsp;7.1
   vertical-align: top;
 }
 
-#vmlhovqtya .gt_row_group_first td {
+#ocqsbhofmx .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#vmlhovqtya .gt_row_group_first th {
+#ocqsbhofmx .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#vmlhovqtya .gt_summary_row {
+#ocqsbhofmx .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1227,16 +1240,16 @@ Table&nbsp;7.1
   padding-right: 5px;
 }
 
-#vmlhovqtya .gt_first_summary_row {
+#ocqsbhofmx .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_first_summary_row.thick {
+#ocqsbhofmx .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#vmlhovqtya .gt_last_summary_row {
+#ocqsbhofmx .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1246,7 +1259,7 @@ Table&nbsp;7.1
   border-bottom-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_grand_summary_row {
+#ocqsbhofmx .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1256,7 +1269,7 @@ Table&nbsp;7.1
   padding-right: 5px;
 }
 
-#vmlhovqtya .gt_first_grand_summary_row {
+#ocqsbhofmx .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1266,7 +1279,7 @@ Table&nbsp;7.1
   border-top-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_last_grand_summary_row_top {
+#ocqsbhofmx .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1276,11 +1289,11 @@ Table&nbsp;7.1
   border-bottom-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_striped {
+#ocqsbhofmx .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#vmlhovqtya .gt_table_body {
+#ocqsbhofmx .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1289,7 +1302,7 @@ Table&nbsp;7.1
   border-bottom-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_footnotes {
+#ocqsbhofmx .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1303,7 +1316,7 @@ Table&nbsp;7.1
   border-right-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_footnote {
+#ocqsbhofmx .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1312,7 +1325,7 @@ Table&nbsp;7.1
   padding-right: 5px;
 }
 
-#vmlhovqtya .gt_sourcenotes {
+#ocqsbhofmx .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1326,7 +1339,7 @@ Table&nbsp;7.1
   border-right-color: #D3D3D3;
 }
 
-#vmlhovqtya .gt_sourcenote {
+#ocqsbhofmx .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1334,76 +1347,76 @@ Table&nbsp;7.1
   padding-right: 5px;
 }
 
-#vmlhovqtya .gt_left {
+#ocqsbhofmx .gt_left {
   text-align: left;
 }
 
-#vmlhovqtya .gt_center {
+#ocqsbhofmx .gt_center {
   text-align: center;
 }
 
-#vmlhovqtya .gt_right {
+#ocqsbhofmx .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#vmlhovqtya .gt_font_normal {
+#ocqsbhofmx .gt_font_normal {
   font-weight: normal;
 }
 
-#vmlhovqtya .gt_font_bold {
+#ocqsbhofmx .gt_font_bold {
   font-weight: bold;
 }
 
-#vmlhovqtya .gt_font_italic {
+#ocqsbhofmx .gt_font_italic {
   font-style: italic;
 }
 
-#vmlhovqtya .gt_super {
+#ocqsbhofmx .gt_super {
   font-size: 65%;
 }
 
-#vmlhovqtya .gt_footnote_marks {
+#ocqsbhofmx .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#vmlhovqtya .gt_asterisk {
+#ocqsbhofmx .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#vmlhovqtya .gt_indent_1 {
+#ocqsbhofmx .gt_indent_1 {
   text-indent: 5px;
 }
 
-#vmlhovqtya .gt_indent_2 {
+#ocqsbhofmx .gt_indent_2 {
   text-indent: 10px;
 }
 
-#vmlhovqtya .gt_indent_3 {
+#ocqsbhofmx .gt_indent_3 {
   text-indent: 15px;
 }
 
-#vmlhovqtya .gt_indent_4 {
+#ocqsbhofmx .gt_indent_4 {
   text-indent: 20px;
 }
 
-#vmlhovqtya .gt_indent_5 {
+#ocqsbhofmx .gt_indent_5 {
   text-indent: 25px;
 }
 
-#vmlhovqtya .katex-display {
+#ocqsbhofmx .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#vmlhovqtya div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ocqsbhofmx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
-<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<table class="gt_table cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <colgroup>
 <col style="width: 22%">
 <col style="width: 18%">
@@ -1451,7 +1464,7 @@ Table&nbsp;7.1
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ferx_calc_npde()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_calc_npde.html">ferx_calc_npde()</a></code></td>
 <td><code>fit</code></td>
 <td>The fit to evaluate</td>
 </tr>
@@ -1473,7 +1486,7 @@ Table&nbsp;7.1
 <td>Override the model and data paths stored in the fit</td>
 </tr>
 <tr class="odd">
-<td><code>ferx_xpose()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_xpose.html">ferx_xpose()</a></code></td>
 <td><code>fit</code></td>
 <td>Fit to convert</td>
 </tr>
@@ -1504,10 +1517,10 @@ Table&nbsp;7.1
 </tbody>
 </table>
 <section id="using-xpose" class="level3"><h3 class="anchored" data-anchor-id="using-xpose">Using xpose</h3>
-<p><code>ferx_xpose()</code> converts a fit into a data object for the xpose (or xpose4) diagnostics packages, which provide ready-made goodness-of-fit, parameter and covariate plots. It maps <code>sdtab</code>, the individual parameters, the random effects and the covariates to xpose’s tables. xpose is not a dependency of this book, so the code is not run here:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_xpose.html">ferx_xpose()</a></code> converts a fit into a data object for the xpose (or xpose4) diagnostics packages, which provide ready-made goodness-of-fit, parameter and covariate plots. It maps <code>sdtab</code>, the individual parameters, the random effects and the covariates to xpose’s tables. xpose is not a dependency of this book, so the code is not run here:</p>
 <div class="cell" data-layout-align="center" data-eval-reason="xpose is not installed for this book (PLAN decision D2)">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_trace</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, optimizer_trace <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">xpdb</span> <span class="op">&lt;-</span> <span class="fu">ferx_xpose</span><span class="op">(</span><span class="va">fit_trace</span>, backend <span class="op">=</span> <span class="st">"xpose"</span>, runno <span class="op">=</span> <span class="fl">1</span>, iterations <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_trace</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, optimizer_trace <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">xpdb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_xpose.html">ferx_xpose</a></span><span class="op">(</span><span class="va">fit_trace</span>, backend <span class="op">=</span> <span class="st">"xpose"</span>, runno <span class="op">=</span> <span class="fl">1</span>, iterations <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu">xpose</span><span class="fu">::</span><span class="fu">dv_vs_ipred</span><span class="op">(</span><span class="va">xpdb</span><span class="op">)</span></span>
 <span><span class="fu">xpose</span><span class="fu">::</span><span class="fu">prm_vs_iteration</span><span class="op">(</span><span class="va">xpdb</span><span class="op">)</span>   <span class="co"># parameter values over the optimizer trace</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1518,7 +1531,7 @@ Table&nbsp;7.1
 <li>
 <strong>Small negative shrinkage is possible.</strong> <code>ETA_CL</code> shows -0.2% here; this is not an error.</li>
 <li>
-<strong>The plotted lines are not the model curve.</strong> <code>sdtab</code> has predictions only at observation times. Use <code>ferx_predict()</code> on a dense grid for smooth individual curves.</li>
+<strong>The plotted lines are not the model curve.</strong> <code>sdtab</code> has predictions only at observation times. Use <code><a href="https://ferx-nlme.org/reference/ferx_predict.html">ferx_predict()</a></code> on a dense grid for smooth individual curves.</li>
 <li>
 <strong><code>fit$eta_cov</code> is a screen, not a test of a covariate model.</strong> Confirm relationships by fitting covariate models (<a href="09-model-selection.html" class="quarto-xref"><span>Model development and selection</span></a>).</li>
 </ul>
@@ -1548,7 +1561,7 @@ Table&nbsp;7.1
 <li>Plot <code>fit$sdtab</code>: observations against predictions, residuals against time and predictions, and individual fits.</li>
 <li>Check random effects with <code>fit$ebe_etas</code>, shrinkage and <code>fit$eta_normality</code>. Use <code>fit$eta_cov</code> for a first covariate screen.</li>
 <li>Check identifiability with <code>fit$cor_matrix</code> and the condition number.</li>
-<li>Add simulation-based NPDE with <code>ferx_calc_npde()</code>. Use <code>ferx_xpose()</code> if you work with xpose.</li>
+<li>Add simulation-based NPDE with <code><a href="https://ferx-nlme.org/reference/ferx_calc_npde.html">ferx_calc_npde()</a></code>. Use <code><a href="https://ferx-nlme.org/reference/ferx_xpose.html">ferx_xpose()</a></code> if you work with xpose.</li>
 </ul>
 <p>Next: <a href="08-vpc.html" class="quarto-xref"><span>Simulation-based evaluation: VPC</span></a> evaluates the model by simulation.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
@@ -1562,7 +1575,7 @@ Table&nbsp;7.1
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_calc_npde</code>, <code>?ferx_xpose</code>, <code>?ferx_fit</code> (the <code>sdtab</code>, <code>eta_cov</code>, <code>eta_normality</code>, <code>cor_matrix</code> elements)</li>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_calc_npde.html">?ferx_calc_npde</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_xpose.html">?ferx_xpose</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code> (the <code>sdtab</code>, <code>eta_cov</code>, <code>eta_normality</code>, <code>cor_matrix</code> elements)</li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/output.html">output files and sdtab</a>, <a href="https://ferx-nlme.org/ferx-core/warnings.html">warnings</a>
 </li>
 </ul>

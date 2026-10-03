@@ -652,23 +652,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <p>Nine of the examples share one dataset: 20 subjects with a single oral dose of 100 and 12 samples each over 24 hours. The transit examples ship it as <code>transit_oral.csv</code>, the others as <code>igd_oral.csv</code>. The two files hold the same doses, times and concentrations. Only the <code>CMT</code> of the observation rows differs, which the prediction does not use for these models:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">savic</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"transit_savic"</span><span class="op">)</span></span>
-<span><span class="va">igd</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"igd_inverse_gaussian"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">savic</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"transit_savic"</span><span class="op">)</span></span>
+<span><span class="va">igd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"igd_inverse_gaussian"</span><span class="op">)</span></span>
 <span><span class="va">transit_oral</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">savic</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="va">igd_oral</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">igd</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">transit_oral</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"TIME"</span>, <span class="st">"AMT"</span>, <span class="st">"EVID"</span>, <span class="st">"DV"</span><span class="op">)</span><span class="op">]</span>, <span class="va">igd_oral</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"TIME"</span>, <span class="st">"AMT"</span>, <span class="st">"EVID"</span>, <span class="st">"DV"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="fu">ferx_predict</span><span class="op">(</span><span class="va">igd</span><span class="op">$</span><span class="va">model</span>, <span class="va">igd</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">$</span><span class="va">PRED</span>, <span class="fu">ferx_predict</span><span class="op">(</span><span class="va">igd</span><span class="op">$</span><span class="va">model</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">$</span><span class="va">PRED</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_predict.html">ferx_predict</a></span><span class="op">(</span><span class="va">igd</span><span class="op">$</span><span class="va">model</span>, <span class="va">igd</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">$</span><span class="va">PRED</span>, <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_predict.html">ferx_predict</a></span><span class="op">(</span><span class="va">igd</span><span class="op">$</span><span class="va">model</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span><span class="op">)</span><span class="op">$</span><span class="va">PRED</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>According to the example model files, these data were simulated from a transit model with a first-order absorption step, the structure of <code>transit_savic</code>. The other models on this dataset are therefore approximations, which makes it a useful test of how the fits and their warnings respond.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">igd_oral</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">obs</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span>, group <span class="op">=</span> <span class="va">ID</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_point</span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">igd_oral</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">obs</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span>, group <span class="op">=</span> <span class="va">ID</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-shared-data" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-shared-data-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -683,39 +688,40 @@ Figure&nbsp;15.1: The shared absorption dataset: concentrations of 20 subjects a
 </section><section id="minimal-runnable-call-transit-absorption" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call-transit-absorption">Minimal runnable call: transit absorption</h2>
 <p>In <code>transit_savic</code>, the dose enters the depot through the built-in <code>transit()</code> input rate, a chain of transit compartments with a continuous number of compartments <code>n</code> and a mean transit time <code>mtt</code>. The depot then empties into the central compartment by first-order <code>KA</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">savic</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">savic</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   # depot  : oral-dose compartment (mg); transit() delivers F*Dose over time</span></span>
 <span><span class="co">#&gt;   # central: concentration compartment (mg/L)</span></span>
 <span><span class="co">#&gt;   d/dt(depot)   = transit(n=NTR, mtt=MTT) - KA*depot</span></span>
 <span><span class="co">#&gt;   d/dt(central) = KA*depot/V - CL/V*central</span></span>
-<span><span class="va">fit_savic</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">savic</span><span class="op">$</span><span class="va">model</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_savic</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">savic</span><span class="op">$</span><span class="va">model</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_savic</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             estimate   rse_pct</span></span>
-<span><span class="co">#&gt; TVCL      5.38556895  5.101844</span></span>
-<span><span class="co">#&gt; TVV      56.16923430  5.298054</span></span>
-<span><span class="co">#&gt; TVKA      0.95232944 11.669795</span></span>
-<span><span class="co">#&gt; TVMTT     0.96509792  5.461020</span></span>
-<span><span class="co">#&gt; TVN       3.13320270  4.127524</span></span>
-<span><span class="co">#&gt; ETA_CL    0.04800009 34.401312</span></span>
-<span><span class="co">#&gt; ETA_V     0.04306916 33.889814</span></span>
-<span><span class="co">#&gt; PROP_ERR  0.15955691  5.093460</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL      5.38551639  5.102088</span></span>
+<span><span class="co">#&gt; TVV      56.16937361  5.297945</span></span>
+<span><span class="co">#&gt; TVKA      0.95233527 11.670209</span></span>
+<span><span class="co">#&gt; TVMTT     0.96510293  5.461192</span></span>
+<span><span class="co">#&gt; TVN       3.13318743  4.127589</span></span>
+<span><span class="co">#&gt; ETA_CL    0.04800486 34.402558</span></span>
+<span><span class="co">#&gt; ETA_V     0.04306678 33.889148</span></span>
+<span><span class="co">#&gt; PROP_ERR  0.15955777  5.093486</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Because <code>n</code> is continuous, the shape of the absorption delay is itself estimated. A dose into a compartment that carries an input-rate function is delivered through that function over time, not also as a bolus. Bioavailability scales the delivered amount as for any dose, so do not multiply <code>transit()</code> by <code>F</code> in the equation.</p>
 </section><section id="reading-the-result-comparing-absorption-models" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result-comparing-absorption-models">Reading the result: comparing absorption models</h2>
 <p>The nine models fitted to the shared data differ in absorption only. The <code>[derived]</code> block (<a href="12-tables-figures.html" class="quarto-xref"><span>Tables and figures</span></a>) adds the exposure metrics of each fit: Cmax, Tmax and the AUC over 24 hours. It is appended to a copy of each model file, which leaves the estimation unchanged:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">comparison_dir</span> <span class="op">&lt;-</span> <span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"absorption"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">comparison_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"absorption"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">comparison_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">shared</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
-<span>  transit_savic <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"transit_savic"</span><span class="op">)</span>,</span>
-<span>  one_cpt_transit <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"one_cpt_transit"</span><span class="op">)</span>,</span>
-<span>  igd_inverse_gaussian <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"igd_inverse_gaussian"</span><span class="op">)</span>,</span>
-<span>  weibull_absorption <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"weibull_absorption"</span><span class="op">)</span>,</span>
-<span>  zero_order_absorption <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"zero_order_absorption"</span><span class="op">)</span>,</span>
-<span>  parallel_absorption <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"parallel_absorption"</span><span class="op">)</span>,</span>
-<span>  mixed_absorption <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"mixed_absorption"</span><span class="op">)</span>,</span>
-<span>  biphasic_igd_absorption <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"biphasic_igd_absorption"</span><span class="op">)</span>,</span>
-<span>  per_route_lag_absorption <span class="op">=</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"per_route_lag_absorption"</span><span class="op">)</span></span>
+<span>  transit_savic <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"transit_savic"</span><span class="op">)</span>,</span>
+<span>  one_cpt_transit <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"one_cpt_transit"</span><span class="op">)</span>,</span>
+<span>  igd_inverse_gaussian <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"igd_inverse_gaussian"</span><span class="op">)</span>,</span>
+<span>  weibull_absorption <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"weibull_absorption"</span><span class="op">)</span>,</span>
+<span>  zero_order_absorption <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"zero_order_absorption"</span><span class="op">)</span>,</span>
+<span>  parallel_absorption <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"parallel_absorption"</span><span class="op">)</span>,</span>
+<span>  mixed_absorption <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"mixed_absorption"</span><span class="op">)</span>,</span>
+<span>  biphasic_igd_absorption <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"biphasic_igd_absorption"</span><span class="op">)</span>,</span>
+<span>  per_route_lag_absorption <span class="op">=</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"per_route_lag_absorption"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">exposure_block</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"[derived]"</span>,</span>
 <span>                    <span class="st">"  CMAX = max(IPRED)"</span>,</span>
@@ -724,20 +730,20 @@ Figure&nbsp;15.1: The shared absorption dataset: concentrations of 20 subjects a
 <span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">shared</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="va">name</span>, <span class="st">".ferx"</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">shared</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="va">exposure_block</span><span class="op">)</span>, <span class="va">model</span><span class="op">)</span></span>
-<span>  <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">model</span>, <span class="va">shared</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">model</span>, <span class="va">shared</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fits</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">shared</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fits</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">f</span> <span class="op">&lt;-</span> <span class="va">fits</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span></span>
-<span>  <span class="va">exposure</span> <span class="op">&lt;-</span> <span class="fu">distinct</span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">CMAX</span>, <span class="va">TMAX</span>, <span class="va">AUC_0_24</span><span class="op">)</span></span>
+<span>  <span class="va">exposure</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">CMAX</span>, <span class="va">TMAX</span>, <span class="va">AUC_0_24</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">name</span>, parameters <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">n_parameters</span>, ofv <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">ofv</span>, aic <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">aic</span>,</span>
 <span>             condition_number <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">condition_number</span>,</span>
 <span>             cmax <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">exposure</span><span class="op">$</span><span class="va">CMAX</span><span class="op">)</span>, tmax <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">exposure</span><span class="op">$</span><span class="va">TMAX</span><span class="op">)</span>, auc_0_24 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">exposure</span><span class="op">$</span><span class="va">AUC_0_24</span><span class="op">)</span>,</span>
-<span>             warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
+<span>             warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">comparison</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">arrange</span><span class="op">(</span><span class="va">ofv</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span><span class="op">(</span><span class="va">ofv</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/gt.html">gt</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/fmt_number.html">fmt_number</a></span><span class="op">(</span>columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">ofv</span>, <span class="va">aic</span><span class="op">)</span>, decimals <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/fmt_number.html">fmt_number</a></span><span class="op">(</span>columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">condition_number</span>, <span class="va">cmax</span>, <span class="va">auc_0_24</span><span class="op">)</span>, n_sigfig <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -747,23 +753,23 @@ Figure&nbsp;15.1: The shared absorption dataset: concentrations of 20 subjects a
 Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exposure (median over subjects) from <code>[derived]</code>.
 </figcaption><div aria-describedby="tbl-absorption-comparison-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="azfglvjtcx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#azfglvjtcx table {
+<div id="blnrvgkqog" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#blnrvgkqog table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#azfglvjtcx thead, #azfglvjtcx tbody, #azfglvjtcx tfoot, #azfglvjtcx tr, #azfglvjtcx td, #azfglvjtcx th {
+#blnrvgkqog thead, #blnrvgkqog tbody, #blnrvgkqog tfoot, #blnrvgkqog tr, #blnrvgkqog td, #blnrvgkqog th {
   border-style: none;
 }
 
-#azfglvjtcx p {
+#blnrvgkqog p {
   margin: 0;
   padding: 0;
 }
 
-#azfglvjtcx .gt_table {
+#blnrvgkqog .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -789,12 +795,12 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-left-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_caption {
+#blnrvgkqog .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#azfglvjtcx .gt_title {
+#blnrvgkqog .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -806,7 +812,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-bottom-width: 0;
 }
 
-#azfglvjtcx .gt_subtitle {
+#blnrvgkqog .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -818,7 +824,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-top-width: 0;
 }
 
-#azfglvjtcx .gt_heading {
+#blnrvgkqog .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -830,13 +836,13 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-right-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_bottom_border {
+#blnrvgkqog .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_col_headings {
+#blnrvgkqog .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -851,7 +857,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-right-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_col_heading {
+#blnrvgkqog .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -871,7 +877,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   overflow-x: hidden;
 }
 
-#azfglvjtcx .gt_column_spanner_outer {
+#blnrvgkqog .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -883,15 +889,15 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   padding-right: 4px;
 }
 
-#azfglvjtcx .gt_column_spanner_outer:first-child {
+#blnrvgkqog .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#azfglvjtcx .gt_column_spanner_outer:last-child {
+#blnrvgkqog .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#azfglvjtcx .gt_column_spanner {
+#blnrvgkqog .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -903,11 +909,11 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   width: 100%;
 }
 
-#azfglvjtcx .gt_spanner_row {
+#blnrvgkqog .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#azfglvjtcx .gt_group_heading {
+#blnrvgkqog .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -933,7 +939,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   text-align: left;
 }
 
-#azfglvjtcx .gt_empty_group_heading {
+#blnrvgkqog .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -948,15 +954,15 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   vertical-align: middle;
 }
 
-#azfglvjtcx .gt_from_md > :first-child {
+#blnrvgkqog .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#azfglvjtcx .gt_from_md > :last-child {
+#blnrvgkqog .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#azfglvjtcx .gt_row {
+#blnrvgkqog .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -975,7 +981,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   overflow-x: hidden;
 }
 
-#azfglvjtcx .gt_stub {
+#blnrvgkqog .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -988,7 +994,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   padding-right: 5px;
 }
 
-#azfglvjtcx .gt_stub_row_group {
+#blnrvgkqog .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1002,15 +1008,15 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   vertical-align: top;
 }
 
-#azfglvjtcx .gt_row_group_first td {
+#blnrvgkqog .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#azfglvjtcx .gt_row_group_first th {
+#blnrvgkqog .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#azfglvjtcx .gt_summary_row {
+#blnrvgkqog .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1020,16 +1026,16 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   padding-right: 5px;
 }
 
-#azfglvjtcx .gt_first_summary_row {
+#blnrvgkqog .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_first_summary_row.thick {
+#blnrvgkqog .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#azfglvjtcx .gt_last_summary_row {
+#blnrvgkqog .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1039,7 +1045,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-bottom-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_grand_summary_row {
+#blnrvgkqog .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1049,7 +1055,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   padding-right: 5px;
 }
 
-#azfglvjtcx .gt_first_grand_summary_row {
+#blnrvgkqog .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1059,7 +1065,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-top-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_last_grand_summary_row_top {
+#blnrvgkqog .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1069,11 +1075,11 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-bottom-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_striped {
+#blnrvgkqog .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#azfglvjtcx .gt_table_body {
+#blnrvgkqog .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1082,7 +1088,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-bottom-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_footnotes {
+#blnrvgkqog .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1096,7 +1102,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-right-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_footnote {
+#blnrvgkqog .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1105,7 +1111,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   padding-right: 5px;
 }
 
-#azfglvjtcx .gt_sourcenotes {
+#blnrvgkqog .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1119,7 +1125,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   border-right-color: #D3D3D3;
 }
 
-#azfglvjtcx .gt_sourcenote {
+#blnrvgkqog .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1127,72 +1133,72 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
   padding-right: 5px;
 }
 
-#azfglvjtcx .gt_left {
+#blnrvgkqog .gt_left {
   text-align: left;
 }
 
-#azfglvjtcx .gt_center {
+#blnrvgkqog .gt_center {
   text-align: center;
 }
 
-#azfglvjtcx .gt_right {
+#blnrvgkqog .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#azfglvjtcx .gt_font_normal {
+#blnrvgkqog .gt_font_normal {
   font-weight: normal;
 }
 
-#azfglvjtcx .gt_font_bold {
+#blnrvgkqog .gt_font_bold {
   font-weight: bold;
 }
 
-#azfglvjtcx .gt_font_italic {
+#blnrvgkqog .gt_font_italic {
   font-style: italic;
 }
 
-#azfglvjtcx .gt_super {
+#blnrvgkqog .gt_super {
   font-size: 65%;
 }
 
-#azfglvjtcx .gt_footnote_marks {
+#blnrvgkqog .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#azfglvjtcx .gt_asterisk {
+#blnrvgkqog .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#azfglvjtcx .gt_indent_1 {
+#blnrvgkqog .gt_indent_1 {
   text-indent: 5px;
 }
 
-#azfglvjtcx .gt_indent_2 {
+#blnrvgkqog .gt_indent_2 {
   text-indent: 10px;
 }
 
-#azfglvjtcx .gt_indent_3 {
+#blnrvgkqog .gt_indent_3 {
   text-indent: 15px;
 }
 
-#azfglvjtcx .gt_indent_4 {
+#blnrvgkqog .gt_indent_4 {
   text-indent: 20px;
 }
 
-#azfglvjtcx .gt_indent_5 {
+#blnrvgkqog .gt_indent_5 {
   text-indent: 25px;
 }
 
-#azfglvjtcx .katex-display {
+#blnrvgkqog .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#azfglvjtcx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#blnrvgkqog div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1212,9 +1218,9 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
 <tr class="odd">
 <td class="gt_row gt_left" headers="model">biphasic_igd_absorption</td>
 <td class="gt_row gt_right" headers="parameters">10</td>
-<td class="gt_row gt_right" headers="ofv">−1,077.6</td>
-<td class="gt_row gt_right" headers="aic">−1,057.6</td>
-<td class="gt_row gt_right" headers="condition_number">44,700,000,000</td>
+<td class="gt_row gt_right" headers="ofv">−1,077.7</td>
+<td class="gt_row gt_right" headers="aic">−1,057.7</td>
+<td class="gt_row gt_right" headers="condition_number">44,100,000,000</td>
 <td class="gt_row gt_right" headers="cmax">1.32</td>
 <td class="gt_row gt_right" headers="tmax">4</td>
 <td class="gt_row gt_right" headers="auc_0_24">16.6</td>
@@ -1258,11 +1264,11 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
 <td class="gt_row gt_right" headers="parameters">7</td>
 <td class="gt_row gt_right" headers="ofv">−899.4</td>
 <td class="gt_row gt_right" headers="aic">−885.4</td>
-<td class="gt_row gt_right" headers="condition_number">6,890</td>
+<td class="gt_row gt_right" headers="condition_number">6,880</td>
 <td class="gt_row gt_right" headers="cmax">1.24</td>
 <td class="gt_row gt_right" headers="tmax">4</td>
 <td class="gt_row gt_right" headers="auc_0_24">15.6</td>
-<td class="gt_row gt_left" headers="warnings">high_correlation, condition_number</td>
+<td class="gt_row gt_left" headers="warnings">general, high_correlation, condition_number</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="model">per_route_lag_absorption</td>
@@ -1280,7 +1286,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
 <td class="gt_row gt_right" headers="parameters">6</td>
 <td class="gt_row gt_right" headers="ofv">−436.2</td>
 <td class="gt_row gt_right" headers="aic">−424.2</td>
-<td class="gt_row gt_right" headers="condition_number">5.00</td>
+<td class="gt_row gt_right" headers="condition_number">4.86</td>
 <td class="gt_row gt_right" headers="cmax">1.19</td>
 <td class="gt_row gt_right" headers="tmax">4</td>
 <td class="gt_row gt_right" headers="auc_0_24">13.5</td>
@@ -1291,7 +1297,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
 <td class="gt_row gt_right" headers="parameters">8</td>
 <td class="gt_row gt_right" headers="ofv">−435.6</td>
 <td class="gt_row gt_right" headers="aic">−419.6</td>
-<td class="gt_row gt_right" headers="condition_number">1,030,000,000</td>
+<td class="gt_row gt_right" headers="condition_number">862,000,000</td>
 <td class="gt_row gt_right" headers="cmax">1.19</td>
 <td class="gt_row gt_right" headers="tmax">4</td>
 <td class="gt_row gt_right" headers="auc_0_24">13.5</td>
@@ -1302,7 +1308,7 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
 <td class="gt_row gt_right" headers="parameters">8</td>
 <td class="gt_row gt_right" headers="ofv">−381.8</td>
 <td class="gt_row gt_right" headers="aic">−365.8</td>
-<td class="gt_row gt_right" headers="condition_number">351</td>
+<td class="gt_row gt_right" headers="condition_number">186</td>
 <td class="gt_row gt_right" headers="cmax">0.987</td>
 <td class="gt_row gt_right" headers="tmax">6</td>
 <td class="gt_row gt_right" headers="auc_0_24">13.9</td>
@@ -1316,32 +1322,32 @@ Table&nbsp;15.1: Absorption models fitted to the same data, with per-subject exp
 </figure>
 </div>
 </div>
-<p><code>transit_savic</code> agrees with the simulation model and reaches the second-lowest OFV with no warnings. <code>one_cpt_transit</code>, which has no <code>KA</code> step, follows with no warnings, then the Weibull and inverse-Gaussian models. The biphasic inverse-Gaussian model reaches a slightly lower OFV with two more parameters. Its warnings show that the data cannot inform them: relative standard errors in the thousands of percent, correlations of ±1 and a condition number of about 4.5 × 10<sup>10</sup>. <code>parallel_absorption</code> collapses to a single route (both absorption rate constants end at the same value), and <code>mixed_absorption</code> ends with parameters at their bounds:</p>
+<p><code>transit_savic</code> agrees with the simulation model and reaches the second-lowest OFV with no warnings. <code>one_cpt_transit</code>, which has no <code>KA</code> step, follows with no warnings, then the Weibull and inverse-Gaussian models; the <code>general</code> warning of the inverse-Gaussian fit is the outer-gradient note of <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>. The biphasic inverse-Gaussian model reaches a slightly lower OFV with two more parameters. Its warnings show that the data cannot inform them: relative standard errors in the thousands of percent, correlations of ±1 and a condition number of about 4.4 × 10<sup>10</sup>. <code>parallel_absorption</code> collapses to a single route (both absorption rate constants end at the same value), and <code>mixed_absorption</code> ends with parameters at their bounds:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fits</span><span class="op">$</span><span class="va">parallel_absorption</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVFR1"</span>, <span class="st">"TVKA1"</span>, <span class="st">"TVKA2"</span><span class="op">)</span><span class="op">]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fits</span><span class="op">$</span><span class="va">parallel_absorption</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVFR1"</span>, <span class="st">"TVKA1"</span>, <span class="st">"TVKA2"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;      TVFR1      TVKA1      TVKA2 </span></span>
-<span><span class="co">#&gt; 0.07324881 0.21634587 0.21634986</span></span>
+<span><span class="co">#&gt; 0.07324913 0.21634786 0.21634749</span></span>
 <span><span class="va">fits</span><span class="op">$</span><span class="va">mixed_absorption</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVFZO"</span>, <span class="st">"TVKA"</span>, <span class="st">"TVDUR"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;    TVFZO     TVKA    TVDUR </span></span>
-<span><span class="co">#&gt; 0.950000 0.050000 4.005647</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 0.950000 0.050000 4.005651</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>So compare absorption models by OFV, but read the warnings before accepting a lower OFV (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>, <a href="10-uncertainty.html" class="quarto-xref"><span>Parameter uncertainty</span></a>).</p>
-<p>Note that <code><a href="https://rdrr.io/r/base/Extremes.html">max()</a></code> and <code>tmax()</code> in <code>[derived]</code> use the observation times, so <code>TMAX</code> is always one of the sampling times. The typical profile on a fine time grid shows the shapes between the samples. <code>ferx_predict()</code> on a one-subject design (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>) gives it for every model. Each of these calls raises the <code>W_DESIGN_DV</code> warning that every design file with empty <code>DV</code> cells gets (explained in <a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>), so the loop muffles it:</p>
+<p>Note that <code><a href="https://rdrr.io/r/base/Extremes.html">max()</a></code> and <code>tmax()</code> in <code>[derived]</code> use the observation times, so <code>TMAX</code> is always one of the sampling times. The typical profile on a fine time grid shows the shapes between the samples. <code><a href="https://ferx-nlme.org/reference/ferx_predict.html">ferx_predict()</a></code> on a one-subject design (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>) gives it for every model. Each of these calls raises the <code>W_DESIGN_DV</code> warning that every design file with empty <code>DV</code> cells gets (explained in <a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>), so the loop muffles it:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"design.csv"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"design.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>ID <span class="op">=</span> <span class="fl">1</span>, TIME <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span>, DV <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>                     AMT <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">240</span><span class="op">)</span><span class="op">)</span>, EVID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">240</span><span class="op">)</span><span class="op">)</span>, CMT <span class="op">=</span> <span class="fl">1</span>, MDV <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">240</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>          <span class="va">design</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="va">profiles</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fits</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># suppress the W_DESIGN_DV warning of a design file, once per model</span></span>
-<span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu">ferx_predict</span><span class="op">(</span><span class="va">shared</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">model</span>, <span class="va">design</span>, fit <span class="op">=</span> <span class="va">fits</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_predict.html">ferx_predict</a></span><span class="op">(</span><span class="va">shared</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">model</span>, <span class="va">design</span>, fit <span class="op">=</span> <span class="va">fits</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">name</span>, TIME <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">TIME</span>, PRED <span class="op">=</span> <span class="va">p</span><span class="op">$</span><span class="va">PRED</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">profiles</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">PRED</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_point</span><span class="op">(</span>data <span class="op">=</span> <span class="va">obs</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"grey60"</span>, size <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"steelblue"</span>, linewidth <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span> <span class="va">model</span>, ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">profiles</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">PRED</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">obs</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"grey60"</span>, size <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="st">"steelblue"</span>, linewidth <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">model</span>, ncol <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Concentration"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-absorption-profiles" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-absorption-profiles-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1475,79 +1481,79 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <section id="lag-time" class="level3"><h3 class="anchored" data-anchor-id="lag-time">Lag time</h3>
 <p>An ODE model gets a lag time from the reserved individual parameter name <code>LAGTIME</code>. Every dose of the subject is delayed by it, without changes to the equations:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">lag_ode</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_ode_lagtime"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">lag_ode</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">lag_ode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_ode_lagtime"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">lag_ode</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL      = TVCL * exp(ETA_CL)</span></span>
 <span><span class="co">#&gt;   V       = TVV  * exp(ETA_V)</span></span>
 <span><span class="co">#&gt;   KA      = TVKA * exp(ETA_KA)</span></span>
 <span><span class="co">#&gt;   LAGTIME = TVLAG * exp(ETA_LAG)    # dose event delayed by this many hours</span></span>
-<span><span class="va">fit_lag_ode</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">lag_ode</span><span class="op">$</span><span class="va">model</span>, <span class="va">lag_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">fit_lag_ode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">lag_ode</span><span class="op">$</span><span class="va">model</span>, <span class="va">lag_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>An analytical model takes the lag time as <code>lagtime=</code> on the <code>pk</code> line. The same model written that way reaches the same estimates, much faster:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">lag_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">lag_ode</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">lag_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">lag_ode</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
 <span><span class="va">lag_lines</span> <span class="op">&lt;-</span> <span class="va">lag_lines</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"^\\[odes\\]|^\\[scaling\\]|^  d/dt|obs_scale"</span>, <span class="va">lag_lines</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">lag_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"ode\\(obs_cmt=central, states=\\[depot, central\\]\\)"</span>,</span>
 <span>                 <span class="st">"pk one_cpt_oral(cl=CL, v=V, ka=KA, lagtime=LAGTIME)"</span>, <span class="va">lag_lines</span><span class="op">)</span></span>
 <span><span class="va">lag_analytical</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"warfarin_lagtime_analytical.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">lag_lines</span>, <span class="va">lag_analytical</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">lag_analytical</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">lag_analytical</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   pk one_cpt_oral(cl=CL, v=V, ka=KA, lagtime=LAGTIME)</span></span>
-<span><span class="va">fit_lag_analytical</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">lag_analytical</span>, <span class="va">lag_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_lag_analytical</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">lag_analytical</span>, <span class="va">lag_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>ode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_lag_ode</span><span class="op">$</span><span class="va">ofv</span>, seconds <span class="op">=</span> <span class="va">fit_lag_ode</span><span class="op">$</span><span class="va">wall_time_secs</span>, <span class="va">fit_lag_ode</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>,</span>
 <span>      analytical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_lag_analytical</span><span class="op">$</span><span class="va">ofv</span>, seconds <span class="op">=</span> <span class="va">fit_lag_analytical</span><span class="op">$</span><span class="va">wall_time_secs</span>,</span>
 <span>                     <span class="va">fit_lag_analytical</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                 ofv   seconds      TVCL      TVV      TVKA     TVLAG</span></span>
-<span><span class="co">#&gt; ode        -53.4787 9.6842690 0.1306106 8.319013 0.8558202 0.4645430</span></span>
-<span><span class="co">#&gt; analytical -53.4757 0.1569758 0.1306480 8.318340 0.8556386 0.4642196</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                  ofv    seconds      TVCL      TVV      TVKA     TVLAG</span></span>
+<span><span class="co">#&gt; ode        -53.47887 7.28196290 0.1306495 8.318363 0.8555746 0.4641990</span></span>
+<span><span class="co">#&gt; analytical -53.47574 0.03303693 0.1306482 8.318337 0.8556428 0.4642205</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The small OFV difference comes from the ODE solver tolerance of the bundled model (<a href="14-structural-models.html" class="quarto-xref"><span>Structural models: analytical and ODE</span></a>). The individual lag times are in <code>fit$individual_estimates</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_lag_analytical</span><span class="op">$</span><span class="va">individual_estimates</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   ID        CL        V        KA   LAGTIME</span></span>
-<span><span class="co">#&gt; 1  1 0.1593243 8.125430 1.6339288 0.7340652</span></span>
-<span><span class="co">#&gt; 2  2 0.0832847 7.603245 1.6013207 0.6860169</span></span>
-<span><span class="co">#&gt; 3  3 0.2901217 8.834521 0.9163936 0.3391066</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_lag_analytical</span><span class="op">$</span><span class="va">individual_estimates</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID         CL        V        KA   LAGTIME</span></span>
+<span><span class="co">#&gt; 1  1 0.15932430 8.125431 1.6339292 0.7340653</span></span>
+<span><span class="co">#&gt; 2  2 0.08328473 7.603244 1.6013209 0.6860170</span></span>
+<span><span class="co">#&gt; 3  3 0.29012165 8.834521 0.9163936 0.3391066</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The ODE fit reports the same individual parameters, to about four significant digits:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_lag_ode</span><span class="op">$</span><span class="va">individual_estimates</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   ID        CL        V        KA   LAGTIME</span></span>
-<span><span class="co">#&gt; 1  1 0.1593235 8.125440 1.6339996 0.7340766</span></span>
-<span><span class="co">#&gt; 2  2 0.0832840 7.603253 1.6013988 0.6860322</span></span>
-<span><span class="co">#&gt; 3  3 0.2901097 8.834497 0.9164047 0.3391110</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_lag_ode</span><span class="op">$</span><span class="va">individual_estimates</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID         CL        V       KA   LAGTIME</span></span>
+<span><span class="co">#&gt; 1  1 0.15932448 8.125425 1.633969 0.7340720</span></span>
+<span><span class="co">#&gt; 2  2 0.08328456 7.603242 1.601367 0.6860259</span></span>
+<span><span class="co">#&gt; 3  3 0.29012214 8.834500 0.916392 0.3391068</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Listing the same parameters in <code>[output]</code> (<a href="12-tables-figures.html" class="quarto-xref"><span>Tables and figures</span></a>) puts them in <code>fit$sdtab</code> as well, next to the predictions and residuals, which is the form a table script wants:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">lag_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"warfarin_ode_lagtime_output.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">lag_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"warfarin_ode_lagtime_output.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">lag_ode</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, <span class="st">""</span>, <span class="st">"[output]"</span>, <span class="st">"  CL V KA LAGTIME"</span><span class="op">)</span>, <span class="va">lag_output</span><span class="op">)</span></span>
-<span><span class="va">fit_lag_output</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">lag_output</span>, <span class="va">lag_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">distinct</span><span class="op">(</span><span class="va">fit_lag_output</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">CL</span>, <span class="va">V</span>, <span class="va">KA</span>, <span class="va">LAGTIME</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   ID        CL        V        KA   LAGTIME</span></span>
-<span><span class="co">#&gt; 1  1 0.1593235 8.125440 1.6339996 0.7340766</span></span>
-<span><span class="co">#&gt; 2  2 0.0832840 7.603253 1.6013988 0.6860322</span></span>
-<span><span class="co">#&gt; 3  3 0.2901097 8.834497 0.9164047 0.3391110</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">fit_lag_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">lag_output</span>, <span class="va">lag_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html">distinct</a></span><span class="op">(</span><span class="va">fit_lag_output</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span>, <span class="va">CL</span>, <span class="va">V</span>, <span class="va">KA</span>, <span class="va">LAGTIME</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   ID         CL        V       KA   LAGTIME</span></span>
+<span><span class="co">#&gt; 1  1 0.15932448 8.125425 1.633969 0.7340720</span></span>
+<span><span class="co">#&gt; 2  2 0.08328456 7.603242 1.601367 0.6860259</span></span>
+<span><span class="co">#&gt; 3  3 0.29012214 8.834500 0.916392 0.3391068</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>A lag time delays all routes together. <code>lag=</code> on an input-rate function delays one route only. <code>per_route_lag_absorption</code> gives the second of two first-order routes its own onset, as for an immediate-release plus delayed-release formulation:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">per_route_lag_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">per_route_lag_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   d/dt(central) = FR1*first_order(ka=KA1) + FR2*first_order(ka=KA2, lag=LAG2) - CL/V*central</span></span>
 <span><span class="va">fits</span><span class="op">$</span><span class="va">per_route_lag_absorption</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVFR1"</span>, <span class="st">"TVKA1"</span>, <span class="st">"TVKA2"</span>, <span class="st">"TVLAG2"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         estimate   rse_pct</span></span>
-<span><span class="co">#&gt; TVFR1  0.6399467  9.529772</span></span>
-<span><span class="co">#&gt; TVKA1  0.1184496 38.374078</span></span>
-<span><span class="co">#&gt; TVKA2  1.1976036 45.319177</span></span>
-<span><span class="co">#&gt; TVLAG2 1.1928938 10.603044</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVFR1  0.6399467  9.526806</span></span>
+<span><span class="co">#&gt; TVKA1  0.1184496 38.356619</span></span>
+<span><span class="co">#&gt; TVKA2  1.1976050 45.308903</span></span>
+<span><span class="co">#&gt; TVLAG2 1.1928941 10.602435</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>On the shared data, which have no second release, this model fits poorly (see the comparison table).</p>
 </section><section id="analytical-transit-and-inverse-gaussian-models" class="level3"><h3 class="anchored" data-anchor-id="analytical-transit-and-inverse-gaussian-models">Analytical transit and inverse-Gaussian models</h3>
 <p><code>one_cpt_transit</code> puts the transit chain directly into a one-compartment model as a closed form, with no <code>KA</code> step and no ODE solver. The equivalent ODE model uses <code>transit()</code> straight into <code>central</code>. Both reach the same fit:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">one_transit</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"one_cpt_transit"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">one_transit</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">one_transit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"one_cpt_transit"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">one_transit</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   pk one_cpt_transit(cl=CL, v=V, n=NTR, mtt=MTT)</span></span>
 <span><span class="va">transit_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"pk one_cpt_transit\\(cl=CL, v=V, n=NTR, mtt=MTT\\)"</span>, <span class="st">"ode(states=[central])"</span>,</span>
@@ -1558,59 +1564,62 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <span>                        after <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"^\\[error_model\\]"</span>, <span class="va">transit_lines</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">transit_ode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"one_cpt_transit_ode.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">transit_lines</span>, <span class="va">transit_ode</span><span class="op">)</span></span>
-<span><span class="va">fit_transit_ode</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">transit_ode</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_transit_ode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">transit_ode</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>analytical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fits</span><span class="op">$</span><span class="va">one_cpt_transit</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fits</span><span class="op">$</span><span class="va">one_cpt_transit</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>,</span>
 <span>      ode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_transit_ode</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_transit_ode</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                 ofv     TVCL      TVV   TVMTT      TVN</span></span>
-<span><span class="co">#&gt; analytical -1063.88 5.367674 58.76277 1.78888 3.731594</span></span>
-<span><span class="co">#&gt; ode        -1063.88 5.367671 58.76283 1.78888 3.731593</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                 ofv     TVCL      TVV    TVMTT      TVN</span></span>
+<span><span class="co">#&gt; analytical -1063.88 5.367671 58.76282 1.788879 3.731594</span></span>
+<span><span class="co">#&gt; ode        -1063.88 5.367671 58.76283 1.788880 3.731593</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>two_cpt_transit</code> does the same for a two-compartment disposition. Its dataset was simulated from the model at the initial values in its <code>[parameters]</code> block, so the fit should recover them:</p>
+<p><code>two_cpt_transit</code> does the same for a two-compartment disposition. Its dataset was simulated from the model at the initial values in its <code>[parameters]</code> block, so the fit should recover them, and <code>fit$theta_init</code> holds those values:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">two_transit</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_transit"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">two_transit</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">two_transit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_transit"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">two_transit</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   pk two_cpt_transit(cl=CL, v1=V1, q=Q, v2=V2, n=NTR, mtt=MTT)</span></span>
-<span><span class="va">fit_two_transit</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">two_transit</span><span class="op">$</span><span class="va">model</span>, <span class="va">two_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_two_transit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;         estimate   rse_pct</span></span>
-<span><span class="co">#&gt; TVCL   5.1413978 10.037088</span></span>
-<span><span class="co">#&gt; TVV1  53.3023428  8.602980</span></span>
-<span><span class="co">#&gt; TVQ    9.9454238  4.839220</span></span>
-<span><span class="co">#&gt; TVV2  96.5756511 13.017664</span></span>
-<span><span class="co">#&gt; TVMTT  0.9646063  2.717262</span></span>
-<span><span class="co">#&gt; TVN    3.1189889  3.517900</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="va">fit_two_transit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">two_transit</span><span class="op">$</span><span class="va">model</span>, <span class="va">two_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>simulated_with <span class="op">=</span> <span class="va">fit_two_transit</span><span class="op">$</span><span class="va">theta_init</span>, estimate <span class="op">=</span> <span class="va">fit_two_transit</span><span class="op">$</span><span class="va">theta</span>,</span>
+<span>           rse_pct <span class="op">=</span> <span class="va">fit_two_transit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit_two_transit</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>, <span class="st">"rse_pct"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;       simulated_with  estimate   rse_pct</span></span>
+<span><span class="co">#&gt; TVCL               5  5.141385 10.037191</span></span>
+<span><span class="co">#&gt; TVV1              50 53.302389  8.602977</span></span>
+<span><span class="co">#&gt; TVQ               10  9.945435  4.839203</span></span>
+<span><span class="co">#&gt; TVV2             100 96.575993 13.017808</span></span>
+<span><span class="co">#&gt; TVMTT              1  0.964605  2.717255</span></span>
+<span><span class="co">#&gt; TVN                3  3.118991  3.517898</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p>Every typical value lands within 7% of the value it was simulated with.</p>
 <p>The analytical inverse-Gaussian models <code>one_cpt_ig</code> and <code>two_cpt_ig</code> are the closed forms of <code>igd()</code>. The one-compartment version and the <code>igd()</code> ODE model give the same fit on the <code>one_cpt_ig</code> dataset, which was simulated from an inverse-Gaussian model:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">one_ig</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"one_cpt_ig"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">one_ig</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">one_ig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"one_cpt_ig"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">one_ig</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   pk one_cpt_ig(cl=CL, v=V, mat=MAT, cv2=CV2)</span></span>
-<span><span class="va">fit_one_ig</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">one_ig</span><span class="op">$</span><span class="va">model</span>, <span class="va">one_ig</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_igd_ode</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">igd</span><span class="op">$</span><span class="va">model</span>, <span class="va">one_ig</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_one_ig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">one_ig</span><span class="op">$</span><span class="va">model</span>, <span class="va">one_ig</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_igd_ode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">igd</span><span class="op">$</span><span class="va">model</span>, <span class="va">one_ig</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>analytical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_one_ig</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_one_ig</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>, ode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_igd_ode</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_igd_ode</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  ofv     TVCL      TVV    TVMAT     TVCV2</span></span>
-<span><span class="co">#&gt; analytical -1303.536 5.310905 48.20073 1.992625 0.2979514</span></span>
-<span><span class="co">#&gt; ode        -1303.536 5.310905 48.20074 1.992625 0.2979513</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_one_ig</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; analytical -1303.536 5.310907 48.20153 1.992629 0.2979521</span></span>
+<span><span class="co">#&gt; ode        -1303.536 5.310907 48.20153 1.992629 0.2979521</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_one_ig</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity         category</span></span>
-<span><span class="co">#&gt; 1  warning high_correlation</span></span>
+<span><span class="co">#&gt; 1  warning          general</span></span>
+<span><span class="co">#&gt; 2  warning high_correlation</span></span>
 <span></span>
-<span><span class="va">two_ig</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_ig"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">two_ig</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">two_ig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_ig"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">two_ig</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   pk two_cpt_ig(cl=CL, v1=V1, q=Q, v2=V2, mat=MAT, cv2=CV2)</span></span>
-<span><span class="va">fit_two_ig</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">two_ig</span><span class="op">$</span><span class="va">model</span>, <span class="va">two_ig</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_two_ig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">two_ig</span><span class="op">$</span><span class="va">model</span>, <span class="va">two_ig</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_two_ig</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         estimate   rse_pct</span></span>
-<span><span class="co">#&gt; TVCL   4.8850296  7.525426</span></span>
-<span><span class="co">#&gt; TVV1  41.9094634 11.308397</span></span>
-<span><span class="co">#&gt; TVQ   10.5105915 10.193220</span></span>
-<span><span class="co">#&gt; TVV2  68.4519055  9.288375</span></span>
-<span><span class="co">#&gt; TVMAT  2.1242131  5.161357</span></span>
-<span><span class="co">#&gt; TVCV2  0.3199686  5.691180</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_two_ig</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; TVCL   4.8850293  7.525427</span></span>
+<span><span class="co">#&gt; TVV1  41.9094504 11.308062</span></span>
+<span><span class="co">#&gt; TVQ   10.5105963 10.192931</span></span>
+<span><span class="co">#&gt; TVV2  68.4519316  9.288421</span></span>
+<span><span class="co">#&gt; TVMAT  2.1242129  5.161156</span></span>
+<span><span class="co">#&gt; TVCV2  0.3199688  5.690963</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_two_ig</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity         category</span></span>
 <span><span class="co">#&gt; 1  warning high_correlation</span></span>
 <span><span class="co">#&gt; 2 critical condition_number</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1619,27 +1628,27 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 </section><section id="a-hand-written-transit-chain" class="level3"><h3 class="anchored" data-anchor-id="a-hand-written-transit-chain">A hand-written transit chain</h3>
 <p>Transit absorption can also be written as explicit states with a fixed number of compartments. <code>transit_2cpt</code> has three transit states feeding a two-compartment model with allometric weight scaling:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">chain</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"transit_2cpt"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">chain</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">chain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"transit_2cpt"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">chain</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   d/dt(transit1)   = -KTR * transit1</span></span>
 <span><span class="co">#&gt;   d/dt(transit2)   =  KTR * transit1 - KTR * transit2</span></span>
 <span><span class="co">#&gt;   d/dt(transit3)   =  KTR * transit2 - KTR * transit3</span></span>
 <span><span class="co">#&gt;   d/dt(central)    =  KA  * transit3 / V1 - (CL / V1 + Q / V1) * central + Q / V2 * peripheral</span></span>
 <span><span class="co">#&gt;   d/dt(peripheral) =  Q   * central  / V1 - Q / V2 * peripheral</span></span>
-<span><span class="va">fit_chain</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">chain</span><span class="op">$</span><span class="va">model</span>, <span class="va">chain</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_chain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">chain</span><span class="op">$</span><span class="va">model</span>, <span class="va">chain</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_chain</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             estimate    rse_pct</span></span>
-<span><span class="co">#&gt; TVCL      6.46029439  17.243722</span></span>
-<span><span class="co">#&gt; TVV1     36.02539363  46.636453</span></span>
-<span><span class="co">#&gt; TVQ      16.98489793  37.641276</span></span>
-<span><span class="co">#&gt; TVV2     95.45330233  19.998815</span></span>
-<span><span class="co">#&gt; TVMTT     2.12451136  18.906474</span></span>
-<span><span class="co">#&gt; ETA_CL    0.04003744 109.864141</span></span>
-<span><span class="co">#&gt; ETA_V1    0.08304266  72.324768</span></span>
-<span><span class="co">#&gt; ETA_KA    0.09214035  41.473815</span></span>
-<span><span class="co">#&gt; PROP_ERR  0.33896863   6.484613</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_chain</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; TVCL      6.46048205  17.241377</span></span>
+<span><span class="co">#&gt; TVV1     36.02128242  46.653158</span></span>
+<span><span class="co">#&gt; TVQ      16.98667195  37.649997</span></span>
+<span><span class="co">#&gt; TVV2     95.44949531  19.991444</span></span>
+<span><span class="co">#&gt; TVMTT     2.12458354  18.912324</span></span>
+<span><span class="co">#&gt; ETA_CL    0.04005039 109.818152</span></span>
+<span><span class="co">#&gt; ETA_V1    0.08304681  72.328398</span></span>
+<span><span class="co">#&gt; ETA_KA    0.09212600  41.475373</span></span>
+<span><span class="co">#&gt; PROP_ERR  0.33897055   6.484658</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_chain</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity         category</span></span>
 <span><span class="co">#&gt; 1  warning    eta_shrinkage</span></span>
 <span><span class="co">#&gt; 2  warning high_correlation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1649,28 +1658,28 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 </h3>
 <p><code>transit()</code>, <code>igd()</code>, <code>weibull()</code> and <code>zero_order()</code> need an ODE model. Combining one with an analytical <code>pk</code> line is an error, and the message names the fix:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">error_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"ode\\(obs_cmt=central, states=\\[depot, central\\]\\)"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">error_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"ode\\(obs_cmt=central, states=\\[depot, central\\]\\)"</span>,</span>
 <span>                   <span class="st">"pk one_cpt_oral(cl=CL, v=V, ka=KA)"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">savic</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">pk_with_transit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"pk_with_transit.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">error_lines</span>, <span class="va">pk_with_transit</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">pk_with_transit</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">pk_with_transit</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
 <span><span class="co">#&gt;   Error parsing model: [structural_model]: `transit(...)` absorption requires an ODE disposition, but the model uses an analytical `pk ...`. transit(...) has no closed form, so ferx will not silently turn the analytical model into an ODE. Replace `pk NAME(...)` with `ode_template NAME(...)` (ferx writes the disposition ODE) and keep `transit(...)` in [odes]. [E_PARSE]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>ode_template</code> (<a href="14-structural-models.html" class="quarto-xref"><span>Structural models: analytical and ODE</span></a>) writes the disposition equations of a built-in model. A <code>d/dt()</code> line in <code>[odes]</code> replaces the generated equation for that state only, so the depot can get a transit input while the other equations stay generated:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">template_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"ode\\(obs_cmt=central, states=\\[depot, central\\]\\)"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">template_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"ode\\(obs_cmt=central, states=\\[depot, central\\]\\)"</span>,</span>
 <span>                      <span class="st">"ode_template one_cpt_oral(cl=CL, v=V, ka=KA)"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">savic</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">template_lines</span> <span class="op">&lt;-</span> <span class="va">template_lines</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"^  d/dt\\(central\\)|^  # (depot|central)"</span>, <span class="va">template_lines</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">template_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"transit_template.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">template_lines</span>, <span class="va">template_model</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">template_model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">template_model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   ode_template one_cpt_oral(cl=CL, v=V, ka=KA)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">template_model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">template_model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   d/dt(depot)   = transit(n=NTR, mtt=MTT) - KA*depot</span></span>
-<span><span class="va">fit_template</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">template_model</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_template</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">template_model</span>, <span class="va">savic</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>template <span class="op">=</span> <span class="va">fit_template</span><span class="op">$</span><span class="va">ofv</span>, transit_savic <span class="op">=</span> <span class="va">fit_savic</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      template transit_savic </span></span>
 <span><span class="co">#&gt;     -1077.126     -1077.126</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1679,42 +1688,42 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 </section><section id="weibull-and-zero-order-absorption" class="level3"><h3 class="anchored" data-anchor-id="weibull-and-zero-order-absorption">Weibull and zero-order absorption</h3>
 <p><code>weibull(td=, beta=)</code> feeds a Weibull absorption-time density into <code>central</code>. A shape <code>beta</code> above 1 gives a delayed peak; <code>beta = 1</code> is first-order absorption with rate 1/<code>td</code>. <code>zero_order(dur=)</code> delivers the dose at a constant rate over an estimated duration. Both fits are in the comparison table:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">weibull_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">weibull_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   d/dt(central) = weibull(td=TD, beta=BETA) - CL/V*central</span></span>
 <span><span class="va">fits</span><span class="op">$</span><span class="va">weibull_absorption</span><span class="op">$</span><span class="va">theta</span></span>
 <span><span class="co">#&gt;      TVCL       TVV      TVTD    TVBETA </span></span>
-<span><span class="co">#&gt;  5.398397 63.021944  1.655643  3.479048</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">zero_order_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  5.397812 63.006414  1.655713  3.478994</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">zero_order_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   d/dt(central) = zero_order(dur=DUR) - CL/V*central</span></span>
 <span><span class="va">fits</span><span class="op">$</span><span class="va">zero_order_absorption</span><span class="op">$</span><span class="va">theta</span></span>
 <span><span class="co">#&gt;      TVCL       TVV     TVDUR </span></span>
-<span><span class="co">#&gt;  6.388410 69.524259  3.962956</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;  6.388415 69.524614  3.962959</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>sequential_absorption</code> combines them in series: a zero-order input fills a depot, which empties by first-order absorption. According to its model file, the dataset was simulated with <code>TVCL</code> 5, <code>TVV</code> 50, <code>TVKA</code> 1 and <code>TVDUR</code> 3:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sequential</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"sequential_absorption"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">sequential</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"sequential_absorption"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">sequential</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   d/dt(depot)   = zero_order(dur=DUR) - KA*depot</span></span>
 <span><span class="co">#&gt;   d/dt(central) = KA*depot - CL/V*central</span></span>
-<span><span class="va">fit_sequential</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">sequential</span><span class="op">$</span><span class="va">model</span>, <span class="va">sequential</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">sequential</span><span class="op">$</span><span class="va">model</span>, <span class="va">sequential</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_sequential</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             estimate   rse_pct</span></span>
-<span><span class="co">#&gt; TVCL      4.88069870  9.661597</span></span>
-<span><span class="co">#&gt; TVV      41.06639455  5.548172</span></span>
-<span><span class="co">#&gt; TVKA      0.87515000  8.868027</span></span>
-<span><span class="co">#&gt; TVDUR     3.01635171  6.265132</span></span>
-<span><span class="co">#&gt; ETA_CL    0.10983650 41.795460</span></span>
-<span><span class="co">#&gt; ETA_V     0.02945935 43.512888</span></span>
-<span><span class="co">#&gt; PROP_ERR  0.12426175  6.529186</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL      4.88070237  9.661450</span></span>
+<span><span class="co">#&gt; TVV      41.06638713  5.547003</span></span>
+<span><span class="co">#&gt; TVKA      0.87515063  8.451756</span></span>
+<span><span class="co">#&gt; TVDUR     3.01635240  5.901156</span></span>
+<span><span class="co">#&gt; ETA_CL    0.10983677 41.794992</span></span>
+<span><span class="co">#&gt; ETA_V     0.02945933 43.512630</span></span>
+<span><span class="co">#&gt; PROP_ERR  0.12426180  6.529186</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="two-absorption-routes" class="level3"><h3 class="anchored" data-anchor-id="two-absorption-routes">Two absorption routes</h3>
 <p>Routes are added up with pathway fractions. <code>parallel_absorption</code> has two first-order routes, <code>mixed_absorption</code> a zero-order and a first-order route, and <code>biphasic_igd_absorption</code> two inverse-Gaussian routes:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">name</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"parallel_absorption"</span>, <span class="st">"mixed_absorption"</span>, <span class="st">"biphasic_igd_absorption"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">shared</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">name</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"parallel_absorption"</span>, <span class="st">"mixed_absorption"</span>, <span class="st">"biphasic_igd_absorption"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">shared</span><span class="op">[[</span><span class="va">name</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">model</span>, <span class="st">"odes"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="co">#&gt; # [odes]</span></span>
 <span><span class="co">#&gt;   d/dt(central) = FR1*first_order(ka=KA1) + FR2*first_order(ka=KA2) - CL/V*central</span></span>
@@ -1730,7 +1739,7 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <p><code>first_order(ka=)</code> exists for these combinations. A single first-order route is the analytical <code>pk ..._oral</code> model. On the shared data none of the two-route models is supported by the data (see the comparison table).</p>
 <p>An input-rate function reads the dose records that target <strong>its own compartment</strong>. Both routes above feed <code>central</code> from the same depot dose, so the pathway fractions split one dose event between them: two routes into one compartment need one dose record, not one per route. Two routes into <em>different</em> compartments are the other case, and each needs its own record. The shared dataset is the first case – a single <code>EVID = 1</code> row into <code>CMT</code> 1 per subject, then observations:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">parallel_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">parallel_absorption</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">parallel_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">parallel_absorption</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">parallel_data</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME     DV AMT EVID CMT MDV</span></span>
 <span><span class="co">#&gt; 1  1 0.00     NA 100    1   1   1</span></span>
@@ -1743,14 +1752,14 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 </div>
 <p>Adding a second record to feed the second route therefore gives the subject two doses. A copy of subject 1 with the dose row duplicated doubles the peak:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">subject1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">parallel_data</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">subject1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">parallel_data</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">one_dose</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"parallel_one_dose.csv"</span><span class="op">)</span></span>
 <span><span class="va">two_doses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"parallel_two_doses.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">subject1</span>, <span class="va">one_dose</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="fu">arrange</span><span class="op">(</span><span class="fu">bind_rows</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">subject1</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>, <span class="va">subject1</span><span class="op">)</span>, <span class="va">TIME</span>, <span class="fu">desc</span><span class="op">(</span><span class="va">EVID</span><span class="op">)</span><span class="op">)</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">subject1</span>, <span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>, <span class="va">subject1</span><span class="op">)</span>, <span class="va">TIME</span>, <span class="fu"><a href="https://dplyr.tidyverse.org/reference/desc.html">desc</a></span><span class="op">(</span><span class="va">EVID</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>          <span class="va">two_doses</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="va">peak</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="fu">ferx_simulate</span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">parallel_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">IPRED</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate</a></span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">parallel_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">IPRED</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">peaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>one_dose_row <span class="op">=</span> <span class="fu">peak</span><span class="op">(</span><span class="va">one_dose</span><span class="op">)</span>, two_dose_rows <span class="op">=</span> <span class="fu">peak</span><span class="op">(</span><span class="va">two_doses</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">peaks</span></span>
@@ -1760,41 +1769,41 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <p>The peak is 2 times higher. That is ordinary dose superposition, not something the fractions do: they normalise within each dose event and never across records, so a duplicated record doubles a single-route model just the same. Genuine repeated dosing is of course fine – one record per dose, and the profiles superpose.</p>
 <p>When two routes into one compartment start at different times, keep the single record and give one route a <code>lag=</code>, as <code>per_route_lag_absorption</code> does above. That combination is refused under steady-state dosing, where the engine asks for the run-in to be written out instead (<a href="18-dosing.html" class="quarto-xref"><span>Dosing regimens and exposure metrics</span></a>):</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ss_data</span> <span class="op">&lt;-</span> <span class="fu">mutate</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">parallel_data</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>, SS <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>, II <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="fl">24</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ss_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">parallel_data</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>, SS <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>, II <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">EVID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="fl">24</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">ss_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"per_route_lag_ss.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">ss_data</span>, <span class="va">ss_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>, na <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
-<span><span class="va">lag_ss</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">per_route_lag_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="va">ss_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">lag_ss</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">shared</span><span class="op">$</span><span class="va">per_route_lag_absorption</span><span class="op">$</span><span class="va">model</span>, <span class="va">ss_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"\\. .*"</span>, <span class="st">"."</span>, <span class="fu"><a href="https://rdrr.io/r/base/conditions.html">conditionMessage</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="va">lag_ss</span>, <span class="st">"condition"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Fit error: Steady-state dosing (SS=1) into a built-in absorption compartment combined with an absorption lagtime (a compartment `lagtime`/`ALAG` or a per-route `lag=`) is not yet supported: the SS+lagtime pre-arrival seed does not yet route the dose through the absorption kernel over the previous interval."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="bioavailability" class="level3"><h3 class="anchored" data-anchor-id="bioavailability">Bioavailability</h3>
 <p><code>bioavailability</code> declares the typical fraction <code>F</code> directly on (0, 1) and puts the random effect on the logit scale, so each subject’s <code>F</code> stays between 0 and 1 (<a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a>). It is passed with <code>f=</code> to the <code>pk</code> line. <code>bioavailability_ode</code> is the ODE version: an individual parameter named <code>F</code> is applied to the dose by the engine and does not appear in the equations. Both give the same fit:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">bio</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span></span>
-<span><span class="va">bio_ode</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"bioavailability_ode"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">bio</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span></span>
+<span><span class="va">bio_ode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"bioavailability_ode"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL = TVCL * exp(ETA_CL)</span></span>
 <span><span class="co">#&gt;   V  = TVV</span></span>
 <span><span class="co">#&gt;   KA = TVKA</span></span>
 <span><span class="co">#&gt;   F  = inv_logit(logit(THETA_F) + ETA_F)  # individual bioavailability ∈ (0, 1)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span>, <span class="st">"structural_model"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [structural_model]</span></span>
 <span><span class="co">#&gt;   pk one_cpt_oral(cl=CL, v=V, ka=KA, f=F)</span></span>
-<span><span class="va">fit_bio</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span>, <span class="va">bio</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_bio_ode</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">bio_ode</span><span class="op">$</span><span class="va">model</span>, <span class="va">bio_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_bio</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span>, <span class="va">bio</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_bio_ode</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">bio_ode</span><span class="op">$</span><span class="va">model</span>, <span class="va">bio_ode</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>analytical <span class="op">=</span> <span class="va">fit_bio</span><span class="op">$</span><span class="va">ofv</span>, ode <span class="op">=</span> <span class="va">fit_bio_ode</span><span class="op">$</span><span class="va">ofv</span><span class="op">)</span></span>
 <span><span class="co">#&gt; analytical        ode </span></span>
 <span><span class="co">#&gt;  -489.4703  -489.4703</span></span>
 <span><span class="va">fit_bio</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             estimate    rse_pct</span></span>
-<span><span class="co">#&gt; TVCL      5.71314425  30.742674</span></span>
-<span><span class="co">#&gt; TVV      56.67240359  30.230279</span></span>
-<span><span class="co">#&gt; TVKA      1.50009213   4.901797</span></span>
-<span><span class="co">#&gt; THETA_F   0.79235918  31.363375</span></span>
-<span><span class="co">#&gt; ETA_CL    0.06811478  33.641142</span></span>
-<span><span class="co">#&gt; ETA_F     0.15663331 224.478293</span></span>
-<span><span class="co">#&gt; PROP_ERR  0.12736042   7.041506</span></span>
+<span><span class="co">#&gt; TVCL      5.71305954  30.742735</span></span>
+<span><span class="co">#&gt; TVV      56.67146921  30.230336</span></span>
+<span><span class="co">#&gt; TVKA      1.50009570   4.901807</span></span>
+<span><span class="co">#&gt; THETA_F   0.79234497  31.363271</span></span>
+<span><span class="co">#&gt; ETA_CL    0.06811478  33.641134</span></span>
+<span><span class="co">#&gt; ETA_F     0.15660884 224.462144</span></span>
+<span><span class="co">#&gt; PROP_ERR  0.12736047   7.041517</span></span>
 <span><span class="va">bio_cor</span> <span class="op">&lt;-</span> <span class="va">fit_bio</span><span class="op">$</span><span class="va">cor_matrix</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV"</span>, <span class="st">"THETA_F"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV"</span>, <span class="st">"THETA_F"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">bio_cor</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         TVCL  TVV THETA_F</span></span>
@@ -1804,33 +1813,33 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 </div>
 <p>The data contain oral doses only. With oral data, clearance, volume and <code>F</code> cannot be separated, which the correlations above show: every pair is between 0.98 and 1 in absolute value. Fix <code>F</code> at the value used in the simulation (0.70, according to the model file) with <code>FIX</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fixed_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"bioavailability_fixed_f.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fixed_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"bioavailability_fixed_f.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta THETA_F\\(0.70, 0.001, 0.999\\)"</span>, <span class="st">"theta THETA_F(0.70, 0.001, 0.999) FIX"</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">bio</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span>, <span class="va">fixed_f</span><span class="op">)</span></span>
-<span><span class="va">fit_fixed_f</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">fixed_f</span>, <span class="va">bio</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_fixed_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">fixed_f</span>, <span class="va">bio</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in .ferx_compute_cor_matrix(result$cov_matrix): One or more diagonal</span></span>
 <span><span class="co">#&gt; elements are non-positive; correlation matrix may not be meaningful.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>estimated_f <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_bio</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_bio</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span>,</span>
 <span>      fixed_f <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_fixed_f</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_fixed_f</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                   ofv     TVCL      TVV     TVKA   THETA_F</span></span>
-<span><span class="co">#&gt; estimated_f -489.4703 5.713144 56.67240 1.500092 0.7923592</span></span>
-<span><span class="co">#&gt; fixed_f     -489.3943 5.064081 50.23376 1.500908 0.7000000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                   ofv     TVCL      TVV     TVKA  THETA_F</span></span>
+<span><span class="co">#&gt; estimated_f -489.4703 5.713060 56.67147 1.500096 0.792345</span></span>
+<span><span class="co">#&gt; fixed_f     -489.3943 5.064102 50.23360 1.500887 0.700000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The R warning refers to the fixed <code>THETA_F</code>, which has no standard error. The OFV changes by only 0.08. The data carry almost no information on <code>F</code>, only on <code>CL/F</code> and <code>V/F</code>. <code>warfarin_logit_f</code> shows the same problem more strongly. Its estimates end at a bound, with grossly inflated relative standard errors:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">logit_f</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin_logit_f"</span><span class="op">)</span></span>
-<span><span class="va">fit_logit_f</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">logit_f</span><span class="op">$</span><span class="va">model</span>, <span class="va">logit_f</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">logit_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin_logit_f"</span><span class="op">)</span></span>
+<span><span class="va">fit_logit_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">logit_f</span><span class="op">$</span><span class="va">model</span>, <span class="va">logit_f</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_logit_f</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             estimate     rse_pct</span></span>
-<span><span class="co">#&gt; TVCL     0.001710015 2841.724496</span></span>
-<span><span class="co">#&gt; TVV      0.100000000 2841.730926</span></span>
-<span><span class="co">#&gt; TVKA     0.853566248    6.426407</span></span>
-<span><span class="co">#&gt; THETA_F  0.012620812 2841.923047</span></span>
-<span><span class="co">#&gt; ETA_CL   0.017304538   67.539057</span></span>
-<span><span class="co">#&gt; ETA_V    0.006500669  135.977516</span></span>
-<span><span class="co">#&gt; ETA_F    0.015684619  101.058904</span></span>
-<span><span class="co">#&gt; PROP_ERR 0.148863612    7.591382</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_logit_f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; TVCL     0.001710012 2856.030881</span></span>
+<span><span class="co">#&gt; TVV      0.100000000 2856.037557</span></span>
+<span><span class="co">#&gt; TVKA     0.853564866    6.426445</span></span>
+<span><span class="co">#&gt; THETA_F  0.012620842 2856.230062</span></span>
+<span><span class="co">#&gt; ETA_CL   0.017305130   67.539068</span></span>
+<span><span class="co">#&gt; ETA_V    0.006500666  135.981414</span></span>
+<span><span class="co">#&gt; ETA_F    0.015684736  101.316588</span></span>
+<span><span class="co">#&gt; PROP_ERR 0.148864737    7.591436</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_logit_f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity           category</span></span>
 <span><span class="co">#&gt; 1  warning      eta_shrinkage</span></span>
 <span><span class="co">#&gt; 2  warning  boundary_estimate</span></span>
@@ -1839,7 +1848,7 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <span><span class="co">#&gt; 5  warning   high_correlation</span></span>
 <span><span class="co">#&gt; 6 critical   condition_number</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The worst relative standard error is 2,842%.</p>
+<p>The worst relative standard error is 2,856%.</p>
 <p>Estimating absolute bioavailability needs data after doses by a route with known bioavailability, such as intravenous doses in the same subjects. Otherwise fix <code>F</code>, or leave it out and interpret <code>CL</code> and <code>V</code> as apparent values.</p>
 </section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
 <ul>
@@ -1859,13 +1868,13 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <section id="warnings-you-may-see-here" class="level3"><h3 class="anchored" data-anchor-id="warnings-you-may-see-here">Warnings you may see here</h3>
 <ul>
 <li>
-<p><code>flip_flop</code> (warning): an analytical transit or inverse-Gaussian model is outside the region where its closed form is valid, because elimination is at least as fast as absorption (the flip-flop regime). ferx then evaluates the equivalent ODE model instead, which is correct but slower. The check uses the typical values at the start of the fit. <code>ferx_model_validate()</code> with data reports it before fitting. Here the starting values of <code>one_cpt_transit</code> are changed to a long mean transit time:</p>
+<p><code>flip_flop</code> (warning): an analytical transit or inverse-Gaussian model is outside the region where its closed form is valid, because elimination is at least as fast as absorption (the flip-flop regime). ferx then evaluates the equivalent ODE model instead, which is correct but slower. The check uses the typical values at the start of the fit. <code><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate()</a></code> with data reports it before fitting. Here the starting values of <code>one_cpt_transit</code> are changed to a long mean transit time:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">flip_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta TVMTT\\(1.0,"</span>, <span class="st">"theta TVMTT(20.0,"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">one_transit</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">flip_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta TVMTT\\(1.0,"</span>, <span class="st">"theta TVMTT(20.0,"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">one_transit</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">flip_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta TVN\\(3.0,"</span>, <span class="st">"theta TVN(0.5,"</span>, <span class="va">flip_lines</span><span class="op">)</span></span>
 <span><span class="va">flip_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"flip_flop_start.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">flip_lines</span>, <span class="va">flip_model</span><span class="op">)</span></span>
-<span><span class="va">flip_check</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="va">flip_model</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="va">flip_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">flip_model</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating: flip_flop_start.ferx </span></span>
 <span><span class="co">#&gt;        data: transit_oral.csv </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1878,11 +1887,11 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Result: VALID (with warnings)</span></span>
 <span><span class="co">#&gt;   * warning W_TRANSIT_FLIP_FLOP: one_cpt_transit disposition rate (0.1000) ≥ transit rate KTR = (n+1)/mtt (0.0750) at typical values (subject 1): the flip-flop regime, outside the analytic absorption closed form's convergence domain. ferx automatically evaluates the equivalent ODE transit model for such parameters (correct, but slower than the closed form) — check the MTT / CL starting estimates if the flip-flop is unexpected.</span></span>
-<span><span class="va">fit_flip</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">flip_model</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_flip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">flip_model</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>ofv <span class="op">=</span> <span class="va">fit_flip</span><span class="op">$</span><span class="va">ofv</span>, <span class="va">fit_flip</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          ofv         TVCL          TVV        TVMTT          TVN </span></span>
-<span><span class="co">#&gt; -1063.879780     5.367671    58.762834     1.788880     3.731593</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_flip</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; -1063.879780     5.367671    58.762829     1.788880     3.731593</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_flip</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity  category</span></span>
 <span><span class="co">#&gt; 1  warning flip_flop</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1891,25 +1900,25 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 <li>
 <p><code>absorption_twin_declined</code> (warning): ferx could not build the equivalent ODE model of an analytical absorption model, so the fallback above is unavailable. The model still fits. Subjects that would need the fallback (steady-state or infusion doses, inter-occasion variability, time-varying covariates, the flip-flop regime) are rejected with an error. The usual cause is an individual parameter named like a state of the ODE version, such as <code>CENTRAL</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">twin_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^  V   = TVV  \\* exp\\(ETA_V\\)"</span>, <span class="st">"  CENTRAL = TVV * exp(ETA_V)"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">twin_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"^  V   = TVV  \\* exp\\(ETA_V\\)"</span>, <span class="st">"  CENTRAL = TVV * exp(ETA_V)"</span>,</span>
 <span>                  <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">one_transit</span><span class="op">$</span><span class="va">model</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">twin_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"v=V,"</span>, <span class="st">"v=CENTRAL,"</span>, <span class="va">twin_lines</span><span class="op">)</span></span>
 <span><span class="va">twin_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"twin_declined.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">twin_lines</span>, <span class="va">twin_model</span><span class="op">)</span></span>
-<span><span class="va">fit_twin</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">twin_model</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_twin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">twin_model</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_twin</span><span class="op">$</span><span class="va">ofv</span></span>
 <span><span class="co">#&gt; [1] -1063.88</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_twin</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">message</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_twin</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">message</span></span>
 <span><span class="co">#&gt; [1] "This absorption model's ODE equivalent could not be built, so the model stays closed-form. Subjects needing the ODE fallback (time-varying covariates, a `TIME`-dependent parameter, IOV, steady-state or infusion doses, or the flip-flop regime) will be rejected with an explicit error instead of silently rerouting (W_ABSORPTION_TWIN_DECLINED, #1008). Reason: [odes]: name `CENTRAL` collides with a previously-declared state (case-insensitive); state, individual-parameter, and ODE-block intermediate names must all be distinct."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>With flip-flop starting values as well, the same model cannot fit:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">twinless_flip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"twin_declined_flip_flop.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">twinless_flip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">comparison_dir</span>, <span class="st">"twin_declined_flip_flop.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta TVN\\(3.0,"</span>, <span class="st">"theta TVN(0.5,"</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta TVMTT\\(1.0,"</span>, <span class="st">"theta TVMTT(20.0,"</span>, <span class="va">twin_lines</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>           <span class="va">twinless_flip</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html">inherits</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_fit</span><span class="op">(</span><span class="va">twinless_flip</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"try-error"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html">inherits</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">twinless_flip</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"try-error"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
-<span><span class="va">twinless_check</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_validate</span><span class="op">(</span><span class="va">twinless_flip</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="va">twinless_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">twinless_flip</span>, <span class="va">one_transit</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating: twin_declined_flip_flop.ferx </span></span>
 <span><span class="co">#&gt;        data: transit_oral.csv </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1946,7 +1955,7 @@ Figure&nbsp;15.2: Typical concentration profiles of the fitted absorption models
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_fit</code>, <code>?ferx_model_validate</code>, <code>?ferx_predict</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">?ferx_model_validate</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_predict.html">?ferx_predict</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/model-file/absorption.html">absorption</a>, <a href="https://ferx-nlme.org/ferx-core/model-file/lagtime.html">lag time</a>, <a href="https://ferx-nlme.org/ferx-core/model-file/ode-models.html">ODE models</a>, <a href="https://ferx-nlme.org/ferx-core/model-file/derived.html"><code>[derived]</code></a>
 </li>

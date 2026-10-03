@@ -655,15 +655,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
 <p>The dataset is checked (<a href="03-data.html" class="quarto-xref"><span>Preparing and checking the analysis dataset</span></a>) and the base model is written and validated (<a href="04-model-files.html" class="quarto-xref"><span>Writing and managing model files</span></a>). This chapter produces the first fit. It covers where starting values come from, how to fit, what the fit object contains, and how to read the warnings ferx attaches to it. Choosing and tuning estimation methods follows in <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>.</p>
 </section><section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.github.io/reference/">ferx</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <p>The base model and its dataset from the previous chapters:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"two_cpt_oral_base"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="starting-values" class="level2"><h2 class="anchored" data-anchor-id="starting-values">Starting values</h2>
 <section id="from-the-model-file" class="level3"><h3 class="anchored" data-anchor-id="from-the-model-file">From the model file</h3>
 <p>Every <code>theta</code>, <code>omega</code> and <code>sigma</code> in <code>[parameters]</code> carries an initial value. For thetas it is the first number in <code>theta NAME(initial, lower, upper)</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">init_lines</span> <span class="op">&lt;-</span> <span class="fu">ferx_model_get_section</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">init_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="st">"parameters"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [parameters]</span></span>
 <span><span class="co">#&gt;   theta TVCL(5.0, 0.1, 100.0)</span></span>
 <span><span class="co">#&gt;   theta TVV1(50.0, 1.0, 500.0)</span></span>
@@ -680,9 +685,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt;   sigma PROP_ERR ~ 0.02 (sd)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="from-the-data-nca-based-starting-values" class="level3"><h3 class="anchored" data-anchor-id="from-the-data-nca-based-starting-values">From the data: NCA-based starting values</h3>
-<p><code>ferx_inits_from_nca()</code> derives starting values from the data using non-compartmental analysis (NCA). It returns them for inspection without fitting. The <code>method</code> is <code>"nca_sweep"</code> (default), <code>"nca"</code> or <code>"nca_ebe"</code>. They differ in how much refinement runs on top of the NCA estimates; <code>?ferx_inits_from_nca</code> describes each.</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">ferx_inits_from_nca()</a></code> derives starting values from the data using non-compartmental analysis (NCA). It returns them for inspection without fitting. The <code>method</code> is <code>"nca_sweep"</code> (default), <code>"nca"</code> or <code>"nca_ebe"</code>. They differ in how much refinement runs on top of the NCA estimates; <code><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">?ferx_inits_from_nca</a></code> describes each.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">nca</span> <span class="op">&lt;-</span> <span class="fu">ferx_inits_from_nca</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">nca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">ferx_inits_from_nca</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="va">nca</span></span>
 <span><span class="co">#&gt; &lt;ferx_inits&gt; NCA-based starting values (method = nca_sweep)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -703,15 +708,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>The result is a <code>ferx_inits</code> object, and <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> shows the suggested thetas, the omega matrix and any notes. On this dataset all three methods return the same thetas:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">nca</span><span class="op">$</span><span class="va">theta</span>, <span class="fu">ferx_inits_from_nca</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca"</span><span class="op">)</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">nca</span><span class="op">$</span><span class="va">theta</span>, <span class="fu">ferx_inits_from_nca</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca_ebe"</span><span class="op">)</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">nca</span><span class="op">$</span><span class="va">theta</span>, <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">ferx_inits_from_nca</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca"</span><span class="op">)</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">nca</span><span class="op">$</span><span class="va">theta</span>, <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">ferx_inits_from_nca</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"nca_ebe"</span><span class="op">)</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>To fit from these values directly, pass <code>inits_from_nca</code> to <code>ferx_fit()</code>: <code>TRUE</code>, or one of the method names. The same option exists as the <code>inits_from_nca</code> key in <code>[fit_options]</code> or <code>settings</code>. The <em>Variants</em> section below shows that this is not always an improvement.</p>
+<p>To fit from these values directly, pass <code>inits_from_nca</code> to <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code>: <code>TRUE</code>, or one of the method names. The same option exists as the <code>inits_from_nca</code> key in <code>[fit_options]</code> or <code>settings</code>. The <em>Variants</em> section below shows that this is not always an improvement.</p>
 </section><section id="a-pilot-run" class="level3"><h3 class="anchored" data-anchor-id="a-pilot-run">A pilot run</h3>
-<p><code>ferx_check_init()</code> runs a short pilot fit with the optimizer trace switched on. It returns the <code>fit</code>, the <code>trace</code> (one row per objective evaluation) and a one-row <code>summary</code>:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_check_init.html">ferx_check_init()</a></code> runs a short pilot fit with the optimizer trace switched on. It returns the <code>fit</code>, the <code>trace</code> (one row per objective evaluation) and a one-row <code>summary</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pilot</span> <span class="op">&lt;-</span> <span class="fu">ferx_check_init</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">pilot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_check_init.html">ferx_check_init</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `covariance = true` but ferx_fit()</span></span>
 <span><span class="co">#&gt; argument overrides it with `false`. The call-time value will be used.</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `maxiter = 500` but ferx_fit() argument</span></span>
@@ -720,12 +725,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt;   n_iter ofv_start   ofv_end ofv_drop converged</span></span>
 <span><span class="co">#&gt; 1     98 -1171.882 -1185.403 13.52042      TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The two R warnings come from <code>ferx_check_init()</code> itself. It overrides <code>covariance</code> and <code>maxiter</code> from the model file, and ferx reports every such override. A falling objective function value (OFV) shows that the optimizer moves away from the starting values in a useful direction. On this model the pilot already reached convergence. The trace shows the path:</p>
+<p>The two R warnings come from <code><a href="https://ferx-nlme.org/reference/ferx_check_init.html">ferx_check_init()</a></code> itself. It overrides <code>covariance</code> and <code>maxiter</code> from the model file, and ferx reports every such override. A falling objective function value (OFV) shows that the optimizer moves away from the starting values in a useful direction. On this model the pilot already reached convergence. The trace shows the path:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">iter</span>, <span class="va">ofv</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">coord_cartesian</span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html">range</a></span><span class="op">(</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span><span class="op">$</span><span class="va">ofv</span><span class="op">[</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span><span class="op">$</span><span class="va">iter</span> <span class="op">&gt;</span> <span class="fl">10</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Objective evaluation"</span>, y <span class="op">=</span> <span class="st">"OFV"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">iter</span>, <span class="va">ofv</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html">range</a></span><span class="op">(</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span><span class="op">$</span><span class="va">ofv</span><span class="op">[</span><span class="va">pilot</span><span class="op">$</span><span class="va">trace</span><span class="op">$</span><span class="va">iter</span> <span class="op">&gt;</span> <span class="fl">10</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Objective evaluation"</span>, y <span class="op">=</span> <span class="st">"OFV"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div id="fig-pilot-trace" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-pilot-trace-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -739,7 +744,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </div>
 </section></section><section id="minimal-runnable-call" class="level2"><h2 class="anchored" data-anchor-id="minimal-runnable-call">Minimal runnable call</h2>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span>
 <span><span class="co">#&gt; ============================================================</span></span>
 <span><span class="co">#&gt;  NONLINEAR MIXED EFFECTS MODEL ESTIMATION</span></span>
@@ -747,7 +752,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt;  Model: two_cpt_oral_base        Dataset: two_cpt_oral_cov</span></span>
 <span><span class="co">#&gt;  Method: FOCEI | Gradient: FD | Subjects: 30 | Obs: 300</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   98 iterations   0.8s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   98 iterations   0.6s</span></span>
 <span><span class="co">#&gt;  OFV: -1185.4028    AIC: -1163.4028    BIC: -1122.6612</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -790,7 +795,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; RUN INFO</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
 <span><span class="co">#&gt;  Gradient (requested): fd   (used: fd)</span></span>
-<span><span class="co">#&gt;  ferx v0.3.0 (core v0.4.0)</span></span>
+<span><span class="co">#&gt;  ferx v0.4.0 (core v0.4.0)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; SETTINGS  (model file / call-time override)</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
@@ -800,7 +805,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt;   gradient                     fd  [model only]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;  1 warning  --  call ferx_get_warnings(fit) for details</span></span>
+<span><span class="co">#&gt;  2 warning  --  call ferx_get_warnings(fit) for details</span></span>
 <span><span class="co">#&gt; ============================================================</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on the fit gives one screen with everything you need to judge it:</p>
@@ -822,7 +827,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <section id="summary" class="level3"><h3 class="anchored" data-anchor-id="summary"><code>summary()</code></h3>
 <p><code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> returns a <code>ferx_summary</code> object. Its print method shows run metadata and all warnings in one compact block, without the parameter tables:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; --------------------------------------------------</span></span>
 <span><span class="co">#&gt; ferx NLME Fit Summary</span></span>
 <span><span class="co">#&gt; --------------------------------------------------</span></span>
@@ -831,7 +836,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; Converged: YES</span></span>
 <span><span class="co">#&gt; Method:    FOCEI</span></span>
 <span><span class="co">#&gt; Gradient:  fd (requested) -&gt; fd (used)</span></span>
-<span><span class="co">#&gt; ferx v0.3.0 (core v0.4.0)</span></span>
+<span><span class="co">#&gt; ferx v0.4.0 (core v0.4.0)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Settings (model file / call-time override):</span></span>
 <span><span class="co">#&gt;   method                       focei  [model only]</span></span>
@@ -847,18 +852,19 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; EPS shrinkage: 27.9%</span></span>
 <span><span class="co">#&gt; DW: 2.91 [negative autocorrelation]</span></span>
 <span><span class="co">#&gt; lag-1 r: -0.532</span></span>
-<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 0.8s</span></span>
+<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 0.6s</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Warnings:</span></span>
+<span><span class="co">#&gt;   * gradient = fd also changed the outer optimizer: with optimizer = auto left in place it resolved to bobyqa rather than the nlopt_lbfgs this model would have used under gradient = auto, because auto picks the derivative-free optimizer when there is no exact analytic gradient to feed a gradient-based one. Two factors moved, not one — if you are comparing an fd arm against an auto arm, pin optimizer = bobyqa in both so the difference you measure is the gradient. </span></span>
 <span><span class="co">#&gt;   * Negative IWRES autocorrelation detected (Durbin-Watson = 2.91). Possible over-parameterization or misspecified error model. </span></span>
 <span><span class="co">#&gt;   * 19 EBE fallback(s) </span></span>
 <span><span class="co">#&gt; --------------------------------------------------</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The last warning line, the number of EBE fallbacks, comes from <code>fit$total_ebe_fallbacks</code> (19 here). It is a run statistic rather than a structured fit warning, so <code>ferx_get_warnings()</code> below does not list it.</p>
+<p>The last warning line, the number of EBE fallbacks, comes from <code>fit$total_ebe_fallbacks</code> (19 here). Each one is a per-subject inner solve whose BFGS step failed and that finished with Nelder-Mead instead. The count runs over all subjects and the whole run, in which every objective evaluation solves every subject again, so it is not a number of problem subjects. It is a run statistic rather than a structured fit warning, and <code><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings()</a></code> below does not list it.</p>
 </section><section id="parameter-estimates" class="level3"><h3 class="anchored" data-anchor-id="parameter-estimates">Parameter estimates</h3>
 <p><code>fit$estimates</code> is the tidy table of all estimated parameters. The row names are the parameter names:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"transform"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span><span class="op">)</span><span class="op">]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"transform"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             transform    estimate          se   rse_pct    lower_95</span></span>
 <span><span class="co">#&gt; TVCL         identity  4.46475758 0.321684435  7.204970  3.83425609</span></span>
 <span><span class="co">#&gt; TVV1         identity 48.24224473 3.102664029  6.431425 42.16102324</span></span>
@@ -884,15 +890,15 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; ETA_KA     0.27126789</span></span>
 <span><span class="co">#&gt; PROP_ERR   0.02182066</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>ferx_coef()</code> and <code>ferx_se()</code> pull values by <code>param</code> name. Unlike indexing the table, a misspelt name is an error that suggests the closest match:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_coef()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_se()</a></code> pull values by <code>param</code> name. Unlike indexing the table, a misspelt name is an error that suggests the closest match:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_coef</span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV1"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_coef</a></span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV1"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      TVCL      TVV1 </span></span>
 <span><span class="co">#&gt;  4.464758 48.242245</span></span>
-<span><span class="fu">ferx_se</span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV1"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_se</a></span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV1"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      TVCL      TVV1 </span></span>
 <span><span class="co">#&gt; 0.3216844 3.1026640</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu">ferx_coef</span><span class="op">(</span><span class="va">fit</span>, <span class="st">"TVCLL"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_coef</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"TVCLL"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error : `ferx_coef()`: unknown parameter "TVCLL".</span></span>
 <span><span class="co">#&gt; Did you mean: TVCL?</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -957,35 +963,35 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </table>
 <p>The first four are the transforms a fixed effect can carry, and <code>fit$theta_transforms</code> lists them for the thetas alone. Bounds do not appear here: this column reflects how the parameter is written in <code>[individual_parameters]</code>, not the internal scale the optimizer packs it onto, and every bounded theta of this model reads <code>identity</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">theta_transforms</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">theta_transforms</span></span>
 <span><span class="co">#&gt;       TVCL       TVV1        TVQ       TVV2       TVKA </span></span>
 <span><span class="co">#&gt; "identity" "identity" "identity" "identity" "identity"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>log</code> and <code>logit</code> put <code>estimate</code> on the transformed scale and the interpretable value in <code>estimate_natural</code>, with <code>lower_95_natural</code> and <code>upper_95_natural</code> beside it. Those columns are <code>NA</code> for <code>identity</code>, <code>variance</code>, <code>proportional</code> and <code>additive</code> rows, which need no back-transform. <code>logit_probability</code> needs none either – the theta is declared on (0, 1) and the engine returns it there, so <code>estimate</code> is already the number you want and <code>estimate_natural</code> repeats it. The <code>bioavailability</code> example (<a href="15-absorption.html" class="quarto-xref"><span>Absorption and bioavailability</span></a>) uses that form:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_logit</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="fu">ferx_example</span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span>,</span>
-<span>                      <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_logit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span>,</span>
+<span>                      <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_logit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"transform"</span>, <span class="st">"estimate"</span>, <span class="st">"lower_95"</span>, <span class="st">"estimate_natural"</span>, <span class="st">"lower_95_natural"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                  transform    estimate    lower_95 estimate_natural</span></span>
-<span><span class="co">#&gt; TVCL              identity  5.71314425  2.27065256               NA</span></span>
-<span><span class="co">#&gt; TVV               identity 56.67240359 23.09324119               NA</span></span>
-<span><span class="co">#&gt; TVKA              identity  1.50009213  1.35597045               NA</span></span>
-<span><span class="co">#&gt; THETA_F  logit_probability  0.79235918  0.30527844        0.7923592</span></span>
-<span><span class="co">#&gt; ETA_CL            variance  0.06811478  0.02320218               NA</span></span>
-<span><span class="co">#&gt; ETA_F             variance  0.15663331 -0.53251792               NA</span></span>
-<span><span class="co">#&gt; PROP_ERR      proportional  0.12736042  0.10978296               NA</span></span>
+<span><span class="co">#&gt;                  transform    estimate   lower_95 estimate_natural</span></span>
+<span><span class="co">#&gt; TVCL              identity  5.71305954  2.2706121               NA</span></span>
+<span><span class="co">#&gt; TVV               identity 56.67146921 23.0927970               NA</span></span>
+<span><span class="co">#&gt; TVKA              identity  1.50009570  1.3559734               NA</span></span>
+<span><span class="co">#&gt; THETA_F  logit_probability  0.79234497  0.3052746         0.792345</span></span>
+<span><span class="co">#&gt; ETA_CL            variance  0.06811478  0.0232022               NA</span></span>
+<span><span class="co">#&gt; ETA_F             variance  0.15660884 -0.5323852               NA</span></span>
+<span><span class="co">#&gt; PROP_ERR      proportional  0.12736047  0.1097830               NA</span></span>
 <span><span class="co">#&gt;          lower_95_natural</span></span>
 <span><span class="co">#&gt; TVCL                   NA</span></span>
 <span><span class="co">#&gt; TVV                    NA</span></span>
 <span><span class="co">#&gt; TVKA                   NA</span></span>
-<span><span class="co">#&gt; THETA_F         0.1650254</span></span>
+<span><span class="co">#&gt; THETA_F         0.1650427</span></span>
 <span><span class="co">#&gt; ETA_CL                 NA</span></span>
 <span><span class="co">#&gt; ETA_F                  NA</span></span>
 <span><span class="co">#&gt; PROP_ERR               NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>THETA_F</code> is the typical bioavailability, 0.792. The model file declares it on that scale (<code>theta THETA_F(0.70, 0.001, 0.999)</code>), and the engine’s own individual parameters agree: reconstructing each subject’s <code>F</code> from <code>estimate</code> reproduces them exactly.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">typical_f</span> <span class="op">&lt;-</span> <span class="va">fit_logit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="st">"estimate"</span><span class="op">]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">typical_f</span> <span class="op">&lt;-</span> <span class="va">fit_logit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="st">"estimate"</span><span class="op">]</span></span>
 <span><span class="va">eta_f</span> <span class="op">&lt;-</span> <span class="va">fit_logit</span><span class="op">$</span><span class="va">ebe_etas</span><span class="op">$</span><span class="va">ETA_F</span></span>
 <span><span class="va">reconstructed</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">typical_f</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">typical_f</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="va">eta_f</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">reconstructed</span> <span class="op">-</span> <span class="va">fit_logit</span><span class="op">$</span><span class="va">individual_estimates</span><span class="op">$</span><span class="cn">F</span><span class="op">)</span><span class="op">)</span></span>
@@ -993,12 +999,15 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </div>
 <p>For a <code>log</code> theta the back-transform is real, and <code>estimate_natural</code> is exactly <code>exp(estimate)</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">log_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"first-fit"</span><span class="op">)</span>, <span class="st">"log_theta.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># Model copies written in this chapter go to a scratch directory, never into the installed package.</span></span>
+<span><span class="va">fit_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"first-fit"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">fit_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">log_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">fit_dir</span>, <span class="st">"log_theta.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"  CL = TVCL * exp(ETA_CL)"</span>, <span class="st">"  CL = exp(TVCL + ETA_CL)"</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"  theta TVCL(0.134, 0.001, 10.0)"</span>, <span class="st">"  theta TVCL(-2.0, -7.0, 2.3)"</span>,</span>
-<span>                   <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>                   <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>               fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">log_model</span><span class="op">)</span></span>
-<span><span class="va">fit_log</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">log_model</span>, <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_log</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">log_model</span>, <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">log_row</span> <span class="op">&lt;-</span> <span class="va">fit_log</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"TVCL"</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>transform <span class="op">=</span> <span class="va">log_row</span><span class="op">$</span><span class="va">transform</span>,</span>
 <span>  difference <span class="op">=</span> <span class="va">log_row</span><span class="op">$</span><span class="va">estimate_natural</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">log_row</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span><span class="op">)</span></span>
@@ -1007,23 +1016,23 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </div>
 <p>The two confidence intervals on a row are built differently. <code>lower_95</code> and <code>upper_95</code> are always the symmetric interval <code>estimate ± 1.96 × se</code> on the scale <code>estimate</code> is reported on. On a bounded parameter that interval is not held inside the bounds, so for a probability read it as a measure of precision rather than as limits. For a <code>logit_probability</code> theta, <code>lower_95_natural</code> and <code>upper_95_natural</code> are formed on the logit scale instead – the standard error is carried there by the delta method, <code>se / (p (1 - p))</code>, and the interval brought back with <code>inv_logit()</code> – so they cannot leave [0, 1], and reach its edge only for an estimate close to a bound with a large standard error:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_logit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_logit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span>,</span>
 <span>                                 <span class="st">"lower_95_natural"</span>, <span class="st">"upper_95_natural"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;          estimate  lower_95 upper_95 lower_95_natural upper_95_natural</span></span>
-<span><span class="co">#&gt; THETA_F 0.7923592 0.3052784  1.27944        0.1650254        0.9866093</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;         estimate  lower_95 upper_95 lower_95_natural upper_95_natural</span></span>
+<span><span class="co">#&gt; THETA_F 0.792345 0.3052746 1.279415        0.1650427        0.9866053</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Here <code>upper_95</code> is 1.279, a bioavailability above 1, while the natural-scale interval runs from 0.165 to 0.987; for a probability, quote that one. <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> shows it on a <code>(95% CI)</code> line under the theta.</p>
 <p>That interval is wide for a reason unrelated to how it is built: with oral data only, <code>F</code>, <code>CL</code> and <code>V</code> cannot be separated (<a href="15-absorption.html" class="quarto-xref"><span>Absorption and bioavailability</span></a>), and the fit says so:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_logit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"category"</span>, <span class="st">"severity"</span><span class="op">)</span><span class="op">]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_logit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"category"</span>, <span class="st">"severity"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;           category severity</span></span>
 <span><span class="co">#&gt; 1 high_correlation  warning</span></span>
 <span><span class="co">#&gt; 2 condition_number critical</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Declaring the same bioavailability on a <code>logit</code> theta instead, in a separate fit, gives nearly the same natural-scale columns. The agreement is approximate – the delta method is a first-order approximation, and two fits stop at slightly different optima – and only the natural-scale columns are comparable: <code>estimate</code>, <code>lower_95</code> and <code>upper_95</code> are on different scales in the two rows.</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">logit_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">book_tempdir</span><span class="op">(</span><span class="st">"first-fit"</span><span class="op">)</span>, <span class="st">"bioavailability_logit.ferx"</span><span class="op">)</span></span>
-<span><span class="va">bio_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="fu">ferx_example</span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">logit_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">fit_dir</span>, <span class="st">"bioavailability_logit.ferx"</span><span class="op">)</span></span>
+<span><span class="va">bio_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
 <span><span class="va">twin_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"theta THETA_F(0.70, 0.001, 0.999)  # typical bioavailability, directly on (0,1) scale"</span>,</span>
 <span>                  <span class="st">"theta THETA_F(0.847, -5.0, 5.0)  # typical bioavailability on the logit scale"</span>,</span>
 <span>                  <span class="va">bio_lines</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -1031,23 +1040,23 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span>                  <span class="va">twin_lines</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">twin_lines</span> <span class="op">!=</span> <span class="va">bio_lines</span><span class="op">)</span> <span class="op">==</span> <span class="fl">2</span><span class="op">)</span>   <span class="co"># both lines really were rewritten</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="va">twin_lines</span>, <span class="va">logit_model</span><span class="op">)</span></span>
-<span><span class="va">fit_twin</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">logit_model</span>, <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_twin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">logit_model</span>, <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"bioavailability"</span><span class="op">)</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">natural</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"transform"</span>, <span class="st">"estimate_natural"</span>, <span class="st">"lower_95_natural"</span>, <span class="st">"upper_95_natural"</span><span class="op">)</span></span>
 <span><span class="va">natural_gap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span><span class="op">(</span><span class="va">fit_logit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="va">natural</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span></span>
 <span>                       <span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span><span class="op">(</span><span class="va">fit_twin</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="va">natural</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>declared_on_0_1 <span class="op">=</span> <span class="va">fit_logit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="va">natural</span><span class="op">]</span>,</span>
 <span>      declared_as_logit <span class="op">=</span> <span class="va">fit_twin</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="st">"THETA_F"</span>, <span class="va">natural</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                           transform estimate_natural lower_95_natural</span></span>
-<span><span class="co">#&gt; declared_on_0_1   logit_probability        0.7923592        0.1650254</span></span>
-<span><span class="co">#&gt; declared_as_logit             logit        0.7923566        0.1654716</span></span>
+<span><span class="co">#&gt; declared_on_0_1   logit_probability        0.7923450        0.1650427</span></span>
+<span><span class="co">#&gt; declared_as_logit             logit        0.7923555        0.1651511</span></span>
 <span><span class="co">#&gt;                   upper_95_natural</span></span>
-<span><span class="co">#&gt; declared_on_0_1          0.9866093</span></span>
-<span><span class="co">#&gt; declared_as_logit        0.9865661</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; declared_on_0_1          0.9866053</span></span>
+<span><span class="co">#&gt; declared_as_logit        0.9865966</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The largest difference between the two rows’ natural-scale columns is 0.00045.</p>
+<p>The largest difference between the two rows’ natural-scale columns is 0.00011.</p>
 <p>For the random effects, <code>fit$eta_param_types</code> says how each eta enters the model – <code>log_normal</code>, <code>additive</code>, <code>logit</code>, <code>logit_probability</code> or <code>custom</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">eta_param_types</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">omega</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html">setNames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">eta_param_types</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">omega</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       ETA_CL       ETA_V1        ETA_Q       ETA_V2       ETA_KA </span></span>
 <span><span class="co">#&gt; "log_normal" "log_normal" "log_normal" "log_normal" "log_normal"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1101,7 +1110,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </tbody>
 </table>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">individual_estimates</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">individual_estimates</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID       CL       V1         Q        V2        KA</span></span>
 <span><span class="co">#&gt; 1  1 4.361100 42.73915 11.328502  88.82908 2.2309504</span></span>
 <span><span class="co">#&gt; 2  2 5.971974 60.77905 12.027252  85.12710 3.3378917</span></span>
@@ -1110,7 +1119,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; 5  5 5.822952 39.95172 11.235375  65.71344 1.2051688</span></span>
 <span><span class="co">#&gt; 6  6 7.726836 45.63701  8.423314 113.38803 1.4900726</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>?ferx_fit</code> documents every element. <a href="25-reference.html" class="quarto-xref"><span>Function, option and example index</span></a> lists them all with the chapter that uses each one.</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code> documents every element. <a href="25-reference.html" class="quarto-xref"><span>Function, option and example index</span></a> lists them all with the chapter that uses each one.</p>
 </section><section id="warnings" class="level3"><h3 class="anchored" data-anchor-id="warnings">Warnings</h3>
 <p>ferx classifies everything it notices during a fit. Each warning has a <strong>severity</strong> and a stable <strong>category</strong> token:</p>
 <table class="caption-top table">
@@ -1137,11 +1146,20 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </tr>
 </tbody>
 </table>
-<p><code>ferx_get_warnings()</code> prints them grouped by severity. With <code>as_df = TRUE</code> it returns a data frame you can filter:</p>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings()</a></code> prints them grouped by severity. With <code>as_df = TRUE</code> it returns a data frame you can filter:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ferx fit warnings  (two_cpt_oral_base)</span></span>
 <span><span class="co">#&gt; -------------------------------------------------</span></span>
+<span><span class="co">#&gt; [WARNING]  general</span></span>
+<span><span class="co">#&gt;             gradient = fd also changed the outer optimizer: with optimizer = auto</span></span>
+<span><span class="co">#&gt;             left in place it resolved to bobyqa rather than the nlopt_lbfgs this</span></span>
+<span><span class="co">#&gt;             model would have used under gradient = auto, because auto picks the</span></span>
+<span><span class="co">#&gt;             derivative-free optimizer when there is no exact analytic gradient to</span></span>
+<span><span class="co">#&gt;             feed a gradient-based one. Two factors moved, not one — if you are</span></span>
+<span><span class="co">#&gt;             comparing an fd arm against an auto arm, pin optimizer = bobyqa in</span></span>
+<span><span class="co">#&gt;             both so the difference you measure is the gradient.</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [WARNING]  dw_autocorrelation</span></span>
 <span><span class="co">#&gt;             Negative IWRES autocorrelation detected (Durbin-Watson = 2.91).</span></span>
 <span><span class="co">#&gt;             Possible over-parameterization or misspecified error model.</span></span>
@@ -1150,14 +1168,16 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt;             simplifying the residual model.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; -------------------------------------------------</span></span>
-<span><span class="co">#&gt; 0 CRITICAL   1 WARNING   0 INFO</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; 0 CRITICAL   2 WARNING   0 INFO</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity           category</span></span>
-<span><span class="co">#&gt; 1  warning dw_autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1  warning            general</span></span>
+<span><span class="co">#&gt; 2  warning dw_autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p><code>fit$warnings</code> holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. For example, reject any fit with a critical warning. <code>check_diagnostics()</code> returns the residual autocorrelation and shrinkage behind two common warnings as data frames:</p>
+<p>The first one has the category <code>general</code>, the fallback for a message without a category of its own, so read its text: the model file sets <code>gradient = fd</code>, and with the optimizer left at <code>auto</code> that also changes the optimizer (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). The second is the residual autocorrelation warning that <a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a> takes up.</p>
+<p><code>fit$warnings</code> holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. For example, reject any fit with a critical warning. <code><a href="https://ferx-nlme.org/reference/check_diagnostics.html">check_diagnostics()</a></code> returns the residual autocorrelation and shrinkage behind two common warnings as data frames:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">check_diagnostics</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/check_diagnostics.html">check_diagnostics</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $autocorrelation</span></span>
 <span><span class="co">#&gt;   dw_statistic     lag1_r                     flag</span></span>
 <span><span class="co">#&gt; 1     2.909623 -0.5317191 negative autocorrelation</span></span>
@@ -1173,7 +1193,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </div>
 <p>What these diagnostics mean and how to act on them is the subject of <a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>.</p>
 </section></section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
-<p>Arguments of <code>ferx_fit()</code> introduced here. A call-time value always overrides the model file’s <code>[fit_options]</code>, and ferx reports the override:</p>
+<p>Arguments of <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> introduced here. A call-time value always overrides the model file’s <code>[fit_options]</code>, and ferx reports the override:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -1220,10 +1240,10 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </tr>
 </tbody>
 </table>
-<p>The other <code>ferx_fit()</code> arguments are covered where they matter: <code>threads</code>, <code>gradient</code>, <code>optimizer_trace</code> and <code>settings</code> in <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>; <code>ignore</code>, <code>accept</code> and <code>ignore_ids</code> in <a href="03-data.html" class="quarto-xref"><span>Preparing and checking the analysis dataset</span></a>; <code>bloq_method</code> in <a href="19-censoring.html" class="quarto-xref"><span>Censored observations (BLOQ)</span></a>; <code>mu_referencing</code> and <code>scale_params</code> in <a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a>; <code>sir</code> and <code>fd_hessian_step</code> in <a href="10-uncertainty.html" class="quarto-xref"><span>Parameter uncertainty</span></a>; <code>output</code> and <code>include_data</code> in <a href="13-reproducibility.html" class="quarto-xref"><span>Reproducibility and sharing</span></a>.</p>
+<p>The other <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> arguments are covered where they matter: <code>threads</code>, <code>gradient</code>, <code>optimizer_trace</code> and <code>settings</code> in <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>; <code>ignore</code>, <code>accept</code> and <code>ignore_ids</code> in <a href="03-data.html" class="quarto-xref"><span>Preparing and checking the analysis dataset</span></a>; <code>bloq_method</code> in <a href="19-censoring.html" class="quarto-xref"><span>Censored observations (BLOQ)</span></a>; <code>mu_referencing</code> and <code>scale_params</code> in <a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a>; <code>sir</code> and <code>fd_hessian_step</code> in <a href="10-uncertainty.html" class="quarto-xref"><span>Parameter uncertainty</span></a>; <code>output</code> and <code>include_data</code> in <a href="13-reproducibility.html" class="quarto-xref"><span>Reproducibility and sharing</span></a>.</p>
 <p>For example, skipping the covariance step:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nocov</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nocov</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, covariance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `covariance = true` but ferx_fit()</span></span>
 <span><span class="co">#&gt; argument overrides it with `false`. The call-time value will be used.</span></span>
 <span><span class="va">fit_nocov</span><span class="op">$</span><span class="va">covariance_status</span></span>
@@ -1245,31 +1265,31 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ferx_inits_from_nca()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">ferx_inits_from_nca()</a></code></td>
 <td>
 <code>model</code>, <code>data</code>, <code>method</code> (<code>"nca_sweep"</code>, <code>"nca"</code>, <code>"nca_ebe"</code>)</td>
 </tr>
 <tr class="even">
-<td><code>ferx_check_init()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_check_init.html">ferx_check_init()</a></code></td>
 <td>
-<code>model</code>, <code>data</code>, <code>method</code> (default <code>"focei"</code>), <code>maxiter</code> (pilot iteration limit), further arguments passed to <code>ferx_fit()</code>
+<code>model</code>, <code>data</code>, <code>method</code> (default <code>"focei"</code>), <code>maxiter</code> (pilot iteration limit), further arguments passed to <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code>
 </td>
 </tr>
 <tr class="odd">
 <td>
-<code>ferx_coef()</code>, <code>ferx_se()</code>
+<code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_coef()</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_se()</a></code>
 </td>
 <td>
 <code>fit</code>, <code>param</code> (names; <code>NULL</code> for all)</td>
 </tr>
 <tr class="even">
-<td><code>ferx_get_warnings()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings()</a></code></td>
 <td>
 <code>fit</code>, <code>as_df</code>
 </td>
 </tr>
 <tr class="odd">
-<td><code>check_diagnostics()</code></td>
+<td><code><a href="https://ferx-nlme.org/reference/check_diagnostics.html">check_diagnostics()</a></code></td>
 <td><code>fit</code></td>
 </tr>
 </tbody>
@@ -1280,14 +1300,14 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-nca-fits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Table&nbsp;5.1: The same model from different starting values.
 </figcaption><div aria-describedby="tbl-nca-fits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nca</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fit_nca_auto</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, gradient <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_nca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_nca_auto</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">base</span><span class="op">$</span><span class="va">model</span>, <span class="va">base</span><span class="op">$</span><span class="va">data</span>, inits_from_nca <span class="op">=</span> <span class="cn">TRUE</span>, gradient <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>                         verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `gradient = fd` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `auto`. The call-time value will be used.</span></span>
 <span></span>
 <span><span class="va">worst</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">sev</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">severity</span></span>
+<span>  <span class="va">sev</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">severity</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="st">"critical"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">sev</span><span class="op">)</span> <span class="st">"critical"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="st">"warning"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">sev</span><span class="op">)</span> <span class="st">"warning"</span> <span class="kw">else</span> <span class="st">"none"</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span></span>
@@ -1298,44 +1318,40 @@ Table&nbsp;5.1: The same model from different starting values.
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  start converged       ofv worst_warning</span></span>
 <span><span class="co">#&gt; 1           model file      TRUE -1185.403       warning</span></span>
-<span><span class="co">#&gt; 2                  NCA      TRUE -1080.741      critical</span></span>
-<span><span class="co">#&gt; 3 NCA, gradient = auto      TRUE -1185.462       warning</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2                  NCA      TRUE -1152.584       warning</span></span>
+<span><span class="co">#&gt; 3 NCA, gradient = auto      TRUE -1182.571       warning</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </figure>
 </div>
-<p>All three report <code>converged = TRUE</code> (with <code>gradient = "auto"</code>, ferx used the analytic gradient). The NCA start with finite differences, however, ended at an OFV about 105 points higher than the other two, with a critical warning. Its warnings show why the result cannot be trusted:</p>
+<p>All three report <code>converged = TRUE</code> (with <code>gradient = "auto"</code>, ferx used the analytic gradient). The NCA start with finite differences, however, ended at an OFV about 33 points higher than the fit from the model file’s values, and nothing in its warnings says so:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">nca_warnings</span> <span class="op">&lt;-</span> <span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_nca</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">nca_warnings</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_nca</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">nca_warnings</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   severity               category</span></span>
-<span><span class="co">#&gt; 1  warning                general</span></span>
-<span><span class="co">#&gt; 2  warning    ebe_start_dependent</span></span>
-<span><span class="co">#&gt; 3  warning covariance_regularized</span></span>
-<span><span class="co">#&gt; 4  warning           inflated_rse</span></span>
-<span><span class="co">#&gt; 5  warning     dw_autocorrelation</span></span>
-<span><span class="co">#&gt; 6  warning       high_correlation</span></span>
-<span><span class="co">#&gt; 7 critical       condition_number</span></span>
-<span><span class="co">#&gt; 8  warning          eta_normality</span></span>
-<span><span class="co"># The paragraph below names this category, so its absence has to fail the render.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="st">"ebe_start_dependent"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">nca_warnings</span><span class="op">$</span><span class="va">category</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   severity           category</span></span>
+<span><span class="co">#&gt; 1  warning            general</span></span>
+<span><span class="co">#&gt; 2  warning            general</span></span>
+<span><span class="co">#&gt; 3  warning   optimizer_health</span></span>
+<span><span class="co">#&gt; 4  warning dw_autocorrelation</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>model_file <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span>, nca <span class="op">=</span> <span class="va">fit_nca</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                TVCL     TVV1       TVQ     TVV2     TVKA</span></span>
+<span><span class="co">#&gt; model_file 4.464758 48.24224  9.584246 93.78774 1.247467</span></span>
+<span><span class="co">#&gt; nca        4.419084 42.01199 10.010390 97.66138 1.094885</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The NCA-based absorption rate constant (<code>TVKA</code> = 0.237) is far from the estimate of the successful fits (1.247). Convergence only means the optimizer stopped. Always compare the OFV and read the warnings before accepting a fit.</p>
-<p><code>ebe_start_dependent</code> in that list is a second reason to distrust this one: the random effects it reports depend on where the inner loop started, so every per-subject diagnostic built on them (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>) inherits that dependence. <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a> shows what to change.</p>
+<p>Its warnings are no more severe than those of the model-file fit (the worst is warning-level for both), and none of them says the fit is worse: the <code>general</code> notes are about the gradient setting and the NCA itself. The fit simply stopped at a different, worse point: <code>TVV1</code> ends at 42 instead of 48.2. The NCA-based absorption rate constant it started from (<code>TVKA</code> = 0.237) is far from the model-file fit’s estimate (1.247). The analytic-gradient fit from the same start comes within 2.8 points of the model-file fit.</p>
+<p>Convergence only means the optimizer stopped, and a clean warning list does not mean it stopped at the best point. Fit from more than one start and compare the OFVs before accepting a fit.</p>
 </section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
 <p><strong>A fit stopped by its iteration limit.</strong> <code>maxiter</code> caps the outer optimizer. The engine turns it into a budget of objective evaluations, whose size depends on the optimizer, which is why the warning below speaks of an evaluation budget. A fit that hits the limit is marked unconverged with a critical <code>convergence</code> warning. For the warfarin example with <code>method = "focei"</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">warf</span> <span class="op">&lt;-</span> <span class="fu">ferx_example</span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
-<span><span class="va">fit_short</span> <span class="op">&lt;-</span> <span class="fu">ferx_fit</span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">warf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<span><span class="va">fit_short</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">warf</span><span class="op">$</span><span class="va">model</span>, <span class="va">warf</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"focei"</span>,</span>
 <span>                      settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>maxiter <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `method = foce` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `focei`. The call-time value will be used.</span></span>
 <span><span class="co">#&gt; Warning: Model file [fit_options] sets `maxiter = 300` but ferx_fit() argument</span></span>
 <span><span class="co">#&gt; overrides it with `2`. The call-time value will be used.</span></span>
-<span><span class="co"># The sentence above says this fit is unconverged, so a converged one has to fail the render.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="op">!</span><span class="va">fit_short</span><span class="op">$</span><span class="va">converged</span><span class="op">)</span></span>
 <span><span class="va">fit_short</span><span class="op">$</span><span class="va">converged</span></span>
 <span><span class="co">#&gt; [1] FALSE</span></span>
-<span><span class="fu">ferx_get_warnings</span><span class="op">(</span><span class="va">fit_short</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span>, <span class="st">"message"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_short</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span>, <span class="st">"message"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity           category</span></span>
 <span><span class="co">#&gt; 1  warning            general</span></span>
 <span><span class="co">#&gt; 2 critical        convergence</span></span>
@@ -1350,19 +1366,19 @@ Table&nbsp;5.1: The same model from different starting values.
 <ul>
 <li>
 <code>n_iterations</code> and the rows of the optimizer trace count objective evaluations, not outer iterations, so they can be much larger than <code>maxiter</code>.</li>
-<li>Reading <code>fit$estimates["NAME", ]</code> with a misspelt name silently returns <code>NA</code>. <code>ferx_coef()</code> and <code>ferx_se()</code> stop with an error instead.</li>
+<li>Reading <code>fit$estimates["NAME", ]</code> with a misspelt name silently returns <code>NA</code>. <code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_coef()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_se()</a></code> stop with an error instead.</li>
 </ul>
 <section id="warnings-you-may-see-here" class="level3"><h3 class="anchored" data-anchor-id="warnings-you-may-see-here">Warnings you may see here</h3>
 <ul>
 <li>
 <code>convergence</code> (critical): the optimizer did not converge. Reject the fit, then change starting values, method or bounds and refit. See <a href="https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence">convergence and covariance warnings</a>.</li>
 <li>
-<code>general</code> (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, and a misspelt data-selection column (<a href="03-data.html" class="quarto-xref"><span>Preparing and checking the analysis dataset</span></a>). Read the message. See <a href="https://ferx-nlme.org/ferx-core/warnings.html#codes-solver">solver, numerics and unclassified warnings</a>.</li>
+<code>general</code> (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, a misspelt data-selection column (<a href="03-data.html" class="quarto-xref"><span>Preparing and checking the analysis dataset</span></a>), and two notes about the outer gradient: that <code>gradient = fd</code> in the model file also changed the optimizer, and that some subjects “could not be given the exact analytic outer gradient” and used an approximate one (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>); giving those two a category of their own is <a href="https://github.com/FeRx-NLME/ferx-core/issues/1618">ferx-core #1618</a>. Read the message. See <a href="https://ferx-nlme.org/ferx-core/warnings.html#codes-solver">solver, numerics and unclassified warnings</a>.</li>
 </ul></section></section><section id="summary-1" class="level2"><h2 class="anchored" data-anchor-id="summary-1">Summary</h2>
 <ul>
-<li>Starting values come from <code>[parameters]</code>. <code>ferx_inits_from_nca()</code> proposes data-based ones, and <code>ferx_check_init()</code> runs a pilot.</li>
+<li>Starting values come from <code>[parameters]</code>. <code><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">ferx_inits_from_nca()</a></code> proposes data-based ones, and <code><a href="https://ferx-nlme.org/reference/ferx_check_init.html">ferx_check_init()</a></code> runs a pilot.</li>
 <li>
-<code>ferx_fit(model, data)</code> fits. <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> show the result, and <code>fit$estimates</code>, <code>ferx_coef()</code> and <code>ferx_se()</code> give the numbers.</li>
+<code>ferx_fit(model, data)</code> fits. <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> show the result, and <code>fit$estimates</code>, <code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_coef()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_coef.html">ferx_se()</a></code> give the numbers.</li>
 <li>Judge a fit by convergence, OFV <strong>and</strong> warnings. <code>ferx_get_warnings(as_df = TRUE)</code> makes them scriptable.</li>
 </ul>
 <p>Next: <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a> chooses and tunes the estimation method.</p>
@@ -1377,7 +1393,7 @@ Table&nbsp;5.1: The same model from different starting values.
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code>?ferx_fit</code>, <code>?summary.ferx_fit</code>, <code>?ferx_inits_from_nca</code>, <code>?ferx_check_init</code>, <code>?ferx_coef</code>, <code>?ferx_get_warnings</code>, <code>?check_diagnostics</code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code>, <code><a href="https://ferx-nlme.org/reference/summary.ferx_fit.html">?summary.ferx_fit</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_inits_from_nca.html">?ferx_inits_from_nca</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_check_init.html">?ferx_check_init</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_coef.html">?ferx_coef</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">?ferx_get_warnings</a></code>, <code><a href="https://ferx-nlme.org/reference/check_diagnostics.html">?check_diagnostics</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/model-file/fit-options.html">fit options</a>, <a href="https://ferx-nlme.org/ferx-core/warnings.html">warnings</a>
 </li>
