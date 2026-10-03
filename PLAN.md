@@ -7,7 +7,7 @@ Model: [PKNCA book](https://humanpred.github.io/pknca-book/). This is a guided, 
 runnable book on **using ferx-r in an R modeling analysis**. Technical detail (DSL
 grammar, estimator math, exhaustive option semantics) lives in the
 [ferx-core docs](https://ferx-nlme.org/ferx-core/) and is linked, not copied.
-The book is about ferx only: **no comparison text to other NLME software.**
+The book is about ferx. Another NLME engine may be named in an analogy that shows what a ferx example or feature corresponds to, **never in a comparison that says ferx is better** (rule 8, softened by the owner 2026-10-02).
 
 ---
 
@@ -69,11 +69,17 @@ maturity callouts). What went wrong:
    green `tools/audit.R`.
 6. **Self-contained chapters.** No object from another chapter.
 7. **Not available from R? Say so and point elsewhere.** Never imply availability.
-8. **ferx only.** No comparisons to or translations from other NLME software.
+8. **Analogies, not claims** (softened by the owner 2026-10-02; was "ferx only: no
+   comparisons to or translations from other NLME software").
+   - Another engine may be named in an analogy that shows a reader what a ferx example or
+     feature corresponds to. Never name one in a comparison that says ferx is better,
+     faster or improved.
    - Describe the data format as "the ferx data format" and link ferx-core
      `data-format`.
-   - Audit bans (case-insensitive, outside URLs): NONMEM, Monolix, nlmixr, PsN,
-     Pumas, pyDarwin, Phoenix, NLME software names.
+   - The audit flags a sentence (outside URLs) that names NONMEM, Monolix, nlmixr, PsN,
+     Pumas, Pharmpy, pyDarwin, Phoenix NLME, NLMIXED, WinBUGS or Stan together with
+     comparative wording (better, faster, improved, outperform, superior, ...). Whether a
+     sentence that passes is an analogy is for review to judge.
    - `ferx_xpose(backend = "xpose4")` is a ferx argument and is allowed.
 9. **Link, don't copy.** Each chapter ends with a Reference callout (`?fn` +
    `https://ferx-nlme.org/ferx-core/<path>.html`). Never link to stale
@@ -607,7 +613,8 @@ Per-chapter loop:
   - Still true and still shown: diagonal `omega`/`sigma` take `(sd)` correctly —
     `omega ETA_CL ~ 0.07` and `~ 0.2645751 (sd)` both give OFV −280.364, as do
     `sigma PROP_ERR ~ 0.01 (sd)` and `~ 0.0001`.
-- **ferx-r / ferx-core bug (found covering `[priors]` at the `a961146` bump), important:**
+- ~~**ferx-r / ferx-core bug (found covering `[priors]` at the `a961146` bump), important:**~~
+  **Fixed** by [ferx-r #379](https://github.com/FeRx-NLME/ferx-r/issues/379), in the pin from `5c9cc7a` (v0.4.0). ch24 now runs `[priors] from_fit` as ordinary content (`priors-from-fit`, `priors-from-fit-compare`: a fit to warfarin subjects 1-5 as the prior for subjects 6-10); the refusal chunk, its paragraph and the pitfall are gone. Original finding:
   the `.fitrx` bundle `ferx_save_fit()` writes cannot be read back by ferx-core, so
   `[priors] from_fit` — the model-updating import, and the block's only key — is unreachable
   from R.
@@ -699,9 +706,11 @@ Per-chapter loop:
 - **ferx-r usability gap (found in the adversarial review of the `6e2f701` bump):** on a refused
   model `ferx_predict()` and `ferx_simulate()` print the engine's parse error and return
   `NULL` without raising an R error; only `ferx_fit()` raises `ferx_engine_error`. Verified on
-  `[not_a_block]`. A script that checks for an error therefore continues with `NULL`. The ch25
-  sentence names only `ferx_fit()` and stays correct. Filed as
-  [ferx-r #385](https://github.com/FeRx-NLME/ferx-r/issues/385); widen the ch25 sentence when it lands.
+  `[not_a_block]`. A script that checks for an error therefore continues with `NULL`. Filed as
+  [ferx-r #385](https://github.com/FeRx-NLME/ferx-r/issues/385). **Fixed** in the pin from `5c9cc7a`:
+  `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and `ferx_inits_from_nca()` all raise
+  `ferx_engine_error` with `code = E_UNKNOWN_BLOCK` on `[not_a_block]`; the ch25 sentence in
+  `tools/make-reference.R` now names the entry points. ch11 and ch22 `try()` chunks print a real error.
 - **ferx-core doc imprecision (same review):** `maxiter` is documented as "maximum outer loop
   iterations", but the engine sets an evaluation budget, `maxiter * (n + 1)` on the NLopt gradient path
   and a separate value for BOBYQA (`outer_optimizer.rs`, `set_maxeval`); `n_iterations` was 8, 16, 24 for `maxiter` 1, 2, 3 on
@@ -732,7 +741,7 @@ Per-chapter loop:
   - the `iiv_on_ruv` FOCE error and the `omega ~ 0.0` not-FIX error end with sentences naming it;
   - bundled model comments (`ss_absorption`, `infusion_absorption`).
 
-  The book shows only the first sentence of those errors (ch16, ch18) and does not print those model comments. `ferx_get_columns()` output is left as is (ch03).
+  The book shows only the first sentence of those errors (ch16, ch18) and does not print those model comments. `ferx_get_columns()` output is left as is (ch03). Under the softened rule (2026-10-02) all of these are analogies and may be printed; the cuts stay because they also keep the output short.
 - ferx-core/ferx-r (found in 4.4, ch20), to check:
   - **`NaN` for zero time above MEC:** `integral(1.0, IPRED > MEC, window=24, …)` returns `NaN`, not 0, for windows where the condition never holds (`warfarin_derived_pkpd` with MEC 8, days 3–5).
   - **Bundled examples are weak demos:** `warfarin_derived_pkpd` uses MEC 0.5, below every warfarin concentration, so time above MEC is always 24 h. `emax_pkpd` has only 3 subjects, so the PD parameters are unidentifiable (RSE up to 5e4%).
@@ -741,14 +750,14 @@ Per-chapter loop:
   - **`print()` of a binary fit:** says "Obs: 0", "Structural: 1-cpt IV" and "Residual: per-CMT ()" for `binary_logistic`.
   - **Misclassified notice:** the finite-difference inner-gradient notice is categorised `data_quality` (warning).
   - **FOCE runs without complaint:** the docs say FOCE is biased for binary endpoints, but `method = "foce"` on the random-intercept model runs silently with the same OFV as FOCEI.
-  - **SAEM default seed:** on that model the default seed ends at a degenerate point (RSE 2e6%), while seeds 1–3 agree.
+  - ~~**SAEM default seed:** on that model the default seed ends at a degenerate point (RSE 2e6%), while seeds 1–3 agree.~~ Gone at `5c9cc7a` with the new SAEM defaults (`scale_adaptation = robbins_monro`, `n_mh_steps = auto`): no seed needs a regularized covariance step, but the four runs now scatter (`ETA_I` 0.39-0.56). ch21 reports the spread, and how many runs needed a regularized covariance step, with inline numbers.
 - ferx-r/ferx-core (found in 4.4, ch22), to check:
   - **Empty `sdtab`:** TTE-only fits return an empty `sdtab` (0 rows).
   - **Stale model comment:** the `tte_exponential` comment says `[event_model]` cannot reference individual parameters; the docs now say it can.
   - **`ferx_simulate()` without `horizon`:** it prints "Error simulating: …" and returns NULL rather than raising an R error.
 - ferx-core/ferx-r (found in 4.5, ch24), to check:
   - **`warfarin_dcm`:** the fitted network (141 weights, FOCEI/lbfgs, 27 s) outputs a constant clearance multiplier (1.0319 for all 30 subjects, sd 8e-9), reaching the base-model OFV (−1185.46 vs −1185.40). The explicit covariate model reaches −1199.33.
-  - **Regularised DCM:** `settings = list(nn_l2 = 0.01)` did not finish within 10 min with bobyqa, or within about 25 min with lbfgs. The book documents `nn_l2`/`nn_smooth` without running them.
+  - ~~**Regularised DCM:** `settings = list(nn_l2 = 0.01)` did not finish within 10 min with bobyqa, or within about 25 min with lbfgs. The book documents `nn_l2`/`nn_smooth` without running them.~~ At `5c9cc7a` it finishes in about 10 s (the unregularized DCM fit takes 0.3 s on the analytic gradient), so ch24 runs it (`dcm-regularized`). It exposes the next item.
   - **`warfarin_sde`:** the diffusion variance collapses (RSE 113%), with OFV −279.27 vs −280.32 without `[diffusion]` (FOCE).
   - **Bundled model comments:** the `warfarin_dcm` comment names other software, so ch24 prints its blocks without comments.
 - ferx-r (found in Step 5): `ferx_fit(method = "vi")` is rejected by `match.arg`, although `method = vi` in the model file runs. The VI ELBO (`vi.neg_two_elbo`, `vi.elbo_trace`, `vi.n_fd_subjects`) is not on the R fit object. `[markov_model]` is rejected at parse time (`E_BLOCK_FEATURE_DISABLED`, since ferx-r does not build the `markov` feature).
@@ -832,6 +841,205 @@ Per-chapter loop:
   another engine's prediction; the book must not repeat that (rule 8).
 - Any example failing the smoke test → ferx-r issue.
 
+- **Found at the `5c9cc7a` (v0.4.0) bump.** Every chapter re-rendered from an empty cache and diffed
+  against the `6e2f701` render, with numbers masked; every changed claim was rewritten from the output
+  and backed by a `stopifnot()` guard. Upstream items:
+  - **ferx-core: two new messages arrive as `general`.** The engine classifies warnings by message text
+    (`src/types.rs`), and neither new message matches an arm: the `W_AUTO_OPTIMIZER_FOLLOWS_GRADIENT`
+    fit note ("gradient = fd also changed the outer optimizer", on every `gradient = fd` model with
+    `optimizer = auto` -- `two_cpt_oral_base`, `emax_pkpd`) and the #1154 outer-gradient note ("N of M
+    subjects could not be given the exact analytic outer gradient", on `two_cpt_oral_cov`,
+    `warfarin_ode`, `mm_oral`, `warfarin_if`, `warfarin_dcm`, ...). `gradient_fallback` /
+    `optimizer_config` would fit. Filed as [ferx-core #1618](https://github.com/FeRx-NLME/ferx-core/issues/1618). The book explains both as `general` notes (ch05 list and
+    `warnings` chunk, ch06 `gradient-moves-optimizer` / `outer-gradient-note`, pointers in ch07, ch17, ch20);
+    when they get a category, the guards in ch05, ch07, ch17 and ch20 stop the render.
+  - **ferx-core docs gap:** `docs/warnings.qmd` at `2a6076af` has no row for `init_not_representable`, so
+    its severity and description are blank in the generated ch25 table. Already tracked: ferx-core #1436, closed into #1439 (docs drift, item 4). ch06 documents and runs it
+    (`init-not-representable`).
+  - **ferx-core bug, important: a fit whose every outer trial is guard-rejected reports convergence at
+    the midpoint of its bounds.** Investigated at the `5c9cc7a` bump. When more than
+    `max_unconverged_frac` (default 0.1) of the subjects' inner loops fail, `ebe_guard_rejects()`
+    (`src/estimation/outer_optimizer.rs`) rejects the trial and returns `1e12` plus a centre-push term
+    `100·(xs − c)`, `c` = scaled bound midpoint. If every trial is rejected, NLopt L-BFGS minimises the
+    penalty and returns `Success` (warfarin, `inner_maxiter = 5`: evals 1-3 all ≥ 1e12, eval 3 exactly
+    `1e12` at the centre). The fit then "restores the best-seen point (OFV = 1e12)", the final inner loop
+    scores it (220.52, a true objective there: an evaluation-only refit with the default inner budget
+    gives 220.54), and the result is `converged = TRUE` with no `convergence` warning. The
+    `ebe_start_dependent` check cannot fire, because the cold solve (220.5) beats the best-seen 1e12.
+    Measured: warfarin at `inner_maxiter` 3/5/6 lands on the geometric bound midpoints (TVCL 0.1,
+    TVV 7.071, TVKA 0.7071, omegas 1) to 3e-9, OFV ≈ 220.5 against -280.36; `mm_oral` at 10 to 2e-8
+    (OFV 442 against -453). Under `bobyqa` (or `two_cpt_oral_base`'s `gradient = fd`) the optimizer
+    stalls at the initial values instead, which `stalled_at_init` reports. Default-budget fits from bad
+    initial values did not trigger it. **Not a regression:** the `6e2f701` engine (built into a scratch
+    library) gives the same midpoints at k ≤ 6; 0.4.0 improved k = 7 and 10, which used to report a fit
+    at the optimum as unconverged with `ebe_start_dependent` -- which is why ch06's old demo stopped
+    triggering. Fix direction: treat "no feasible evaluation" as non-convergence (critical
+    `convergence` naming the guard) instead of restoring a penalty point. Filed as [ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617). ch06
+    (`starved-inner-loop`) shows it in an "at this build" callout whose guard stops the render once the
+    engine reports it. Replaces the old
+    `ebe-start-dependent` demo (`inner_maxiter = 10` on warfarin), which no longer raises the warning;
+    `warfarin_sde` is now the only bundled example that does, and ch06 uses it.
+  - **ferx-core: a fit restarted at its own optimum.** `bobyqa` and `nlopt_lbfgs` now report
+    `converged = FALSE` with a critical `convergence` warning beside `stalled_at_init`; `slsqp` reports
+    `converged = TRUE`. The `W_STALLED_AT_INIT` text still says "`converged` may be true". ch06
+    (`stalled-at-init`) shows both optimizers.
+  - **ferx-core: DCM fits stop far from their optimum** ([#1561](https://github.com/FeRx-NLME/ferx-core/issues/1561),
+    known issue of the release). Unpenalized OFV of `warfarin_dcm` (FOCEI, no covariance step): no
+    penalty -1185.46 (constant multiplier, sd 7e-9); `reconverge_gradient_interval = 1` -1160.47;
+    `optimizer = bobyqa` -1178.81; `nn_l2` 0.001 -1210.39, 0.01 -1393.12, 0.1 -1513.90. A heavier
+    penalty cannot legitimately reach a better unpenalized objective, so the unpenalized fit converges at
+    least 330 above its optimum. `two_cpt_oral_cov` gives -1199.33. ch24 now says so, runs the `nn_l2 =
+    0.01` fit, and keeps the AIC comparison (the explicit model still wins, -1173 vs -1089).
+  - **ferx-core: `block_sigma` correlation (#847).** ch16's `correlated_combined` fit now estimates the
+    residual correlation and ends at OFV -280.308, 0.06 above the nested `combined` fit (-280.363), with
+    rho 0.995 (SE 29) and `covariance_regularized`; `ADD_ERR` collapses to 3e-4, so rho is unidentified.
+    The chapter's claim (extra parameters not supported) holds; not reported further.
+  - **Behaviour changes absorbed in prose:** `ferx_inits_from_nca()` reads through the engine reader
+    (ferx-r #391), and the NCA-start FD fit of `two_cpt_oral_base` now ends 33 above the model-file fit
+    with only `warning`-level notes and passes every strictness gate (ch05, ch09 `strictness-fail`, ch10
+    now uses `emax_pkpd` as its bad-covariance example); the `warfarin_block_omega` iivsearch now selects
+    the diagonal structure and the `algorithm = "skip"` candidate no longer stalls (ch09); both ruvsearch
+    prescreen passes pick `time_varying1` (ch09); reloaded fits keep their warning categories (ferx-r
+    #308, ch13); `ferx_simulate()`/`ferx_predict()` pass on `W_CMT_DEFAULTED` and model notes (ch20,
+    ch22); the `multi_start` note appears only when a start other than the first wins (ch06). The
+    `emax_pkpd` numbers changed as well; ch20 now fits with `gradient = "auto"` (below).
+  - **ferx-core bug: a covariate exponent shared by two typical values drifts to its lower bound
+    under SAEM.** Filed as [ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620).
+    Found while moving ch06's M-step demo off `warfarin_saem` (every theta there has an eta, so
+    `mstep_draws = 4` was bit-identical and the demo showed nothing). In `two_cpt_oral_cov`,
+    `THETA_WT` scales CL and V1; #619 records both covariate mu-references and declines V1's ("THETA_WT
+    already belongs to another covariate mu-reference"). THETA_WT then joins only CL's group step (the
+    numerical M-step pins it; the engine note saying it "stays on the numerical M-step" is wrong for
+    it) and drifts: seed 1, default solver, 0.151 at 150/250 and 0.010 (the bound) at 300/700, 300/1500
+    and 600/3000; `score_sa` reaches 0.010 within 150/250 on seeds 1-3. Importance-sampled -2 log L at
+    the final estimates (MC error about 0.3): FOCEI -1199.38 (0.653); SAEM default 150/250 -1194.9 to
+    -1197.4; 300/700 -1192.4 to -1194.3. Controls: `mu_referencing = false` (no groups) is noisy but
+    does not drift; the exponent routed through an `if` local (plain no-ETA theta) does not drift and
+    `score_sa` is close to FOCEI there; one exponent per typical value stays at FOCEI's optimum
+    (0.73, IS -1199.4 to -1199.5) at every schedule for both solvers. Data simulated with 0.75.
+    So it is not a `score_sa` defect: `score_sa` only gets to the bound sooner. ch06 shows the default,
+    both settings, the longer-schedule drift (`saem-shared-exponent-drift`, "at this build" callout,
+    guarded) and the remedy (`saem-mstep-remedy`).
+  - **Book prose defect (pre-existing, fixed at this bump):** ch16 said a refused `ferx_fit()` carries
+    "the message but not the code"; since ferx-r #378 the refusal appends `[E_BLOCK_VARIANCE_ONLY]` and
+    carries `$code`. `block-sd-fit` now shows and guards the code.
+  - **Still open, rechecked:** `ferx_model_validate()` still reports compact TTE models invalid (ch22
+    callout stays). The SDE docs fix (ferx-core #1426) is in the pin; ch24 links its "What the filter
+    does not do" section.
+  - **Link host:** ferx-r moved its links to `ferx-nlme.org` after the release (9c62b18). The book
+    followed in this PR (9a55b6b), and `tools/audit.R` now flags the old host. Two old-host links remain
+    in generated output (the `library(ferx)` package link from the installed `DESCRIPTION`, a URL inside
+    a ch09 engine message); both redirect.
+  - **ferx-r/ferx-core: `emax_pkpd`'s `gradient = fd` stops short of the optimum, and ch20's old
+    "recovery" was an artifact of it.** The model file sets `gradient = fd  # required: per-CMT / Form C
+    readout`, but at `5c9cc7a` ferx has an analytic gradient for it (`gradient_used` "analytic" under
+    `gradient = "auto"`). On ch20's 30-subject simulation at 100 (seed 42) the FD fits converge near
+    their start, which in a simulation-estimation run is the simulation truth: FD/bobyqa -247.77
+    (EMAX 38.9, EC50 5.27, regularized covariance, RSE to 66,606%), FD/slsqp -246.45 (34.2, 4.23, clean
+    covariance), FD/nlopt_lbfgs -245.93. The analytic gradient reaches -256.88 (EMAX 10.8, EC50 0.90),
+    also when started at the truth, and the truth itself scores -233.10. The objective agrees between
+    paths (the analytic optimum scores -256.877 on the FD path with `maxiter = 0`). The design is the
+    real problem: the concentration never exceeds 2.9, below EC50 = 5, and across seeds 42/1/2/3 the
+    analytic optimum puts EMAX at 10.8 / 200 (bound) / 17.7 / 135. With ten subjects each on
+    100/300/1000 every seed recovers EMAX 36.7-42.3, EC50 4.25-5.48 with RSE <= 28%, and the FD fits
+    still stop 2.7-11 above the optimum there. The `6e2f701` build (scratch library) reaches the same FD
+    point (-247.77) on identical simulated data; its render printed RSEs of 3-28% at a nearby point, so
+    the old sentence "all parameters are recovered with moderate standard errors" described a fit that
+    had stopped near its starting values. ch20 now fits with `gradient = "auto"` (main fit included,
+    3-subject analytic -36.94 vs FD -34.13), shows the 100 design missing EMAX/EC50 against the
+    objective at the simulation values (`maxiter = 0`), a dose-range design recovering them, and the FD
+    fits in an "at this build" callout (`pkpd-sim-fd`) whose hidden check also verifies the objective
+    agreement. ch09/ch10 keep the model-file fit as their unreliable-fit example (still condition number
+    > 1000 and |r| > 0.95 at the analytic optimum). Filed as
+    [ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625): the example lives in ferx-core
+    and ferx-r mirrors it byte for byte (plus line 6 of ferx-r's `ex_emax_pkpd.R`); ferx-core's own
+    `scaling_multi_analyte.ferx` already says per-CMT Form C readouts are analytic since #439. The FD gap
+    itself is [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520) (FD stencils reading ODE
+    integration noise at the default tolerances), where the v0.4.0 sweep is posted (comment 2026-10-02):
+    the model-file fit gives -34.133 / -24.001 / -35.694 / -36.775 at `ode_reltol` 1e-4 / 1e-6 / 1e-8 /
+    1e-10, so the level #520 proposes for FD fits (1e-6 / 1e-8) makes this one worse. ch20 links #1625.
+  - **ferx-core: Bayes does not converge on the two-compartment models.** Default `method = "bayes"`:
+    `two_cpt_oral_base` max R-hat 1.194, `two_cpt_oral_cov` 2.735. Longer chains do not help: base
+    1.188 / 1.197 and cov 3.047 / 7.158 at 3000 / 6000 warmup and draws per chain (the cov value grows).
+    The engine message recommends longer chains. Not a regression (`6e2f701` gave the same 2.735 on the
+    covariate model). `warfarin` converges under the defaults (max R-hat 1.003, min bulk ESS 742). ch06
+    now demonstrates Bayes on warfarin and shows the base-model failure in an "at this build" callout
+    (`bayes-base`); ch10 shows the covariate model at both chain lengths and leaves Bayes out of the
+    interval comparison. Filed as [ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626)
+    after isolating three causes (2026-10-02; `bayes.rs` unchanged on main): (1) base model, the block-MH
+    eta kernel stalls: max R-hat 1.194 / 1.197 / 1.201 at 1,000 / 6,000 / 20,000 draws per chain, bulk ESS
+    of OMEGA(2,2) 9 / 7 / 6, `n_mh_steps = 50` no better (1.41 at 6,000), while HMC proposals
+    (`n_leapfrog = 10`) converge at 4,000 (max R-hat 1.003; with 5 leapfrog steps 1.039, at 2,000 draws
+    1.876); (2) covariate model, the random-walk theta block ignores declared bounds (`log = theta_lower
+    >= 0`, no bound check, while the mu-ref move clamps) and the exponents drift towards zero, 2.5%
+    quantiles ~1e-8 against the 0.01 bound (HMC at 4,000: max R-hat 7.33); (3) covariate coefficients
+    barely move at fixed eta even sampled on the natural scale (R-hat ~2 at 6,000). Not #1620's
+    shared-exponent mechanism: separate exponents on CL and V1 do no better. ch06's callout now also runs
+    the base model with HMC proposals (converged); ch10's Bayes section is an "at this build" callout that
+    adds the HMC run and the exponents' 2.5% quantiles below their bound.
+  - **ferx-core: the bundled `warfarin_sde` fit stops at a saddle point.** Found while answering why
+    ch24's SDE standard errors run to 255,000%. `[diffusion]` needs finite differences
+    (`gradient_method = fd`), so `optimizer = auto` resolves to bobyqa, which stops at OFV -279.15 with
+    `covariance_regularized` reporting negative curvature (min eigenvalue -413 of max 7163): not a
+    minimum, so every standard error is meaningless. `nlopt_lbfgs` reaches -279.55 with DIFF_CENTRAL 6e-8
+    and ordinary standard errors (max 40%); slsqp -274.66. The model without `[diffusion]` stops short
+    with its FD settings too (bobyqa -277.24, slsqp -275.74, nlopt_lbfgs -271.88, all regularized) and
+    reaches -280.36 with the analytic gradient (max RSE 46%, = the analytical warfarin model). The SDE
+    model with DIFF fixed at 1e-12, evaluated at that optimum, scores -280.37, so the models coincide
+    there and even the nlopt_lbfgs SDE fit is 0.8 short. FOCEI: bobyqa -276.10 (DIFF 5.3e-5);
+    nlopt_lbfgs does not leave the starting DIFF 0.01 (OFV -125.0). ch24 now explains the saddle, shows the
+    nlopt_lbfgs refit and the four-way comparison (`sde-lbfgs`, `sde-vs-ode`, checks hidden), and drops
+    the FOCE-vs-FOCEI variant, which compared two fits that had stopped short. ch06 keeps the bundled fit
+    for its `ebe_start_dependent` demo and says it stops at a saddle. Not filed: it is
+    [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520) (FD stencils at the default ODE
+    tolerances), and the fit's own `covariance_regularized` message already names the remedy (#1508). The
+    v0.4.0 sweep is posted on #520 (2026-10-02): -279.152 (saddle) / -280.147 / -279.264 / -280.184 at
+    `ode_reltol` 1e-4 / 1e-6 / 1e-8 / 1e-10, so the FD/bobyqa stop is not monotone in the tolerance. At the
+    tolerances the message names (1e-6 / 1e-8) the model file's bobyqa fit reaches -280.147, below
+    nlopt_lbfgs (-279.55), with no regularization, DIFF_CENTRAL 2e-6 (RSE 302%) and ordinary structural
+    RSEs. ch24 now prints that sentence of the message and runs the refit (`sde-tolerance`), uses it as
+    the furthest SDE fit in `sde-vs-ode` and for the simulation variant, and links #520.
+  - **Platform dependence (2026-10-03): the first Linux CI run of #33 failed.** CI had never run on
+    this PR: it conflicted with `main` (#32) from the start. Its first run (`f37b181`) stopped at ch06
+    `check-ebe-start-dependent`. A local x86_64 Linux container that mirrors the workflow (R 4.4.3,
+    stable Rust, Quarto 1.10.18, ferx-r at the pin) rendered every chapter with failing checks logged
+    instead of fatal. Seven checks failed, all on fits whose stopping point depends on rounding:
+    ch06 `ebe_start_dependent` on the SDE fit (macOS raises it, Linux not) and the `multi_start` note
+    (the single start and the best of 8 agree to 2.7e-07 at -453.3985; Linux's note names start 3); ch20 a regularized covariance on one FD fit (not
+    stated in the prose); ch24 the SDE fit (model-file OFV -279.15 macOS / -276.31 Linux, both at negative
+    curvature; `nlopt_lbfgs` clean on macOS, regularized with RSEs to 628,000% on Linux; the FD ODE fit
+    3.1 / 0.34 above the analytic one) and the DCM network (penalized fit 208 OFV below the unpenalized
+    one on macOS, 11 above it on Linux, where the unpenalized fit learns a covariate effect). What holds
+    on both: negative curvature at the model-file SDE fit and the FD ODE fit, the tolerance refit (1e-6 /
+    1e-8: -280.15 / -280.24, clean covariance), the analytic ODE fit (-280.36 on both), every analytic
+    PK/PD fit to the printed digit. The chapters now rest only on those: ch06 explains
+    `ebe_start_dependent` without a live fit and reads the multi-start note from the fit; ch24 builds the
+    SDE story on the tolerance refit (the `nlopt_lbfgs` refit is gone), states that the model-file fit
+    and the unpenalized network differ between machines, and its DCM prose and checks hold either way.
+    The probe logged only the first failing condition of each check, so a second render found one more:
+    the SDE model evaluated at the ODE optimum with the diffusion fixed near zero scores -280.48 on
+    Linux at the default tolerances (macOS -280.37, ODE optimum -280.36); at 1e-6 / 1e-8 both give
+    -280.3639, so `check-sde-vs-ode` now evaluates there.
+    Lesson: render on Linux before calling a PR ready; the site is built there.
+  - **Review round 4 (2026-10-02): reader-facing fixes.** A review of what a reader can run and learn,
+    chapter by chapter, found (a) visible code calling `book_tempdir()` and relying on packages attached
+    only by the hidden `_common.R` -- now every chapter loads ferx, dplyr and ggplot2 in a visible
+    `packages` chunk, writes to a directory under `tempdir()` created in visible code, and `_common.R`
+    attaches nothing (CLAUDE.md rule 8, enforced by the audit); (b) `book_settings_table()` calls and
+    render-check `stopifnot()`s with maintainer comments in reader code -- the tables are `echo: false`
+    with captions, the checks moved to `include: false` chunks labelled `check-<label>`; (c) a global
+    `options(scipen = 100)` that reformatted printed output -- now applied only inside the inline hook;
+    (d) prose contradicted by its own output: ch20's simulation-estimation (above), ch24 "with FOCEI the
+    diffusion variance is even smaller" (it was about 4x larger; wrong at `6e2f701` too; the variant is now
+    gone, see the `warfarin_sde` entry above), ch24's SDE standard errors (above), ch14
+    `[initial_conditions]` described as an ODE feature (it is analytical-only and a parse error on an
+    ODE model; ch14 now runs both forms); (e) examples that showed little: ch11 `match` (now compared
+    subject by subject with plain simulation), ch19 ULOQ and ch23 strategy tables (now read in computed
+    prose), ch06 `final_gradient` (now beside a gradient-based fit), ch05 EBE fallbacks (explained),
+    unexplained warnings in ch15 (the inverse-Gaussian `general` note) and ch17, ch20 and ch22 (R warnings
+    from fixed parameters), now explained and checked; (f) a deprecated
+    `geom_errorbarh()` (ch10) and a misplaced ruvsearch paragraph (ch09, now computed).
+
 ### Maintenance: pin bump
 
 1. Diff NAMESPACE, `formals`, settings keys, example registry (rerun
@@ -847,10 +1055,10 @@ Per-chapter loop:
 
 | # | Decision | Outcome |
 |---|---|---|
-| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` -> `70f7fe3` (ferx-core `7abf4235`) -> `a961146` (ferx-core `d66046e`) -> `6e2f701` (ferx-core `d66046e`, unchanged); re-pin to next release tag when cut. Read the ferx-core SHA out of that ferx-r commit's `src/rust/Cargo.lock`; never infer it from `src/rust/Cargo.toml`, which says `branch = "main"` and reads as unpinned. `_variables.yml` carried a stale `ferx_core_sha` (`8372248c`) through the `70f7fe3` bump for exactly that reason |
+| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` -> `70f7fe3` (ferx-core `7abf4235`) -> `a961146` (ferx-core `d66046e`) -> `6e2f701` (ferx-core `d66046e`, unchanged) -> `5c9cc7a`, the ferx-r **v0.4.0 release tag** (ferx-core `2a6076af`, its v0.4.0 tag; read from `src/rust/Cargo.lock`); re-pin to the next release tag when cut. `_variables.yml` carries `ferx_r_tag` while the pin is a tagged release (ch01 offers it as the install ref); drop it if a later pin is not. Read the ferx-core SHA out of that ferx-r commit's `src/rust/Cargo.lock`; never infer it from `src/rust/Cargo.toml`, which says `branch = "main"` and reads as unpinned. `_variables.yml` carried a stale `ferx_core_sha` (`8372248c`) through the `70f7fe3` bump for exactly that reason |
 | D2 | xpose | **Decided:** mention only; `ferx_xpose` eval-reason |
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |
-| D7 | Other NLME software | **Decided:** ferx only; no comparison chapter or text |
+| D7 | Other NLME software | **Decided:** ferx only; no comparison chapter or text. **Revised by owner 2026-10-02:** an analogy to another engine is allowed when it shows what an example or feature corresponds to; no named comparison claiming ferx is better or improved (CLAUDE.md rule 6) |
 | D4 | Mirror ferx-core examples into ferx-r for features that fit from R but have no bundled example: `[covariate_model]` (two_cpt_oral_covmodel), repeated TTE (rtte_exponential, rtte_weibull_reset), fixed-rate infusion (dose_rate, one_cpt_infusion) | **Decided (2026-09-11):** the book gives **mention + link only** for now. Bundling these examples is an **open ferx-r follow-up** (Step 7). Once a ferx-r release bundles them: re-pin (rerun Step 0.2/0.5/0.7), then run them in their home chapters (17 covariates, 22 TTE, 18 dosing) |
 | D6 | Part II thread = two_cpt_oral_base → two_cpt_oral_cov | **Confirmed on timing (0.5):** base fit 0.9 s, cov fit 0.5 s, covsearch 78 s, bootstrap 50 in 13 s. The covsearch selection outcome is reported as the run gives it in ch 09 |

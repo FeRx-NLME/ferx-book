@@ -18,13 +18,22 @@ ferx-core labels LOQ-censored observations **beta**. See [feature maturity](http
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 `warfarin_bloq` is the warfarin dataset with an LLOQ of 2. The `CENS` column marks the 10 observations below it (`CENS = 1`), and their `DV` holds the limit, not the measured value:
 
 ```{r}
 #| label: data
 bloq <- ferx_example("warfarin_bloq")
 w <- ferx_example("warfarin")
-censoring_dir <- book_tempdir("censoring")
+censoring_dir <- file.path(tempdir(), "censoring")
+dir.create(censoring_dir, showWarnings = FALSE)
 bloq_data <- read.csv(bloq$data, na.strings = ".")
 warfarin_data <- read.csv(w$data, na.strings = ".")
 count(filter(bloq_data, EVID == 0), CENS)
@@ -131,8 +140,20 @@ uloq <- warfarin_data |>
 uloq_file <- file.path(censoring_dir, "warfarin_uloq11.csv")
 write.csv(uloq, uloq_file, row.names = FALSE, na = ".")
 count(filter(uloq, EVID == 0), CENS)
-compare_methods(uloq_file)[c(1, 2, 4), ]
+uloq_methods <- compare_methods(uloq_file)[c(1, 2, 4), ]
+uloq_methods
 ```
+
+```{r}
+#| label: check-uloq
+#| include: false
+# The sentence below reads M3 as close to the uncensored fit and the fit at the limit as inflated.
+uloq_by <- function(method, column) uloq_methods[[column]][uloq_methods$method == method]
+stopifnot(abs(uloq_by("m3", "TVCL") / uloq_by("uncensored data", "TVCL") - 1) < 0.01,
+          uloq_by("drop (fit at the limit)", "PROP_ERR") > 2 * uloq_by("uncensored data", "PROP_ERR"))
+```
+
+Above the limit the picture is the same as below it: M3 stays close to the uncensored fit, while fitting the `r sum(uloq$CENS == -1)` censored peaks at the limit inflates the residual error `r round(uloq_by("drop (fit at the limit)", "PROP_ERR") / uloq_by("uncensored data", "PROP_ERR"), 1)`-fold. The exclusion row is left out of this table: `ignore = "CENS == 1"` matches only rows below a lower limit, so here it removes nothing. Rows above the limit are excluded with `ignore = "CENS == -1"`.
 
 ### Checking the censored fraction
 

@@ -18,12 +18,21 @@ The error models are **stable** in ferx-core. ODE models, `[scaling]` and `[deri
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 `emax_pkpd` has 3 subjects with an oral dose, plasma concentrations and effect measurements in one dataset. The `CMT` column tells the endpoints apart: 2 for the concentration, 3 for the effect:
 
 ```{r}
 #| label: data
 pkpd <- ferx_example("emax_pkpd")
-pkpd_dir <- book_tempdir("pkpd")
+pkpd_dir <- file.path(tempdir(), "pkpd")
+dir.create(pkpd_dir, showWarnings = FALSE)
 pkpd_data <- read.csv(pkpd$data, na.strings = ".")
 filter(pkpd_data, ID == 1) |> arrange(CMT, TIME)
 count(filter(pkpd_data, EVID == 0), CMT)
@@ -38,10 +47,11 @@ The model has three ODE states: the depot, the central compartment and an effect
 invisible(ferx_model_get_section(pkpd$model, "odes"))
 invisible(ferx_model_get_section(pkpd$model, "scaling"))
 invisible(ferx_model_get_section(pkpd$model, "error_model"))
-fit_pkpd <- ferx_fit(pkpd$model, pkpd$data, verbose = FALSE)
+invisible(ferx_model_get_section(pkpd$model, "fit_options"))
+fit_pkpd <- ferx_fit(pkpd$model, pkpd$data, gradient = "auto", verbose = FALSE)
 ```
 
-Both endpoints enter one likelihood, so the PK and PD parameters are estimated together.
+Both endpoints enter one likelihood, so the PK and PD parameters are estimated together. The model file asks for `gradient = fd`, and its comment calls finite differences required for this readout. At this build they are not, and the comment is out of date ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625)): ferx computes the analytic gradient for this model (`fit_pkpd$gradient_used` is "`r fit_pkpd$gradient_used`"), and the R warning above reports the override. The fits in this chapter pass `gradient = "auto"`, because the finite-difference fit stops short of the optimum, as the simulation–estimation run below shows.
 
 ## Reading the result
 
@@ -59,15 +69,31 @@ fit_pkpd$sdtab |>
   labs(x = "Time (h)", y = NULL, colour = "ID")
 ```
 
-The predictions follow the data, but three subjects cannot determine eight structural parameters and two residual errors:
+The predictions follow the data, but three subjects do not determine the PD parameters:
 
 ```{r}
 #| label: pkpd-estimates
 fit_pkpd$estimates[, c("estimate", "rse_pct")]
-ferx_get_warnings(fit_pkpd, as_df = TRUE)[, c("severity", "category")]
+pd <- c("TVE0", "TVEMAX", "TVEC50", "TVGAMMA")
+round(fit_pkpd$cor_matrix[pd, pd], 2)
+pkpd_warnings <- ferx_get_warnings(fit_pkpd, as_df = TRUE)
+pkpd_warnings[, c("severity", "category")]
 ```
 
-The PD parameters have relative standard errors in the thousands of percent, and the parameters are almost perfectly correlated. The model structure is fine; the data are too few (see the simulation–estimation variant below).
+```{r}
+#| label: check-pkpd-estimates
+#| include: false
+# The paragraph below reads these numbers and warnings, so a different picture has to fail the render.
+pk <- c("TVCL", "TVV", "TVKA", "TVKE0")
+pd_cor <- fit_pkpd$cor_matrix[pd, pd]
+diag(pd_cor) <- 0
+stopifnot(fit_pkpd$gradient_used == "analytic",
+          all(c("high_correlation", "condition_number") %in% pkpd_warnings$category),
+          max(fit_pkpd$estimates[pk, "rse_pct"]) < 10, fit_pkpd$estimates["TVE0", "rse_pct"] > 100,
+          max(abs(pd_cor)) > 0.95)
+```
+
+The PK parameters are well determined, with relative standard errors of at most `r ceiling(max(fit_pkpd$estimates[pk, "rse_pct"]))`%. The PD parameters are not: the baseline `TVE0` has a relative standard error of `r round(fit_pkpd$estimates["TVE0", "rse_pct"])`%, and the PD parameters are almost perfectly correlated with each other (|r| up to `r round(max(abs(pd_cor)), 2)`). The model structure is fine; the question is what data would determine the PD parameters, which the simulation–estimation runs below answer.
 
 ## Options that matter
 
@@ -84,42 +110,140 @@ Every observed `CMT` needs a readout and an error model. The two forms cannot be
 
 ## Variants
 
-### Simulation and estimation with more subjects
+### Simulation and estimation: can a design support the model?
 
-To see whether the joint model can be estimated with a realistic design, simulate a study from the model's initial values and fit it again. The design has 30 subjects, six concentration samples and six effect samples each. `ferx_simulate()` without `fit` uses the model file's parameters (@sec-simulation):
+To see whether the joint model can be estimated with a realistic design, simulate a study from the model's initial values and fit it again. `simulate_study()` below writes a design, simulates it once with `ferx_simulate()` (without `fit`, so with the model file's parameters, @sec-simulation) and returns the simulated study as a data file. The first design is the bundled one, scaled up: 30 subjects on 100, with six concentration and six effect samples each. `recovery()` puts each estimate beside the value it was simulated with:
 
 ```{r}
 #| label: pkpd-sim-design
-ids <- 1:30
-design <- bind_rows(
-  data.frame(ID = ids, TIME = 0, DV = NA, EVID = 1, AMT = 100, CMT = 1, RATE = 0, MDV = 1),
-  expand.grid(ID = ids, TIME = c(0.5, 1, 2, 4, 8, 12)) |>
-    mutate(DV = NA, EVID = 0, AMT = NA, CMT = 2, RATE = 0, MDV = 0),
-  expand.grid(ID = ids, TIME = c(1, 2, 4, 8, 12, 24)) |>
-    mutate(DV = NA, EVID = 0, AMT = NA, CMT = 3, RATE = 0, MDV = 0)
-) |> arrange(ID, TIME, desc(EVID), CMT)
-design_file <- file.path(pkpd_dir, "pkpd_design.csv")
-write.csv(design, design_file, row.names = FALSE, na = ".")
-simulated <- ferx_simulate(pkpd$model, design_file, n_sim = 1, seed = 42)
+simulate_study <- function(doses, file, seed = 42) {
+  ids <- seq_along(doses)
+  design <- bind_rows(
+    data.frame(ID = ids, TIME = 0, DV = NA, EVID = 1, AMT = doses, CMT = 1, RATE = 0, MDV = 1),
+    expand.grid(ID = ids, TIME = c(0.5, 1, 2, 4, 8, 12)) |>
+      mutate(DV = NA, EVID = 0, AMT = NA, CMT = 2, RATE = 0, MDV = 0),
+    expand.grid(ID = ids, TIME = c(1, 2, 4, 8, 12, 24)) |>
+      mutate(DV = NA, EVID = 0, AMT = NA, CMT = 3, RATE = 0, MDV = 0)
+  ) |> arrange(ID, TIME, desc(EVID), CMT)
+  design_file <- sub("\\.csv$", "_design.csv", file)
+  write.csv(design, design_file, row.names = FALSE, na = ".")
+  # the empty DV cells are the points to simulate, which ferx notes as W_DESIGN_DV
+  simulated <- suppressWarnings(ferx_simulate(pkpd$model, design_file, n_sim = 1, seed = seed))
+  rows <- design$EVID == 0
+  design$DV[rows] <- simulated$DV_SIM[match(paste(design$ID, design$TIME, design$CMT)[rows],
+                                            paste(simulated$ID, simulated$TIME, simulated$CMT))]
+  write.csv(design, file, row.names = FALSE, na = ".")
+  file
+}
+recovery <- function(f) {
+  data.frame(parameter = c(names(f$theta), f$eta_names, f$sigma_names),
+             simulated_with = c(f$theta_init, f$omega_init[c(1, 4)], f$sigma_init),
+             estimate = c(f$theta, diag(f$omega), f$sigma),
+             rse_pct = f$estimates$rse_pct)
+}
+one_dose <- simulate_study(rep(100, 30), file.path(pkpd_dir, "pkpd_100.csv"))
+# suppress the R warning that reports overriding the model file's gradient
+fit_one_dose <- suppressWarnings(ferx_fit(pkpd$model, one_dose, gradient = "auto", verbose = FALSE))
+recovery(fit_one_dose)
 ```
 
-The warning is expected for a design. The simulated values replace the empty `DV` column, matched by subject, time and `CMT`:
+The PK parameters are recovered and the PD parameters are not: `TVEMAX` ends at `r signif(fit_one_dose$theta[["TVEMAX"]], 3)` and `TVEC50` at `r signif(fit_one_dose$theta[["TVEC50"]], 2)`, where the simulation used 40 and 5, and their relative standard errors of `r round(fit_one_dose$estimates["TVEMAX", "rse_pct"])`% and `r round(fit_one_dose$estimates["TVEC50", "rse_pct"])`% do not flag it. This is where the data put the optimum, not a fit that went wrong. `maxiter = 0` evaluates the objective at the starting values without moving, which here are the simulation values themselves:
 
 ```{r}
-#| label: pkpd-sim-fit
-observations <- design$EVID == 0
-design$DV[observations] <- simulated$DV_SIM[match(paste(design$ID, design$TIME, design$CMT)[observations],
-                                                  paste(simulated$ID, simulated$TIME, simulated$CMT))]
-simulated_file <- file.path(pkpd_dir, "pkpd_simulated.csv")
-write.csv(design, simulated_file, row.names = FALSE, na = ".")
-fit_simulated <- ferx_fit(pkpd$model, simulated_file, verbose = FALSE)
-data.frame(parameter = c(names(fit_simulated$theta), fit_simulated$eta_names, fit_simulated$sigma_names),
-           simulated_with = c(fit_simulated$theta_init, fit_simulated$omega_init[c(1, 4)], fit_simulated$sigma_init),
-           estimate = c(fit_simulated$theta, diag(fit_simulated$omega), fit_simulated$sigma),
-           rse_pct = fit_simulated$estimates$rse_pct)
+#| label: pkpd-sim-truth
+# suppress the R warnings that report overriding the model file's gradient and covariance setting
+at_simulation_values <- suppressWarnings(ferx_fit(pkpd$model, one_dose, gradient = "auto", covariance = FALSE,
+                                                  settings = list(maxiter = 0), verbose = FALSE))
+data.frame(fit = fit_one_dose$ofv, simulation_values = at_simulation_values$ofv)
+one_dose_data <- read.csv(one_dose, na.strings = ".")
+max(one_dose_data$DV[one_dose_data$CMT == 2])
 ```
 
-With 30 subjects all parameters are recovered with moderate standard errors. The `simulated_with` column is the model file's initial values, which the simulation used and the fit started from.
+The true parameters score `r round(at_simulation_values$ofv - fit_one_dose$ofv, 1)` OFV points worse than the fit. The cause is the design: with 100 for every subject, the concentration never rises above `r round(max(one_dose_data$DV[one_dose_data$CMT == 2]), 1)`, below the `EC50` of 5, so the data see only the lower part of the Emax curve, and a smaller `EMAX` with a smaller `EC50` traces nearly the same part. More subjects on the same dose do not help. Doses that reach past `EC50` do -- the same number of subjects, ten each on 100, 300 and 1000:
+
+```{r}
+#| label: pkpd-sim-doses
+dose_range <- simulate_study(rep(c(100, 300, 1000), each = 10), file.path(pkpd_dir, "pkpd_dose_range.csv"))
+fit_dose_range <- suppressWarnings(ferx_fit(pkpd$model, dose_range, gradient = "auto", verbose = FALSE))
+recovery(fit_dose_range)
+```
+
+```{r}
+#| label: check-pkpd-sim
+#| include: false
+# The paragraphs around these chunks say the 100 design misses EMAX and EC50 at an optimum the
+# simulation values cannot match, because its concentrations stay below EC50, and that the
+# dose range recovers every typical value with moderate standard errors.
+dose_range_data <- read.csv(dose_range, na.strings = ".")
+pk <- c("TVCL", "TVV", "TVKA", "TVKE0")
+emax_ec50 <- c("TVEMAX", "TVEC50")
+miss <- function(f, p) abs(f$theta[p] / f$theta_init[match(p, names(f$theta))] - 1)
+stopifnot(max(miss(fit_one_dose, pk)) < 0.1,
+          fit_one_dose$theta[["TVEMAX"]] < 20, fit_one_dose$theta[["TVEC50"]] < 2.5,
+          max(fit_one_dose$estimates[emax_ec50, "rse_pct"]) < 50,
+          at_simulation_values$ofv - fit_one_dose$ofv > 5,
+          max(one_dose_data$DV[one_dose_data$CMT == 2]) < 5,
+          max(dose_range_data$DV[dose_range_data$CMT == 2]) > 10,
+          max(miss(fit_dose_range, emax_ec50)) < 0.25,
+          max(fit_dose_range$estimates$rse_pct) < 50)
+```
+
+With concentrations up to `r round(max(dose_range_data$DV[dose_range_data$CMT == 2]))`, `TVEMAX` and `TVEC50` come out at `r signif(fit_dose_range$theta[["TVEMAX"]], 3)` and `r signif(fit_dose_range$theta[["TVEC50"]], 2)`, within `r ceiling(100 * max(abs(fit_dose_range$theta[c("TVEMAX", "TVEC50")] / c(40, 5) - 1)))`% of 40 and 5 instead of several-fold off, and the largest relative standard error of any parameter is `r round(max(fit_dose_range$estimates$rse_pct))`%. One simulated study is one draw: repeat it with other seeds before settling a design. A simulation–estimation run answers the design question before the study is run.
+
+::: {.callout-warning}
+## The model file's finite-difference gradient stops short at this build
+
+The fits above pass `gradient = "auto"`. With the model file's own `gradient = fd`, the fits of both designs converge well above their optimum, and refitting with a gradient-based optimizer, as @sec-estimation-methods suggests when `bobyqa` stops on a slope, does not rescue them:
+
+```{r}
+#| label: pkpd-sim-fd
+gradient_runs <- function(data, fit_auto) {
+  list(`gradient = fd (model file)` = ferx_fit(pkpd$model, data, verbose = FALSE),
+       # suppress the R warning that reports overriding the model file's optimizer
+       `gradient = fd, optimizer = slsqp` = suppressWarnings(
+         ferx_fit(pkpd$model, data, settings = list(optimizer = "slsqp"), verbose = FALSE)),
+       `gradient = "auto"` = fit_auto)
+}
+fd_runs <- list(`100 for all` = gradient_runs(one_dose, fit_one_dose),
+                `100, 300, 1000` = gradient_runs(dose_range, fit_dose_range))
+do.call(rbind, lapply(names(fd_runs), function(design) {
+  do.call(rbind, lapply(names(fd_runs[[design]]), function(run) {
+    f <- fd_runs[[design]][[run]]
+    data.frame(design = design, fit = run, ofv = f$ofv, TVEMAX = f$theta[["TVEMAX"]],
+               TVEC50 = f$theta[["TVEC50"]], max_rse_pct = max(f$estimates$rse_pct))
+  }))
+}))
+```
+
+```{r}
+#| label: check-pkpd-sim-fd
+#| include: false
+# The callout says every fd fit stops well above the analytic optimum, that the objective is the
+# same on both paths (the analytic estimates, written into the model file, score the same OFV on
+# the fd path), and that on the 100 design the fd fits stay close to the simulation values.
+fd_gap <- unlist(lapply(fd_runs, function(runs) sapply(runs[1:2], function(f) f$ofv - runs[[3]]$ofv)))
+at_optimum <- readLines(pkpd$model)
+est <- fit_one_dose$estimates
+for (nm in names(fit_one_dose$theta)) {
+  at_optimum <- sub(sprintf("theta %s\\(([^,]+),", nm), sprintf("theta %s(%.15g,", nm, est[nm, "estimate"]), at_optimum)
+}
+for (nm in fit_one_dose$eta_names) {
+  at_optimum <- sub(sprintf("omega %s\\s*~.*$", nm), sprintf("omega %s ~ %.15g", nm, est[nm, "estimate"]), at_optimum)
+}
+for (nm in fit_one_dose$sigma_names) {
+  at_optimum <- sub(sprintf("sigma %s\\s*~.*$", nm), sprintf("sigma %s ~ %.15g (sd)", nm, est[nm, "estimate"]), at_optimum)
+}
+at_optimum_file <- file.path(pkpd_dir, "emax_pkpd_at_optimum.ferx")
+writeLines(at_optimum, at_optimum_file)
+fd_at_optimum <- suppressWarnings(ferx_fit(at_optimum_file, one_dose, covariance = FALSE,
+                                           settings = list(maxiter = 0), verbose = FALSE))
+fd_emax <- sapply(fd_runs[[1]][1:2], function(f) f$theta[["TVEMAX"]])
+stopifnot(all(fd_gap > 2), abs(fd_at_optimum$ofv - fit_one_dose$ofv) < 0.01,
+          all(abs(fd_emax / 40 - 1) < 0.25))
+```
+
+Every finite-difference fit stops between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above the optimum that the analytic gradient finds. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the fit starts at the simulation values and stops near them, so `TVEMAX` comes out close to 40 and the design looks able to support the model, which it is not. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, pass `gradient = "auto"` until the model file drops its `gradient = fd` ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625)).
+:::
 
 ### Effects computed from a PK fit
 
@@ -133,7 +257,7 @@ fit_derived <- ferx_fit(derived_pkpd$model, derived_pkpd$data, verbose = FALSE)
 filter(fit_derived$sdtab, ID == 1) |> select(TIME, IPRED, EFF, CMAX_INTERVAL, TAM_D1)
 ```
 
-The fixed thetas are used only in `[derived]`, so the fit warns that they do not affect the predictions. That is intended here. With `MEC = 0.5` every concentration in these data is above the MEC, so the time above it is the whole day. A copy with `MEC = 8` shows a threshold within the concentration range, per 24-hour window:
+The fixed thetas are used only in `[derived]`, so the fit warns that they do not affect the predictions, and R warns about the correlation matrix because a fixed parameter has no standard error. Both are intended here. With `MEC = 0.5` every concentration in these data is above the MEC, so the time above it is the whole day. A copy with `MEC = 8` shows a threshold within the concentration range, per 24-hour window:
 
 ```{r}
 #| label: time-above-mec
@@ -158,7 +282,7 @@ fit_timecourse <- ferx_fit(timecourse$model, timecourse$data, verbose = FALSE)
 fit_timecourse$estimates[, c("estimate", "rse_pct")]
 ```
 
-Such a model works with prediction, simulation and the diagnostics like any other. `TAD` and `TAFD` are `NaN` in `sdtab`, since there are no doses. For the same reason `ferx_predict()` passes on the data reader's `W_NO_DOSES` warning, which for a compartment-free model states the design rather than a problem:
+Such a model works with prediction, simulation and the diagnostics like any other. `TAD` and `TAFD` are `NaN` in `sdtab`, since there are no doses. For the same reason `ferx_predict()` passes on the data reader's `W_NO_DOSES` warning, and `W_CMT_DEFAULTED` because the dataset has no `CMT` column. For a compartment-free model with one endpoint, both state the design rather than a problem:
 
 ```{r}
 #| label: fig-timecourse
@@ -176,6 +300,7 @@ A compartment-free model cannot have `[odes]`, `[scaling]` or references to `cen
 ## Pitfalls
 
 - **Joint PK/PD models need data for every parameter.** Check relative standard errors and correlations before interpreting PD parameters; a simulation–estimation run tells whether a design can support the model.
+- **An Emax design has to reach the `EC50`.** With concentrations that stay below it, `EMAX` and `EC50` cannot be told apart, whatever the number of subjects, and their standard errors need not say so. Compare the fit's OFV with the objective at the simulation values: a fit that stops near its starting values looks like a recovery.
 - **Per-CMT error models need an ODE model.** An analytical `pk` model with `CMT=N:` lines is rejected. Use `ode_template` to write the PK part as ODEs.
 - **Every observed `CMT` needs a readout and an error model.** A missing entry stops the fit and names the compartment.
 - **Thresholds that are never crossed give `NaN`** in `[derived]` filters and conditional integrals.
@@ -184,7 +309,7 @@ A compartment-free model cannot have `[odes]`, `[scaling]` or references to `cen
 
 - `general` (warning): parameters declared but not used by the predictions, such as the fixed PD thetas of `warfarin_derived_pkpd` that only `[derived]` reads.
 
-Other warnings above (`inflated_rse`, `high_correlation`, `condition_number`, `covariance_regularized`) are covered in @sec-uncertainty.
+Other warnings above (`inflated_rse`, `high_correlation`, `condition_number`) are covered in @sec-uncertainty.
 
 ## Summary
 

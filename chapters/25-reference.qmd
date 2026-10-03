@@ -15,7 +15,7 @@ Help pages: `?name`. Function reference on the web: [ferx-r reference](https://f
 | `ferx_allometry()` | Allometric scaling | `model = NULL`, `data = NULL`, `config = NULL`, `covariate = NULL`, `reference = NULL`, `parameters = NULL`, `exponents = NULL`, `estimate = FALSE`, `lower = NULL`, `upper = NULL`, `fit = TRUE`, `threads = NULL`, `retries = NULL`, `directory = NULL` | @sec-covariates |
 | `ferx_amd()` | Automatic model development (AMD) | `model = NULL`, `data = NULL`, `search_space = NULL`, `config = NULL`, `strategy = NULL`, `retries_on = NULL`, `skip = NULL`, `rank = NULL`, `cutoff = NULL`, `threads = NULL`, `retries = NULL`, `directory = NULL`, `resume = FALSE`, `progress` | @sec-model-selection |
 | `ferx_amd_plan()` | The AMD pipeline as planned, without fitting anything | `model = NULL`, `data = NULL`, `search_space = NULL`, `config = NULL`, `strategy = NULL`, `retries_on = NULL`, `skip = NULL` | @sec-model-selection |
-| `ferx_apply_selection()` | Preview data-selection filtering | `data`, `ignore = NULL`, `accept = NULL`, `ignore_ids = NULL`, `excluded = FALSE` | @sec-data |
+| `ferx_apply_selection()` | Preview data-selection filtering | `data`, `ignore = NULL`, `accept = NULL`, `ignore_ids = NULL`, `excluded = FALSE`, `model = NULL` | @sec-data |
 | `ferx_bic()` | BIC variants for model selection | `fit`, `type` | @sec-model-selection |
 | `ferx_bootstrap()` | Non-parametric case bootstrap | `model`, `data = NULL`, `samples = 200`, `seed = 1`, `threads = NULL`, `stratify_on = NULL`, `sample_size = NULL`, `update_inits = TRUE`, `run_base_model = TRUE`, `keep_covariance = FALSE`, `dofv = FALSE`, `skip_minimization_terminated = TRUE`, `skip_estimate_near_boundary = TRUE`, `skip_covariance_step_terminated = FALSE`, `skip_with_covstep_warnings = FALSE`, `ci = 95`, `directory = NULL`, `resume = FALSE`, `retry_failed = FALSE`, `progress`, `verbose = FALSE` | @sec-uncertainty |
 | `ferx_bootstrap_summarize()` | Re-summarise a finished bootstrap run | `directory`, `skip_minimization_terminated = TRUE`, `skip_estimate_near_boundary = TRUE`, `skip_covariance_step_terminated = FALSE`, `skip_with_covstep_warnings = FALSE`, `ci = 95` | @sec-uncertainty |
@@ -108,7 +108,7 @@ Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The cha
 | Setting | Values | Default | Meaning | Chapter |
 |---|---|---|---|---|
 | `accept` |  |  | Character vector of filter expressions. A record is kept only when all conditions pass; excluded if any fail. | @sec-data |
-| `adapt_interval` |  | `50` | Iterations between step-size adaptation | @sec-estimation-methods |
+| `adapt_interval` |  | `50` | Iterations between step-size adaptation, under `scale_adaptation = interval`. | @sec-estimation-methods |
 | `agq_eval_only` |  |  |  | @sec-estimation-methods |
 | `analytic_cov_hessian` | `true`, `false` | `true` | Use the **exact analytic R-matrix** for the covariance step when the model is in scope, instead of the finite-difference-of-OFV Hessian. | @sec-uncertainty |
 | `bayes_chains` |  |  | Number of independent chains (default 4); used for split-R-hat. | @sec-estimation-methods |
@@ -166,14 +166,16 @@ Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The cha
 | `max_unconverged_frac` |  | `0.1` | Fraction of subjects (with at least `min_obs_for_convergence_check` observations) allowed to have unconverged EBEs before the outer optimizer rejects the step (returns OFV = ∞). | @sec-estimation-methods |
 | `maxiter` | integer | `500` | Maximum outer loop iterations. `maxiter = 0` is *evaluation only*: the engine runs one inner EBE solve at the initial parameters and reports the objective there with no outer optimisation — useful for scoring a fixed parameter set or computing standard errors at known estimates (with `covariance = true`). | @sec-estimation-methods |
 | `min_obs_for_convergence_check` |  | `2` | Subjects with fewer than this many observations are excluded from the `max_unconverged_frac` check (they still run normally). | @sec-estimation-methods |
-| `mstep_damping` |  | `0.03` | Exploration-phase cap on the stochastic-approximation step for the numerical θ/σ M-step, the θ-side counterpart of the per-iteration SA step cap SAEM already applies to Ω. | @sec-estimation-methods |
+| `mstep_damping` |  | `1.0` (off); `0.03` with `iiv_on_ruv` | Optional exploration-phase cap on the stochastic-approximation step for the numerical θ/σ M-step (the channel that moves a theta with no ETA). | @sec-estimation-methods |
+| `mstep_draws` |  | `1` | Number of E-step draws the **`bobyqa`** M-step objective is averaged over. | @sec-estimation-methods |
+| `mstep_solver` |  | `bobyqa` | Which solver moves the numerical θ/σ M-step — the channel that estimates a theta with no ETA. | @sec-estimation-methods |
 | `mu_referencing` | `true`, `false` | `true` | Re-centre inner-loop ETA estimates on the current population mean (auto-detected from `[individual_parameters]`). | @sec-variability |
 | `multi_start_seed` |  | `42` | RNG seed for the multi-start theta perturbations. Independent of `seed` (SAEM) so that changing the SAEM seed does not silently alter which perturbed starting points are used in FOCE multi-start runs. | @sec-estimation-methods |
 | `n_agq` |  | `1` | Gauss-Hermite nodes **per random effect**. `1` reproduces the Laplace approximation exactly; odd values are conventional (they keep a node at the mode). | @sec-estimation-methods |
 | `n_convergence` |  | `250` | Phase 2 iterations (step size = 1/k) | @sec-estimation-methods |
 | `n_exploration` |  | `150` | Phase 1 iterations (step size = 1) | @sec-estimation-methods |
-| `n_leapfrog` |  | `0` | Leapfrog steps per HMC proposal (0 = use MH; see below). When > 0, subjects for which HMC is unavailable (ODE model, missing analytical PK path, non-finite Ω, unsupported TV-cov path) fall back to MH using `n_mh_steps` proposals. | @sec-estimation-methods |
-| `n_mh_steps` |  | `20` | Block Metropolis-Hastings steps per subject per iteration. Also sizes the componentwise decorrelating kernel that prevents block-Ω collapse (`max(2, n_mh_steps / n_eta)` sweeps; multi-η models only — skipped when `n_eta < 2`). | @sec-estimation-methods |
+| `n_leapfrog` |  | `0` | Leapfrog steps per HMC proposal (0 = use MH). When > 0, subjects for which HMC is unavailable (ODE model, missing analytical PK path, non-finite Ω, unsupported TV-cov path) fall back to MH using `n_mh_steps` proposals. | @sec-estimation-methods |
+| `n_mh_steps` |  | `auto` | Block Metropolis-Hastings steps per subject per iteration, or `auto` — the default — to size it from the dataset as `2.5 × observations per subject per η`, clamped to `[6, 20]`. | @sec-estimation-methods |
 | `n_starts` |  | `1` | Number of independent optimization runs. `1` disables multi-start (no behaviour change). | @sec-estimation-methods |
 | `nn_l2` | float ≥ 0 | `0.0` | L2 (weight-decay) strength. Adds `nn_l2 · Σ wᵢ²` over the network's **weight** matrices only (bias terms are left free). | @sec-experimental |
 | `nn_smooth` | float ≥ 0 | `0.0` | Smoothness (curvature) strength. Penalizes the finite-difference 2nd derivative `C = f(x+h) − 2·f(x) + f(x−h)` of each output along every input's marginal partial-dependence curve, i.e. `nn_smooth · Σ C²`. | @sec-experimental |
@@ -193,6 +195,8 @@ Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The cha
 | `parameter_scaling` | `auto`, `none`, `abs`, `rescale2` | `auto` | Parameter-scaling strategy for the outer optimizer (supersedes `scale_params` when non-`none`). | @sec-variability |
 | `reconverge_gradient_interval` | integer ≥ 0 | `0` | How often to re-solve each subject's inner EBE loop during the population gradient instead of holding the EBEs (η̂) and FOCE Hessian fixed. | @sec-estimation-methods |
 | `report_final_gradient` | `true`, `false` | `true` | Compute a finite-difference gradient at the reported estimates when the optimizer supplied none of its own, and report it as `final_gradient` with `final_gradient_source = "finite_difference"`. | @sec-estimation-methods |
+| `scale_adaptation` |  | `robbins_monro` | How the MH step scales are adapted. `interval` is the historical rule (×1.1 / ×0.9 every `adapt_interval`); `robbins_monro` steps `log δ` every iteration by `c·k^-0.6·(accept − target)`. | @sec-estimation-methods |
+| `scale_deadband` |  | `0.15,0.60` | Acceptance window `lo,hi` in which the `robbins_monro` step is **skipped**, leaving the scale untouched; outside it the ordinary step applies. | @sec-estimation-methods |
 | `scale_params` |  | `false` | Legacy boolean alias for `parameter_scaling = abs`. Divide each packed (log/Cholesky) coordinate by its initial magnitude before passing it to the optimizer. | @sec-variability |
 | `seed` |  | `12345` | RNG seed for reproducibility | @sec-estimation-methods |
 | `sir_df` |  | `5.0` | Degrees of freedom for the Student-t proposal; higher values approach a normal proposal | @sec-uncertainty |
@@ -200,7 +204,7 @@ Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The cha
 | `sir_resamples` |  | `250` | Number of resampled vectors (m) | @sec-uncertainty |
 | `sir_samples` |  | `1000` | Number of proposal samples (M) | @sec-uncertainty |
 | `sir_seed` |  | `12345` | RNG seed for reproducibility | @sec-uncertainty |
-| `stagnation_guard` |  | `true` | Short-circuit the NLopt-based outer optimizers once recent evals show no OFV improvement above 1e-3 over a window of `3*(n+1).max(50)` evals. | @sec-estimation-methods |
+| `stagnation_guard` |  | `true` | Short-circuit the NLopt-based outer optimizers once recent evals show no OFV improvement above 1e-3 over a window of evals — `max(3·(n+1), 50)` in general, shortened to `max(n+1, 10)` for a FOCE/FOCEI gradient-based optimizer (L-BFGS, SLSQP, MMA; not Laplace/AGQ, which have reachable `outer_xtol`/`outer_ftol` stops) once the fit has improved on its first evaluation, unless its steps are growing — each of the last two at least 1.5× the one before. | @sec-estimation-methods |
 | `start_sigma` |  | `0.3` | Log-space perturbation applied to initial theta values for starts 1..n. | @sec-estimation-methods |
 | `steihaug_max_iters` | integer | adaptive | Max CG iterations for the Steihaug subproblem (only used when `optimizer = trust_region`). | @sec-estimation-methods |
 | `vi_avg_last` |  | final 25% | Polyak averaging window, in iterations — the reported estimate is the mean over the final window rather than the last iterate. | @sec-estimation-methods |
@@ -255,7 +259,7 @@ Columns the ferx data format recognises. *Type* and *Meaning* are taken from the
 | `ADDL` |  |  | @sec-data |
 | `AMT` | numeric | Dose amount (for `EVID=1`/`EVID=4`; also the dose-inference signal when `EVID` is absent) | @sec-data |
 | `CENS` | integer | Censoring flag. `1` = below LLOQ and `DV` carries the LLOQ; `-1` = above ULOQ and `DV` carries the ULOQ; `0` = quantified. | @sec-data |
-| `CMT` | integer | Compartment number (1-indexed) | @sec-data |
+| `CMT` | integer | Compartment number (1-indexed). A float-formatted integer (`2.0`, as pandas writes a whole column once any cell in it is blank) reads as that integer. | @sec-data |
 | `DV` | numeric | Dependent variable (observed concentration) | @sec-data |
 | `EVID` | integer | Event ID: 0 = observation, 1 = dose, 2 = other event, 3 = system reset, 4 = reset + dose. | @sec-data |
 | `FREMTYPE` |  |  | @sec-covariates |
@@ -365,10 +369,10 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 | `bloq_method` | Warning | BLOQ / M3 censoring caveat. | @sec-censoring |
 | `boundary_estimate` | Warning | One or more THETA **estimates** are pinned to an optimizer bound. | @sec-diagnostics |
 | `cancelled` | Info | Run cancelled by the user. | @sec-estimation-methods |
-| `condition_number` | Critical | Ill-conditioned covariance / high condition number. | @sec-diagnostics |
+| `condition_number` | Critical | Ill-conditioned covariance / high condition number. The figure is only meaningful next to the estimator that produced it — read `covariance_method` from the `details` payload, or from the fit (Which covariance estimator produced these numbers). | @sec-diagnostics |
 | `convergence` | Critical | Optimizer did not converge, **or** (`W_NONFINITE_OBJECTIVE`) the objective at the final estimates is `NaN`, infinite, or the clamped divergence sentinel. | @sec-first-fit |
 | `covariance_failed` | Critical | Covariance step failed — no standard errors. | @sec-uncertainty |
-| `covariance_regularized` | Warning | Covariance step succeeded but was regularized / degraded. | @sec-uncertainty |
+| `covariance_regularized` | Warning | Covariance step succeeded but an eigenvalue floor was applied, or an off-diagonal stencil was non-finite. | @sec-uncertainty |
 | `covariance_step` | Info | Covariance-step informational note (e.g. evaluation cost). | @sec-uncertainty |
 | `data_quality` | Warning | Dataset issue (missing DV, ADDL/II, non-positive DV, …). | @sec-data |
 | `dw_autocorrelation` | Warning | IWRES autocorrelation (Durbin–Watson out of range). | @sec-diagnostics |
@@ -384,13 +388,14 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 | `high_correlation` | Warning | One or more THETA (fixed-effect) pairs have \|correlation\| ≥ 0.95. | @sec-diagnostics |
 | `importance_sampling` | Warning | ESS = 0 / proposal collapse. | @sec-estimation-methods |
 | `inflated_rse` | Warning | One or more THETA estimates have RSE > ~50%. | @sec-diagnostics |
+| `init_not_representable` |  |  | @sec-estimation-methods |
 | `init_outside_bounds` | Warning | An **initial estimate** packs outside one of ferx's internal rails (the hidden `1e9` THETA cap, the OMEGA `±6` / off-diagonal `±10` guards, the SIGMA `[-8, 5]` guard) and was clamped there before the first objective evaluation. | @sec-estimation-methods |
 | `mu_referencing` | Warning / Info | Missing or partial mu-referencing. | @sec-estimation-methods |
 | `multi_start` | Info | Multi-start note. | @sec-estimation-methods |
 | `ode_solver` | Warning / Info | The ODE solver's own health at the final estimates (#1080). **Warning** when steps clamped at the minimum step size (a stability-limited segment whose un-integrated tail is freeze-padded), when a segment stopped before its requested end, when `ode_stiff_abort_after` cut segments short, or when `ode_method = auto` discarded an escalation and re-solved it explicitly — including when only its **analytic derivatives** overflowed, its values staying finite — and when that re-solve failed too. | @sec-structural-models |
 | `omega_structure` | Warning | Mixed lognormal / additive block in omega. | @sec-variability |
 | `optimizer_config` | Warning / Info | `global_search` config note or failure. | @sec-estimation-methods |
-| `optimizer_health` | Warning | Trust-radius collapse / degeneracy. | @sec-estimation-methods |
+| `optimizer_health` | Warning | Trust-radius collapse / degeneracy, or a fit that stopped mid-descent and was restarted from the best point it reached. | @sec-estimation-methods |
 | `parameter_at_runaway_guard` | Critical / Warning | A free coordinate is pinned to a hidden optimizer guard (implicit THETA cap, OMEGA / SIGMA rail), with a `verdict` the side does not decide. | @sec-estimation-methods |
 | `simulation` | Warning | A simulated subject was handled specially — a degenerate hazard draw (censored, no event) or an over-large recurrent-event stream (skipped/truncated). | @sec-time-to-event |
 | `sir` | Warning | SIR failed or was requested without a covariance. | @sec-uncertainty |
@@ -400,7 +405,7 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 
 ## Check report codes
 
-Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused `ferx_fit()` raises a condition of class `ferx_engine_error` that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 49 codes below (31 errors, 18 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
+Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused call raises a condition of class `ferx_engine_error` -- from `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and the other entry points alike -- that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 59 codes below (31 errors, 28 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
 
 | Code | Severity | Meaning |
 |---|---|---|
@@ -437,18 +442,28 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_UNKNOWN_BLOCK` | error | A `[block]` header is not a recognised block name. The message lists every offending header with its line, the valid set **this build accepts**, and a did-you-mean when there is a near match; `suggestion` carries the near match on its own. |
 | `W_ABSORPTION_TWIN_DECLINED` | warning | An analytic transit / inverse-Gaussian model's ODE twin could not be built, so the model stays closed-form with no ODE fallback. |
 | `W_ADDL_MISSING_II` | warning | ADDL > 0 on a dose row but II is zero or missing; additional doses were not expanded. |
+| `W_ALL_DOSES_ZERO` | warning | An `AMT` column is present and at least one dose event was parsed, but every parsed amount is exactly zero. |
+| `W_AMT_NOT_DOSED` | warning | Record(s) carry `AMT != 0` but were **not** read as dose events, because `EVID` is neither 1 nor 4; their `AMT` was ignored. |
+| `W_AUTO_OPTIMIZER_FOLLOWS_GRADIENT` | warning | `gradient = fd` set while `optimizer` is left at `auto`, on a model whose analytic outer gradient *is* in scope. |
+| `W_CENS_UNEXPECTED` | warning | An observation row's `CENS` cell is a whole number other than `-1` (above ULOQ), `0` (quantified) or `1` (below LLOQ), such as `7` or `-2`. |
+| `W_CMT_DEFAULTED` | warning | Dose and observation rows were assigned compartment 1 because the dataset did not say which one — no `CMT` column, or a cell that is missing (`.`/blank/`NA`) or not a compartment index. |
+| `W_COMPARTMENT_FREE_DOSES` | warning | The dataset carries dose records but the `[structural_model]` is compartment-free, so no dose is applied and `AMT` / `RATE` / `SS` / `CMT` on those rows have no effect on the prediction. |
 | `W_DERIVED_COVARIATE_SHADOW` | warning | A `[derived]` name shadows a covariate (allowed but may be confusing). |
 | `W_DERIVED_STEP_IGNORED` | warning | `step=` given for a DV-based integral (ignored; DV integrals always use observation times). |
 | `W_DESIGN_DV` | warning | Simulation reader only: one or more `EVID=0` rows had a missing `DV` and were kept as design points to simulate at, so the dataset contributes more rows than a fit of the same file would. |
 | `W_ETA_NOT_DECLARED` | warning | As `E_ETA_NOT_DECLARED`, but reported without `--data`, where ferx cannot yet know whether the dataset supplies the column. |
 | `W_EXPERIMENTAL_NN` | warning | The model uses neural-network components (`[covariate_nn]`), an experimental feature. |
 | `W_EXPERIMENTAL_SDE` | warning | The model uses stochastic differential equations (`[diffusion]`), an experimental feature. |
+| `W_FILTER_COLUMN_ABSENT` | warning | A `[data_selection]` condition names a column the dataset does not have. The comparison never matches, so the condition does not select what was meant — and what that costs depends on the key it was written under: an `ignore` excludes nothing, an `accept` excludes **every** row. |
 | `W_GN_NO_RANDOM_EFFECTS` | warning | `method = gn` as the last estimating stage on a model with no random effects (`n_eta = 0`). |
+| `W_INIT_NOT_REPRESENTABLE` | warning | A declared value the **packer itself** altered, before any box existed (#1307): the `1e-10` log floor on a θ / Ω-diagonal / Σ / `[mixture]` override, or the Fisher-z `±3` rail on a **free** `block_sigma` correlation. |
 | `W_INIT_OUTSIDE_BOUNDS` | warning | An initial estimate strictly outside one of ferx's **internal** rails rather than a declared bound: the hidden `1e9` θ cap, the Ω `±6` (variance ≤ 1.6e5) / off-diagonal `±10` guards, or the Σ `[-8, 5]` guard. |
 | `W_IOV_OCC_MISSING` | warning | Some rows in the IOV occasion column had missing or unparseable values; those rows were assigned occasion=0. |
 | `W_MISSING_DV` | warning | One or more `EVID=0` rows had a missing `DV` (`.`/`NA`/blank) but were not marked `MDV=1`; they were skipped rather than scored as `DV=0`. |
 | `W_NEGATIVE_LAGTIME` | warning | Lag time is negative at the initial typical-value point. |
+| `W_NO_DOSES` | warning | Zero dose events parsed across every subject, **although scored observations are present**. |
 | `W_OUTPUT_DUPLICATE` | warning | A name in `[output]` is already written to sdtab automatically (e.g. `TAFD`, `TAD`, an eta name). |
+| `W_PER_CMT_UNMATCHED` | warning | The other direction of the two above: a compartment the model **declares** an entry for, that no observation is recorded on. |
 | `W_SDE_RESET` | warning | EVID=3/4 resets under an SDE `[diffusion]` model are not honoured. |
 | `W_STEADY_STATE_ABSOLUTE_TIME` | warning | An `SS=1` dose (`II > 0`) on a model whose `[odes]` right-hand side reads an **absolute** clock — `TAFD`, `T`/`t`, or the bare `TIME` built-in. |
 | `W_STEADY_STATE_II` | warning | SS=1 doses with missing / non-positive `II` (treated as non-SS). |

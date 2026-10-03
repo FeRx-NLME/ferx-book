@@ -22,6 +22,14 @@ This is *simulation* of a dosing policy under a population model. It does not es
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 The bundled `adaptive_tdm` example titrates a vancomycin-style IV infusion every 12 hours on the measured trough concentration:
 
 ```{r}
@@ -69,18 +77,18 @@ Each of the `r length(unique(tdm_data$ID))` subjects in the dataset is simulated
 
 The four data frames describe the same runs at different levels of detail. Follow one virtual patient (subject 1 in replicate 1) through them.
 
-`decisions` has one row per decision time: the signal the controller read and what it did.
+`decisions` has one row per decision time: the signal the controller read and what it did. The signals are rounded here for display; with assay error the "zero" trough at time 0 is a tiny number, which would otherwise push the column into scientific notation.
 
 ```{r}
 #| label: one-patient-decisions
-res$decisions |> filter(SIM == 1, ID == "1")
+res$decisions |> filter(SIM == 1, ID == "1") |> mutate(SIGNAL = round(SIGNAL, 2))
 ```
 
 `doses` is the dose ledger. It records the amount given, the signal and the rule that fired. When no rule matches, the running dose is given again and `RULE` shows the route (here `infuse`).
 
 ```{r}
 #| label: one-patient-doses
-res$doses |> filter(SIM == 1, ID == "1") |> select(TIME, AMT, RATE, SIGNAL, RULE)
+res$doses |> filter(SIM == 1, ID == "1") |> select(TIME, AMT, RATE, SIGNAL, RULE) |> mutate(SIGNAL = round(SIGNAL, 2))
 ```
 
 The first dose is already `r res$doses$AMT[res$doses$SIM == 1 & res$doses$ID == "1"][1]` mg rather than the `start_dose` of 1000 mg. At the first decision (time 0) no drug has been given, so the trough is zero and the rule `signal < 10 : increase 25%` fires immediately.
@@ -96,7 +104,7 @@ res$trajectories |> filter(SIM == 1, ID == "1")
 
 ```{r}
 #| label: metrics
-head(res$metrics)
+head(res$metrics) |> mutate(across(starts_with("SIGNAL"), \(x) round(x, 2)))
 ```
 
 `PCT_TIME_IN_WINDOW` is the *fraction* (between 0 and 1) of that patient's decisions at which the signal was inside `target_window`. `CUM_DOSE` and `N_DOSES` count the controller's doses.
@@ -159,7 +167,8 @@ The main use of adaptive simulation is comparing policies. Here is a more aggres
 
 ```{r}
 #| label: aggressive-model
-strategy_dir <- book_tempdir("adaptive-strategies")
+strategy_dir <- file.path(tempdir(), "adaptive-strategies")
+dir.create(strategy_dir, showWarnings = FALSE)
 aggressive <- file.path(strategy_dir, "adaptive_tdm_aggressive.ferx")
 invisible(file.copy(ex$model, aggressive, overwrite = TRUE))
 
@@ -176,7 +185,7 @@ Simulate both strategies with the same seed and compare the per-patient metrics:
 #| tbl-cap: "Two titration strategies, 1000 virtual patient runs each."
 res_aggressive <- ferx_simulate_adaptive(aggressive, ex$data, n_sim = n_sim, seed = 1)
 
-bind_rows(
+strategies <- bind_rows(
   `25% steps` = res$metrics,
   `50% steps` = res_aggressive$metrics,
   .id = "strategy"
@@ -187,10 +196,25 @@ bind_rows(
     `mean cumulative dose (mg)` = mean(CUM_DOSE),
     `mean increases` = mean(N_INCREASES),
     `mean decreases` = mean(N_DECREASES)
-  ) |>
+  )
+strategies |>
   gt::gt() |>
   gt::fmt_number(columns = -strategy, decimals = 2)
 ```
+
+```{r}
+#| label: check-strategies
+#| include: false
+# The paragraph below reads the 50% steps as slightly better in the window with fewer dose changes.
+by_strategy <- function(column, which) strategies[[column]][strategies$strategy == which]
+changes <- function(which) by_strategy("mean increases", which) + by_strategy("mean decreases", which)
+stopifnot(by_strategy("mean fraction in window", "50% steps") > by_strategy("mean fraction in window", "25% steps"),
+          changes("50% steps") < changes("25% steps"),
+          abs(by_strategy("mean cumulative dose (mg)", "50% steps") /
+                by_strategy("mean cumulative dose (mg)", "25% steps") - 1) < 0.05)
+```
+
+The larger steps put slightly more decisions in the target window (`r round(by_strategy("mean fraction in window", "50% steps"), 2)` against `r round(by_strategy("mean fraction in window", "25% steps"), 2)`) with fewer dose changes per patient (`r round(changes("50% steps"), 2)` against `r round(changes("25% steps"), 2)`), for about the same cumulative dose. On this population the two policies perform almost alike. A policy is judged by such a comparison, run with the same seed, rather than by either column on its own.
 
 ### A loading dose followed by titration
 

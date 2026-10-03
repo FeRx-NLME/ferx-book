@@ -21,6 +21,14 @@ The analysis is done: the final covariate model is fitted, evaluated and its unc
 ## The data
 
 ```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
 #| label: fits
 cov <- ferx_example("two_cpt_oral_cov")
 base <- ferx_example("two_cpt_oral_base")
@@ -119,7 +127,8 @@ The same blocks can be added to the final model. `ferx_model_set_section()` only
 
 ```{r}
 #| label: final-exposure
-report_dir <- book_tempdir("report")
+report_dir <- file.path(tempdir(), "report")
+dir.create(report_dir, showWarnings = FALSE)
 exposure_model <- file.path(report_dir, "final_with_exposure.ferx")
 writeLines(c(readLines(cov$model), "",
              "[derived]",

@@ -20,12 +20,23 @@ book_stage_banner("ESTIMATE")
 
 ## The data
 
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 The base model of the workflow thread, plus the smaller warfarin example for the method comparison:
 
 ```{r}
 #| label: examples
 base <- ferx_example("two_cpt_oral_base")
 warf <- ferx_example("warfarin")
+# Model copies written in this chapter go to a scratch directory, never into the installed package.
+estimation_dir <- file.path(tempdir(), "estimation")
+dir.create(estimation_dir, showWarnings = FALSE)
 ```
 
 ## Estimation methods
@@ -71,7 +82,7 @@ Pass `method` to override the model file. A character vector runs a **chain**: e
 #| label: chain
 fit_chain <- ferx_fit(base$model, base$data, method = c("saem", "focei"), verbose = FALSE)
 fit_chain$method_chain
-c(converged = fit_chain$converged, ofv = fit_chain$ofv)
+data.frame(converged = fit_chain$converged, ofv = fit_chain$ofv)
 ```
 
 ## Reading the result
@@ -118,15 +129,28 @@ cat(head(strsplit(iters, "\n")[[1]], 10), sep = "\n")
 
 ### The gradient at the reported estimates
 
-The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes a central finite-difference gradient after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported:
+The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes a central finite-difference gradient after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported. Beside a gradient-based fit of the same model:
 
 ```{r}
 #| label: final-gradient
 fit_bobyqa <- ferx_fit(warf$model, warf$data, settings = list(optimizer = "bobyqa"), verbose = FALSE)
-data.frame(optimizer = fit_bobyqa$optimizer_label, converged = fit_bobyqa$converged,
-           n_gradient = length(fit_bobyqa$final_gradient))
+fit_lbfgs <- ferx_fit(warf$model, warf$data, settings = list(optimizer = "nlopt_lbfgs"), verbose = FALSE)
+data.frame(optimizer = c(fit_bobyqa$optimizer_label, fit_lbfgs$optimizer_label),
+           converged = c(fit_bobyqa$converged, fit_lbfgs$converged),
+           ofv = c(fit_bobyqa$ofv, fit_lbfgs$ofv),
+           largest_gradient = c(max(abs(fit_bobyqa$final_gradient)), max(abs(fit_lbfgs$final_gradient))))
 round(fit_bobyqa$final_gradient, 4)
 ```
+
+```{r}
+#| label: check-final-gradient
+#| include: false
+# The sentence below says bobyqa stopped on a slope that the gradient-based fit got past.
+stopifnot(fit_bobyqa$converged, fit_lbfgs$converged, fit_bobyqa$ofv > fit_lbfgs$ofv,
+          max(abs(fit_bobyqa$final_gradient)) > 100 * max(abs(fit_lbfgs$final_gradient)))
+```
+
+Both fits report convergence, but `bobyqa` stopped where the objective still slopes: its largest gradient component is `r round(max(abs(fit_bobyqa$final_gradient)), 2)`, against `r signif(max(abs(fit_lbfgs$final_gradient)), 1)` for `nlopt_lbfgs`, which reached an OFV `r signif(fit_bobyqa$ofv - fit_lbfgs$ofv, 2)` lower. The gap is small on this model; a gradient well away from zero beside `converged = TRUE` is the sign to refit with a gradient-based optimizer and compare.
 
 That costs one gradient's worth of extra objective evaluations -- two per free parameter -- after the fit, and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
 
@@ -168,6 +192,42 @@ data.frame(
 )
 ```
 
+Switching the gradient moved a second factor as well. With `optimizer` left at `auto`, ferx chooses the outer optimizer to suit the gradient, so the two fits did not use the same one, and the model-file fit says so in a `general` warning:
+
+```{r}
+#| label: gradient-moves-optimizer
+c(model_file = fit$optimizer_label, gradient_auto = fit_auto$optimizer_label)
+optimizer_note <- grep("also changed the outer optimizer", fit$warnings, value = TRUE, fixed = TRUE)
+cat(strwrap(optimizer_note, 90), sep = "\n")
+```
+
+```{r}
+#| label: check-gradient-moves-optimizer
+#| include: false
+# The paragraphs around this chunk explain this note, so its absence has to fail the render.
+stopifnot(length(optimizer_note) == 1)
+```
+
+To measure the gradient alone, pin `optimizer` in both fits; `settings = list(optimizer = "bobyqa")` on the model-file fit removes the note. A fit on the analytic gradient can carry a different `general` note: some subjects could not be given the exact analytic outer gradient and used an approximation that holds their random effects fixed. The covariate model of @sec-model-selection shows it:
+
+```{r}
+#| label: outer-gradient-note
+cov <- ferx_example("two_cpt_oral_cov")
+fit_cov <- ferx_fit(cov$model, cov$data, verbose = FALSE)
+gradient_note <- grep("could not be given the exact analytic outer gradient", fit_cov$warnings,
+                      value = TRUE, fixed = TRUE)
+cat(strwrap(gradient_note, 90), sep = "\n")
+```
+
+```{r}
+#| label: check-outer-gradient-note
+#| include: false
+# The paragraph above says the covariate model carries this note.
+stopifnot(length(gradient_note) == 1)
+```
+
+The note reports the route the gradient took, not a defect in the result: it names how many subjects took the approximation, and if a fit stalls, `reconverge_gradient_interval` (below) re-solves the random effects every N-th evaluation.
+
 ### Helper functions
 
 | Function | Arguments |
@@ -184,26 +244,26 @@ data.frame(
 
 Everything else is set through `settings = list(key = value)`, or with the same key in the model's `[fit_options]`. The tables below are generated from the ferx-core [fit options](https://ferx-nlme.org/ferx-core/model-file/fit-options.html) documentation and `?ferx_fit` for the pinned build.
 
-**Run control**
-
 ```{r}
 #| label: tbl-settings-run
+#| echo: false
+#| tbl-cap: "Run control settings."
 book_settings_table(c("maxiter", "optimizer_trace", "checkpoint", "checkpoint_interval_secs"))
 ```
 
-**Outer optimizer**
-
 ```{r}
 #| label: tbl-settings-outer
+#| echo: false
+#| tbl-cap: "Outer optimizer settings."
 book_settings_table(c("optimizer", "outer_xtol", "outer_ftol", "stagnation_guard",
                       "reconverge_gradient_interval", "steihaug_max_iters",
                       "report_final_gradient", "global_search", "global_maxeval"))
 ```
 
-**Inner loop (individual random effects)**
-
 ```{r}
 #| label: tbl-settings-inner
+#| echo: false
+#| tbl-cap: "Inner loop settings (individual random effects)."
 book_settings_table(c("inner_optimizer", "inner_maxiter", "inner_tol", "inner_restarts",
                       "ebe_warm_start", "max_unconverged_frac", "min_obs_for_convergence_check"))
 ```
@@ -212,17 +272,14 @@ book_settings_table(c("inner_optimizer", "inner_maxiter", "inner_tol", "inner_re
 
 Both loops can end up reporting a number that describes their starting point rather than the model, and each has its own warning.
 
-`stalled_at_init` says the outer loop never left its initial estimates: no free theta, omega or sigma moved. The OFV is then the objective *of the initial values*, and `converged` does not contradict it -- a fit that never moved has a flat trace to plateau on. The honest way to see it is the case where it is expected: refit a model whose `[parameters]` block has been rewritten with the estimates of a converged run.
+`stalled_at_init` says the outer loop never left its initial estimates: no free theta, omega or sigma moved. The OFV is then the objective *of the initial values*, and `converged` need not contradict it -- a fit that never moved has a flat trace to plateau on. The honest way to see it is the case where it is expected: refit a model whose `[parameters]` block has been rewritten with the estimates of a converged run.
 
 ```{r}
 #| label: stalled-at-init
 fit_warf <- ferx_fit(warf$model, warf$data, verbose = FALSE)
-restart_dir <- book_tempdir("estimation-restart")
 
-# Rewrite the [parameters] block with a fit's own estimates. Each stopifnot() is
-# there so a renamed or reformatted declaration stops the render: without it a
-# missed match writes the file back unchanged, and the fit below would have
-# nothing to stall on while the text still claimed it did.
+# Rewrite the [parameters] block with a fit's own estimates. stopifnot() stops when a
+# declaration is not found, rather than writing the file back unchanged.
 rewrite_inits <- function(fit, path) {
   est <- fit$estimates
   lines <- readLines(warf$model)
@@ -246,25 +303,33 @@ rewrite_inits <- function(fit, path) {
   lines
 }
 
-restart <- file.path(restart_dir, "warfarin_restart.ferx")
+restart <- file.path(estimation_dir, "warfarin_restart.ferx")
 grep("theta |omega |sigma ", rewrite_inits(fit_warf, restart), value = TRUE)
 fit_restart <- ferx_fit(restart, warf$data, settings = list(optimizer = "bobyqa"), verbose = FALSE)
-data.frame(ofv = fit_restart$ofv, converged = fit_restart$converged,
-           stalled_at_init = fit_restart$stalled_at_init)
+fit_restart_slsqp <- ferx_fit(restart, warf$data, settings = list(optimizer = "slsqp"), verbose = FALSE)
+data.frame(optimizer = c("bobyqa", "slsqp"), ofv = c(fit_restart$ofv, fit_restart_slsqp$ofv),
+           converged = c(fit_restart$converged, fit_restart_slsqp$converged),
+           stalled_at_init = c(fit_restart$stalled_at_init, fit_restart_slsqp$stalled_at_init))
 restart_warnings <- ferx_get_warnings(fit_restart, as_df = TRUE)
 restart_warnings[, c("severity", "category")]
-# The section is about this warning, so its absence has to fail the render
-# rather than quietly leave a shorter table under unchanged prose.
-stopifnot("stalled_at_init" %in% restart_warnings$category)
 ```
 
-Here the start really was the optimum, so the warning is expected and harmless, and it arrives with `converged = TRUE` -- which is the point. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
+```{r}
+#| label: check-stalled-at-init
+#| include: false
+# The section is about this warning, so its absence on either fit has to fail the
+# render rather than quietly leave a different table under unchanged prose.
+stopifnot("stalled_at_init" %in% restart_warnings$category,
+          "stalled_at_init" %in% ferx_get_warnings(fit_restart_slsqp, as_df = TRUE)$category)
+```
+
+Here the start really was the optimum, so `stalled_at_init` is expected and harmless. What `converged` says beside it can depend on the optimizer: here it is `r fit_restart_slsqp$converged` under `slsqp` and `r fit_restart$converged` under `bobyqa`. A stalled fit reported as converged is the case the warning exists for, since nothing else would flag it. Either way, read `stalled_at_init` first. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
 
 The seed has to come from a run that actually reached the optimum. The same rewrite applied to the `bobyqa` fit of the previous section does not stall, because that fit stopped short of the optimum (@tbl-optimizers) and the optimizer still has somewhere to go:
 
 ```{r}
 #| label: stalled-at-init-seed
-from_bobyqa <- file.path(restart_dir, "warfarin_restart_bobyqa.ferx")
+from_bobyqa <- file.path(estimation_dir, "warfarin_restart_bobyqa.ferx")
 invisible(rewrite_inits(fit_bobyqa, from_bobyqa))
 fit_from_bobyqa <- ferx_fit(from_bobyqa, warf$data, settings = list(optimizer = "bobyqa"),
                             verbose = FALSE)
@@ -273,27 +338,47 @@ data.frame(seed = c("converged fit", "bobyqa fit"),
            stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
 ```
 
-`ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. Squeezing that budget produces it on warfarin:
+`ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare.
+
+"Materially" is a small margin relative to the OFV, so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, which stops at a saddle point, raises it on some machines and not on others.
+
+::: {.callout-warning}
+## A starved inner loop is not reported as such at this build
+
+When too many subjects' inner loops fail to converge -- a larger fraction of them than `max_unconverged_frac`, `r book_setting_default("max_unconverged_frac")` by default -- ferx rejects the outer trial and returns a penalty instead of an objective, which pushes the optimizer towards the middle of the parameter box. If *every* trial is rejected, a gradient-based optimizer converges on that penalty, and the fit reports `converged = TRUE` at the midpoint of the declared bounds, with no `convergence` or `ebe_start_dependent` warning. Cutting `inner_maxiter` far below its default does that on warfarin:
 
 ```{r}
-#| label: ebe-start-dependent
-fit_tight_inner <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 10),
-                            verbose = FALSE)
-data.frame(ofv = fit_tight_inner$ofv, converged = fit_tight_inner$converged)
-tight_warnings <- ferx_get_warnings(fit_tight_inner, as_df = TRUE)
-tight_warnings[, c("severity", "category")]
-stopifnot("ebe_start_dependent" %in% tight_warnings$category)
-# head(), not [1:4]: a shorter message would pad with NA and print it as output.
-cat(head(strwrap(tight_warnings$message[tight_warnings$category == "ebe_start_dependent"], 90), 4),
-    sep = "\n")
+#| label: starved-inner-loop
+fit_starved <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 5), verbose = FALSE)
+starved_warnings <- ferx_get_warnings(fit_starved, as_df = TRUE)
+# Geometric midpoints of the declared theta bounds, read from the model file.
+bounds <- regmatches(readLines(warf$model),
+                     regexec("theta (\\w+)\\([^,]+,\\s*([^,]+),\\s*([^)]+)\\)", readLines(warf$model)))
+bounds <- do.call(rbind, Filter(length, bounds))
+midpoints <- setNames(sqrt(as.numeric(bounds[, 3]) * as.numeric(bounds[, 4])), bounds[, 2])
+rbind(default_budget = fit_warf$theta, inner_maxiter_5 = fit_starved$theta,
+      bound_midpoint = midpoints[names(fit_warf$theta)])
+data.frame(converged = fit_starved$converged, ofv = fit_starved$ofv, default_ofv = fit_warf$ofv)
+starved_warnings[, c("severity", "category")]
 ```
 
-Two things are wrong at once here, and they have separate warnings: starving the inner loop also stops the outer one from converging, hence the critical `convergence` warning beside it. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the estimates are usable. What the warning limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare.
+```{r}
+#| label: check-starved-inner-loop
+#| include: false
+# The callout describes this behaviour; once the engine reports it, the render has to stop.
+stopifnot(fit_starved$converged,
+          max(abs(fit_starved$theta / midpoints[names(fit_starved$theta)] - 1)) < 1e-4,
+          !any(c("convergence", "ebe_start_dependent") %in% starved_warnings$category))
+```
+
+The other warnings -- the critical `condition_number` among them -- say the result is unusable, but not why. Estimates sitting exactly on the midpoints of their bounds are the sign. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it. A derivative-free `optimizer` such as `bobyqa` stalls at the initial estimates instead, which `stalled_at_init` does report ([ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617)).
+:::
 
 Choosing the outer `optimizer` on warfarin:
 
 ```{r}
 #| label: tbl-optimizers
+#| tbl-cap: "The outer optimizers on warfarin."
 optimizers <- c("bobyqa", "slsqp", "nlopt_lbfgs", "mma", "trust_region")
 do.call(rbind, lapply(optimizers, function(o) {
   f <- ferx_fit(warf$model, warf$data, settings = list(optimizer = o), verbose = FALSE)
@@ -308,7 +393,7 @@ The optimizers agree to within a small tolerance on this model. A clearly higher
 #| label: global-search
 fit_global <- ferx_fit(warf$model, warf$data,
                        settings = list(global_search = TRUE, global_maxeval = 500), verbose = FALSE)
-c(converged = fit_global$converged, ofv = fit_global$ofv)
+data.frame(converged = fit_global$converged, ofv = fit_global$ofv)
 ```
 
 ### Multi-start
@@ -317,6 +402,8 @@ c(converged = fit_global$converged, ofv = fit_global$ofv)
 
 ```{r}
 #| label: tbl-settings-multistart
+#| echo: false
+#| tbl-cap: "Multi-start settings."
 book_settings_table(c("n_starts", "start_sigma", "multi_start_seed"))
 ```
 
@@ -337,7 +424,16 @@ data.frame(fit = c("single start", "8 starts"), ofv = c(fit_single$ofv, fit_mult
 ferx_get_warnings(fit_multi, as_df = TRUE)[, c("severity", "category", "message")]
 ```
 
-On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary -- the alternative is not knowing whether the one start you ran was the good one. The `multi_start` note reports which start won.
+```{r}
+#| label: check-multistart
+#| include: false
+# The paragraph below says the single start already reaches the 8-start OFV, to every digit the
+# table prints; whether a multi_start note names another start is read from the fit (a margin
+# that small can go either way).
+stopifnot(abs(fit_single$ofv - fit_multi$ofv) < 5e-5)
+```
+
+On this build the single start already reaches the same OFV, so here the extra starts only confirm it, at several times the wall time. That is the outcome you hope for rather than evidence that multi-start is unnecessary -- the alternative is not knowing whether the one start you ran was the good one. When a start other than the first wins, an `info` note in the `multi_start` category says which. `r if ("multi_start" %in% ferx_get_warnings(fit_multi, as_df = TRUE)$category) "Here one did, but only by less than the printed precision of the OFV, so the single start has the same value to every digit shown; which start comes out lowest by such a margin can differ from one machine to the next." else "Here the first start won, so the warnings above have no such note."`
 
 The two remedies for a stuck fit overlap, and ferx says how it resolves that rather than leaving you to guess. The global pre-search ignores its starting point by design, so running it on every perturbed start would overwrite the perturbation; instead it runs on start 0 only, and the remaining starts are ordinary perturbed local fits:
 
@@ -357,8 +453,11 @@ The bundled `warfarin_saem` model sets its SAEM options in the model file. With 
 
 ```{r}
 #| label: tbl-settings-saem
+#| echo: false
+#| tbl-cap: "SAEM settings."
 book_settings_table(c("n_exploration", "n_convergence", "n_mh_steps", "n_leapfrog",
-                      "adapt_interval", "omega_burnin", "mstep_damping", "seed",
+                      "scale_adaptation", "scale_deadband", "adapt_interval", "omega_burnin",
+                      "mstep_damping", "mstep_solver", "mstep_draws", "seed",
                       "conddist", "conddist_nsamp", "conddist_burnin", "conddist_keep_samples"))
 ```
 
@@ -373,10 +472,121 @@ cond
 
 `print()` on a `ferx_conddist` object shows the distribution-based shrinkage and the per-subject conditional mean, SD and mode. `fit$saem_n_subjects_hmc` reports how many subjects used HMC proposals (`n_leapfrog > 0`). It is `r if (is.null(fit_saem$saem_n_subjects_hmc) || is.na(fit_saem$saem_n_subjects_hmc)) "not set" else fit_saem$saem_n_subjects_hmc` here, because this model uses Metropolis-Hastings proposals.
 
+How those proposals are tuned is set by three defaults. `scale_adaptation = "robbins_monro"` adjusts each subject's step scale every iteration towards the target acceptance rate, but leaves it alone while the acceptance rate is inside `scale_deadband`. `n_mh_steps = "auto"` sizes the number of proposals from the data. `mstep_damping` is off except in models with `iiv_on_ruv`. `interval` is the older rule, which rescales only every `adapt_interval` iterations. Passing it with `n_mh_steps = 20` and `mstep_damping = 0.03` gives the previous defaults back:
+
+```{r}
+#| label: saem-adaptation
+saem_variants <- list(
+  defaults = NULL,
+  previous_defaults = list(scale_adaptation = "interval", n_mh_steps = 20, mstep_damping = 0.03),
+  no_deadband = list(scale_deadband = "none")
+)
+# suppress the R warning that reports overriding the model file's n_mh_steps
+saem_runs <- lapply(saem_variants, function(s) suppressWarnings(
+  ferx_fit(ws$model, ws$data, settings = s, verbose = FALSE)))
+t(sapply(saem_runs, function(f) c(ofv = f$ofv, f$theta)))
+```
+
+The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previous_defaults` overrides that with 20. On this well-informed model every variant lands within `r signif(max(sapply(saem_runs, function(f) max(abs(f$theta / saem_runs$defaults$theta - 1)))) * 100, 1)`% of the default estimates. The choice matters when the sampler is far from its target acceptance rate, which the ferx-core [SAEM](https://ferx-nlme.org/ferx-core/estimation/saem.html) page measures on harder models.
+
+#### Thetas that no random effect reaches
+
+SAEM moves most thetas through their random effects: a typical value such as `TVCL` follows the mean of its eta, and a covariate exponent is updated together with the typical value it scales. A theta that no such update reaches is left to a numerical M-step instead, which ferx-core describes as noisier and able to settle away from the optimum ([thetas the closed-form update cannot reach](https://ferx-nlme.org/ferx-core/estimation/saem.html#saem-mstep-no-closed-form)). The covariate model of @sec-model-selection runs into this: `THETA_WT` scales both `CL` and `V1` and can join only one of the two updates. It joins `CL`'s; `V1`'s is not used, which leaves `TVV1` to the numerical step, and the fit's note names the thetas involved. Two settings act on that step: `mstep_solver = "score_sa"` replaces its derivative-free solver, and `mstep_draws` averages that solver's objective over several E-step draws instead of one. A SAEM fit's own OFV is a FOCE approximation, so the fits are compared on the importance-sampled −2 log-likelihood at their final estimates (*Importance sampling*, below):
+
+```{r}
+#| label: saem-mstep
+# Fit, then evaluate the importance-sampled -2 log-likelihood at the final estimates.
+# suppress the R warnings that report overriding the model file's method and covariance setting
+is_fit <- function(model, method, settings = list()) {
+  suppressWarnings(ferx_fit(model, cov$data, method = c(method, "imp"), covariance = FALSE,
+                            settings = c(list(imp_eval_only = TRUE, imp_seed = 1), settings),
+                            verbose = FALSE))
+}
+is_table <- function(fits, thetas) {
+  t(sapply(fits, function(f) c(is_minus2ll = f$importance_sampling$minus2_log_likelihood,
+                               mc_error = f$importance_sampling$mc_standard_error, f$theta[thetas])))
+}
+mstep_fits <- list(
+  focei = is_fit(cov$model, "focei"),
+  saem = is_fit(cov$model, "saem", list(seed = 1)),
+  saem_300_700 = is_fit(cov$model, "saem", list(seed = 1, n_exploration = 300, n_convergence = 700)),
+  saem_score_sa = is_fit(cov$model, "saem", list(seed = 1, mstep_solver = "score_sa")),
+  saem_4_draws = is_fit(cov$model, "saem", list(seed = 1, mstep_draws = 4))
+)
+numerical_note <- grep("stay on the numerical M-step", mstep_fits$saem$warnings, value = TRUE, fixed = TRUE)
+cat(strwrap(numerical_note, 90), sep = "\n")
+round(is_table(mstep_fits, c("TVV1", "THETA_WT", "THETA_CRCL")), 3)
+is_gap <- function(f) f$importance_sampling$minus2_log_likelihood -
+  mstep_fits$focei$importance_sampling$minus2_log_likelihood
+wt <- function(f) f$theta[["THETA_WT"]]
+```
+
+```{r}
+#| label: check-saem-mstep
+#| include: false
+# The paragraph above says the fit names the affected thetas, so the note has to exist.
+stopifnot(length(numerical_note) == 1)
+```
+
+The note also names `THETA_WT`, which is inaccurate at this build: the exponent belongs to `CL`'s update, which keeps it out of the numerical step ([ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620)). SAEM leaves `THETA_WT` at `r round(wt(mstep_fits$saem), 2)`, where FOCEI finds `r round(wt(mstep_fits$focei), 2)`, and its importance-sampled −2 log-likelihood is `r round(is_gap(mstep_fits$saem), 1)` units above FOCEI's, against a Monte Carlo error of about `r round(mstep_fits$saem$importance_sampling$mc_standard_error, 1)`. `mstep_draws = 4` gives `r round(wt(mstep_fits$saem_4_draws), 2)` and `r if (is_gap(mstep_fits$saem_4_draws) < 1) "closes the gap" else sprintf("leaves the gap at %.1f", is_gap(mstep_fits$saem_4_draws))`; ferx-core expects it to help little while consecutive draws of the default sampler are strongly correlated.
+
+::: {.callout-warning}
+## A shared covariate exponent drifts to its bound at this build
+
+The declined update is not harmless. The longer SAEM runs, the further `THETA_WT` falls: with the default solver and a schedule of `n_exploration = 300`, `n_convergence = 700` (`saem_300_700` above), it ends at `r round(wt(mstep_fits$saem_300_700), 3)`. `mstep_solver = "score_sa"`, which corrects this step for a theta that is in no group at all, gets there within the default schedule (`r round(wt(mstep_fits$saem_score_sa), 3)`, `r round(is_gap(mstep_fits$saem_score_sa), 1)` units above FOCEI on the importance-sampled objective), and a fit with the covariance step reports it as a `boundary_estimate`. Neither solver setting is the cure; the model is, as below ([ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620)).
+
+```{r}
+#| label: saem-shared-exponent-drift
+score_sa_cov <- suppressWarnings(ferx_fit(cov$model, cov$data, method = "saem",
+                                          settings = list(seed = 1, mstep_solver = "score_sa"),
+                                          verbose = FALSE))
+score_sa_warnings <- ferx_get_warnings(score_sa_cov, as_df = TRUE)
+score_sa_warnings[score_sa_warnings$category == "boundary_estimate", "message"]
+```
+
+```{r}
+#| label: check-saem-shared-exponent-drift
+#| include: false
+# The callout describes this drift; once the engine fixes it (ferx-core #1620), the render
+# has to stop. An out-of-scope model would keep the default solver and name score_sa.
+stopifnot(wt(mstep_fits$saem_300_700) < 0.1, wt(mstep_fits$saem_score_sa) < 0.1,
+          "boundary_estimate" %in% score_sa_warnings$category,
+          !any(grepl("score_sa", mstep_fits$saem_score_sa$warnings, fixed = TRUE)))
+```
+:::
+
+The structural remedy is to let the regular update reach the exponent. With its own exponent for `V1`, no theta of either covariate group is read anywhere else, and SAEM no longer leaves any of them to the numerical step:
+
+```{r}
+#| label: saem-mstep-remedy
+separate_wt <- file.path(estimation_dir, "two_cpt_oral_cov_separate_wt.ferx")
+sep_lines <- sub("V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)",
+                 "V1 = TVV1 * (WT / 70)^THETA_WT_V1 * exp(ETA_V1)", readLines(cov$model), fixed = TRUE)
+sep_lines <- append(sep_lines, "  theta THETA_WT_V1(0.75, 0.01, 5.0)",
+                    after = grep("theta THETA_WT\\(", sep_lines))
+# Stop unless both edits were made: the new exponent is used and declared.
+stopifnot(sum(grepl("THETA_WT_V1", sep_lines, fixed = TRUE)) == 2)
+writeLines(sep_lines, separate_wt)
+separate_fits <- list(focei = is_fit(separate_wt, "focei"),
+                      saem = is_fit(separate_wt, "saem", list(seed = 1)))
+round(is_table(separate_fits, c("TVV1", "THETA_WT", "THETA_WT_V1", "THETA_CRCL")), 3)
+```
+
+```{r}
+#| label: check-saem-mstep-remedy
+#| include: false
+# The sentence above says no theta is left to the numerical step; its note would say otherwise.
+stopifnot(!any(grepl("numerical M-step", separate_fits$saem$warnings, fixed = TRUE)))
+```
+
+`r sep_gap <- separate_fits$saem$importance_sampling$minus2_log_likelihood - separate_fits$focei$importance_sampling$minus2_log_likelihood; if (abs(sep_gap) < 1) sprintf("Now SAEM and FOCEI agree: the importance-sampled objectives differ by %.2f, within the Monte Carlo error, and SAEM puts the clearance exponent at %.2f against FOCEI's %.2f.", sep_gap, separate_fits$saem$theta[["THETA_WT"]], separate_fits$focei$theta[["THETA_WT"]]) else sprintf("SAEM still ends %.1f units above FOCEI on the importance-sampled objective, so here the separate exponent is not enough.", sep_gap)` Whether to share one exponent between two parameters is a modelling decision; under SAEM it also decides which update estimates it.
+
 ### Laplace and adaptive quadrature
 
 ```{r}
 #| label: tbl-settings-agq
+#| echo: false
+#| tbl-cap: "Laplace and adaptive quadrature settings."
 book_settings_table(c("n_agq", "agq_eval_only"))
 ```
 
@@ -394,6 +604,8 @@ c(laplace = fit_lap$ofv, agq_3_nodes = fit_agq$ofv)
 
 ```{r}
 #| label: tbl-settings-gn
+#| echo: false
+#| tbl-cap: "Gauss-Newton settings."
 book_settings_table("gn_lambda")
 ```
 
@@ -401,6 +613,8 @@ book_settings_table("gn_lambda")
 
 ```{r}
 #| label: tbl-settings-imp
+#| echo: false
+#| tbl-cap: "Importance sampling settings."
 book_settings_table(c("imp_samples", "imp_proposal_df", "imp_seed", "imp_low_ess_threshold",
                       "imp_iterations", "imp_averaging", "imp_auto", "imp_defensive_alpha",
                       "imp_eval_only"))
@@ -420,6 +634,8 @@ fit_imp$importance_sampling[c("minus2_log_likelihood", "mc_standard_error", "n_s
 
 ```{r}
 #| label: tbl-settings-impmap
+#| echo: false
+#| tbl-cap: "IMPMAP settings."
 book_settings_table(c("impmap_iterations", "impmap_samples", "impmap_proposal_df", "impmap_seed",
                       "impmap_averaging", "impmap_low_ess_threshold", "impmap_trace",
                       "impmap_mceta", "impmap_sobol", "impmap_auto", "iscale_min", "iscale_max"))
@@ -429,26 +645,59 @@ book_settings_table(c("impmap_iterations", "impmap_samples", "impmap_proposal_df
 
 ```{r}
 #| label: tbl-settings-bayes
-book_settings_table(c("bayes_warmup", "bayes_iters", "bayes_chains", "bayes_thin", "bayes_seed"))
+#| echo: false
+#| tbl-cap: "Bayesian estimation settings."
+book_settings_table(c("bayes_warmup", "bayes_iters", "bayes_chains", "bayes_thin", "bayes_seed", "n_leapfrog"))
 ```
+
+`method = "bayes"` samples the posterior with several MCMC chains and summarises the draws. On warfarin the default run converges:
 
 ```{r}
 #| label: bayes
-fit_bayes <- ferx_fit(base$model, base$data, method = "bayes", verbose = FALSE)
+# suppress the R warning that reports overriding the model file's method
+fit_bayes <- suppressWarnings(ferx_fit(warf$model, warf$data, method = "bayes", verbose = FALSE))
 with(fit_bayes$bayes, data.frame(parameter = param_names, mean = mean, q025 = q025, q975 = q975,
                                  rhat = rhat, ess_bulk = ess_bulk))
-fit_bayes$converged
+data.frame(converged = fit_bayes$converged, max_rhat = fit_bayes$bayes$max_rhat,
+           chains = fit_bayes$bayes$n_chains, draws_per_chain = fit_bayes$bayes$n_draws_per_chain)
 ```
 
-`fit$bayes` holds the posterior mean, median and 2.5%/97.5% quantiles, split-R-hat, effective sample sizes and Monte Carlo standard errors per parameter. Here the largest R-hat is `r round(fit_bayes$bayes$max_rhat, 3)`, and the fit is marked unconverged with this warning:
+`fit$bayes` holds the posterior mean, median and 2.5%/97.5% quantiles, split-R-hat, effective sample sizes and Monte Carlo standard errors per parameter. R-hat compares the chains with each other: values near 1 mean they sample the same distribution, and ferx marks a run unconverged when the largest one exceeds 1.01. Here the largest is `r round(fit_bayes$bayes$max_rhat, 3)` and the smallest bulk effective sample size `r round(min(fit_bayes$bayes$ess_bulk))`, so the posterior summaries can be used. @sec-uncertainty discusses posterior intervals as a measure of parameter uncertainty.
+
+::: {.callout-warning}
+## Bayes does not converge on the two-compartment models with its defaults at this build
+
+On the base model of this chapter the default run ends unconverged, and its warning recommends longer chains. Four times longer chains do not help. HMC proposals for the random effects, which `n_leapfrog` switches on, do:
 
 ```{r}
-#| label: bayes-warning
-w_bayes <- ferx_get_warnings(fit_bayes, as_df = TRUE)
+#| label: bayes-base
+bayes_settings <- list(default = list(), four_times_longer = list(bayes_warmup = 4000, bayes_iters = 4000),
+                       four_times_longer_hmc = list(bayes_warmup = 4000, bayes_iters = 4000, n_leapfrog = 10))
+# suppress the R warnings that report overriding the model file's method
+bayes_base <- lapply(bayes_settings, function(s) {
+  suppressWarnings(ferx_fit(base$model, base$data, method = "bayes", settings = s, verbose = FALSE))
+})
+w_bayes <- ferx_get_warnings(bayes_base$default, as_df = TRUE)
 strwrap(w_bayes$message[grepl("R-hat", w_bayes$message)], 80)
+do.call(rbind, lapply(names(bayes_base), function(run) {
+  b <- bayes_base[[run]]$bayes
+  data.frame(run = run, draws_per_chain = b$n_draws_per_chain, converged = bayes_base[[run]]$converged,
+             max_rhat = b$max_rhat, min_ess_bulk = min(b$ess_bulk))
+}))
 ```
 
-Posterior intervals as a measure of parameter uncertainty are discussed in @sec-uncertainty.
+```{r}
+#| label: check-bayes
+#| include: false
+# The section says warfarin converges and the base model does not with the default proposals, at
+# either chain length, but does with HMC proposals.
+stopifnot(fit_bayes$converged, fit_bayes$bayes$max_rhat < 1.01,
+          !bayes_base$default$converged, !bayes_base$four_times_longer$converged,
+          bayes_base$four_times_longer_hmc$converged)
+```
+
+With the default Metropolis-Hastings proposals and `r bayes_base$four_times_longer$bayes$n_draws_per_chain` draws per chain the largest R-hat is still `r round(bayes_base$four_times_longer$bayes$max_rhat, 2)`, so the chains have not settled on one distribution and the posterior summaries of these fits are not usable. Those proposals move the random effects too slowly on this model for longer chains to make up for it ([ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626)). With `n_leapfrog = 10` each subject's random effects get HMC proposals instead, which ferx offers for analytical models without IOV, and the same chain length converges: the largest R-hat is `r round(bayes_base$four_times_longer_hmc$bayes$max_rhat, 3)` and the smallest bulk effective sample size `r round(min(bayes_base$four_times_longer_hmc$bayes$ess_bulk))`. These settings converge on this model, but they are no recipe: read `max_rhat` on every run. The covariate model of @sec-uncertainty converges with neither kind of proposal. For parameter uncertainty on that model use the covariance step, SIR or the bootstrap (@sec-uncertainty).
+:::
 
 ### Variational inference
 
@@ -463,7 +712,7 @@ It runs when the model file sets it. A copy of the base model with `method = vi`
 
 ```{r}
 #| label: vi-fit
-vi_model <- file.path(book_tempdir("estimation"), "two_cpt_oral_base_vi.ferx")
+vi_model <- file.path(estimation_dir, "two_cpt_oral_base_vi.ferx")
 writeLines(sub("^  method     = focei", "  method     = vi", readLines(base$model)), vi_model)
 invisible(ferx_model_get_section(vi_model, "fit_options"))
 fit_vi <- ferx_fit(vi_model, base$data, verbose = FALSE)
@@ -484,6 +733,8 @@ The estimates are close to FOCEI. The ELBO itself and VI's per-subject posterior
 
 ```{r}
 #| label: tbl-settings-vi
+#| echo: false
+#| tbl-cap: "Variational inference settings."
 book_settings_table(c("vi_iters", "vi_mc_samples", "vi_lr", "vi_grad_clip", "vi_family", "vi_kl",
                       "vi_omega_update", "vi_sigma_update", "vi_avg_last", "vi_eta_grad", "vi_final_ofv", "vi_seed"))
 ```
@@ -535,16 +786,37 @@ ferx_stop(job)               # or: stop the job
 See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html) for the full descriptions.
 
 - `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.
-- `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. Arrives alongside `converged = TRUE`, which is why it is not a `convergence` warning (above).
+- `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. It can arrive alongside `converged = TRUE`, which is why it is a warning of its own rather than a `convergence` warning; whether `converged` agrees depends on the optimizer (above).
 - `ebe_start_dependent` (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise `inner_maxiter`, or `inner_restarts` for a suspected second mode (above).
 - `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
 - `mu_referencing` (warning or info): mu-referencing is missing or partial. Prefer forms like `CL = TVCL * exp(ETA_CL)` for SAEM and Bayes.
 - `optimizer_config` (warning or info): a note on, or failure of, the `global_search` configuration.
-- `multi_start` (info): which start of a multi-start fit won.
+- `multi_start` (info): which start of a multi-start fit won, when it was not the first.
 - `cancelled` (info): the run was cancelled by the user.
 - `threads` (info): a note on thread-count efficiency.
 - `flat_parameter` (warning): a theta has no effect on the objective at its initial value and was frozen there. Map it into the model or remove it.
 - `init_outside_bounds` (warning): an initial estimate lay outside an internal limit and was clamped before the first evaluation.
+- `init_not_representable` (warning): an initial estimate that the optimizer cannot represent at all, such as a positive theta started at or below the floor of the log scale it is estimated on (the message gives the value). The value is moved before the first evaluation, so the fit does not start where the file says. Here a `TVKA` started at `1e-12`, inside its own bounds:
+
+  ```{r}
+  #| label: init-not-representable
+  tiny_start <- file.path(estimation_dir, "warfarin_tiny_ka.ferx")
+  writeLines(sub("theta TVKA(1.0, 0.01, 50.0)", "theta TVKA(1e-12, 0.0, 50.0)",
+                 readLines(warf$model), fixed = TRUE), tiny_start)
+  fit_tiny <- ferx_fit(tiny_start, warf$data, verbose = FALSE)
+  tiny_warnings <- ferx_get_warnings(fit_tiny, as_df = TRUE)
+  cat(head(strwrap(tiny_warnings$message[tiny_warnings$category == "init_not_representable"], 90), 3),
+      sep = "\n")
+  ```
+
+  ```{r}
+  #| label: check-init-not-representable
+  #| include: false
+  # The item says this start raises the warning and wrecks the fit (critical warnings).
+  stopifnot("init_not_representable" %in% tiny_warnings$category, "critical" %in% tiny_warnings$severity)
+  ```
+
+  Starting this far off also wrecks the rest of the fit, which carries critical warnings as well. Declare the start at a value the parameter can take.
 - `parameter_at_runaway_guard` (warning or critical): a parameter is pinned at a hidden optimizer guard. `collapse` (warning) means remove or simplify it; `runaway` (critical) means reject the fit.
 - `importance_sampling` (warning): the effective sample size dropped to zero, or the proposal collapsed. Increase the samples or improve the proposal.
 - `vi_bad_basin` (critical): the final bound-quality check of a VI fit failed, and the fit is marked unconverged. Try new starting values, or start from another method.

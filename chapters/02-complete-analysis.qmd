@@ -15,6 +15,16 @@ Each section is deliberately short. It shows the one call you need and ends with
 
 ## The data
 
+Every chapter starts by loading ferx, plus dplyr and ggplot2 for data handling and plots:
+
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
 ferx ships example models and datasets with the package. `ferx_example()` takes one argument, `name`. Given a name, it returns the file paths for that example; called without `name`, it lists what is available:
 
 ```{r}
@@ -189,11 +199,12 @@ fit$estimates |>
                  rse_pct = "RSE (%)", lower_95 = "95% CI lower", upper_95 = "95% CI upper")
 ```
 
-`ferx_save_fit()` writes the whole fit (estimates, per-subject values, predictions and the model source) to a single `.fitrx` file. A path without an extension gets `.fitrx` appended:
+`ferx_save_fit()` writes the whole fit (estimates, per-subject values, predictions and the model source) to a single `.fitrx` file. A path without an extension gets `.fitrx` appended. Here it goes to a directory under `tempdir()`; in a project, write it next to the analysis:
 
 ```{r}
 #| label: save
-run_dir <- book_tempdir("complete-analysis")
+run_dir <- file.path(tempdir(), "complete-analysis")
+dir.create(run_dir, showWarnings = FALSE)
 ferx_save_fit(fit, file.path(run_dir, "warfarin-run1"))
 list.files(run_dir)
 ```

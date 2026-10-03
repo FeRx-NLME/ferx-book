@@ -2,13 +2,15 @@
 # Audit the book source against the pinned ferx build (runs locally and in CI).
 #
 # Hard checks (non-zero exit on failure):
-#   pin        _variables.yml ferx_r_sha == render.yml FERX_R_SHA (and the
+#   pin        _variables.yml ferx_r_sha == render.yml FERX_R_SHA, ferx_r_tag (if set)
+#              resolves to ferx_r_sha on GitHub (and the
 #              installed package's RemoteSha, when pak recorded one)
 #   calls      every ferx_*() / check_*() call is a pinned export
 #   examples   every ferx_example("x") name exists in the pinned registry
 #   eval       every `eval: false` chunk carries `#| eval-reason:`
 #   output     no hand-written knitr output (`#>` lines) in the source
-#   links      no links to retired ferx-nlme.org pages (either domain)
+#   links      no links to the old ferx-nlme.github.io host (the site moved to ferx-nlme.org)
+#              and none to retired site sections (model-dsl, learn, examples)
 #   ferx-only  no mentions of other NLME software outside URLs
 # Coverage (report; hard only with --strict):
 #   every row of tools/features.csv has a home chapter in tools/homes.csv and
@@ -35,6 +37,32 @@ pin <- yaml::read_yaml("_variables.yml")
 wf <- readLines(".github/workflows/render.yml", warn = FALSE)
 wf_sha <- sub('^\\s*FERX_R_SHA:\\s*"?([0-9a-f]+)"?.*$', "\\1", grep("FERX_R_SHA:", wf, value = TRUE))
 if (!identical(wf_sha, pin$ferx_r_sha)) note("pin", sprintf("render.yml FERX_R_SHA (%s) != _variables.yml ferx_r_sha (%s)", paste(wf_sha, collapse = ","), pin$ferx_r_sha))
+# ch01 offers ferx_r_tag as an install ref "that gives the same build", so the
+# tag must resolve to the pinned commit. Checked on GitHub (CI has no ../ferx-r);
+# without network the check is skipped and says so rather than passing silently.
+if (!is.null(pin$ferx_r_tag)) {
+  # Ask for the tag and its peeled form: an annotated tag's commit is the `^{}`
+  # line, a lightweight tag has only the plain line. git's exit status tells an
+  # unreachable remote (skip, say so) from a tag that does not exist (fail).
+  tag_ref <- paste0("refs/tags/", pin$ferx_r_tag)
+  ls <- tryCatch(suppressWarnings(system2("git", c("ls-remote", "https://github.com/FeRx-NLME/ferx-r.git",
+                                               tag_ref, paste0(tag_ref, "^{}")),
+                                          stdout = TRUE, stderr = FALSE)),
+                 error = function(e) structure(character(0), status = 127L))
+  status <- attr(ls, "status")
+  if (!is.null(status) && status != 0) {
+    cat("pin: could not reach GitHub to resolve ferx_r_tag", pin$ferx_r_tag, "(git status", status, "); tag check skipped\n")
+  } else if (!length(ls)) {
+    note("pin", sprintf("ferx_r_tag %s does not exist on FeRx-NLME/ferx-r - fix or remove ferx_r_tag", pin$ferx_r_tag))
+  } else {
+    peeled <- grep("\\^\\{\\}$", ls, value = TRUE)
+    tag_sha <- sub("\\s.*$", "", if (length(peeled)) peeled[1] else ls[1])
+    if (!identical(tag_sha, pin$ferx_r_sha)) {
+      note("pin", sprintf("ferx_r_tag %s resolves to %s, not ferx_r_sha %s - update or remove ferx_r_tag",
+                          pin$ferx_r_tag, tag_sha, pin$ferx_r_sha))
+    }
+  }
+}
 if (requireNamespace("ferx", quietly = TRUE)) {
   remote <- utils::packageDescription("ferx")$RemoteSha
   if (!is.null(remote) && !startsWith(pin$ferx_r_sha, remote) && !startsWith(remote, pin$ferx_r_sha)) {
@@ -65,7 +93,31 @@ if (!file.exists(stamp_path)) {
 
 # ---- per-file checks ------------------------------------------------------------
 banned <- "\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|Pharmpy|pyDarwin|Phoenix\\s*NLME|NLMIXED|WinBUGS|Stan)\\b"
+# CLAUDE.md rule 6: another engine may be named in an analogy, never in a claim that
+# ferx is better. A sentence naming one with comparative wording is flagged; whether
+# a sentence that passes is an analogy is for review to judge.
+comparative <- paste0("\\b(better|best|faster|fastest|quicker|slower|improv\\w*|outperform\\w*|superior|",
+                      "inferior|beats?|more (accurate|robust|reliable|efficient|stable))\\b")
 strip_urls <- function(x) gsub("https?://[^ )>\"']+", "", x)
+claims_over <- function(line) {
+  sentences <- strsplit(strip_urls(line), "(?<=[.!?])\\s+", perl = TRUE)[[1]]
+  any(grepl(banned, sentences, ignore.case = TRUE) & grepl(comparative, sentences, ignore.case = TRUE))
+}
+
+# CLAUDE.md rule 8: reader code runs as shown. Returns the chunks of a file with their
+# first line, label and whether the reader sees the code.
+chunks_of <- function(lines) {
+  starts <- grep("^\\s*```\\{r", lines)
+  lapply(starts, function(s) {
+    e <- s + 1
+    while (e <= length(lines) && !grepl("^\\s*```\\s*$", lines[e])) e <- e + 1
+    body <- if (e > s + 1) lines[(s + 1):(e - 1)] else character()
+    header <- body[grepl("^\\s*#\\|", body)]
+    list(start = s, body = body,
+         label = sub("^\\s*#\\|\\s*label:\\s*", "", grep("^\\s*#\\|\\s*label:", header, value = TRUE)[1]),
+         visible = !any(grepl("^\\s*#\\|\\s*(echo|include):\\s*(false|FALSE)", header)))
+  })
+}
 
 for (f in files) {
   lines <- src[[f]]
@@ -88,8 +140,38 @@ for (f in files) {
     }
   }
   for (i in grep("^\\s*#>", lines)) note("output", sprintf("%s:%d: hand-written output line", f, i))
-  for (i in grep("ferx-nlme\\.(github\\.io|org)/(model-dsl|learn|examples)/", lines)) note("links", sprintf("%s:%d: retired site link", f, i))
-  for (i in grep(banned, strip_urls(lines), ignore.case = TRUE)) note("ferx-only", sprintf("%s:%d: %s", f, i, trimws(lines[i])))
+  for (i in grep("https?://ferx-nlme\\.github\\.io/", lines)) note("links", sprintf("%s:%d: old site host (use ferx-nlme.org)", f, i))
+  for (i in grep("ferx-nlme\\.org/(model-dsl|learn|examples)/", lines)) note("links", sprintf("%s:%d: retired site link", f, i))
+  for (i in grep(banned, strip_urls(lines), ignore.case = TRUE)) {
+    if (claims_over(lines[i])) note("ferx-only", sprintf("%s:%d: names another engine next to comparative wording: %s",
+                                                         f, i, trimws(lines[i])))
+  }
+
+  chunks <- chunks_of(lines)
+  for (ch in Filter(function(ch) ch$visible, chunks)) {
+    for (k in grep("\\bbook_[a-z_]+\\(", ch$body)) {
+      note("reader-code", sprintf("%s:%d: book helper in a visible chunk (hide it with echo: false)", f, ch$start + k))
+    }
+    for (k in grep("#.*\\b(the render|fail the render|render stops)\\b", ch$body)) {
+      note("reader-code", sprintf("%s:%d: render-check comment in a visible chunk (move the check to an include: false chunk)",
+                                  f, ch$start + k))
+    }
+  }
+  chapter_no <- suppressWarnings(as.integer(sub("^chapters/(\\d+)-.*", "\\1", f)))
+  if (!is.na(chapter_no) && chapter_no >= 2 && chapter_no <= 24) {
+    packages <- Filter(function(ch) identical(ch$label, "packages") && ch$visible, chunks)
+    loads <- if (length(packages)) packages[[1]]$body else character()
+    for (pkg in c("ferx", "dplyr", "ggplot2")) {
+      if (!any(grepl(sprintf("^library\\(%s\\)", pkg), loads))) {
+        note("reader-code", sprintf("%s: no visible `packages` chunk loading %s", f, pkg))
+      }
+    }
+  }
+}
+
+common <- readLines(file.path("chapters", "_common.R"), warn = FALSE)
+for (i in grep("^\\s*(library|require|suppressPackageStartupMessages)\\(", common)) {
+  note("reader-code", sprintf("chapters/_common.R:%d: attaches a package the reader's code would then rely on", i))
 }
 
 # ---- coverage ---------------------------------------------------------------------

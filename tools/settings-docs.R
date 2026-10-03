@@ -39,6 +39,8 @@ clean_desc <- function(x) {
   x <- gsub("\\[([^]]+)\\]\\([^)]*\\)", "\\1", x)          # markdown links -> text
   x <- gsub("\\s*\\(#[0-9]+\\)", "", x)                    # issue refs
   x <- gsub("<br\\s*/?>", " ", x)
+  x <- gsub("[;,]\\s*see (below|above)(?=\\))", "", x, perl = TRUE)  # points into the ferx-core page
+  x <- gsub("\\s*\\(see (below|above)\\)", "", x)
   x <- gsub("\\s+", " ", x)
   # Remove parentheticals that name other software before splitting.
   x <- gsub("\\s*\\([^()]*\\b(NONMEM|Monolix|nlmixr2?|PsN|Pumas|Pharmpy|pyDarwin|Phoenix)\\b[^()]*\\)", "", x, ignore.case = TRUE)
