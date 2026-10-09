@@ -349,14 +349,14 @@ When too many subjects' inner loops fail to converge -- a larger fraction of the
 
 ```{r}
 #| label: starved-inner-loop
-fit_starved <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 5), verbose = FALSE)
+fit_starved <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 3), verbose = FALSE)
 starved_warnings <- ferx_get_warnings(fit_starved, as_df = TRUE)
 # Geometric midpoints of the declared theta bounds, read from the model file.
 bounds <- regmatches(readLines(warf$model),
                      regexec("theta (\\w+)\\([^,]+,\\s*([^,]+),\\s*([^)]+)\\)", readLines(warf$model)))
 bounds <- do.call(rbind, Filter(length, bounds))
 midpoints <- setNames(sqrt(as.numeric(bounds[, 3]) * as.numeric(bounds[, 4])), bounds[, 2])
-rbind(default_budget = fit_warf$theta, inner_maxiter_5 = fit_starved$theta,
+rbind(default_budget = fit_warf$theta, inner_maxiter_3 = fit_starved$theta,
       bound_midpoint = midpoints[names(fit_warf$theta)])
 data.frame(converged = fit_starved$converged, ofv = fit_starved$ofv, default_ofv = fit_warf$ofv)
 starved_warnings[, c("severity", "category")]
@@ -491,7 +491,9 @@ The model file sets `n_mh_steps = 3`, so `auto` does not apply to it, and `previ
 
 #### Thetas that no random effect reaches
 
-SAEM moves most thetas through their random effects: a typical value such as `TVCL` follows the mean of its eta, and a covariate exponent is updated together with the typical value it scales. A theta that no such update reaches is left to a numerical M-step instead, which ferx-core describes as noisier and able to settle away from the optimum ([thetas the closed-form update cannot reach](https://ferx-nlme.org/ferx-core/estimation/saem.html#saem-mstep-no-closed-form)). The covariate model of @sec-model-selection runs into this: `THETA_WT` scales both `CL` and `V1` and can join only one of the two updates. It joins `CL`'s; `V1`'s is not used, which leaves `TVV1` to the numerical step, and the fit's note names the thetas involved. Two settings act on that step: `mstep_solver = "score_sa"` replaces its derivative-free solver, and `mstep_draws` averages that solver's objective over several E-step draws instead of one. A SAEM fit's own OFV is a FOCE approximation, so the fits are compared on the importance-sampled −2 log-likelihood at their final estimates (*Importance sampling*, below):
+SAEM moves most thetas through their random effects: a typical value such as `TVCL` follows the mean of its eta, and a covariate exponent is updated together with the typical value it scales. A theta that no such update reaches is left to a numerical M-step instead, which ferx-core describes as noisier and able to settle away from the optimum ([thetas the closed-form update cannot reach](https://ferx-nlme.org/ferx-core/estimation/saem.html#saem-mstep-no-closed-form)). Two settings act on that step: `mstep_solver = "score_sa"` replaces its derivative-free solver, and `mstep_draws` averages that solver's objective over several E-step draws instead of one.
+
+The covariate model of @sec-model-selection has an exponent that two updates want: `THETA_WT` scales both `CL` and `V1`. ferx updates the two typical values and their shared exponent in one joint M-step, and the fit's note says so. A SAEM fit's own OFV is a FOCE approximation, so the fits are compared on the importance-sampled −2 log-likelihood at their final estimates (*Importance sampling*, below), across the schedule and M-step settings:
 
 ```{r}
 #| label: saem-mstep
@@ -502,10 +504,6 @@ is_fit <- function(model, method, settings = list()) {
                             settings = c(list(imp_eval_only = TRUE, imp_seed = 1), settings),
                             verbose = FALSE))
 }
-is_table <- function(fits, thetas) {
-  t(sapply(fits, function(f) c(is_minus2ll = f$importance_sampling$minus2_log_likelihood,
-                               mc_error = f$importance_sampling$mc_standard_error, f$theta[thetas])))
-}
 mstep_fits <- list(
   focei = is_fit(cov$model, "focei"),
   saem = is_fit(cov$model, "saem", list(seed = 1)),
@@ -513,73 +511,30 @@ mstep_fits <- list(
   saem_score_sa = is_fit(cov$model, "saem", list(seed = 1, mstep_solver = "score_sa")),
   saem_4_draws = is_fit(cov$model, "saem", list(seed = 1, mstep_draws = 4))
 )
-numerical_note <- grep("stay on the numerical M-step", mstep_fits$saem$warnings, value = TRUE, fixed = TRUE)
-cat(strwrap(numerical_note, 90), sep = "\n")
-round(is_table(mstep_fits, c("TVV1", "THETA_WT", "THETA_CRCL")), 3)
-is_gap <- function(f) f$importance_sampling$minus2_log_likelihood -
-  mstep_fits$focei$importance_sampling$minus2_log_likelihood
-wt <- function(f) f$theta[["THETA_WT"]]
+joint_note <- grep("joint M-step", mstep_fits$saem$warnings, value = TRUE, fixed = TRUE)
+cat(strwrap(joint_note, 90), sep = "\n")
+t(sapply(mstep_fits, function(f) c(is_minus2ll = f$importance_sampling$minus2_log_likelihood,
+                                   mc_error = f$importance_sampling$mc_standard_error,
+                                   f$theta[c("TVV1", "THETA_WT", "THETA_CRCL")]))) |> round(3)
 ```
 
 ```{r}
 #| label: check-saem-mstep
 #| include: false
-# The paragraph above says the fit names the affected thetas, so the note has to exist.
-stopifnot(length(numerical_note) == 1)
+# The prose: the note names the joint step, and every SAEM variant lands within two
+# Monte Carlo errors of FOCEI on the importance-sampled objective.
+is_gaps <- sapply(mstep_fits[-1], function(f) f$importance_sampling$minus2_log_likelihood -
+                    mstep_fits$focei$importance_sampling$minus2_log_likelihood)
+mc <- sapply(mstep_fits[-1], function(f) f$importance_sampling$mc_standard_error)
+stopifnot(length(joint_note) == 1, all(abs(is_gaps) < 2 * mc))
 ```
 
-The note also names `THETA_WT`, which is inaccurate at this build: the exponent belongs to `CL`'s update, which keeps it out of the numerical step ([ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620)). SAEM leaves `THETA_WT` at `r round(wt(mstep_fits$saem), 2)`, where FOCEI finds `r round(wt(mstep_fits$focei), 2)`, and its importance-sampled −2 log-likelihood is `r round(is_gap(mstep_fits$saem), 1)` units above FOCEI's, against a Monte Carlo error of about `r round(mstep_fits$saem$importance_sampling$mc_standard_error, 1)`. `mstep_draws = 4` gives `r round(wt(mstep_fits$saem_4_draws), 2)` and `r if (is_gap(mstep_fits$saem_4_draws) < 1) "closes the gap" else sprintf("leaves the gap at %.1f", is_gap(mstep_fits$saem_4_draws))`; ferx-core expects it to help little while consecutive draws of the default sampler are strongly correlated.
+Every SAEM variant ends within `r round(max(abs(is_gaps)), 2)` units of FOCEI on the importance-sampled objective, inside twice its Monte Carlo error, with the weight exponent between `r round(min(sapply(mstep_fits, function(f) f$theta[["THETA_WT"]])), 2)` and `r round(max(sapply(mstep_fits, function(f) f$theta[["THETA_WT"]])), 2)`. On this model the M-step settings change little; they matter for a theta that is in no update at all.
 
-::: {.callout-warning}
-## A shared covariate exponent drifts to its bound at this build
-
-The declined update is not harmless. The longer SAEM runs, the further `THETA_WT` falls: with the default solver and a schedule of `n_exploration = 300`, `n_convergence = 700` (`saem_300_700` above), it ends at `r round(wt(mstep_fits$saem_300_700), 3)`. `mstep_solver = "score_sa"`, which corrects this step for a theta that is in no group at all, gets there within the default schedule (`r round(wt(mstep_fits$saem_score_sa), 3)`, `r round(is_gap(mstep_fits$saem_score_sa), 1)` units above FOCEI on the importance-sampled objective), and a fit with the covariance step reports it as a `boundary_estimate`. Neither solver setting is the cure; the model is, as below ([ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620)).
-
-```{r}
-#| label: saem-shared-exponent-drift
-score_sa_cov <- suppressWarnings(ferx_fit(cov$model, cov$data, method = "saem",
-                                          settings = list(seed = 1, mstep_solver = "score_sa"),
-                                          verbose = FALSE))
-score_sa_warnings <- ferx_get_warnings(score_sa_cov, as_df = TRUE)
-score_sa_warnings[score_sa_warnings$category == "boundary_estimate", "message"]
-```
-
-```{r}
-#| label: check-saem-shared-exponent-drift
-#| include: false
-# The callout describes this drift; once the engine fixes it (ferx-core #1620), the render
-# has to stop. An out-of-scope model would keep the default solver and name score_sa.
-stopifnot(wt(mstep_fits$saem_300_700) < 0.1, wt(mstep_fits$saem_score_sa) < 0.1,
-          "boundary_estimate" %in% score_sa_warnings$category,
-          !any(grepl("score_sa", mstep_fits$saem_score_sa$warnings, fixed = TRUE)))
-```
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}} the second update that wants a shared exponent is declined, which leaves `TVV1` to the numerical step, and the exponent drifts towards its lower bound the longer SAEM runs ([ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620), fixed after that release). With {{< var ferx_r_release >}}, give `V1` its own exponent, or use FOCEI for this model.
 :::
-
-The structural remedy is to let the regular update reach the exponent. With its own exponent for `V1`, no theta of either covariate group is read anywhere else, and SAEM no longer leaves any of them to the numerical step:
-
-```{r}
-#| label: saem-mstep-remedy
-separate_wt <- file.path(estimation_dir, "two_cpt_oral_cov_separate_wt.ferx")
-sep_lines <- sub("V1 = TVV1 * (WT / 70)^THETA_WT * exp(ETA_V1)",
-                 "V1 = TVV1 * (WT / 70)^THETA_WT_V1 * exp(ETA_V1)", readLines(cov$model), fixed = TRUE)
-sep_lines <- append(sep_lines, "  theta THETA_WT_V1(0.75, 0.01, 5.0)",
-                    after = grep("theta THETA_WT\\(", sep_lines))
-# Stop unless both edits were made: the new exponent is used and declared.
-stopifnot(sum(grepl("THETA_WT_V1", sep_lines, fixed = TRUE)) == 2)
-writeLines(sep_lines, separate_wt)
-separate_fits <- list(focei = is_fit(separate_wt, "focei"),
-                      saem = is_fit(separate_wt, "saem", list(seed = 1)))
-round(is_table(separate_fits, c("TVV1", "THETA_WT", "THETA_WT_V1", "THETA_CRCL")), 3)
-```
-
-```{r}
-#| label: check-saem-mstep-remedy
-#| include: false
-# The sentence above says no theta is left to the numerical step; its note would say otherwise.
-stopifnot(!any(grepl("numerical M-step", separate_fits$saem$warnings, fixed = TRUE)))
-```
-
-`r sep_gap <- separate_fits$saem$importance_sampling$minus2_log_likelihood - separate_fits$focei$importance_sampling$minus2_log_likelihood; if (abs(sep_gap) < 1) sprintf("Now SAEM and FOCEI agree: the importance-sampled objectives differ by %.2f, within the Monte Carlo error, and SAEM puts the clearance exponent at %.2f against FOCEI's %.2f.", sep_gap, separate_fits$saem$theta[["THETA_WT"]], separate_fits$focei$theta[["THETA_WT"]]) else sprintf("SAEM still ends %.1f units above FOCEI on the importance-sampled objective, so here the separate exponent is not enough.", sep_gap)` Whether to share one exponent between two parameters is a modelling decision; under SAEM it also decides which update estimates it.
 
 ### Laplace and adaptive quadrature
 
@@ -812,11 +767,14 @@ See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html)
   ```{r}
   #| label: check-init-not-representable
   #| include: false
-  # The item says this start raises the warning and wrecks the fit (critical warnings).
-  stopifnot("init_not_representable" %in% tiny_warnings$category, "critical" %in% tiny_warnings$severity)
+  # The item says this start raises the warning and ends far above the model file's fit,
+  # with TVKA at its upper bound and a boundary_estimate warning.
+  stopifnot("init_not_representable" %in% tiny_warnings$category,
+            fit_tiny$ofv - fit_warf$ofv > 100, fit_tiny$theta[["TVKA"]] > 49.9,
+            "boundary_estimate" %in% tiny_warnings$category)
   ```
 
-  Starting this far off also wrecks the rest of the fit, which carries critical warnings as well. Declare the start at a value the parameter can take.
+  Starting this far off also wrecks the rest of the fit. It ends at an OFV of `r round(fit_tiny$ofv, 1)`, against `r round(fit_warf$ofv, 1)` from the model file's start, with `TVKA` at its upper bound of 50. `converged` is `r fit_tiny$converged`, and the warnings that follow (`r paste0("\x60", setdiff(unique(tiny_warnings$category), "init_not_representable"), "\x60", collapse = ", ")`) are `r if ("critical" %in% tiny_warnings$severity) "critical in part" else "all of warning level"`, so read `init_not_representable` as a reason to refit, not as a note. Declare the start at a value the parameter can take.
 - `parameter_at_runaway_guard` (warning or critical): a parameter is pinned at a hidden optimizer guard. `collapse` (warning) means remove or simplify it; `runaway` (critical) means reject the fit.
 - `importance_sampling` (warning): the effective sample size dropped to zero, or the proposal collapsed. Increase the samples or improve the proposal.
 - `vi_bad_basin` (critical): the final bound-quality check of a VI fit failed, and the fit is marked unconverged. Try new starting values, or start from another method.
