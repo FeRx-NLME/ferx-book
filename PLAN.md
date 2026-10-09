@@ -1052,7 +1052,7 @@ Per-chapter loop:
     from fixed parameters), now explained and checked; (f) a deprecated
     `geom_errorbarh()` (ch10) and a misplaced ruvsearch paragraph (ch09, now computed).
 
-- **ferx-r, found 2026-10-09 (ch24, at `161d28a`), not filed:** `print.ferx_fit` collapses a level block of 20 or more free coefficients into a THETA BLOCKS line (#413), but the `Structural:` line under MODEL STRUCTURE (`.ferx_format_structural()`, `R/internal-fit-format.R:131`) still lists every level by name, so for an MBMA block with hundreds of levels that line is the long one. ferx-core has no such line. ch24 shows it in an "At this build" callout; remove it when fixed.
+- **ferx-r, found 2026-10-09 (ch24, at `161d28a`), filed as [ferx-r #538](https://github.com/FeRx-NLME/ferx-r/issues/538):** `print.ferx_fit` collapses a level block of 20 or more free coefficients into a THETA BLOCKS line (#413), but the `Structural:` line under MODEL STRUCTURE (`.ferx_format_structural()`, `R/internal-fit-format.R:131`) still lists every level by name, so for an MBMA block with hundreds of levels that line is the long one. ferx-core has no such line; `summary()`'s `Structure:` line likewise. The pre-fit `ferx_model()` print is compact. ch24 shows it in an "At this build" callout; remove it when fixed.
 
 ### Maintenance: pin bump
 
