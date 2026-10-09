@@ -301,6 +301,8 @@ fixed_lines <- fixed_lines[!grepl("omega ETA_E0", fixed_lines)]
 fixed_lines <- sub("BASE = TVE0 + PLACEBO + ETA_E0 + KAPPA_ARM", "BASE = TVE0 + PLACEBO + KAPPA_ARM",
                    fixed_lines, fixed = TRUE)
 fixed_lines <- sub("contrast = sum_to_zero_within", "contrast = sum_to_zero", fixed_lines, fixed = TRUE)
+# Stop unless all three edits were made: no ETA_E0 left outside comments, and the new contrast in place.
+stopifnot(!any(grepl("^[^#]*ETA_E0", fixed_lines)), any(grepl("contrast = sum_to_zero]", fixed_lines, fixed = TRUE)))
 fixed_model <- file.path(mbma_dir, "mbma_fixed_study.ferx")
 writeLines(fixed_lines, fixed_model)
 invisible(ferx_model_get_section(fixed_model, "individual_parameters"))
@@ -429,10 +431,12 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
   model_lines <- readLines(mbma$model)
   proportional_lines <- sub("DV ~ additive(ADD_ERR) weight = SE", "DV ~ proportional(ADD_ERR) weight = SE",
                             model_lines, fixed = TRUE)
+  stopifnot(any(grepl("proportional(ADD_ERR) weight = SE", proportional_lines, fixed = TRUE)))
   proportional_model <- file.path(mbma_dir, "mbma_proportional.ferx")
   writeLines(proportional_lines, proportional_model)
   try(ferx_fit(proportional_model, mbma$data, verbose = FALSE))
   kappa_lines <- sub("y    = BASE - DRUG", "y    = BASE - DRUG + KAPPA_ARM", model_lines, fixed = TRUE)
+  stopifnot(any(grepl("BASE - DRUG + KAPPA_ARM", kappa_lines, fixed = TRUE)))
   kappa_model <- file.path(mbma_dir, "mbma_kappa_in_prediction.ferx")
   writeLines(kappa_lines, kappa_model)
   try(ferx_fit(kappa_model, mbma$data, verbose = FALSE))
