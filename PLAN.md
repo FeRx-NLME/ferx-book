@@ -1054,6 +1054,8 @@ Per-chapter loop:
 
 - **ferx-r, found 2026-10-09 (ch24, at `161d28a`), filed as [ferx-r #538](https://github.com/FeRx-NLME/ferx-r/issues/538):** `print.ferx_fit` collapses a level block of 20 or more free coefficients into a THETA BLOCKS line (#413), but the `Structural:` line under MODEL STRUCTURE (`.ferx_format_structural()`, `R/internal-fit-format.R:131`) still lists every level by name, so for an MBMA block with hundreds of levels that line is the long one. ferx-core has no such line; `summary()`'s `Structure:` line likewise. The pre-fit `ferx_model()` print is compact. ch24 shows it in an "At this build" callout; remove it when fixed.
 
+- **ferx-core, found 2026-10-09 (ch24, at `826d3bb9`), filed as [ferx-core #1827](https://github.com/FeRx-NLME/ferx-core/issues/1827):** the refusal of a weighted kappa in a compartment-free model's `y =` names `[scaling]`, because the parser stores a compartment-free `[structural_model]` under the `scaling` key. ch24's `weight-refusals` chunk explains it in a comment; `check-weight-refusals` fails once fixed, then remove both.
+
 ### Maintenance: pin bump
 
 1. Diff NAMESPACE, `formals`, settings keys, example registry (rerun

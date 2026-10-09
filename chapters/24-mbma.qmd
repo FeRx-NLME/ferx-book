@@ -439,7 +439,18 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
   stopifnot(any(grepl("BASE - DRUG + KAPPA_ARM", kappa_lines, fixed = TRUE)))
   kappa_model <- file.path(mbma_dir, "mbma_kappa_in_prediction.ferx")
   writeLines(kappa_lines, kappa_model)
+  # At this build the message says [scaling]: it means the y = line of [structural_model]
+  # (ferx-core #1827).
   try(ferx_fit(kappa_model, mbma$data, verbose = FALSE))
+  ```
+
+  ```{r}
+  #| label: check-weight-refusals
+  #| include: false
+  # The comment above explains a message that names [scaling]; once ferx-core #1827 is
+  # fixed this fails, and the comment and this check go.
+  kappa_refusal <- tryCatch(ferx_fit(kappa_model, mbma$data, verbose = FALSE), error = conditionMessage)
+  stopifnot(is.character(kappa_refusal), grepl("[scaling] references `KAPPA_ARM`", kappa_refusal, fixed = TRUE))
   ```
 
 ### Warnings you may see here
