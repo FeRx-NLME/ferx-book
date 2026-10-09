@@ -135,13 +135,14 @@ fit_gompertz$estimates[, c("estimate", "rse_pct")]
 ```{r}
 #| label: check-exponential-fixed
 #| include: false
-# The paragraph below traces the R warning to the fixed placeholder parameters.
+# The paragraph below says the placeholder parameters are fixed and have no standard error.
 fixed_rows <- c("DUMMY_CL", "DUMMY_V", "SIGMA_DV")
 stopifnot(all(fixed_rows %in% rownames(fit_exponential$estimates)),
-          all(fit_exponential$estimates[fixed_rows, "se"] == 0))
+          all(fit_exponential$estimates[fixed_rows, "fixed"]),
+          all(is.na(fit_exponential$estimates[fixed_rows, "se"])))
 ```
 
-The R warning after the exponential fit comes from its fixed placeholder parameters, which have no standard error. The model files give the simulation values: an exponential rate of 0.05 with variance 0.09, and Gompertz `TVALPHA` 0.002, `TVGAMMA` 0.05 with variance 0.04. The typical parameters are in range, but the between-subject variances of these single-event datasets are poorly determined. With one event per subject, frailty is hard to separate from the hazard's shape.
+The exponential fit's placeholder parameters (`DUMMY_CL`, `DUMMY_V`, `SIGMA_DV`) are fixed, so `fit_exponential$estimates` marks them `fixed` and gives them no standard error (`se` is `NA`; ferx-r {{< var ferx_r_release >}} differs, see @sec-variability). The model files give the simulation values: an exponential rate of 0.05 with variance 0.09, and Gompertz `TVALPHA` 0.002, `TVGAMMA` 0.05 with variance 0.04. The typical parameters are in range, but the between-subject variances of these single-event datasets are poorly determined. With one event per subject, frailty is hard to separate from the hazard's shape.
 
 ### A simulation-based check
 

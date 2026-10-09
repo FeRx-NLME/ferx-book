@@ -12,6 +12,10 @@
 #   links      no links to the old ferx-nlme.github.io host (the site moved to ferx-nlme.org)
 #              and none to retired site sections (model-dsl, learn, examples)
 #   ferx-only  no mentions of other NLME software outside URLs
+#   version    tools/features-release.csv is the inventory of the release tag named in
+#              tools/features-release-pin.yml; every features.csv row missing from it is
+#              named in a "Needs ferx-r newer than" callout in its home chapter, and no
+#              chapter keeps such a callout without one
 # Coverage (report; hard only with --strict):
 #   every row of tools/features.csv has a home chapter in tools/homes.csv and
 #   its name occurs in that chapter's source.
@@ -40,27 +44,36 @@ if (!identical(wf_sha, pin$ferx_r_sha)) note("pin", sprintf("render.yml FERX_R_S
 # ch01 offers ferx_r_tag as an install ref "that gives the same build", so the
 # tag must resolve to the pinned commit. Checked on GitHub (CI has no ../ferx-r);
 # without network the check is skipped and says so rather than passing silently.
-if (!is.null(pin$ferx_r_tag)) {
+# Resolve a ferx-r tag on GitHub (CI has no ../ferx-r). Returns the commit, NA when
+# the tag does not exist, or NULL when GitHub cannot be reached (the caller says so
+# rather than passing silently).
+resolve_tag <- function(tag) {
   # Ask for the tag and its peeled form: an annotated tag's commit is the `^{}`
   # line, a lightweight tag has only the plain line. git's exit status tells an
   # unreachable remote (skip, say so) from a tag that does not exist (fail).
-  tag_ref <- paste0("refs/tags/", pin$ferx_r_tag)
+  tag_ref <- paste0("refs/tags/", tag)
   ls <- tryCatch(suppressWarnings(system2("git", c("ls-remote", "https://github.com/FeRx-NLME/ferx-r.git",
                                                tag_ref, paste0(tag_ref, "^{}")),
                                           stdout = TRUE, stderr = FALSE)),
                  error = function(e) structure(character(0), status = 127L))
   status <- attr(ls, "status")
   if (!is.null(status) && status != 0) {
-    cat("pin: could not reach GitHub to resolve ferx_r_tag", pin$ferx_r_tag, "(git status", status, "); tag check skipped\n")
-  } else if (!length(ls)) {
+    cat("pin: could not reach GitHub to resolve", tag, "(git status", status, "); tag check skipped\n")
+    return(NULL)
+  }
+  if (!length(ls)) return(NA_character_)
+  peeled <- grep("\\^\\{\\}$", ls, value = TRUE)
+  sub("\\s.*$", "", if (length(peeled)) peeled[1] else ls[1])
+}
+# ch01 offers ferx_r_tag as an install ref "that gives the same build", so the
+# tag must resolve to the pinned commit.
+if (!is.null(pin$ferx_r_tag)) {
+  tag_sha <- resolve_tag(pin$ferx_r_tag)
+  if (!is.null(tag_sha) && is.na(tag_sha)) {
     note("pin", sprintf("ferx_r_tag %s does not exist on FeRx-NLME/ferx-r - fix or remove ferx_r_tag", pin$ferx_r_tag))
-  } else {
-    peeled <- grep("\\^\\{\\}$", ls, value = TRUE)
-    tag_sha <- sub("\\s.*$", "", if (length(peeled)) peeled[1] else ls[1])
-    if (!identical(tag_sha, pin$ferx_r_sha)) {
-      note("pin", sprintf("ferx_r_tag %s resolves to %s, not ferx_r_sha %s - update or remove ferx_r_tag",
-                          pin$ferx_r_tag, tag_sha, pin$ferx_r_sha))
-    }
+  } else if (!is.null(tag_sha) && !identical(tag_sha, pin$ferx_r_sha)) {
+    note("pin", sprintf("ferx_r_tag %s resolves to %s, not ferx_r_sha %s - update or remove ferx_r_tag",
+                        pin$ferx_r_tag, tag_sha, pin$ferx_r_sha))
   }
 }
 if (requireNamespace("ferx", quietly = TRUE)) {
@@ -158,7 +171,7 @@ for (f in files) {
     }
   }
   chapter_no <- suppressWarnings(as.integer(sub("^chapters/(\\d+)-.*", "\\1", f)))
-  if (!is.na(chapter_no) && chapter_no >= 2 && chapter_no <= 24) {
+  if (!is.na(chapter_no) && chapter_no >= 2 && !grepl("-reference\\.qmd$", f)) {
     packages <- Filter(function(ch) identical(ch$label, "packages") && ch$visible, chunks)
     loads <- if (length(packages)) packages[[1]]$body else character()
     for (pkg in c("ferx", "dplyr", "ggplot2")) {
@@ -226,6 +239,72 @@ if (nrow(missing) && !quiet) {
   cat(sprintf("%d uncovered rows -> tools/out/uncovered.csv\n", nrow(missing)))
 }
 if (strict && nrow(missing)) note("coverage", sprintf("%d feature rows unassigned or uncovered", nrow(missing)))
+
+# ---- version ------------------------------------------------------------------------
+# Readers may have the last release rather than the pin. tools/features-release.csv is
+# features.csv as inventory.R wrote it at that release's commit; a row missing from it
+# does not exist in the release, so its home chapter must say so: the row is named (by
+# the coverage rule of its kind) inside a callout titled "Needs ferx-r newer than ...".
+# An argument or S3 method of a function or class that is itself newer is covered by
+# naming that function or class. A chapter with such a callout but no newer row fails
+# too, so the callouts go when the pin becomes a release.
+release_pin_path <- "tools/features-release-pin.yml"
+if (!file.exists(release_pin_path) || !file.exists("tools/features-release.csv")) {
+  note("version", "tools/features-release.csv / features-release-pin.yml missing - see CLAUDE.md \"Versions\"")
+} else {
+  release_pin <- yaml::read_yaml(release_pin_path)
+  if (!identical(as.character(release_pin$release), as.character(pin$ferx_r_release))) {
+    note("version", sprintf("features-release-pin.yml release %s != _variables.yml ferx_r_release %s",
+                            release_pin$release, pin$ferx_r_release))
+  }
+  rel_sha <- resolve_tag(paste0("v", release_pin$release))
+  if (!is.null(rel_sha) && !identical(rel_sha, as.character(release_pin$ferx_r_sha))) {
+    note("version", sprintf("tag v%s resolves to %s, but features-release.csv was generated at %s",
+                            release_pin$release, rel_sha, release_pin$ferx_r_sha))
+  }
+  release_rows <- read.csv("tools/features-release.csv", stringsAsFactors = FALSE)
+  rkey <- function(d) paste(d$kind, d$name, d$parent, sep = "\r")
+  newer <- cov[!rkey(cov) %in% rkey(release_rows) & !cov$home %in% c("", "index", "26-reference"), ]
+  newer_fns <- newer$name[newer$kind == "export"]
+  version_callouts <- function(lines) {
+    # The text of every callout whose title is "## Needs ferx-r newer than ...".
+    starts <- grep("^\\s*:::+\\s*\\{\\.callout", lines)
+    unlist(lapply(starts, function(s) {
+      e <- s + 1
+      while (e <= length(lines) && !grepl("^\\s*:::+\\s*$", lines[e])) e <- e + 1
+      body <- lines[(s + 1):min(e, length(lines))]
+      if (any(grepl("^\\s*## Needs ferx-r newer than ", body))) paste(body, collapse = "\n") else NULL
+    }))
+  }
+  for (f in grep("^chapters/", names(src), value = TRUE)) {
+    home <- sub("^chapters/(.*)\\.qmd$", "\\1", f)
+    rows <- newer[newer$home == home, ]
+    callout_txt <- paste(version_callouts(src[[f]]), collapse = "\n")
+    if (!nrow(rows)) {
+      if (nzchar(callout_txt)) note("version", sprintf("%s: has a \"Needs ferx-r newer than\" callout but covers nothing newer than %s - remove it",
+                                                   f, release_pin$release))
+      next
+    }
+    has <- function(p) grepl(p, callout_txt, perl = TRUE)
+    for (i in seq_len(nrow(rows))) {
+      r <- rows[i, ]
+      ok <- if (r$kind %in% c("argument", "s3method") && (r$parent %in% newer_fns || r$detail %in% newer_fns)) {
+        has(paste0("\\b", esc(if (r$kind == "argument") r$parent else r$detail), "\\b"))
+      } else if (r$kind == "argument") {
+        has(paste0("\\b", esc(r$parent), "\\b")) && has(paste0("(`", esc(r$name), "`|\\b", esc(r$name), "\\s*=)"))
+      } else if (r$kind == "export") {
+        has(paste0("\\b", esc(r$name), "\\("))
+      } else if (r$kind == "example") {
+        has(paste0("`", esc(r$name), "`|ferx_example\\(\"", esc(r$name), "\"\\)"))
+      } else {
+        has(paste0("`", esc(r$name), "`|\\$", esc(r$name), "\\b"))
+      }
+      if (!ok) note("version", sprintf("%s: %s %s%s is newer than ferx-r %s but not named in a \"Needs ferx-r newer than\" callout",
+                                       f, r$kind, r$name, if (nzchar(r$parent)) paste0(" (", r$parent, ")") else "",
+                                       release_pin$release))
+    }
+  }
+}
 
 # ---- result -------------------------------------------------------------------------
 if (length(fail)) {

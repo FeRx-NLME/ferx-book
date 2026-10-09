@@ -1,0 +1,460 @@
+# Model-based meta-analysis {#sec-mbma}
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
+```
+
+## Where you are
+
+A model-based meta-analysis (MBMA) fits a dose-response and time-course model to published summary data: one mean per study arm and visit, with its standard error and the number of patients behind it. There are no individual patients. Each row counts according to its precision, and arms differ from one another more than their sampling error alone explains.
+
+This chapter fits the bundled `mbma_placebo` example. It covers the arm-level data shape and `ferx_mbma_data()`, inverse-variance weighting with `weight =` on the error model, between-arm variability as a weighted kappa, an unstructured placebo time course as a theta level block, and how to read, save and resample such a fit.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example and no `fit$theta_levels`. The `.fitrx` round trip of a level block and `ferx_sir()` / `ferx_covariance()` following the fit's own settings are newer than {{< var ferx_r_release >}} as well.
+:::
+
+::: {.callout-note}
+## Maturity
+The `weight =` modifier, on the error model and on a kappa, is **experimental** in ferx-core ([residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...)). Theta level blocks are documented on the [parameters](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks) page.
+:::
+
+## The data
+
+```{r}
+#| label: packages
+#| message: false
+library(ferx)
+library(dplyr)
+library(ggplot2)
+```
+
+The bundled data are synthetic: six studies of a symptom score (lower is better), each with a placebo arm and two or three dose arms, observed at week 0 and three later visits. Each row is one arm at one visit:
+
+```{r}
+#| label: data
+mbma <- ferx_example("mbma_placebo")
+mbma_dir <- file.path(tempdir(), "mbma")
+dir.create(mbma_dir, showWarnings = FALSE)
+arm_data <- read.csv(mbma$data)
+head(arm_data, 5)
+arm_data |>
+  group_by(STUDY) |>
+  summarise(arms = n_distinct(OCC), weeks = paste(sort(unique(TIME)), collapse = ", "),
+            doses = paste(sort(unique(DOSE)), collapse = ", "),
+            min_NARM = min(NARM), max_NARM = max(NARM))
+```
+
+The columns follow one convention:
+
+- `ID` and `STUDY` are the study. A random effect on `ID` is therefore between-study variability.
+- `OCC` is the arm within the study, numbered from 1. A kappa, the random effect that is drawn once per occasion, is therefore between-arm variability.
+- `DV` is the reported arm mean, `SE` its standard error and `NARM` the number of patients in the arm. `DOSE` is the arm's dose; placebo arms have 0.
+- There are no dose records. The model is compartment-free: `DOSE` is a covariate, not an amount.
+
+### Building the dataset with `ferx_mbma_data()`
+
+Published summaries rarely come in this layout. `ferx_mbma_data()` turns a table with one row per study, arm and timepoint into it, and checks it on the way. The script that generated the bundled data ends with that call, so running it gives both the raw table (`arms`) and the bundled file:
+
+```{r}
+#| label: generator
+generator <- system.file("examples", "mbma_placebo", "simulate_dataset.R", package = "ferx")
+gen <- new.env()
+gen$mbma_out_csv <- file.path(mbma_dir, "rebuilt.csv")
+sys.source(generator, envir = gen)
+head(gen$arms, 5)
+```
+
+The raw table names its columns as a publication would: a trial label, an arm number, the week, the arm mean, the between-patient standard deviation and the arm size. `ferx_mbma_data()` takes the name of each:
+
+```{r}
+#| label: mbma-data
+arm_table <- ferx_mbma_data(gen$arms, study = "trial", arm = "arm", time = "week",
+                            mean = "mean", sd = "sd", n = "n", covariates = "DOSE")
+arm_table
+attr(arm_table, "arms") |> head(4)
+all.equal(read.csv(gen$mbma_out_csv), arm_data)
+```
+
+`print()` on a `ferx_mbma_data` object reports the number of studies and arms and the range of `SE * sqrt(NARM)`, the between-patient SD the standard errors imply. That range is a quick check that the precision column holds what you think it does. The `arms` attribute maps each `(STUDY, OCC)` back to the original trial and arm labels, and the rebuilt file equals the bundled one.
+
+The arguments:
+
+- `data` is the arm table. `study`, `arm`, `time`, `mean` and `n` name its columns.
+- Give exactly one of `se` (the standard error of the arm mean) or `sd` (the between-patient SD, converted to `sd / sqrt(n)`, as the message above says).
+- `scale` is `"continuous"` (the default), `"proportion"` or `"percent"`. The last two check the range of `mean`, and `"percent"` divides `mean` and `se` by 100.
+- `covariates` carries further columns through. Character and factor columns are coded as integers, with the codes in `attr(d, "codes")`.
+- `levels` adds a `LEVEL_IDX` column that numbers the observed combinations of the named columns, for a counted level block `theta NAME[N]`. `index` takes your own numbering instead, for example to pool visits into windows. This chapter's model uses the data-driven form, which needs neither.
+
+```{r}
+#| label: mbma-levels
+with_index <- ferx_mbma_data(gen$arms, study = "trial", arm = "arm", time = "week",
+                             mean = "mean", sd = "sd", n = "n", levels = c("STUDY", "TIME"))
+head(attr(with_index, "levels"), 5)
+```
+
+The checks catch preparation mistakes that would otherwise fit without complaint. A score read as a proportion is refused, and a study left with one arm is flagged, because nothing within it informs the treatment effect:
+
+```{r}
+#| label: mbma-data-checks
+try(ferx_mbma_data(gen$arms, study = "trial", arm = "arm", time = "week",
+                   mean = "mean", sd = "sd", n = "n", scale = "proportion"))
+one_arm <- subset(gen$arms, !(trial == "T01" & arm > 1))
+invisible(ferx_mbma_data(one_arm, study = "trial", arm = "arm", time = "week",
+                         mean = "mean", sd = "sd", n = "n"))
+```
+
+The fitting functions take a CSV path, so write the result with `write.csv(d, path, row.names = FALSE)` before fitting it.
+
+## Minimal runnable call
+
+The model has four parts: a typical placebo level `TVE0` with a between-study random effect `ETA_E0`, a placebo time course `PLACEBO` with one level per study and visit, an Emax dose-response that builds up over time, and a between-arm random effect `KAPPA_ARM`:
+
+```{r}
+#| label: model
+invisible(ferx_model_get_section(mbma$model, "parameters"))
+invisible(ferx_model_get_section(mbma$model, "individual_parameters"))
+invisible(ferx_model_get_section(mbma$model, "structural_model"))
+invisible(ferx_model_get_section(mbma$model, "error_model"))
+invisible(ferx_model_get_section(mbma$model, "fit_options"))
+```
+
+`iov_column = OCC` makes each arm an occasion. The fit takes a few seconds:
+
+```{r}
+#| label: fit
+fit <- ferx_fit(mbma$model, mbma$data, verbose = FALSE)
+fit
+```
+
+```{r}
+#| label: check-fit
+#| include: false
+# The prose below says the fit converged, has 18 free placebo levels (fewer than
+# the 20 at which print() collapses a block) and a computed covariance step.
+stopifnot(isTRUE(fit$converged), fit$covariance_status == "computed",
+          sum(!is.na(fit$theta_levels$theta_name)) == 18)
+```
+
+The fit converges and the covariance step runs. The rest of this chapter reads the result one part at a time.
+
+## Reading the result
+
+### Residual weighting: `weight =` on the error model
+
+The error model is `DV ~ additive(ADD_ERR) weight = SE`, with `ADD_ERR` fixed at a variance of 1. `weight = W` multiplies the additive residual SD by `W`, so each row's residual SD is its own reported standard error, and the row counts `1 / SE^2` in the objective. This is inverse-variance weighting. The weight is a property of the data row, so it may use covariates, `TIME` and thetas, but not random effects or predictions.
+
+`DV`, `PRED`, `IPRED` and simulations all stay on the natural scale, so nothing has to be transformed back before plotting. The individual weighted residual is the residual divided by that row's standard error:
+
+```{r}
+#| label: weighted-residual
+head(fit$sdtab[, c("ID", "TIME", "DV", "IPRED", "IWRES")], 4)
+all.equal(fit$sdtab$IWRES, (arm_data$DV - fit$sdtab$IPRED) / arm_data$SE)
+```
+
+Keep `sigma` fixed at 1 when the weights are the reported standard errors of a continuous endpoint: the weight already carries the whole precision, and a free sigma would count the scale twice. The ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...) page describes the other convention, a free sigma for a weighted logit of a responder proportion.
+
+### Between-arm variability: the weighted kappa
+
+Two arms of the same study at the same dose would still not give the same mean: arms differ by more than their standard errors. That between-treatment-arm variability is smaller for a larger arm. The model declares it on the kappa:
+
+```
+kappa KAPPA_ARM ~ 4.0 (sd) weight = NARM
+```
+
+`weight = NARM` means the kappa of an arm with `NARM` patients is drawn from a normal distribution with variance γ² / `NARM`. ferx estimates γ², the variance for an arm of one patient, which is the quantity a published MBMA reports. Printed on its own, its SD looks large, so the fit prints the SD at the typical arm beside it, on the line that starts `weight = NARM`. The same numbers are in the fit:
+
+```{r}
+#| label: kappa
+gamma2 <- fit$omega_iov["KAPPA_ARM", "KAPPA_ARM"]
+c(gamma2 = gamma2, se = unname(fit$se_kappa["KAPPA_ARM"]))
+fit$kappa_weights
+fit$kappa_weight_typical
+fit$kappa_param_types
+```
+
+```{r}
+#| label: kappa-report
+arm_sizes <- distinct(arm_data, STUDY, OCC, NARM)$NARM
+data.frame(
+  arm = c("one patient", "smallest arm", "typical arm (ferx)", "largest arm"),
+  NARM = c(1, min(arm_sizes), fit$kappa_weight_typical, max(arm_sizes))
+) |>
+  mutate(between_arm_sd = sqrt(gamma2 / NARM))
+```
+
+```{r}
+#| label: check-kappa-report
+#| include: false
+# The prose reports gamma^2 as the estimate, compares it with the generator's
+# GAMMA2 through its 95% interval, and contrasts the typical arm with median().
+lo <- gamma2 - 1.96 * fit$se_kappa[["KAPPA_ARM"]]
+hi <- gamma2 + 1.96 * fit$se_kappa[["KAPPA_ARM"]]
+stopifnot(gen$GAMMA2 > lo, gen$GAMMA2 < hi,
+          fit$kappa_weight_typical %in% arm_sizes,
+          median(arm_sizes) != fit$kappa_weight_typical)
+```
+
+So the convention for a report is: give the estimate as the unweighted γ² (`r signif(gamma2, 4)`, standard error `r signif(fit$se_kappa[["KAPPA_ARM"]], 3)`), and print beside it the effective between-arm SD at the median arm, `r sprintf("%.2f", sqrt(gamma2 / fit$kappa_weight_typical))` score points at `NARM` = `r fit$kappa_weight_typical`. The generator used γ² = `r gen$GAMMA2`, inside the estimate's 95% interval. With `r length(arm_sizes)` arms the median falls between two arm sizes. R's `median()` averages them (`r median(arm_sizes)`), while ferx takes an observed arm size, so read the typical arm from `fit$kappa_weight_typical` rather than recomputing it.
+
+`KAPPA_ARM` enters `BASE` additively, so `fit$kappa_param_types` is `additive`, and the print shows an SD rather than a CV%. The kappa's shrinkage, `fit$shrinkage_kappa`, is a fraction (`r round(fit$shrinkage_kappa, 3)`), not a percentage.
+
+### TVE0 is each study's mean placebo level
+
+`PLACEBO[STUDY, TIME]` gives every study and visit its own placebo level, so no parametric placebo curve can bias the drug effect. Together with `TVE0` and the study random effect `ETA_E0`, those levels have one degree of freedom too many per study: a study's level could move up and its `ETA_E0` down by the same amount. The block's `contrast = sum_to_zero_within` removes it by making each study's levels sum to zero.
+
+That convention changes what `TVE0` means. `TVE0 + ETA_E0` is a study's mean placebo level over its own visits, not its week-0 value, and the placebo levels are deviations from that mean. In this example the placebo score improves over time, so a study's week-0 placebo level tends to lie above its mean:
+
+```{r}
+#| label: tve0
+levels_fit <- fit$theta_levels
+cells <- distinct(arm_data, STUDY, TIME) |>
+  arrange(STUDY, TIME) |>
+  mutate(label = paste0("STUDY=", STUDY, ",TIME=", TIME))
+stopifnot(identical(cells$label, levels_fit$label))
+cells$placebo_level <- levels_fit$value
+study_means <- data.frame(STUDY = as.integer(fit$ebe_etas$ID), ETA_E0 = fit$ebe_etas$ETA_E0) |>
+  mutate(mean_placebo = fit$theta[["TVE0"]] + ETA_E0)
+cells |>
+  filter(TIME == 0) |>
+  left_join(study_means, by = "STUDY") |>
+  transmute(STUDY, mean_placebo, week0_placebo = mean_placebo + placebo_level)
+```
+
+```{r}
+#| label: check-tve0
+#| include: false
+# The prose counts the studies whose week-0 level lies above the study mean
+# ("tends to" needs a majority), and says the realised mean placebo level, not
+# the nominal 50, is inside TVE0's interval and closer to the estimate.
+week0 <- cells$placebo_level[cells$TIME == 0]
+tve0 <- fit$theta[["TVE0"]]; tve0_se <- fit$se_theta[["TVE0"]]
+stopifnot(sum(week0 > 0) > length(week0) / 2,
+          abs(tve0 - gen$tve0_realised) < 1.96 * tve0_se,
+          abs(tve0 - gen$TVE0) > abs(tve0 - gen$tve0_realised))
+```
+
+In `r sum(week0 > 0)` of the `r length(week0)` studies the week-0 level is above the study's mean`r if (any(week0 <= 0)) sprintf("; in study %s it is %s below it", paste(cells$STUDY[cells$TIME == 0][week0 <= 0], collapse = " and "), paste(round(-week0[week0 <= 0], 2), collapse = " and ")) else ""`. Reporting `TVE0` as "the baseline" would therefore typically understate the week-0 level.
+
+The generator's nominal week-0 level is `r gen$TVE0`, but that is not what `TVE0` estimates. The truth to compare with is the realised mean placebo level over the six studies, `r round(gen$tve0_realised, 2)`, which the generator printed above. The estimate, `r round(fit$theta[["TVE0"]], 2)` (standard error `r round(fit$se_theta[["TVE0"]], 2)`), is close to it. The drug parameters are estimated with the generator's values inside their 95% intervals:
+
+```{r}
+#| label: drug-truth
+truth <- c(TVE0 = gen$tve0_realised, EMAX = gen$EMAX, ED50 = gen$ED50, ET50 = gen$ET50)
+data.frame(truth = truth, estimate = fit$theta[names(truth)],
+           lower95 = fit$theta[names(truth)] - 1.96 * fit$se_theta[names(truth)],
+           upper95 = fit$theta[names(truth)] + 1.96 * fit$se_theta[names(truth)])
+```
+
+```{r}
+#| label: check-drug-truth
+#| include: false
+# "the generator's values inside their 95% intervals"
+est <- fit$theta[names(truth)]; se <- fit$se_theta[names(truth)]
+stopifnot(all(truth > est - 1.96 * se), all(truth < est + 1.96 * se))
+```
+
+### The placebo levels: `fit$theta_levels`
+
+`fit$theta_levels` has one row per level of every level block. The 24 study-by-visit cells here give 24 rows. Under `sum_to_zero_within`, one level per study is not estimated but derived as minus the sum of the others, so it has no theta of its own: its `theta_name` is `NA`. The `value` column holds the fitted value of every level, derived ones included, so each study's values sum to zero:
+
+```{r}
+#| label: theta-levels
+head(levels_fit, 5)
+sum(is.na(levels_fit$theta_name))
+round(tapply(levels_fit$value, levels_fit$group, sum), 10)
+```
+
+```{r}
+#| label: check-theta-levels
+#| include: false
+stopifnot(nrow(levels_fit) == 24, sum(is.na(levels_fit$theta_name)) == 6,
+          all(abs(tapply(levels_fit$value, levels_fit$group, sum)) < 1e-8))
+```
+
+Because `value` is complete, the placebo time course plots straight from it. The level labels come in the order of the sorted `(STUDY, TIME)` cells, which the `stopifnot()` in the `tve0` chunk confirmed, so `cells` already carries each level's study and visit:
+
+```{r}
+#| label: fig-placebo-levels
+#| fig-cap: "Fitted placebo levels: each study's deviation from its own mean placebo level, by visit. Every study's levels sum to zero."
+ggplot(cells, aes(TIME, placebo_level, colour = factor(STUDY))) +
+  geom_hline(yintercept = 0, colour = "grey60") +
+  geom_line() +
+  geom_point() +
+  labs(x = "Week", y = "Placebo level (score points)", colour = "Study")
+```
+
+### A large level block prints compactly
+
+A real MBMA can have hundreds of study-by-visit cells. `print()` moves a level block with 20 or more free coefficients into a one-line THETA BLOCKS summary (count, minimum, median, maximum), so the structural parameters stay readable. This model has 18, so its print above lists them all.
+
+A model with study as a fixed effect has more. Dropping `ETA_E0` and switching to `contrast = sum_to_zero` over all levels leaves 23 free levels, and `TVE0` becomes the mean of all 24 cells:
+
+```{r}
+#| label: fixed-study
+fixed_lines <- readLines(mbma$model)
+fixed_lines <- fixed_lines[!grepl("omega ETA_E0", fixed_lines)]
+fixed_lines <- sub("BASE = TVE0 + PLACEBO + ETA_E0 + KAPPA_ARM", "BASE = TVE0 + PLACEBO + KAPPA_ARM",
+                   fixed_lines, fixed = TRUE)
+fixed_lines <- sub("contrast = sum_to_zero_within", "contrast = sum_to_zero", fixed_lines, fixed = TRUE)
+fixed_model <- file.path(mbma_dir, "mbma_fixed_study.ferx")
+writeLines(fixed_lines, fixed_model)
+invisible(ferx_model_get_section(fixed_model, "individual_parameters"))
+fit_fixed <- ferx_fit(fixed_model, mbma$data, verbose = FALSE)
+fit_fixed
+```
+
+```{r}
+#| label: check-fixed-study
+#| include: false
+# The prose: 23 free levels shown as one THETA BLOCKS line; every level still in
+# fit$theta; the structure line still lists every level; the two general
+# warnings are the finite-difference fallback past the analytic gradient cap.
+printed <- capture.output(print(fit_fixed))
+structure_line <- grep("^  Structural:", printed, value = TRUE)
+general <- subset(ferx_get_warnings(fit_fixed, as_df = TRUE), category == "general")$message
+stopifnot(isTRUE(fit_fixed$converged), any(grepl("THETA BLOCKS", printed)),
+          sum(!is.na(fit_fixed$theta_levels$theta_name)) == 23,
+          sum(grepl("^PLACEBO\\[", names(fit_fixed$theta))) == 23,
+          lengths(regmatches(structure_line, gregexpr("PLACEBO\\[", structure_line))) == 23,
+          length(general) == 2, any(grepl("finite differences", general)))
+```
+
+The THETA table now shows the four structural parameters and one line for `PLACEBO`. Every coefficient is still in `fit_fixed$theta`, and `fit_fixed$theta_levels` still has every level with its value.
+
+::: {.callout-warning}
+## At this build
+The `Structural:` line under MODEL STRUCTURE still lists every level by name, so for a block with hundreds of levels that line, not the THETA table, is the long one. Read the levels from `fit$theta_levels`.
+:::
+
+This model estimates more parameters than the analytic gradient handles, so ferx falls back to finite differences and says so in two `general` warnings. The fit is correct, only slower. The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
+
+## Saving and reloading the fit
+
+A `.fitrx` file keeps the level layout: which data columns define the block, its contrast and its levels. A reloaded fit can therefore be used for predictions, simulations, SIR and covariance without the original R session:
+
+```{r}
+#| label: fitrx
+fitrx_path <- file.path(mbma_dir, "mbma_placebo.fitrx")
+ferx_save_fit(fit, fitrx_path)
+fit_loaded <- ferx_load_fit(fitrx_path)
+identical(fit_loaded$theta_levels, fit$theta_levels)
+all.equal(fit_loaded$theta, fit$theta)
+cov_loaded <- ferx_covariance(fit_loaded)
+all.equal(cov_loaded$se_theta, fit$se_theta, tolerance = 1e-4)
+```
+
+```{r}
+#| label: check-fitrx
+#| include: false
+# The prose says the reloaded covariance step agrees, not that it is bit-identical.
+stopifnot(isTRUE(all.equal(cov_loaded$se_theta, fit$se_theta, tolerance = 1e-4)))
+```
+
+The covariance step on the reloaded fit gives the same standard errors as the original fit, to the tolerance shown. @sec-reproducibility covers `.fitrx` files in general.
+
+## Uncertainty: SIR and the covariance step
+
+`ferx_sir()` and `ferx_covariance()` run on an MBMA fit like on any other (@sec-uncertainty). They follow the fit's own settings: the inner-loop and scoring settings it was estimated with (`fit$scoring_settings`) and, for `ferx_sir()`, the SIR settings recorded in the fit (`fit$sir_settings`). Arguments you leave out are taken from the fit, not from the function's defaults. So `ferx_sir()` on a fit that already carries an SIR repeats that SIR, with the same number of draws and the same seed:
+
+```{r}
+#| label: sir
+fit_sir <- ferx_sir(fit, sir_seed = 7)
+fit_sir$sir_settings[c("samples", "resamples", "seed")]
+fit_sir$sir_ess
+fit_sir$sir_ci_kappa
+fit_sir_again <- ferx_sir(fit_sir)
+c(seed = fit_sir_again$sir_seed_used, ess = fit_sir_again$sir_ess)
+identical(fit_sir_again$sir_ci_theta, fit_sir$sir_ci_theta)
+```
+
+```{r}
+#| label: check-sir
+#| include: false
+stopifnot(fit_sir_again$sir_seed_used == 7, identical(fit_sir_again$sir_ci_theta, fit_sir$sir_ci_theta))
+```
+
+The effective sample size, the number of resamples the weights effectively support, depends strongly on the seed for this model. Check a few seeds before trusting one set of intervals:
+
+```{r}
+#| label: sir-seeds
+sapply(c(1, 2, 7), function(s) ferx_sir(fit, sir_seed = s)$sir_ess)
+```
+
+`ferx_covariance()` likewise takes `mu_referencing` from the fit when you do not pass it. The sandwich estimator `"rsr"` gives standard errors that do not rely on the residual model being right:
+
+```{r}
+#| label: covariance
+fit$scoring_settings$mu_referencing
+fit_rsr <- ferx_covariance(fit, covariance_method = "rsr")
+data.frame(r = fit$se_theta[1:4], rsr = fit_rsr$se_theta[1:4])
+fit_s <- ferx_covariance(fit, covariance_method = "s")
+fit_s$covariance_status
+```
+
+The `"s"` estimator alone fails here. It is built from the cross-product of the per-subject scores, and a meta-analysis has few subjects: `r fit$n_subjects` studies cannot determine `r fit$n_parameters` parameters. Use `"r"` or `"rsr"` for an MBMA with fewer studies than parameters.
+
+```{r}
+#| label: check-covariance
+#| include: false
+stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "failed",
+          fit$n_subjects < fit$n_parameters,
+          any(grepl("rank-deficient", ferx_get_warnings(fit_s, as_df = TRUE)$message)))
+```
+
+## Pitfalls
+
+- **Simulate and predict on the fitted cells only.** The placebo levels exist for the study-by-visit cells in the fit data. A visit or a study the fit never saw has no level, and ferx refuses it rather than assume 0:
+
+  ```{r}
+  #| label: new-visit
+  new_visit <- arm_data[arm_data$STUDY == 1 & arm_data$OCC == 1, ][1, ]
+  new_visit$TIME <- 6
+  new_visit_file <- file.path(mbma_dir, "new_visit.csv")
+  write.csv(new_visit, new_visit_file, row.names = FALSE)
+  try(ferx_simulate(mbma$model, new_visit_file, n_sim = 1, fit = fit))
+  ```
+
+  To pool visits into windows, number the cells yourself with `ferx_mbma_data(index = ...)` or `levels =` and use the counted form `theta PLACEBO[N]`.
+- **A standard deviation is not a standard error.** Pass a between-patient SD as `sd =` so `ferx_mbma_data()` divides it by `sqrt(n)`. `print()` shows the SD the standard errors imply; it should look like a patient-level SD.
+- **The OFV includes the weights.** ferx scores on the natural scale, so the OFV differs from that of a model fitted to `DV / SE` by a term that depends only on the data. It cancels from every OFV difference between models on the same rows and weights. See the ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...) page.
+- **`weight =` needs an additive term.** On a purely proportional error model the weight would cancel out, so ferx refuses it. A weighted kappa is likewise refused anywhere but `[individual_parameters]`, where its scaling is applied:
+
+  ```{r}
+  #| label: weight-refusals
+  model_lines <- readLines(mbma$model)
+  proportional_lines <- sub("DV ~ additive(ADD_ERR) weight = SE", "DV ~ proportional(ADD_ERR) weight = SE",
+                            model_lines, fixed = TRUE)
+  proportional_model <- file.path(mbma_dir, "mbma_proportional.ferx")
+  writeLines(proportional_lines, proportional_model)
+  try(ferx_fit(proportional_model, mbma$data, verbose = FALSE))
+  kappa_lines <- sub("y    = BASE - DRUG", "y    = BASE - DRUG + KAPPA_ARM", model_lines, fixed = TRUE)
+  kappa_model <- file.path(mbma_dir, "mbma_kappa_in_prediction.ferx")
+  writeLines(kappa_lines, kappa_model)
+  try(ferx_fit(kappa_model, mbma$data, verbose = FALSE))
+  ```
+
+### Warnings you may see here
+
+No warning category has this chapter as its home. The fits above raise two that other chapters explain: `inflated_rse` (@sec-diagnostics), because some placebo levels are small relative to their standard errors, which is expected for an unstructured placebo time course, and, on a machine with more cores than the six subjects, the `threads` note (@sec-estimation-methods).
+
+## Summary
+
+- Arm-level data have one row per study, arm and visit; `ferx_mbma_data()` builds and checks that layout from a published table.
+- `DV ~ additive(ADD_ERR) weight = SE` with `ADD_ERR` fixed at 1 is inverse-variance weighting on the natural scale.
+- `kappa ... weight = NARM` is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, `sqrt(gamma2 / fit$kappa_weight_typical)`.
+- With `contrast = sum_to_zero_within`, `TVE0` is each study's mean placebo level over its visits, not its week-0 level.
+- `fit$theta_levels$value` holds every placebo level, derived ones included. Large blocks print as one THETA BLOCKS line.
+- `.fitrx` files keep the level layout, and `ferx_sir()` and `ferx_covariance()` follow the fit's settings.
+
+Next: @sec-experimental covers experimental model features.
+
+::: {.callout-tip}
+## Reference
+- R help: `?ferx_mbma_data`, `?ferx_fit`, `?ferx_sir`, `?ferx_covariance`, `?ferx_save_fit`
+- ferx-core: [theta level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks), [residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...)
+:::
