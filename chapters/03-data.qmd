@@ -38,7 +38,7 @@ ex <- ferx_example("two_cpt_oral_cov")
 ferx_get_columns(ex)
 ```
 
-It accepts the list returned by `ferx_example()`, a path, or a fitted model (it then reads `fit$data_path`). Read the full file with `read.csv()`. `.` marks an empty cell:
+It accepts the list returned by `ferx_example()`, a path, a data frame, or a fitted model (it then reads the fit's own data). Read the full file with `read.csv()`. `.` marks an empty cell:
 
 ```{r}
 #| label: read-data
@@ -147,6 +147,50 @@ ggplot(subjects, aes(WT, CRCL)) +
 
 The model file for this dataset declares both columns in a `[covariates]` block. Without such a block, every non-standard column is treated as a covariate automatically. @sec-covariates covers covariate modeling.
 
+## Fitting a data frame
+
+Every function that takes `data` also accepts a data frame, so a dataset you build or edit in R goes straight into the fit without a detour through a file. Here the analysis is restricted to the subjects up to 90 kg:
+
+```{r}
+#| label: fit-data-frame
+pk_light <- pk |> filter(WT <= 90)
+fit_df <- ferx_fit(ex$model, pk_light, verbose = FALSE)
+c(subjects = n_distinct(pk_light$ID), ofv = fit_df$ofv)
+```
+
+ferx writes the data frame to a CSV in the session's temporary directory and fits that file. Every number is written to full precision, so the fit equals the fit of the file the data frame was read from:
+
+```{r}
+#| label: fit-data-frame-same
+fit_file <- ferx_fit(ex$model, ex$data, verbose = FALSE)
+fit_pk <- ferx_fit(ex$model, pk, verbose = FALSE)
+c(file = fit_file$ofv, data_frame = fit_pk$ofv)
+```
+
+```{r}
+#| label: check-fit-data-frame-same
+#| include: false
+# The sentence above says "equals", so the two OFVs have to be identical.
+stopifnot(identical(fit_file$ofv, fit_pk$ofv))
+```
+
+A missing value is written as `.`, a factor as its labels and a logical as `1`/`0`. Text, such as a subject ID `"007"`, is written verbatim, and every column is kept, including ones ferx does not use. The fit keeps the written data as `fit$data_source`, so the steps that read the data again still work after the temporary file is gone. Saving the fit with `ferx_save_fit()` always bundles the data. Simulation from the fit, for example, uses the fit's own data when `data` is left out:
+
+```{r}
+#| label: fit-data-frame-later
+unlink(fit_df$data_path)
+sim <- ferx_simulate(ex$model, fit = fit_df, n_sim = 1)
+n_distinct(sim$ID)
+```
+
+```{r}
+#| label: check-fit-data-frame-later
+#| include: false
+# The prose says simulation uses the fit's own data: the 90 kg subset, not the file.
+stopifnot(n_distinct(sim$ID) == n_distinct(pk_light$ID),
+          n_distinct(sim$ID) < n_distinct(pk$ID))
+```
+
 ## Excluding records
 
 ::: {.callout-warning}
@@ -199,6 +243,22 @@ str(fit_sel$exclusions)
 #| label: fit-ferx-data
 fit_sel2 <- ferx_fit(ex$model, sel, verbose = FALSE)
 c(conditions = fit_sel$ofv, ferx_data = fit_sel2$ofv)
+```
+
+A selection made on a data frame works the same way. The fit applies the rules to the whole data frame, so `fit$exclusions` counts what they removed:
+
+```{r}
+#| label: fit-ferx-data-frame
+sel_df <- ferx_apply_selection(pk, ignore = "DV < 0.2", ignore_ids = c(3, 7))
+fit_sel3 <- ferx_fit(ex$model, sel_df, verbose = FALSE)
+c(path = fit_sel2$ofv, data_frame = fit_sel3$ofv)
+```
+
+```{r}
+#| label: check-fit-ferx-data-frame
+#| include: false
+stopifnot(identical(fit_sel2$ofv, fit_sel3$ofv),
+          identical(fit_sel2$exclusions, fit_sel3$exclusions))
 ```
 
 `fit$exclusions` records how many observation, dose and other records were dropped, which subjects were dropped entirely, and which rules fired. The same conditions can also go through `settings` as `ignore`, `accept` and `ignore_subjects`.
@@ -280,7 +340,8 @@ Without the model, the preview finds no `DV` column and excludes nothing (see *P
 
 | Function | Argument | Meaning |
 |---|---|---|
-| `ferx_get_columns()` | `data` | Path, `ferx_example()` list or fit |
+| `ferx_fit()` and every other function with `data` | `data` | Path or data frame |
+| `ferx_get_columns()` | `data` | Path, data frame, `ferx_example()` list or fit |
 | `ferx_apply_selection()` | `data` | Path, data frame, `ferx_data` object or fit |
 | | `ignore` | Exclude a record when any condition is true |
 | | `accept` | Keep a record only when all conditions are true |
@@ -313,6 +374,7 @@ Always check `fit$exclusions` (or the warnings) after fitting with a selection.
 - Empty cells never match a comparison. `DV < 0.2` does not exclude dose rows, whose `DV` is empty.
 - `||` is not supported within a condition. Use several conditions instead, since any matching `ignore` condition excludes the record.
 - Conditions on `ADDL` or on the occasion column have no effect.
+- A `ferx_data` that you subset or edit after `ferx_apply_selection()`, for example with `filter()`, is fitted as the rows it now holds, with a warning, not as the dataset it was selected from. Run `ferx_apply_selection()` on the edited data to fit it with its rules.
 
 ### Warnings you may see here
 
@@ -321,6 +383,7 @@ Always check `fit$exclusions` (or the warnings) after fitting with a selection.
 ## Summary
 
 - Check the header with `ferx_get_columns()`, then check structure, missing values, profiles and covariates with ordinary R before modeling.
+- A data frame built or edited in R can be passed as `data` directly. The fit keeps its data, so the steps that read the data again do not depend on a file.
 - Preview exclusions with `ferx_apply_selection()`. Apply them with `ferx_fit(ignore, accept, ignore_ids)` or in `[data_selection]`, and confirm them in `fit$exclusions`.
 - `[data]` lets a model name its dataset. An explicit `data` argument wins.
 
