@@ -14,7 +14,7 @@ ch <- c(
   "09-model-selection", "10-uncertainty", "11-simulation", "12-tables-figures",
   "13-reproducibility", "14-structural-models", "15-absorption", "16-variability",
   "17-covariates", "18-dosing", "19-censoring", "20-pkpd", "21-binary",
-  "22-time-to-event", "23-adaptive-dosing", "24-experimental", "25-reference"
+  "22-time-to-event", "23-adaptive-dosing", "24-mbma", "25-experimental", "26-reference"
 )
 home_of <- function(n) { h <- ch[startsWith(ch, sprintf("%02d-", n))]; stopifnot(length(h) == 1); h }
 
@@ -37,7 +37,8 @@ export_home <- c(
   ferx_save_fit = 13, ferx_load_fit = 13,
   ferx_cov_screen = 17, ferx_gam_screen = 17, ferx_allometry = 17, ferx_model_to_frem = 17,
   ferx_predict_survival = 22,
-  ferx_simulate_adaptive = 23
+  ferx_simulate_adaptive = 23,
+  ferx_mbma_data = 24
 )
 
 # ferx_fit / ferx_simulate arguments that belong with a topic, not the parent.
@@ -55,7 +56,7 @@ s3_class_home <- c(
   ferx_covsearch = 9, ferx_modelsearch = 9, ferx_ruvsearch = 9, ferx_data = 3,
   ferx_globalsearch = 9, ferx_inits = 5, ferx_model = 4,
   ferx_search_config = 9, ferx_search_space = 9,
-  ferx_summary = 5
+  ferx_summary = 5, ferx_mbma_data = 24
 )
 
 setting_home <- function(k) {
@@ -65,19 +66,19 @@ setting_home <- function(k) {
   if (k %in% c("mu_referencing", "scale_params", "parameter_scaling")) return(16)
   if (grepl("^npde_", k)) return(7)
   if (grepl("^frem_", k)) return(17)
-  if (grepl("^nn_", k)) return(24)
+  if (grepl("^nn_", k)) return(25)
   if (k %in% c("ignore", "accept", "ignore_subjects")) return(3)
   if (k %in% c("inits_from_nca")) return(5)
-  if (grepl("^vi_", k)) return(25)  # vi method is not accepted by ferx_fit() (PLAN §3)
+  if (grepl("^vi_", k)) return(26)  # vi method is not accepted by ferx_fit() (PLAN §3)
   6  # run control, optimizers, inner loop, multistart, SAEM, IMP/IMPMAP, Bayes, AGQ, GN
 }
 
 block_home <- c(
   parameters = 4, individual_parameters = 4, structural_model = 4, error_model = 4,
   fit_options = 4, data = 3, data_selection = 3, odes = 14, initial_conditions = 14,
-  scaling = 14, covariates = 17, covariate_model = 17, covariate_nn = 24, diffusion = 24,
+  scaling = 14, covariates = 17, covariate_model = 17, covariate_nn = 25, diffusion = 25,
   derived = 12, output = 12, event_model = 22, binary_model = 21, adaptive_dosing = 23,
-  simulation = 11, mixture = 16, markov_model = 25
+  simulation = 11, mixture = 16, markov_model = 26
 )
 
 example_home <- c(
@@ -102,8 +103,8 @@ example_home <- c(
   binary_logistic = 21,
   setNames(rep(22, 5), c("tte_exponential", "tte_weibull", "tte_gompertz", "tte_competing_risks",
     "pktte_joint")),
-  adaptive_tdm = 23, adaptive_vanco_loading = 23,
-  warfarin_sde = 24, warfarin_dcm = 24
+  adaptive_tdm = 23, adaptive_vanco_loading = 23, mbma_placebo = 24,
+  warfarin_sde = 25, warfarin_dcm = 25
 )
 
 column_home <- c(TENTRY = 22, FREMTYPE = 17)
@@ -119,8 +120,8 @@ warning_home <- c(
   boundary_estimate = 7, inflated_rse = 7, high_correlation = 7, condition_number = 7,
   covariance_step = 10, covariance_failed = 10, covariance_regularized = 10, sir = 10,
   data_quality = 3, ode_solver = 14, flip_flop = 15, absorption_twin_declined = 15,
-  omega_structure = 16, bloq_method = 19, simulation = 22, experimental = 24,
-  vi_bad_basin = 25  # vi is not accepted by ferx_fit() (PLAN §3)
+  omega_structure = 16, bloq_method = 19, simulation = 22, experimental = 25,
+  vi_bad_basin = 26  # vi is not accepted by ferx_fit() (PLAN §3)
 )
 
 rule <- function(kind, name, parent, detail) {
@@ -137,7 +138,7 @@ rule <- function(kind, name, parent, detail) {
     example = example_home[name],
     searchfile = 9,
     warning_code = warning_home[name],
-    fit_slot = 25,
+    fit_slot = 26,
     NA
   )
   if (length(n) == 0 || is.na(n)) "" else home_of(unname(n))

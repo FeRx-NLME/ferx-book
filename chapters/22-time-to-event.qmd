@@ -135,13 +135,14 @@ fit_gompertz$estimates[, c("estimate", "rse_pct")]
 ```{r}
 #| label: check-exponential-fixed
 #| include: false
-# The paragraph below traces the R warning to the fixed placeholder parameters.
+# The paragraph below says the placeholder parameters are fixed and have no standard error.
 fixed_rows <- c("DUMMY_CL", "DUMMY_V", "SIGMA_DV")
 stopifnot(all(fixed_rows %in% rownames(fit_exponential$estimates)),
-          all(fit_exponential$estimates[fixed_rows, "se"] == 0))
+          all(fit_exponential$estimates[fixed_rows, "fixed"]),
+          all(is.na(fit_exponential$estimates[fixed_rows, "se"])))
 ```
 
-The R warning after the exponential fit comes from its fixed placeholder parameters, which have no standard error. The model files give the simulation values: an exponential rate of 0.05 with variance 0.09, and Gompertz `TVALPHA` 0.002, `TVGAMMA` 0.05 with variance 0.04. The typical parameters are in range, but the between-subject variances of these single-event datasets are poorly determined. With one event per subject, frailty is hard to separate from the hazard's shape.
+The exponential fit's placeholder parameters (`DUMMY_CL`, `DUMMY_V`, `SIGMA_DV`) are fixed, so `fit_exponential$estimates` marks them `fixed` and gives them no standard error (`se` is `NA`; ferx-r {{< var ferx_r_release >}} differs, see @sec-variability). The model files give the simulation values: an exponential rate of 0.05 with variance 0.09, and Gompertz `TVALPHA` 0.002, `TVGAMMA` 0.05 with variance 0.04. The typical parameters are in range, but the between-subject variances of these single-event datasets are poorly determined. With one event per subject, frailty is hard to separate from the hazard's shape.
 
 ### A simulation-based check
 
@@ -255,7 +256,7 @@ The shape estimate changes, because the time from 0 to 4 hours no longer counts 
 
 ## Pitfalls
 
-- **`ferx_model_validate()` rejects compact TTE models at this build.** Models without `[structural_model]`, `[error_model]` and `[individual_parameters]` are reported as invalid, although they fit:
+- **Validate a compact TTE model like any other.** `ferx_model_validate()` accepts a model without `[structural_model]`, `[error_model]` and `[individual_parameters]`, such as `tte_weibull`:
 
   ```{r}
   #| label: validate-tte
@@ -263,7 +264,16 @@ The shape estimate changes, because the time from 0 to 4 hours no longer counts 
   weibull_check$ok
   ```
 
-  `tte_exponential`, which keeps the placeholder blocks, validates.
+  ```{r}
+  #| label: check-validate-tte
+  #| include: false
+  stopifnot(isTRUE(weibull_check$ok))
+  ```
+
+  ::: {.callout-note}
+  ## Changed after ferx-r {{< var ferx_r_release >}}
+  In ferx-r {{< var ferx_r_release >}}, `ferx_model_validate()` reports such compact TTE models as invalid, although they fit ([ferx-r #306](https://github.com/FeRx-NLME/ferx-r/issues/306)). Only models that keep the placeholder blocks, such as `tte_exponential`, validate there.
+  :::
 - **Set `horizon` when simulating.** Without it, analytical hazards are not censored at the end of follow-up, and a drug-driven hazard cannot be simulated.
 - **A typical-subject curve is not the population curve.** Compare observed Kaplan–Meier curves with simulations, not with `ferx_predict_survival()` at random effect 0.
 - **Covariates in a hazard must be constant within a subject.** A time-varying covariate in the hazard stops the fit.

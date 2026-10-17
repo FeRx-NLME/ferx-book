@@ -74,7 +74,7 @@ se_by_method <- sapply(c(r = "r", s = "s", rsr = "rsr"), function(m) {
 round(se_by_method, 4)
 ```
 
-`"r"` (inverse Hessian, the default) reproduces the inline standard errors, `"s"` is the inverse cross-product and `"rsr"` the sandwich estimator. `ferx_covariance()` also takes `mu_referencing` (match the original fit) and `verbose`.
+`"r"` (inverse Hessian, the default) reproduces the inline standard errors, `"s"` is the inverse cross-product and `"rsr"` the sandwich estimator. `ferx_covariance()` also takes `mu_referencing`, which by default is the value the fit was made with, and `verbose`. It repeats the inner-loop settings the fit recorded in `fit$scoring_settings`.
 
 ## SIR
 
@@ -89,11 +89,45 @@ fit_sir$sir_ci_theta
 
 `sir_ci_omega` and `sir_ci_sigma` hold the intervals for the variances and residual error. `sir_ess` is the effective sample size of the resampled set; the closer it is to `sir_resamples`, the better the proposal matches the data. `sir_keep_samples = TRUE` keeps the resampled vectors on the fit, which `ferx_simulate_with_uncertainty()` needs (@sec-simulation). `verbose = TRUE` prints progress.
 
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+The `sir_df` and `sir_scale` arguments of `ferx_sir()`, and the `sir_scale` setting, are not in ferx-r {{< var ferx_r_release >}}.
+:::
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}}, `ferx_sir()` always used its own defaults (1000 samples, 250 resamples, seed 12345), and `ferx_covariance()` its own inner-loop settings. Since then, both take whatever you leave out from the fit, as below.
+:::
+
+Two arguments shape the proposal and the target. `sir_df` is the degrees of freedom of the Student-t proposal. `sir_scale` sets the scale on which the importance-sampling target is flat: `"packed"`, the optimizer's internal scale, or `"natural"`, the scale the variances are reported on. They give different intervals for the variances:
+
+```{r}
+#| label: sir-scale
+fit_sir_natural <- ferx_sir(fit, sir_samples = 1000, sir_resamples = 250, sir_scale = "natural")
+c(packed = fit_sir$sir_ess, natural = fit_sir_natural$sir_ess)
+cbind(packed = fit_sir$sir_ci_omega, natural = fit_sir_natural$sir_ci_omega)
+```
+
+```{r}
+#| label: check-sir-scale
+#| include: false
+stopifnot(fit_sir$sir_settings$scale == "packed", fit_sir_natural$sir_settings$scale == "natural",
+          !isTRUE(all.equal(fit_sir$sir_ci_omega, fit_sir_natural$sir_ci_omega)))
+```
+
+Every SIR argument you leave out is taken from the SIR the fit already records in `fit$sir_settings`, and only otherwise from the defaults. So `ferx_sir()` on a fit that carries an SIR repeats it with the same draws, seed, `sir_df` and `sir_scale`:
+
+```{r}
+#| label: sir-repeat
+fit_sir_natural$sir_settings[c("samples", "resamples", "seed", "df", "scale")]
+identical(ferx_sir(fit_sir_natural)$sir_ci_omega, fit_sir_natural$sir_ci_omega)
+```
+
 ```{r}
 #| label: tbl-settings-sir
 #| echo: false
 #| tbl-cap: "SIR settings."
-book_settings_table(c("sir_samples", "sir_resamples", "sir_seed", "sir_keep_samples", "sir_df"))
+book_settings_table(c("sir_samples", "sir_resamples", "sir_seed", "sir_keep_samples", "sir_df", "sir_scale"))
 ```
 
 The effective sample size depends strongly on the random seed:
