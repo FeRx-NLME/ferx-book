@@ -514,7 +514,7 @@ Per-chapter loop:
   - fixed-rate infusion: `dose_rate`, `one_cpt_infusion`
 - ferx-r:
   - docs claim nn is off by default
-  - `ferx_model_validate` rejects compact TTE models
+  - ~~`ferx_model_validate` rejects compact TTE models~~ fixed by ferx-r #306 (closed 2026-10-04, in the pin from `161d28a`); ch22 says so, with a check and a "Changed after" note
   - pkgdown omits post-0.3.0 exports
 - ferx-core:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,

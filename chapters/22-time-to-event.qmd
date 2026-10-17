@@ -256,7 +256,7 @@ The shape estimate changes, because the time from 0 to 4 hours no longer counts 
 
 ## Pitfalls
 
-- **`ferx_model_validate()` rejects compact TTE models at this build.** Models without `[structural_model]`, `[error_model]` and `[individual_parameters]` are reported as invalid, although they fit:
+- **Validate a compact TTE model like any other.** `ferx_model_validate()` accepts a model without `[structural_model]`, `[error_model]` and `[individual_parameters]`, such as `tte_weibull`:
 
   ```{r}
   #| label: validate-tte
@@ -264,7 +264,16 @@ The shape estimate changes, because the time from 0 to 4 hours no longer counts 
   weibull_check$ok
   ```
 
-  `tte_exponential`, which keeps the placeholder blocks, validates.
+  ```{r}
+  #| label: check-validate-tte
+  #| include: false
+  stopifnot(isTRUE(weibull_check$ok))
+  ```
+
+  ::: {.callout-note}
+  ## Changed after ferx-r {{< var ferx_r_release >}}
+  In ferx-r {{< var ferx_r_release >}}, `ferx_model_validate()` reports such compact TTE models as invalid, although they fit ([ferx-r #306](https://github.com/FeRx-NLME/ferx-r/issues/306)). Only models that keep the placeholder blocks, such as `tte_exponential`, validate there.
+  :::
 - **Set `horizon` when simulating.** Without it, analytical hazards are not censored at the end of follow-up, and a drug-driven hazard cannot be simulated.
 - **A typical-subject curve is not the population curve.** Compare observed Kaplan–Meier curves with simulations, not with `ferx_predict_survival()` at random effect 0.
 - **Covariates in a hazard must be constant within a subject.** A time-varying covariate in the hazard stops the fit.
