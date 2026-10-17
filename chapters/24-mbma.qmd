@@ -123,6 +123,17 @@ invisible(ferx_model_get_section(mbma$model, "error_model"))
 invisible(ferx_model_get_section(mbma$model, "fit_options"))
 ```
 
+```{r}
+#| label: check-arms
+#| include: false
+# The paragraph below counts the arms and says each study has one placebo arm.
+arms_all <- distinct(arm_data, STUDY, OCC, DOSE)
+stopifnot(sum(arms_all$DOSE == 0) == n_distinct(arm_data$STUDY),
+          all(tapply(arms_all$DOSE == 0, arms_all$STUDY, sum) == 1), sum(arms_all$DOSE > 0) > 0)
+```
+
+Placebo and treated arms are fitted together, in one likelihood: all `r nrow(arms_all)` arms of the `r n_distinct(arm_data$STUDY)` studies, `r sum(arms_all$DOSE == 0)` on placebo and `r sum(arms_all$DOSE > 0)` on an active dose. Every arm of a study shares that study's placebo levels, and the Emax term, which is zero at `DOSE = 0`, adds the drug effect on top. The model therefore assumes that the placebo response is the same in a study's placebo and treated arms and adds to the drug effect. Within a study, the difference between a treated arm and its placebo arm is what identifies `EMAX`, `ED50` and `ET50`.
+
 `iov_column = OCC` makes each arm an occasion. The fit takes a few seconds:
 
 ```{r}
