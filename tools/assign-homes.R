@@ -38,7 +38,7 @@ export_home <- c(
   ferx_cov_screen = 17, ferx_gam_screen = 17, ferx_allometry = 17, ferx_model_to_frem = 17,
   ferx_predict_survival = 22,
   ferx_simulate_adaptive = 23,
-  ferx_mbma_data = 24
+  ferx_mbma_data = 24, ferx_contrast_vpc = 24
 )
 
 # ferx_fit / ferx_simulate arguments that belong with a topic, not the parent.
@@ -56,7 +56,7 @@ s3_class_home <- c(
   ferx_covsearch = 9, ferx_modelsearch = 9, ferx_ruvsearch = 9, ferx_data = 3,
   ferx_globalsearch = 9, ferx_inits = 5, ferx_model = 4,
   ferx_search_config = 9, ferx_search_space = 9,
-  ferx_summary = 5, ferx_mbma_data = 24
+  ferx_summary = 5, ferx_mbma_data = 24, ferx_contrast_vpc = 24
 )
 
 setting_home <- function(k) {
@@ -121,6 +121,7 @@ warning_home <- c(
   covariance_step = 10, covariance_failed = 10, covariance_regularized = 10, sir = 10,
   data_quality = 3, ode_solver = 14, flip_flop = 15, absorption_twin_declined = 15,
   omega_structure = 16, bloq_method = 19, simulation = 22, experimental = 25,
+  uncertainty_draws_skipped = 11,
   vi_bad_basin = 26  # vi is not accepted by ferx_fit() (PLAN §3)
 )
 

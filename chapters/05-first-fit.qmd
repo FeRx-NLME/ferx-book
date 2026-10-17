@@ -367,7 +367,7 @@ data.frame(
 )
 ```
 
-All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient). The NCA start with finite differences, however, ended at an OFV about `r round(fit_nca$ofv - fit$ofv)` points higher than the fit from the model file's values, and nothing in its warnings says so:
+All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient), and they end within `r signif(diff(range(c(fit$ofv, fit_nca$ofv, fit_nca_auto$ofv))), 2)` OFV points of each other, at nearly the same estimates. Their warnings are of the same kinds:
 
 ```{r}
 #| label: nca-warnings
@@ -379,14 +379,20 @@ rbind(model_file = fit$theta, nca = fit_nca$theta)
 ```{r}
 #| label: check-nca-warnings
 #| include: false
-# The paragraphs around this chunk say the fit is clearly worse yet its warnings are
-# no more severe than the model-file fit's, so either turning false has to fail the render.
+# The paragraphs around this chunk say the three starts reach the same optimum (within
+# one OFV point), with warnings no more severe than the model-file fit's.
 nca_general <- nca_warnings$message[nca_warnings$category == "general"]
-stopifnot(fit_nca$ofv - fit$ofv > 10, worst(fit_nca) == worst(fit),
+stopifnot(diff(range(c(fit$ofv, fit_nca$ofv, fit_nca_auto$ofv))) < 1,
+          worst(fit_nca) == worst(fit), worst(fit_nca_auto) == worst(fit),
           length(nca_general) > 0, all(grepl("gradient = fd|inits_from_nca", nca_general)))
 ```
 
-Its warnings are no more severe than those of the model-file fit (the worst is `r worst(fit_nca)`-level for both), and none of them says the fit is worse: the `general` notes are about the gradient setting and the NCA itself. The fit simply stopped at a different, worse point: `TVV1` ends at `r round(fit_nca$theta[["TVV1"]], 1)` instead of `r round(fit$theta[["TVV1"]], 1)`. The NCA-based absorption rate constant it started from (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the model-file fit's estimate (`r round(ferx_coef(fit, "TVKA"), 3)`). The analytic-gradient fit from the same start comes within `r abs(round(fit_nca_auto$ofv - fit$ofv, 1))` points of the model-file fit.
+The `general` notes are about the gradient setting and the NCA itself. On this model the NCA-based values are a good start: `TVV1` ends at `r round(fit_nca$theta[["TVV1"]], 1)` against `r round(fit$theta[["TVV1"]], 1)`, although the NCA-based absorption rate constant it started from (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the model-file fit's estimate (`r round(ferx_coef(fit, "TVKA"), 3)`).
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+With ferx-r {{< var ferx_r_release >}}, the NCA start with finite differences stops about 33 OFV points above the model-file fit (the book's {{< var ferx_r_release >}} edition shows −1152.6 against −1185.4), with `converged = TRUE` and warnings no more severe than the model-file fit's, and the `gradient = "auto"` fit about 3 points above. That is the case comparing starts exists to catch.
+:::
 
 Convergence only means the optimizer stopped, and a clean warning list does not mean it stopped at the best point. Fit from more than one start and compare the OFVs before accepting a fit.
 
