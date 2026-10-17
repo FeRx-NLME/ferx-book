@@ -64,7 +64,7 @@ for (block in c("structural_model", "odes", "scaling")) {
 }
 ```
 
-Each analytical example has an ODE twin in the package. Fitted to the same data, each pair reaches the same OFV; the ODE version only takes longer. The covariance step is skipped here to save time:
+Each analytical example has an ODE twin in the package. The covariance step is skipped here to save time:
 
 ```{r}
 #| label: tbl-twins
@@ -81,15 +81,30 @@ fit_timed <- function(ex) {
   start <- Sys.time()
   # suppress the R warning that reports overriding the model file's covariance setting
   f <- suppressWarnings(ferx_fit(ex$model, ex$data, covariance = FALSE, verbose = FALSE))
-  c(ofv = f$ofv, seconds = as.numeric(difftime(Sys.time(), start, units = "secs")))
+  list(ofv = f$ofv, seconds = as.numeric(difftime(Sys.time(), start, units = "secs")),
+       exact = isTRUE(f$ode_linear_exact))
 }
 twin_results <- do.call(rbind, lapply(pairs, function(p) {
   a <- fit_timed(p[[2]]); o <- fit_timed(p[[3]])
-  data.frame(model = p[[1]], ofv_analytical = a[["ofv"]], ofv_ode = o[["ofv"]],
-             seconds_analytical = round(a[["seconds"]], 1), seconds_ode = round(o[["seconds"]], 1))
+  data.frame(model = p[[1]], ofv_analytical = a$ofv, ofv_ode = o$ofv, ode_exact = o$exact,
+             seconds_analytical = round(a$seconds, 1), seconds_ode = round(o$seconds, 1))
 }))
 twin_results
 ```
+
+```{r}
+#| label: check-twins
+#| include: false
+# The prose: every pair reaches the same OFV, and every twin was solved exactly.
+stopifnot(all(abs(twin_results$ofv_analytical - twin_results$ofv_ode) < 1e-3), all(twin_results$ode_exact))
+```
+
+Fitted to the same data, each pair reaches the same OFV. These ODE systems are linear, and ferx solves a linear system exactly, with the matrix exponential, instead of integrating it step by step: `fit$ode_linear_exact` records that, and `ode_exact` above reads it. The ODE twins therefore cost little more than the analytical forms. A nonlinear system, such as Michaelis-Menten elimination (below), is still integrated.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+`fit$ode_linear_exact`, `ode_method = "linear"` and the exact solution of a linear ODE system are not in ferx-r {{< var ferx_r_release >}}. There every ODE fit is integrated, so the twins take much longer than the analytical forms.
+:::
 
 Use the analytical form whenever a built-in model fits the problem, and write ODEs only when it doesn't.
 
@@ -380,25 +395,47 @@ book_settings_table(c("ode_method", "ode_reltol", "ode_abstol", "ode_max_steps",
                       "ode_stiff_abort_after", "ode_auto_switch"))
 ```
 
-The bundled ODE twins set very tight tolerances (`ode_reltol = 1e-10`, `ode_abstol = 1e-12`) so that they match the analytical models exactly. Looser tolerances are faster and change the OFV slightly:
+The bundled ODE twins set very tight tolerances (`ode_reltol = 1e-10`, `ode_abstol = 1e-12`), so that they match the analytical models when integrated. Tolerances apply only when ferx integrates: a nonlinear system, or a linear one with a stepper named in `ode_method` (below). On the nonlinear `mm_oral`, looser tolerances are faster and change the OFV slightly:
 
 ```{r}
 #| label: tbl-ode-tolerance
-#| tbl-cap: "Default and tight ODE tolerances on `warfarin_ode` (covariance step skipped)."
+#| tbl-cap: "Default and tight ODE tolerances on `mm_oral` (covariance step skipped)."
 w_ode <- ferx_example("warfarin_ode")
+tolerance_runs <- list()
 tolerances <- list(default = list(), tight = list(ode_reltol = 1e-10, ode_abstol = 1e-12))
 do.call(rbind, lapply(names(tolerances), function(nm) {
   settings <- utils::modifyList(list(ode_reltol = 1e-4, ode_abstol = 1e-6), tolerances[[nm]])
   start <- Sys.time()
   # suppress the R warnings that report overriding the model file's settings
-  f <- suppressWarnings(ferx_fit(w_ode$model, w_ode$data, covariance = FALSE, settings = settings,
+  f <- suppressWarnings(ferx_fit(mm$model, mm$data, covariance = FALSE, settings = settings,
                                  verbose = FALSE))
+  tolerance_runs[[nm]] <<- f
   data.frame(tolerance = nm, ode_reltol = settings$ode_reltol, ode_abstol = settings$ode_abstol,
              ofv = round(f$ofv, 5), seconds = round(as.numeric(difftime(Sys.time(), start, units = "secs")), 1))
 }))
 ```
 
-`ode_method` selects the stepper: explicit (`rk45`, `vern7`), stiff (`rosenbrock23`, `rodas4`, `rodas5p`) or `auto`, which starts explicit and escalates when stiffness is detected. On this non-stiff model, all of them converge, to OFVs within about 0.01 of each other at moderate tolerances, but at different speeds:
+```{r}
+#| label: check-ode-tolerance
+#| include: false
+# "change the OFV slightly": a visible but small difference, on an integrated (not exact) fit.
+tol_gap <- abs(tolerance_runs$default$ofv - tolerance_runs$tight$ofv)
+stopifnot(tol_gap > 1e-4, tol_gap < 1, !isTRUE(tolerance_runs$default$ode_linear_exact))
+```
+
+`ode_method` selects the stepper: explicit (`rk45`, `vern7`), stiff (`rosenbrock23`, `rodas4`, `rodas5p`) or `auto`, which takes the exact solution for a linear system and otherwise starts explicit and escalates when stiffness is detected. Naming a stepper makes ferx integrate even a linear system such as `warfarin_ode`, and `ode_method = "linear"` asks for the exact solution outright, which a nonlinear system refuses:
+
+```{r}
+#| label: ode-method-linear
+try(ferx_fit(mm$model, mm$data, settings = list(ode_method = "linear"), verbose = FALSE))
+```
+
+```{r}
+#| label: check-ode-method-linear
+#| include: false
+stopifnot(inherits(tryCatch(ferx_fit(mm$model, mm$data, settings = list(ode_method = "linear"), verbose = FALSE),
+                            error = function(e) e), "error"))
+``` On this non-stiff model, all of them converge, to OFVs within about 0.01 of each other at moderate tolerances, but at different speeds:
 
 ```{r}
 #| label: tbl-ode-methods
@@ -495,7 +532,7 @@ The ferx-core [initial conditions](https://ferx-nlme.org/ferx-core/model-file/in
 
 ## Summary
 
-- Built-in `pk` models cover 1–3 compartments, IV and oral. Their ODE twins reach the same fit, only more slowly.
+- Built-in `pk` models cover 1–3 compartments, IV and oral. Their ODE twins reach the same fit, and as linear systems they are solved exactly rather than integrated.
 - Write `[odes]` for nonlinear or custom systems. `ode_template` generates a built-in model's ODEs for you.
 - Tune ODE fits with `ode_method` and the tolerance settings.
 - `[scaling]` maps the model output to `DV`: a constant or expression divisor (`obs_scale`), or a readout per observation (`y`), per `CMT` if needed.

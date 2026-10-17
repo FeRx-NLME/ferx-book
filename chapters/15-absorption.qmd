@@ -215,14 +215,21 @@ rbind(ode = c(ofv = fit_lag_ode$ofv, seconds = fit_lag_ode$wall_time_secs, fit_l
                      fit_lag_analytical$theta))
 ```
 
-The small OFV difference comes from the ODE solver tolerance of the bundled model (@sec-structural-models). The individual lag times are in `fit$individual_estimates`:
+```{r}
+#| label: check-lag-exact
+#| include: false
+# With the exact solution the prose says both forms reach the same fit.
+if (isTRUE(fit_lag_ode$ode_linear_exact)) stopifnot(abs(fit_lag_ode$ofv - fit_lag_analytical$ofv) < 1e-3)
+```
+
+`r if (isTRUE(fit_lag_ode$ode_linear_exact)) "The ODE system is linear, so ferx solves it exactly rather than integrating it, and both forms reach the same fit (@sec-structural-models)." else "The small OFV difference comes from the ODE solver tolerance of the bundled model (@sec-structural-models)."` The individual lag times are in `fit$individual_estimates`:
 
 ```{r}
 #| label: lagtime-individual
 head(fit_lag_analytical$individual_estimates, 3)
 ```
 
-The ODE fit reports the same individual parameters, to about four significant digits:
+The ODE fit reports the same individual parameters:
 
 ```{r}
 #| label: ode-individual-estimates

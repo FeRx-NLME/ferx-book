@@ -69,7 +69,7 @@ identical(nca$theta, ferx_inits_from_nca(base$model, base$data, method = "nca")$
   identical(nca$theta, ferx_inits_from_nca(base$model, base$data, method = "nca_ebe")$theta)
 ```
 
-To fit from these values directly, pass `inits_from_nca` to `ferx_fit()`: `TRUE`, or one of the method names. The same option exists as the `inits_from_nca` key in `[fit_options]` or `settings`. The *Variants* section below shows that this is not always an improvement.
+To fit from these values directly, pass `inits_from_nca` to `ferx_fit()`: `TRUE`, or one of the method names. The same option exists as the `inits_from_nca` key in `[fit_options]` or `settings`. The *Variants* section below compares the two starts.
 
 ### A pilot run
 
@@ -367,7 +367,7 @@ data.frame(
 )
 ```
 
-All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient), and they end within `r signif(diff(range(c(fit$ofv, fit_nca$ofv, fit_nca_auto$ofv))), 2)` OFV points of each other, at nearly the same estimates. Their warnings are of the same kinds:
+All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient), and they end within `r signif(diff(range(c(fit$ofv, fit_nca$ofv, fit_nca_auto$ofv))), 2)` OFV points of each other, at nearly the same estimates. Their warnings are no more severe than the model-file fit's:
 
 ```{r}
 #| label: nca-warnings
@@ -426,7 +426,7 @@ For the same reason `fit_short$n_iterations` is `r fit_short$n_iterations` here,
 ### Warnings you may see here
 
 - `convergence` (critical): the optimizer did not converge. Reject the fit, then change starting values, method or bounds and refit. See [convergence and covariance warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence).
-- `general` (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, a misspelt data-selection column (@sec-data), and two notes about the outer gradient: that `gradient = fd` in the model file also changed the optimizer, and that some subjects "could not be given the exact analytic outer gradient" and used an approximate one (@sec-estimation-methods); giving those two a category of their own is [ferx-core #1618](https://github.com/FeRx-NLME/ferx-core/issues/1618). Read the message. See [solver, numerics and unclassified warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-solver).
+- `general` (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, a misspelt data-selection column (@sec-data), and two notes about the outer gradient: that `gradient = fd` in the model file also changed the optimizer, and, on models where it applies, that some subjects "could not be given the exact analytic outer gradient" and used an approximate one (@sec-estimation-methods describes it); giving those two a category of their own is [ferx-core #1618](https://github.com/FeRx-NLME/ferx-core/issues/1618). Read the message. See [solver, numerics and unclassified warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-solver).
 
 ## Summary
 
