@@ -1056,6 +1056,8 @@ Per-chapter loop:
 
 - **ferx-core, found 2026-10-09 (ch24, at `826d3bb9`), filed as [ferx-core #1827](https://github.com/FeRx-NLME/ferx-core/issues/1827):** the refusal of a weighted kappa in a compartment-free model's `y =` names `[scaling]`, because the parser stores a compartment-free `[structural_model]` under the `scaling` key. ch24's `weight-refusals` chunk explains it in a comment; `check-weight-refusals` fails once fixed, then remove both.
 
+- **Review round 5 (2026-10-17): prose contradicted by its own output at `161d28a`.** A read of every rendered chapter against the output beside it found ten stale passages that no check guarded, all fixed on #35 with a check each: ch06 the bobyqa-seeded refit stalls (the prose said it does not); ch09 the search-file table listed four of eight examples, and the global-search ranking is on `fitness`, not the criterion; ch16/ch18 the bundled zero omegas are `FIX` since ferx-r #443, so ch18's chunk fitted instead of showing the refusal (now a copy without `FIX`); ch18 the state AUC falls on day 8, after the last dose; ch20 no R correlation warning (FIX SE is `NA`), no `W_NO_DOSES`/`W_CMT_DEFAULTED` on `ferx_predict()`, `TAM_TAU` is a nearest-observation count on sparse samples (12 h in window 2 from two samples), and only the typical PK values are precise; ch22 compact TTE models validate (#306); ch24 the printout's `Gradient: ANALYTIC` is the model-level route. Lesson: a claim with no `check-` chunk goes stale silently; review renders, not sources.
+
 ### Maintenance: pin bump
 
 1. Diff NAMESPACE, `formals`, settings keys, example registry (rerun

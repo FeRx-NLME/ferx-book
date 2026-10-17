@@ -325,7 +325,7 @@ stopifnot("stalled_at_init" %in% restart_warnings$category,
 
 Here the start really was the optimum, so `stalled_at_init` is expected and harmless. What `converged` says beside it can depend on the optimizer: here it is `r fit_restart_slsqp$converged` under `slsqp` and `r fit_restart$converged` under `bobyqa`. A stalled fit reported as converged is the case the warning exists for, since nothing else would flag it. Either way, read `stalled_at_init` first. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
 
-The seed has to come from a run that actually reached the optimum. The same rewrite applied to the `bobyqa` fit of the previous section does not stall, because that fit stopped short of the optimum (@tbl-optimizers) and the optimizer still has somewhere to go:
+The same rewrite can seed a refit from the `bobyqa` fit of the previous section, which stopped `r signif(fit_bobyqa$ofv - fit_warf$ofv, 1)` OFV units short of the optimum (@tbl-optimizers):
 
 ```{r}
 #| label: stalled-at-init-seed
@@ -337,6 +337,15 @@ data.frame(seed = c("converged fit", "bobyqa fit"),
            seed_ofv = c(fit_warf$ofv, fit_bobyqa$ofv),
            stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
 ```
+
+```{r}
+#| label: check-stalled-at-init-seed
+#| include: false
+# The paragraph says the bobyqa seed is short of the optimum; the rest follows the computed flag.
+stopifnot(fit_bobyqa$ofv > fit_warf$ofv)
+```
+
+`r if (fit_from_bobyqa$stalled_at_init) "That refit stalls as well: started so close to the optimum, \x60bobyqa\x60 finds nothing to improve. So \x60stalled_at_init\x60 says the optimizer did not move, not that the start was the optimum. Compare the OFV with a fit that is known to have converged before reading a stall as harmless." else "That refit does not stall: the optimizer still has somewhere to go, so a stall points to a start at the optimum."`
 
 `ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare.
 

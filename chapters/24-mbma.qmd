@@ -323,7 +323,8 @@ stopifnot(isTRUE(fit_fixed$converged), any(grepl("THETA BLOCKS", printed)),
           sum(!is.na(fit_fixed$theta_levels$theta_name)) == 23,
           sum(grepl("^PLACEBO\\[", names(fit_fixed$theta))) == 23,
           lengths(regmatches(structure_line, gregexpr("PLACEBO\\[", structure_line))) == 23,
-          length(general) == 2, any(grepl("finite differences", general)))
+          length(general) == 2, any(grepl("finite differences", general)),
+          any(grepl("model-level route", general, fixed = TRUE)))
 ```
 
 The THETA table now shows the four structural parameters and one line for `PLACEBO`. Every coefficient is still in `fit_fixed$theta`, and `fit_fixed$theta_levels` still has every level with its value.
@@ -333,7 +334,7 @@ The THETA table now shows the four structural parameters and one line for `PLACE
 The `Structural:` line under MODEL STRUCTURE still lists every level by name, so for a block with hundreds of levels that line, not the THETA table, is the long one ([ferx-r #538](https://github.com/FeRx-NLME/ferx-r/issues/538)). Read the levels from `fit$theta_levels`.
 :::
 
-This model estimates more parameters than the analytic gradient handles, so ferx falls back to finite differences and says so in two `general` warnings. The fit is correct, only slower. The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
+This model estimates more parameters than the analytic gradient path handles, so its subjects fall back to finite differences, and ferx says so in two `general` warnings. The printout still reads `Gradient: ANALYTIC` because it reports the model-level route, not what each subject used, as the second warning notes. The fit is correct, only slower. The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
 
 ## Saving and reloading the fit
 

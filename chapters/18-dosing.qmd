@@ -177,11 +177,23 @@ concentration <- function(t) {
     if (tad <= 0) 0 else 100 * p$KA / (p$V * (p$KA - ke)) * (exp(-ke * tad) - exp(-p$KA * tad))
   })))
 }
-distinct(filter(fit_state$sdtab, ID == 1), DAY, AUC_TAU, AUC_TAU_STATE) |>
+auc_days <- distinct(filter(fit_state$sdtab, ID == 1), DAY, AUC_TAU, AUC_TAU_STATE) |>
   mutate(AUC_EXACT = sapply(DAY, function(day) integrate(concentration, (day - 1) * 24, day * 24)$value))
+auc_days
 ```
 
-The state integral matches the exact areas and rises as the drug accumulates. The `IPRED` integral does not: the day-4 window, with a single sample, even comes out below day 2. Windows are reported on the rows that fall in them, so days 3 and 5, which have no samples, have no row.
+```{r}
+#| label: check-auc-days
+#| include: false
+# The prose: the state integral matches the exact areas, rises over the dosing days (the last
+# dose is at 144 h, in day 7) and falls in day 8, after the last dose.
+dosing_days <- auc_days$DAY <= 7
+stopifnot(max(abs(auc_days$AUC_TAU_STATE / auc_days$AUC_EXACT - 1)) < 0.01,
+          all(diff(auc_days$AUC_TAU_STATE[dosing_days]) > 0),
+          tail(auc_days$AUC_TAU_STATE, 1) < auc_days$AUC_TAU_STATE[auc_days$DAY == 7])
+```
+
+The state integral matches the exact areas. It rises as the drug accumulates over the dosing days and falls on day 8, the window after the last dose at 144 h. The `IPRED` integral does not: the day-4 window, with a single sample, even comes out below day 2. Windows are reported on the rows that fall in them, so days 3 and 5, which have no samples, have no row.
 
 ### Filters without matching rows
 
@@ -239,12 +251,23 @@ data.frame(TIME = ferx_predict(inf_abs$model, inf_abs$data)$TIME,
            analytical = ferx_predict(analytical(0.6, file.path(dosing_dir, "inf_analytical.ferx")), inf_abs$data)$PRED)
 ```
 
-The two examples declare `omega ETA_CL ~ 0.0` without `FIX`. That is fine for prediction, but a fit stops and asks for `FIX` or a positive starting variance (@sec-variability):
+The two examples declare `omega ETA_CL ~ 0.0 FIX`: one typical subject, so there is no variability to estimate. Without `FIX`, a fit stops and asks for `FIX` or a positive starting variance (@sec-variability):
 
 ```{r}
 #| label: absorption-doses-fit
-fit_attempt <- tryCatch(ferx_fit(ss_abs$model, ss_abs$data, verbose = FALSE), error = conditionMessage)
+no_fix <- sub("omega ETA_CL ~ 0.0 FIX", "omega ETA_CL ~ 0.0", readLines(ss_abs$model), fixed = TRUE)
+stopifnot(any(grepl("omega ETA_CL ~ 0.0 ", no_fix, fixed = TRUE)), !any(grepl("0.0 FIX", no_fix, fixed = TRUE)))
+no_fix_model <- file.path(dosing_dir, "ss_absorption_no_fix.ferx")
+writeLines(no_fix, no_fix_model)
+fit_attempt <- tryCatch(ferx_fit(no_fix_model, ss_abs$data, verbose = FALSE), error = conditionMessage)
 sub(",.*", "", fit_attempt)  # first clause
+```
+
+```{r}
+#| label: check-absorption-doses-fit
+#| include: false
+# The paragraph says the copy without FIX is refused, and @sec-variability points here for the message.
+stopifnot(is.character(fit_attempt), grepl("declares no variability", fit_attempt, fixed = TRUE))
 ```
 
 ### Other dose records
