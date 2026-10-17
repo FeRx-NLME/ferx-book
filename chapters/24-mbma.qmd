@@ -15,7 +15,7 @@ This chapter fits the bundled `mbma_placebo` example. It covers the arm-level da
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example and no `fit$theta_levels`. The `.fitrx` round trip of a level block and `ferx_sir()` / `ferx_covariance()` following the fit's own settings are newer than {{< var ferx_r_release >}} as well.
+This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, and `ferx_sir()` / `ferx_covariance()` following the fit's own settings are newer than {{< var ferx_r_release >}} as well.
 :::
 
 ::: {.callout-note}
@@ -108,7 +108,7 @@ invisible(ferx_mbma_data(one_arm, study = "trial", arm = "arm", time = "week",
                          mean = "mean", sd = "sd", n = "n"))
 ```
 
-The fitting functions take a CSV path, so write the result with `write.csv(d, path, row.names = FALSE)` before fitting it.
+The result goes straight into the fitting functions: their `data` argument takes a data.frame as well as a CSV path (shown below).
 
 ## Minimal runnable call
 
@@ -151,7 +151,22 @@ stopifnot(isTRUE(fit$converged), fit$covariance_status == "computed",
           sum(!is.na(fit$theta_levels$theta_name)) == 18)
 ```
 
-The fit converges and the covariance step runs. The rest of this chapter reads the result one part at a time.
+The fit converges and the covariance step runs. The `ferx_mbma_data()` table fits the same way, with no file in between:
+
+```{r}
+#| label: fit-table
+fit_table <- ferx_fit(mbma$model, arm_table, verbose = FALSE)
+c(file = fit$ofv, table = fit_table$ofv)
+```
+
+```{r}
+#| label: check-fit-table
+#| include: false
+# The prose: the same fit to the printed digits, not bit-identical.
+stopifnot(abs(fit_table$ofv - fit$ofv) < 1e-4, isTRUE(all.equal(fit_table$theta, fit$theta, tolerance = 1e-4)))
+```
+
+The two agree to the printed digits but are not bit-identical: the bundled file stores each standard error to 15 significant digits, while `arm_table` holds them at full precision. The rest of this chapter reads the fit of the file one part at a time.
 
 ## Reading the result
 
@@ -271,7 +286,7 @@ stopifnot(all(truth > est - 1.96 * se), all(truth < est + 1.96 * se))
 
 ### The placebo levels: `fit$theta_levels`
 
-`fit$theta_levels` has one row per level of every level block. The 24 study-by-visit cells here give 24 rows. Under `sum_to_zero_within`, one level per study is not estimated but derived as minus the sum of the others, so it has no theta of its own: its `theta_name` is `NA`. The `value` column holds the fitted value of every level, derived ones included, so each study's values sum to zero:
+`fit$theta_levels` has one row per level of every level block. The 24 study-by-visit cells here give 24 rows. Under `sum_to_zero_within`, one level per study is not estimated but derived as minus the sum of the others, so it has no theta of its own: its `theta_name` is `NA`. The `value` column holds the fitted value of every level, derived ones included, so each study's values sum to zero. `se` is each level's standard error: a free level's own, and for a derived level the delta-method standard error of the negated sum. (`sir_lo` and `sir_hi` stay empty until SIR runs, below.)
 
 ```{r}
 #| label: theta-levels
@@ -284,18 +299,21 @@ round(tapply(levels_fit$value, levels_fit$group, sum), 10)
 #| label: check-theta-levels
 #| include: false
 stopifnot(nrow(levels_fit) == 24, sum(is.na(levels_fit$theta_name)) == 6,
-          all(abs(tapply(levels_fit$value, levels_fit$group, sum)) < 1e-8))
+          all(abs(tapply(levels_fit$value, levels_fit$group, sum)) < 1e-8),
+          all(is.finite(levels_fit$se) & levels_fit$se > 0), all(is.na(levels_fit$sir_lo)))
 ```
 
-Because `value` is complete, the placebo time course plots straight from it. The level labels come in the order of the sorted `(STUDY, TIME)` cells, which the `stopifnot()` in the `tve0` chunk confirmed, so `cells` already carries each level's study and visit:
+Because `value` and `se` are complete, the placebo time course and its uncertainty plot straight from them. The level labels come in the order of the sorted `(STUDY, TIME)` cells, which the `stopifnot()` in the `tve0` chunk confirmed, so `cells` already carries each level's study and visit:
 
 ```{r}
 #| label: fig-placebo-levels
-#| fig-cap: "Fitted placebo levels: each study's deviation from its own mean placebo level, by visit. Every study's levels sum to zero."
+#| fig-cap: "Fitted placebo levels with 95% intervals from their standard errors: each study's deviation from its own mean placebo level, by visit. Every study's levels sum to zero."
+cells$se <- levels_fit$se
 ggplot(cells, aes(TIME, placebo_level, colour = factor(STUDY))) +
   geom_hline(yintercept = 0, colour = "grey60") +
   geom_line() +
-  geom_point() +
+  geom_pointrange(aes(ymin = placebo_level - 1.96 * se, ymax = placebo_level + 1.96 * se),
+                  position = position_dodge(width = 0.6), size = 0.3) +
   labs(x = "Week", y = "Placebo level (score points)", colour = "Study")
 ```
 
@@ -325,27 +343,58 @@ fit_fixed
 #| label: check-fixed-study
 #| include: false
 # The prose: 23 free levels shown as one THETA BLOCKS line; every level still in
-# fit$theta; the structure line still lists every level; the two general
-# warnings are the finite-difference fallback past the analytic gradient cap.
+# fit$theta; the structure line names the block once; the two general warnings
+# are the finite-difference fallback past the analytic gradient cap.
 printed <- capture.output(print(fit_fixed))
 structure_line <- grep("^  Structural:", printed, value = TRUE)
 general <- subset(ferx_get_warnings(fit_fixed, as_df = TRUE), category == "general")$message
 stopifnot(isTRUE(fit_fixed$converged), any(grepl("THETA BLOCKS", printed)),
           sum(!is.na(fit_fixed$theta_levels$theta_name)) == 23,
           sum(grepl("^PLACEBO\\[", names(fit_fixed$theta))) == 23,
-          lengths(regmatches(structure_line, gregexpr("PLACEBO\\[", structure_line))) == 23,
+          grepl("PLACEBO[STUDY, TIME] (23 coefficients)", structure_line, fixed = TRUE),
+          !grepl("PLACEBO[STUDY=", structure_line, fixed = TRUE),
           length(general) == 2, any(grepl("finite differences", general)),
           any(grepl("model-level route", general, fixed = TRUE)))
 ```
 
-The THETA table now shows the four structural parameters and one line for `PLACEBO`. Every coefficient is still in `fit_fixed$theta`, and `fit_fixed$theta_levels` still has every level with its value.
-
-::: {.callout-warning}
-## At this build
-The `Structural:` line under MODEL STRUCTURE still lists every level by name, so for a block with hundreds of levels that line, not the THETA table, is the long one ([ferx-r #538](https://github.com/FeRx-NLME/ferx-r/issues/538)). Read the levels from `fit$theta_levels`.
-:::
+The THETA table now shows the four structural parameters and one line for `PLACEBO`, and the `Structural:` line under MODEL STRUCTURE names the block once with its number of coefficients, whatever its size. Every coefficient is still in `fit_fixed$theta`, and `fit_fixed$theta_levels` still has every level with its value.
 
 This model estimates more parameters than the analytic gradient path handles, so its subjects fall back to finite differences, and ferx says so in two `general` warnings. The printout still reads `Gradient: ANALYTIC` because it reports the model-level route, not what each subject used, as the second warning notes. The fit is correct, only slower. The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
+
+## Checking the treatment contrast
+
+An MBMA is about the treatment contrast: the difference between an active arm and placebo within a study. An arm-level VPC (@sec-vpc) mixes that with everything else the arms of a study share, above all the between-study spread. `ferx_contrast_vpc()` forms the contrast directly. Within each study (`within`) and visit (`time`, `TIME` by default), it subtracts the reference arm (`by` equal to `ref`) from each active arm, on the data and on every replicate of a simulation from the fit. The between-study `ETA_E0` and the placebo levels are shared by a study's arms and cancel, so what is left is the drug effect plus the between-arm and residual variability. `arm` names the column that tells a study's arms apart (`OCC` here):
+
+```{r}
+#| label: contrast-vpc
+contrast <- ferx_contrast_vpc(fit, by = "DOSE", ref = 0, within = "ID", arm = "OCC",
+                              n_sim = 500, seed = 1)
+contrast
+head(contrast$pairs, 4)
+```
+
+`print()` on a `ferx_contrast_vpc` object summarises the pairing and the check. `$pairs` has one row per study, visit and active arm: the observed contrast, the simulated band for that pair (`SIM_LO`, `SIM_MED`, `SIM_HI`, at `probs`, by default the 5th, 50th and 95th percentiles) and `PCTL`, the fraction of simulated contrasts below the observed one. `$vpc` summarises by dose and visit, and `plot()` draws it:
+
+```{r}
+#| label: fig-contrast-vpc
+#| fig-cap: "Contrast VPC: active minus placebo within a study, by dose and week. Points are observed contrasts, the band is the 90% interval of the simulated median contrast."
+#| fig-height: 6
+plot(contrast)
+```
+
+```{r}
+#| label: check-contrast-vpc
+#| include: false
+# The prose counts pairs, studies and the cells whose observed median falls outside the band.
+outside <- with(contrast$vpc, OBS_MED < SIM_LO | OBS_MED > SIM_HI)
+extreme <- with(contrast$pairs, PCTL < 0.05 | PCTL > 0.95)
+stopifnot(nrow(contrast$pairs) > 0, length(contrast$excluded) == 0,
+          sum(outside) < nrow(contrast$vpc) / 4)
+```
+
+The `r nrow(contrast$pairs)` pairs come from all `r length(unique(contrast$pairs$ID))` studies, since each has a placebo arm at every visit. The observed median contrast lies outside the simulated band in `r sum(outside)` of the `r nrow(contrast$vpc)` dose-by-week cells, and `r sum(extreme)` of the `r nrow(contrast$pairs)` single pairs fall outside their own 5 to 95 percent range. With one to five pairs per cell and a 90% band, a few such cells are expected by chance; a dose-response or time course the model gets wrong would show as a run of cells on one side.
+
+Other arguments: `scale` sets the scale the difference is formed on (`"observed"`, the default, or `"log"`, `"logit"`, `"expit"`), `cmt` picks one endpoint of multi-endpoint data, and `model` and `data` override the fit's own files. A study without a reference arm is left out with a warning, and one with two reference arms is refused.
 
 ## Saving and reloading the fit
 
@@ -377,8 +426,8 @@ The covariance step on the reloaded fit gives the same standard errors as the or
 
 ```{r}
 #| label: sir
-fit_sir <- ferx_sir(fit, sir_seed = 7)
-fit_sir$sir_settings[c("samples", "resamples", "seed")]
+fit_sir <- ferx_sir(fit, sir_seed = 7, sir_keep_samples = TRUE)
+fit_sir$sir_settings[c("samples", "resamples", "seed", "keep_samples")]
 fit_sir$sir_ess
 fit_sir$sir_ci_kappa
 fit_sir_again <- ferx_sir(fit_sir)
@@ -391,6 +440,24 @@ identical(fit_sir_again$sir_ci_theta, fit_sir$sir_ci_theta)
 #| include: false
 stopifnot(fit_sir_again$sir_seed_used == 7, identical(fit_sir_again$sir_ci_theta, fit_sir$sir_ci_theta))
 ```
+
+With the resampled vectors kept (`sir_keep_samples = TRUE`), `ferx_sir()` also fills in each placebo level's 95% SIR interval in `theta_levels`, the derived levels included:
+
+```{r}
+#| label: sir-levels
+head(fit_sir$theta_levels[, c("label", "theta_name", "value", "se", "sir_lo", "sir_hi")], 4)
+```
+
+```{r}
+#| label: check-sir-levels
+#| include: false
+tl <- fit_sir$theta_levels
+stopifnot(!anyNA(tl$sir_lo), !anyNA(tl$sir_hi[is.na(tl$theta_name)]), all(tl$sir_lo <= tl$value & tl$value <= tl$sir_hi),
+          # the sentence below: the first derived level is among the four rows shown, and it is study 1's
+          any(is.na(head(tl$theta_name, 4))), tl$group[which(is.na(tl$theta_name))[1]] == 0)
+```
+
+Row `r which(is.na(fit_sir$theta_levels$theta_name))[1]`, `r fit_sir$theta_levels$label[which(is.na(fit_sir$theta_levels$theta_name))[1]]`, is study 1's derived level: it has no theta of its own, so its `theta_name` is `NA` (see *The placebo levels* above), and its interval comes from the same draws as the free levels' intervals.
 
 The effective sample size, the number of resamples the weights effectively support, depends strongly on the seed for this model. Check a few seeds before trusting one set of intervals:
 
@@ -428,9 +495,7 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
   #| label: new-visit
   new_visit <- arm_data[arm_data$STUDY == 1 & arm_data$OCC == 1, ][1, ]
   new_visit$TIME <- 6
-  new_visit_file <- file.path(mbma_dir, "new_visit.csv")
-  write.csv(new_visit, new_visit_file, row.names = FALSE)
-  try(ferx_simulate(mbma$model, new_visit_file, n_sim = 1, fit = fit))
+  try(ferx_simulate(mbma$model, new_visit, n_sim = 1, fit = fit))
   ```
 
   To pool visits into windows, number the cells yourself with `ferx_mbma_data(index = ...)` or `levels =` and use the counted form `theta PLACEBO[N]`.
@@ -475,13 +540,14 @@ No warning category has this chapter as its home. The fits above raise two that 
 - `DV ~ additive(ADD_ERR) weight = SE` with `ADD_ERR` fixed at 1 is inverse-variance weighting on the natural scale.
 - `kappa ... weight = NARM` is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, `sqrt(gamma2 / fit$kappa_weight_typical)`.
 - With `contrast = sum_to_zero_within`, `TVE0` is each study's mean placebo level over its visits, not its week-0 level.
-- `fit$theta_levels$value` holds every placebo level, derived ones included. Large blocks print as one THETA BLOCKS line.
+- `fit$theta_levels` holds every placebo level's value and standard error, derived ones included, and its SIR interval after `ferx_sir(sir_keep_samples = TRUE)`. Large blocks print as one THETA BLOCKS line.
+- `ferx_contrast_vpc()` checks the model on the treatment contrast within a study, where the between-study variability cancels.
 - `.fitrx` files keep the level layout, and `ferx_sir()` and `ferx_covariance()` follow the fit's settings.
 
 Next: @sec-experimental covers experimental model features.
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_mbma_data`, `?ferx_fit`, `?ferx_sir`, `?ferx_covariance`, `?ferx_save_fit`
+- R help: `?ferx_mbma_data`, `?ferx_fit`, `?ferx_contrast_vpc`, `?ferx_sir`, `?ferx_covariance`, `?ferx_save_fit`
 - ferx-core: [theta level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks), [residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...)
 :::

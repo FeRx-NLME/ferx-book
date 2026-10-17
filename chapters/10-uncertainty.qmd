@@ -23,7 +23,7 @@ book_stage_banner("EVALUATE")
 - the **bootstrap**: refitting the model to resampled datasets;
 - **Bayesian estimation**: posterior intervals.
 
-This chapter applies each to the covariate model and compares the intervals of the first three. Bayesian estimation does not converge on this model at this build, so its intervals are left out (below).
+This chapter applies each to the covariate model and compares their intervals.
 
 ## The data
 
@@ -207,9 +207,6 @@ head(relaxed$parameters[, c("parameter", "ci_lower", "ci_upper")], 7)
 
 `method = "bayes"` returns posterior summaries instead of a covariance step (@sec-estimation-methods). Posterior intervals are only meaningful when the chains have converged, which ferx reports as a largest R-hat at or below 1.01.
 
-::: {.callout-warning}
-## Bayes does not converge on this model at this build
-
 Three runs try: the default, four times longer chains, and four times longer chains with HMC proposals for the random effects (`n_leapfrog = 10`), which make the base model converge in @sec-estimation-methods. The table adds the 2.5% posterior quantile of the two covariate exponents (`WT_q025`, `CRCL_q025`), whose lower bounds the first lines print:
 
 ```{r}
@@ -233,20 +230,26 @@ do.call(rbind, lapply(names(bayes_runs), function(run) {
 ```{r}
 #| label: check-bayes
 #| include: false
-# The text says no run converges, and that with HMC proposals both exponents are drawn below
-# their lower bound of 0.01.
-hmc_q025 <- sapply(c("THETA_WT", "THETA_CRCL"), exponent_q025, b = bayes_runs$four_times_longer_hmc$bayes)
-stopifnot(!any(sapply(bayes_runs, function(f) f$converged)), all(hmc_q025 < 0.01))
+# The text says both longer runs converge and that every run keeps the exponents' 2.5%
+# quantiles above their lower bound of 0.01. (The default run's R-hat is too close to 1.01 to
+# assert either way; the prose reads it.)
+q025 <- unlist(lapply(bayes_runs, function(f) sapply(c("THETA_WT", "THETA_CRCL"), exponent_q025, b = f$bayes)))
+stopifnot(bayes_runs$four_times_longer$converged, bayes_runs$four_times_longer_hmc$converged,
+          all(q025 > 0.01))
 ```
 
-The largest R-hat is `r round(bayes_runs$default$bayes$max_rhat, 2)` with the default chains, `r round(bayes_runs$four_times_longer$bayes$max_rhat, 2)` with the longer ones and `r round(bayes_runs$four_times_longer_hmc$bayes$max_rhat, 2)` with HMC proposals, so the chains disagree and their intervals are not used below. The HMC run also shows a defect of the sampler at this build: it samples the covariate exponents without enforcing their bounds. Both 2.5% quantiles are at most `r format(signif(max(hmc_q025), 2), scientific = TRUE)`, far below the lower bound of 0.01, as the exponents drift towards zero, where the covariate effect vanishes ([ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626)). @sec-estimation-methods shows Bayes fits that converge, on warfarin and on the base model.
+The largest R-hat is `r round(bayes_runs$default$bayes$max_rhat, 3)` with the default chains, `r round(bayes_runs$four_times_longer$bayes$max_rhat, 3)` with the longer ones and `r round(bayes_runs$four_times_longer_hmc$bayes$max_rhat, 3)` with HMC proposals: `r n_conv <- sum(sapply(bayes_runs, function(f) f$converged)); if (n_conv == 3) "all three runs converge" else sprintf("%d of the three runs converge, the longer ones among them", n_conv)`. The covariate exponents stay inside their bounds, with 2.5% quantiles of at least `r signif(min(q025), 2)` against a lower bound of 0.01. The intervals of the longer run go into the comparison below.
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+With ferx-r {{< var ferx_r_release >}}, none of these three runs converges on this model, and the HMC run draws both covariate exponents far below their lower bound of 0.01: its sampler does not enforce theta bounds ([ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626), fixed after that release). Check `max_rhat` and the quantiles against the bounds before using Bayesian intervals there.
 :::
 
 ## Comparing the intervals
 
 ```{r}
 #| label: fig-intervals
-#| fig-cap: "95% intervals for the fixed effects from the covariance step, SIR and the bootstrap (percentile)."
+#| fig-cap: "95% intervals for the fixed effects from the covariance step, SIR, the bootstrap (percentile) and Bayes (posterior quantiles of the longer run)."
 #| fig-height: 5
 thetas <- names(fit$theta)
 intervals <- bind_rows(
@@ -256,7 +259,10 @@ intervals <- bind_rows(
              lower = fit_sir$sir_ci_theta[thetas, "lower"], upper = fit_sir$sir_ci_theta[thetas, "upper"]),
   data.frame(method = "bootstrap", parameter = thetas,
              lower = boot$parameters$ci_lower[match(thetas, boot$parameters$parameter)],
-             upper = boot$parameters$ci_upper[match(thetas, boot$parameters$parameter)])
+             upper = boot$parameters$ci_upper[match(thetas, boot$parameters$parameter)]),
+  data.frame(method = "Bayes", parameter = thetas,
+             lower = bayes_runs$four_times_longer$bayes$q025[match(thetas, bayes_runs$four_times_longer$bayes$param_names)],
+             upper = bayes_runs$four_times_longer$bayes$q975[match(thetas, bayes_runs$four_times_longer$bayes$param_names)])
 ) |>
   left_join(data.frame(parameter = thetas, estimate = fit$theta), by = "parameter") |>
   mutate(lower_rel = lower / estimate, upper_rel = upper / estimate)
@@ -271,7 +277,7 @@ ggplot(intervals, aes(y = method, xmin = lower_rel, xmax = upper_rel, colour = m
         axis.text.y = element_blank())
 ```
 
-The structural parameters are precisely estimated by every route. The covariate exponents `THETA_WT` and `THETA_CRCL` have wide intervals, and the three routes differ in how wide. For a small dataset like this one, report the method you used and, where it matters, check that the conclusions hold under a second method.
+The structural parameters are precisely estimated by every route. The covariate exponents `THETA_WT` and `THETA_CRCL` have wide intervals, and the four routes differ in how wide. For a small dataset like this one, report the method you used and, where it matters, check that the conclusions hold under a second method.
 
 ## Pitfalls
 

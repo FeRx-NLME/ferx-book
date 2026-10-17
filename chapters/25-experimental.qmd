@@ -134,8 +134,8 @@ do.call(rbind, lapply(names(sde_vs_ode), function(model) {
 ```{r}
 #| label: check-sde-vs-ode
 #| include: false
-# The paragraph below says the ODE model's analytic fit is the lowest of the four, that its
-# finite-difference fit stopped above it with a regularized covariance step, that the
+# The paragraph below says the ODE model's analytic fit is below the tighter SDE fit, that its
+# finite-difference fit lands within 0.1 of it, that the
 # Durbin-Watson statistic does not move, and that the two models coincide at a zero diffusion
 # variance: the SDE model with the diffusion fixed at about zero, evaluated at the ODE optimum,
 # scores the ODE fit's OFV.
@@ -153,13 +153,12 @@ writeLines(at_ode, at_ode_file)
 # evaluated at the tighter tolerances: at the defaults the evaluation itself carries solver noise
 sde_at_ode <- suppressWarnings(ferx_fit(at_ode_file, sde$data, covariance = FALSE, verbose = FALSE,
                                         settings = list(maxiter = 0, ode_reltol = 1e-6, ode_abstol = 1e-8)))
-stopifnot(fit_ode$ofv < fit_sde_tight$ofv, fit_ode$ofv < fit_ode_fd$ofv,
-          "covariance_regularized" %in% ferx_get_warnings(fit_ode_fd, as_df = TRUE)$category,
+stopifnot(fit_ode$ofv < fit_sde_tight$ofv, abs(fit_ode_fd$ofv - fit_ode$ofv) < 0.1,
           abs(sde_at_ode$ofv - fit_ode$ofv) < 0.1, max(fit_ode$estimates$rse_pct) < 100,
           abs(fit_sde_tight$dw_statistic - fit_ode$dw_statistic) < 0.05)
 ```
 
-The diffusion term does not improve on the ordinary ODE model. The SDE fit with the tighter tolerances has a diffusion variance of essentially zero and an OFV `r round(fit_sde_tight$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit; at a zero diffusion variance the two models coincide, so even that SDE fit stopped slightly short. The ODE model's own finite-difference fit also stops above its optimum, with a regularized covariance step: the trouble at the default tolerances comes from the finite differences, not from the diffusion term. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_tight$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
+The diffusion term does not improve on the ordinary ODE model. The SDE fit with the tighter tolerances has a diffusion variance of essentially zero and an OFV `r round(fit_sde_tight$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit; at a zero diffusion variance the two models coincide, so even that SDE fit stopped slightly short. The ODE model's own finite-difference fit, at the same default tolerances, ends within `r signif(abs(fit_ode_fd$ofv - fit_ode$ofv), 1)` of its analytic optimum. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_tight$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
 
 ## Options that matter
 

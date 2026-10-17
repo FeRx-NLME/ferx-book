@@ -115,11 +115,12 @@ emax_gate$failures
 ```{r}
 #| label: check-strictness-fail
 #| include: false
-# The paragraph below says the first passes and the second fails, so either changing has to fail the render.
-stopifnot(nca_gate$passed, !emax_gate$passed)
+# The paragraph below says the first passes and the second fails, and that the NCA-start
+# fit reaches fit_base's optimum (within one OFV point).
+stopifnot(nca_gate$passed, !emax_gate$passed, abs(fit_nca$ofv - fit_base$ofv) < 1)
 ```
 
-The NCA-start fit passes every gate, although its OFV is `r round(fit_nca$ofv - fit_base$ofv)` points worse than `fit_base`: only comparing OFVs shows that it stopped at a worse point. The `emax_pkpd` fit is refused because its parameters cannot be told apart.
+The NCA-start fit passes every gate, and here it also reaches the optimum of `fit_base` (the OFVs differ by `r signif(abs(fit_nca$ofv - fit_base$ofv), 1)`). The gates would pass it just the same had it stopped at a worse point, as this fit does with ferx-r {{< var ferx_r_release >}} (@sec-first-fit): only comparing OFVs shows that. The `emax_pkpd` fit is refused because its parameters cannot be told apart.
 
 The gates and their defaults: `require_converged = TRUE`, `require_covariance = FALSE`, `max_condition_number = 1000`, `max_correlation = 0.95`, `reject_on_boundary = TRUE` and `reject_init_stall = TRUE`. Set a threshold to `NULL`, or a flag to `FALSE`, to disable that gate. `reject_init_stall` assumes a cold start from the model file's initial values, so turn it off when candidates start from a previous model's estimates.
 
