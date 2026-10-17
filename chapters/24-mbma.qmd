@@ -452,8 +452,12 @@ head(fit_sir$theta_levels[, c("label", "theta_name", "value", "se", "sir_lo", "s
 #| label: check-sir-levels
 #| include: false
 tl <- fit_sir$theta_levels
-stopifnot(!anyNA(tl$sir_lo), !anyNA(tl$sir_hi[is.na(tl$theta_name)]), all(tl$sir_lo <= tl$value & tl$value <= tl$sir_hi))
+stopifnot(!anyNA(tl$sir_lo), !anyNA(tl$sir_hi[is.na(tl$theta_name)]), all(tl$sir_lo <= tl$value & tl$value <= tl$sir_hi),
+          # the sentence below: the first derived level is among the four rows shown, and it is study 1's
+          any(is.na(head(tl$theta_name, 4))), tl$group[which(is.na(tl$theta_name))[1]] == 0)
 ```
+
+Row `r which(is.na(fit_sir$theta_levels$theta_name))[1]`, `r fit_sir$theta_levels$label[which(is.na(fit_sir$theta_levels$theta_name))[1]]`, is study 1's derived level: it has no theta of its own, so its `theta_name` is `NA` (see *The placebo levels* above), and its interval comes from the same draws as the free levels' intervals.
 
 The effective sample size, the number of resamples the weights effectively support, depends strongly on the seed for this model. Check a few seeds before trusting one set of intervals:
 
