@@ -342,12 +342,13 @@ stopifnot(isTRUE(fit_fixed$converged), any(grepl("THETA BLOCKS", printed)),
           sum(grepl("^PLACEBO\\[", names(fit_fixed$theta))) == 23,
           grepl("PLACEBO[STUDY, TIME] (23 coefficients)", structure_line, fixed = TRUE),
           !grepl("PLACEBO[STUDY=", structure_line, fixed = TRUE),
-          length(general) == 2, any(grepl("finite differences", general)))
+          length(general) == 2, any(grepl("finite differences", general)),
+          any(grepl("model-level route", general, fixed = TRUE)))
 ```
 
 The THETA table now shows the four structural parameters and one line for `PLACEBO`, and the `Structural:` line under MODEL STRUCTURE names the block once with its number of coefficients, whatever its size. Every coefficient is still in `fit_fixed$theta`, and `fit_fixed$theta_levels` still has every level with its value.
 
-This model estimates more parameters than the analytic gradient handles, so ferx falls back to finite differences and says so in two `general` warnings. The fit is correct, only slower. The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
+This model estimates more parameters than the analytic gradient path handles, so its subjects fall back to finite differences, and ferx says so in two `general` warnings. The printout still reads `Gradient: ANALYTIC` because it reports the model-level route, not what each subject used, as the second warning notes. The fit is correct, only slower. The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
 
 ## Checking the treatment contrast
 

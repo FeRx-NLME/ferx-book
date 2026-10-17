@@ -98,7 +98,7 @@ stopifnot(fit_pkpd$gradient_used == "analytic",
           max(abs(pd_cor)) > 0.95)
 ```
 
-The PK parameters are well determined, with relative standard errors of at most `r ceiling(max(fit_pkpd$estimates[pk, "rse_pct"]))`%. The PD parameters are not: the baseline `TVE0` has a relative standard error of `r round(fit_pkpd$estimates["TVE0", "rse_pct"])`%, and the PD parameters are almost perfectly correlated with each other (|r| up to `r round(max(abs(pd_cor)), 2)`). The model structure is fine; the question is what data would determine the PD parameters, which the simulation–estimation runs below answer.
+The typical PK parameters are well determined, with relative standard errors of at most `r ceiling(max(fit_pkpd$estimates[pk, "rse_pct"]))`%; with three subjects their between-subject variances are poorly determined (`r round(min(fit_pkpd$estimates[c("ETA_CL", "ETA_V"), "rse_pct"]))`% and more). The typical PD parameters are not well determined either: the baseline `TVE0` has a relative standard error of `r round(fit_pkpd$estimates["TVE0", "rse_pct"])`%, and the PD parameters are almost perfectly correlated with each other (|r| up to `r round(max(abs(pd_cor)), 2)`). The model structure is fine; the question is what data would determine the PD parameters, which the simulation–estimation runs below answer.
 
 ## Options that matter
 
@@ -261,7 +261,7 @@ fit_derived <- ferx_fit(derived_pkpd$model, derived_pkpd$data, verbose = FALSE)
 filter(fit_derived$sdtab, ID == 1) |> select(TIME, IPRED, EFF, CMAX_INTERVAL, TAM_D1)
 ```
 
-The fixed thetas are used only in `[derived]`, so the fit warns that they do not affect the predictions, and R warns about the correlation matrix because a fixed parameter has no standard error. Both are intended here. With `MEC = 0.5` every concentration in these data is above the MEC, so the time above it is the whole day. A copy with `MEC = 8` shows a threshold within the concentration range, per 24-hour window:
+The fixed thetas are used only in `[derived]`, so the fit warns that they do not affect the predictions. That is intended here. With `MEC = 0.5` every concentration in these data is above the MEC, so the time above it is the whole day. A copy with `MEC = 8` shows a threshold within the concentration range, per 24-hour window:
 
 ```{r}
 #| label: time-above-mec
@@ -271,7 +271,7 @@ fit_mec8 <- ferx_fit(mec8_model, derived_pkpd$data, verbose = FALSE)
 filter(fit_mec8$sdtab, ID == 1) |> select(TIME, IPRED, TAM_TAU, TAM_D1)
 ```
 
-Subject 1 is above 8 for most of the first day and about half of the second. From day 3 on its concentration stays below 8, and the time above the MEC in those windows is reported as `NaN`, not 0. Treat `NaN` as "never above" when you summarise it.
+`TAM_TAU` evaluates `IPRED` on its `step` grid by the nearest observation, so where samples are sparse it is a coarse count. Subject 1's second window has samples only at 24 and 48 hours: the half of the window nearer 24 hours takes that sample's `r round(filter(fit_mec8$sdtab, ID == 1, TIME == 24)$IPRED, 2)`, above 8, and the other half the 48-hour `r round(filter(fit_mec8$sdtab, ID == 1, TIME == 48)$IPRED, 2)`, so the window counts `r filter(fit_mec8$sdtab, ID == 1, TIME == 24)$TAM_TAU` hours above the MEC, half the window, whatever the concentration does between the two samples. The ferx-core [derived quantities](https://ferx-nlme.org/ferx-core/model-file/derived.html) page describes the approximation. Sample densely where the time above a threshold matters. From day 3 on its concentration stays below 8, and the time above the MEC in those windows is reported as `NaN`, not 0. Treat `NaN` as "never above" when you summarise it.
 
 ### Models without compartments
 
@@ -286,7 +286,7 @@ fit_timecourse <- ferx_fit(timecourse$model, timecourse$data, verbose = FALSE)
 fit_timecourse$estimates[, c("estimate", "rse_pct")]
 ```
 
-Such a model works with prediction, simulation and the diagnostics like any other. `TAD` and `TAFD` are `NaN` in `sdtab`, since there are no doses. For the same reason `ferx_predict()` passes on the data reader's `W_NO_DOSES` warning, and `W_CMT_DEFAULTED` because the dataset has no `CMT` column. For a compartment-free model with one endpoint, both state the design rather than a problem:
+Such a model works with prediction, simulation and the diagnostics like any other. `TAD` and `TAFD` are `NaN` in `sdtab`, since there are no doses:
 
 ```{r}
 #| label: fig-timecourse

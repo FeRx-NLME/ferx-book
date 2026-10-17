@@ -131,7 +131,7 @@ The gates and their defaults: `require_converged = TRUE`, `require_covariance = 
 The ferx-core pages for the search tools carry the maturity label *alpha*. See [feature maturity](https://ferx-nlme.org/ferx-core/maturity.html).
 :::
 
-The search tools read a **`.ferxsearch`** configuration file (TOML) that names the base model and data and states the search. Four bundled examples carry one as `$search`:
+The search tools read a **`.ferxsearch`** configuration file (TOML) that names the base model and data and states the search. `r n_word <- xfun::numbers_to_words(length(search_examples <- Filter(function(e) !is.null(ferx_example(e)$search), ferx_example()))); paste0(toupper(substring(n_word, 1, 1)), substring(n_word, 2))` bundled examples carry one as `$search`:
 
 | Example | Search file for |
 |---|---|
@@ -139,6 +139,18 @@ The search tools read a **`.ferxsearch`** configuration file (TOML) that names t
 | `two_cpt_oral_cov` | a configuration with a BIC ranking, used here to show loading |
 | `warfarin` | structural search (`[modelsearch]`) |
 | `one_cpt_transit` | residual error search (`[ruvsearch]`) |
+| `warfarin_block_omega` | between-subject variability search (`[iivsearch]`) |
+| `warfarin_iov` | inter-occasion variability search (`[iovsearch]`) |
+| `two_cpt_oral_global` | global search over structure and covariates together (`[globalsearch]`) |
+| `warfarin_amd` | an automatic model development plan (`[amd]`, with its stages) |
+
+```{r}
+#| label: check-search-examples
+#| include: false
+# The table above lists every bundled example with a search file.
+stopifnot(setequal(search_examples, c("two_cpt_oral_base", "two_cpt_oral_cov", "warfarin", "one_cpt_transit",
+                                      "warfarin_block_omega", "warfarin_iov", "two_cpt_oral_global", "warfarin_amd")))
+```
 
 `ferx_search_config()` loads a file with the engine's own strict loader, so an invalid space or a misspelt section fails before anything is fitted:
 
@@ -401,7 +413,7 @@ gs <- ferx_globalsearch(config = gs_ex$search,
 gs
 ```
 
-Read the top rows with both columns in view. The ranking is on the criterion, which charges each model for its parameters and for an unhealthy fit, so the best OFV need not win:
+Read the top rows with both columns in view. The table is sorted on `fitness`, the criterion plus the charges described below, and the criterion itself adds to the OFV, so the best OFV need not win:
 
 ```{r}
 #| label: globalsearch-ofv-vs-criterion
@@ -410,7 +422,7 @@ top
 charge <- top$criterion - top$ofv
 ```
 
-`r if (top$ofv[2] < top$ofv[1]) sprintf("Here the runner-up has the *better* OFV (%.1f against %.1f) and still ranks second, because the criterion charges it %.1f for its parameters and fit health against %.1f for the winner. A table showing only the OFV would name the wrong winner", top$ofv[2], top$ofv[1], charge[2], charge[1]) else sprintf("Here the winner also has the better OFV (%.1f against %.1f for the runner-up), but the margin on the criterion is %.1f rather than %.1f, because the two are charged %.1f and %.1f for their parameters and fit health", top$ofv[1], top$ofv[2], top$criterion[2] - top$criterion[1], top$ofv[2] - top$ofv[1], charge[1], charge[2])`, which is why the criterion and the OFV are separate columns.
+`r if (top$ofv[2] < top$ofv[1]) sprintf("Here the runner-up has the *better* OFV (%.1f against %.1f) and still ranks second, because the criterion adds %.1f to its OFV against %.1f for the winner. A table showing only the OFV would name the wrong winner", top$ofv[2], top$ofv[1], charge[2], charge[1]) else sprintf("Here the winner also has the better OFV (%.1f against %.1f for the runner-up), but the margin on the criterion is %.1f rather than %.1f, because the criterion adds %.1f and %.1f to their OFVs", top$ofv[1], top$ofv[2], top$criterion[2] - top$criterion[1], top$ofv[2] - top$ofv[1], charge[1], charge[2])`, which is why the criterion and the OFV are separate columns.
 
 ### The criterion is not the whole of the ranking
 
