@@ -273,6 +273,15 @@ Build the equivalent design dataset in R instead, as above. See the ferx-core [s
 - **Covariates must be in the design.** Every covariate the model uses needs a column in the design dataset.
 - **Parameter uncertainty is a separate step.** Intervals from `ferx_simulate()` reflect variability only. Use `ferx_simulate_with_uncertainty()` when the uncertainty of the estimates matters for the question.
 
+### Warnings you may see here
+
+- `uncertainty_draws_skipped` (warning): `ferx_simulate_with_uncertainty()` skipped some parameter draws because they fell in the flip-flop regime of a transit or inverse-Gaussian absorption closed form that has no ODE twin. The warning gives the count and the indices of the skipped draws. The draws that remain are not a random subset, so intervals built from them are biased, not just wider. Rewrite the model with an explicit ODE `transit()` or `igd()`, which simulates every draw. No example in this chapter raises it; see the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html#codes-absorption).
+
+  ::: {.callout-important}
+  ## Needs ferx-r newer than {{< var ferx_r_release >}}
+  The `uncertainty_draws_skipped` warning is not in ferx-r {{< var ferx_r_release >}}.
+  :::
+
 ## Summary
 
 - Build design datasets in R with doses (`AMT`, `II`, `ADDL`), sampling times, covariates and an empty `DV`.

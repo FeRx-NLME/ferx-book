@@ -215,14 +215,21 @@ rbind(ode = c(ofv = fit_lag_ode$ofv, seconds = fit_lag_ode$wall_time_secs, fit_l
                      fit_lag_analytical$theta))
 ```
 
-The small OFV difference comes from the ODE solver tolerance of the bundled model (@sec-structural-models). The individual lag times are in `fit$individual_estimates`:
+```{r}
+#| label: check-lag-exact
+#| include: false
+# With the exact solution the prose says both forms reach the same fit.
+if (isTRUE(fit_lag_ode$ode_linear_exact)) stopifnot(abs(fit_lag_ode$ofv - fit_lag_analytical$ofv) < 1e-3)
+```
+
+`r if (isTRUE(fit_lag_ode$ode_linear_exact)) "The ODE system is linear, so ferx solves it exactly rather than integrating it, and both forms reach the same fit (@sec-structural-models)." else "The small OFV difference comes from the ODE solver tolerance of the bundled model (@sec-structural-models)."` The individual lag times are in `fit$individual_estimates`:
 
 ```{r}
 #| label: lagtime-individual
 head(fit_lag_analytical$individual_estimates, 3)
 ```
 
-The ODE fit reports the same individual parameters, to about four significant digits:
+The ODE fit reports the same individual parameters:
 
 ```{r}
 #| label: ode-individual-estimates
@@ -452,7 +459,7 @@ rbind(estimated_f = c(ofv = fit_bio$ofv, fit_bio$theta),
       fixed_f = c(ofv = fit_fixed_f$ofv, fit_fixed_f$theta))
 ```
 
-The R warning refers to the fixed `THETA_F`, which has no standard error. The OFV changes by only `r round(fit_fixed_f$ofv - fit_bio$ofv, 2)`. The data carry almost no information on `F`, only on `CL/F` and `V/F`. `warfarin_logit_f` shows the same problem more strongly. Its estimates end at a bound, with grossly inflated relative standard errors:
+The fixed `THETA_F` has no standard error. The OFV changes by only `r round(fit_fixed_f$ofv - fit_bio$ofv, 2)`. The data carry almost no information on `F`, only on `CL/F` and `V/F`. `warfarin_logit_f` shows the same problem more strongly. Its estimates end at a bound, with grossly inflated relative standard errors:
 
 ```{r}
 #| label: warfarin-logit-f

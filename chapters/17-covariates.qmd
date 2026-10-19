@@ -185,7 +185,7 @@ invisible(ferx_model_get_section(scaled$model_path, "covariate_model"))
 
 Each `[covariate_model]` line states a relation (`PARAM ~ COV form(...)`), and ferx rewrites it into the expression you would otherwise write by hand. The ferx-core [covariate model](https://ferx-nlme.org/ferx-core/model-file/covariate-model.html) page lists the forms (`linear`, `power`, `exponential`, `hockey`, `categorical`, …). No bundled ferx-r example writes the block by hand.
 
-With `fit = TRUE`, the default, the base and the scaled model are both fitted. `print()` on the `ferx_allometry` result shows the relations and both fits (its `digits` argument sets the precision). The R warning about the correlation matrix comes from the fixed exponents, which have no standard error:
+With `fit = TRUE`, the default, the base and the scaled model are both fitted. `print()` on the `ferx_allometry` result shows the relations and both fits (its `digits` argument sets the precision). The exponents are fixed, so they have no standard error: in `allometry$fit$estimates` their `fixed` column is `TRUE` and their `se` is `NA` (ferx-r {{< var ferx_r_release >}} differs, see @sec-variability):
 
 ```{r}
 #| label: allometry-fit
@@ -197,9 +197,10 @@ allometry$dofv
 ```{r}
 #| label: check-allometry-fit
 #| include: false
-# The sentence above traces the R warning to the fixed exponents, which have no standard error.
+# The sentence above says the fixed exponents are marked fixed and have no standard error.
 fixed_exponents <- grepl("_WT$", rownames(allometry$fit$estimates))
-stopifnot(any(fixed_exponents), all(allometry$fit$estimates$se[fixed_exponents] == 0))
+stopifnot(any(fixed_exponents), all(allometry$fit$estimates$fixed[fixed_exponents]),
+          all(is.na(allometry$fit$estimates$se[fixed_exponents])))
 ```
 
 Fixed allometric exponents make this model worse. With `estimate = TRUE` the exponents are estimated between `lower` and `upper`, and `parameters` limits the scaling to clearance and central volume. `directory` keeps a journal of the run:

@@ -234,12 +234,23 @@ c(all_three = fit_w$ofv, ka_fixed = fit_no_iiv_ka$ofv)
 
 Fixing the `KA` variance saves one parameter and costs `r round(fit_no_iiv_ka$ofv - fit_w$ofv, 1)` OFV on these data, so that random effect is clearly worth keeping. The variability it carried does not vanish, it moves: the `CL` variance goes from `r round(fit_w$estimates["ETA_CL", "estimate"], 3)` to `r round(fit_no_iiv_ka$estimates["ETA_CL", "estimate"], 2)`, and the residual error grows `r round(fit_no_iiv_ka$estimates["PROP_ERR", "estimate"] / fit_w$estimates["PROP_ERR", "estimate"])`-fold, from `r signif(fit_w$estimates["PROP_ERR", "estimate"], 3)` to `r signif(fit_no_iiv_ka$estimates["PROP_ERR", "estimate"], 3)`. Absorption variability the model can no longer express has to come out somewhere.
 
-A fixed parameter still has a row in `fit$estimates`. It carries the value the engine stores for a declared zero, with a standard error of 0, and it no longer counts towards `n_parameters`:
+A fixed parameter still has a row in `fit$estimates`. It carries the value the engine stores for a declared zero, has no standard error (`se` is `NA`), and no longer counts towards `n_parameters`:
 
 ```{r}
 #| label: fixed-row
-fit_no_iiv_ka$estimates[c("ETA_CL", "ETA_KA"), c("estimate", "se", "rse_pct")]
+fit_no_iiv_ka$estimates[c("ETA_CL", "ETA_KA"), c("estimate", "fixed", "se", "rse_pct")]
 ```
+
+```{r}
+#| label: check-fixed-row
+#| include: false
+stopifnot(isTRUE(fit_no_iiv_ka$estimates["ETA_KA", "fixed"]), is.na(fit_no_iiv_ka$estimates["ETA_KA", "se"]))
+```
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}} a fixed parameter's `se` is 0 rather than `NA`, `fit$estimates` has no `fixed` column, and ferx-r warns that the correlation matrix of the estimates has non-positive diagonal elements. With the pinned build, find fixed parameters with the `fixed` column rather than by testing `se == 0`.
+:::
 
 Leaving the same zero **free** is refused rather than fitted: the optimizer would start on its lower rail and could not move off it (@sec-dosing shows the message).
 
@@ -272,8 +283,6 @@ A partial block estimates only what it declares. `ETA_KA` keeps a variance of it
 #| label: block-omega-se
 fit_block$se_omega
 ```
-
-Those two structural zeros are also the reason the fit prints an R warning that one or more diagonal elements of the correlation matrix are non-positive: ferx-r derives that matrix from `fit$cov_matrix`, which carries a zero variance for every held entry.
 
 To estimate those covariances, declare them. A copy of the model with one full 3 × 3 block, and no separate diagonal `omega`:
 
@@ -435,10 +444,9 @@ With 10 subjects the variance collapses to the lower guard: these data do not sh
 The error model can do more than shown here. The ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html) page documents:
 
 - error models selected by a covariate with `if`/`else`;
-- magnitudes that depend on `TIME` or covariates (experimental);
-- residual weighting with `weight =` for meta-analysis data (experimental).
+- magnitudes that depend on `TIME` or covariates (experimental).
 
-No bundled example uses them.
+No bundled example uses them. Residual weighting with `weight =` (experimental), for summary data such as a meta-analysis, is run in @sec-mbma, together with its random-effect counterpart, a kappa weighted by arm size.
 
 ### Inter-occasion variability
 
@@ -629,7 +637,7 @@ A `[mixture]` block assigns each subject probabilistically to one of several sub
 - **Extra variance parameters often collapse.** An additive component, a residual random effect or a between-subject variance that goes to its lower guard is not supported by the data. Remove it rather than report it.
 - **An additive random effect can make a positive parameter negative.** Use `exp()` for parameters such as clearance, volume and lag time.
 - **Keep sigma declarations in the order of the error model call.** A single `DV ~` line takes them by position.
-- **A block estimates only the covariances it declares.** Held entries stay 0 with a standard error of 0, and the correlation matrix of the estimates is then reported as not meaningful. Widen the block if a covariance is worth estimating.
+- **A block estimates only the covariances it declares.** Held entries stay 0 with a standard error of 0. Widen the block if a covariance is worth estimating.
 - **LTBS reports on the log scale,** and its OFV cannot be compared with natural-scale error models.
 
 ### Warnings you may see here

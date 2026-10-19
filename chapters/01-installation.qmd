@@ -24,17 +24,38 @@ install.packages("pak")
 pak::pak("FeRx-NLME/ferx-r@{{< var ferx_r_sha >}}")
 ```
 
-That commit is the ferx-r `{{< var ferx_r_tag >}}` release, so installing the tag gives the same build:
-
-```r
-pak::pak("FeRx-NLME/ferx-r@{{< var ferx_r_tag >}}")
-```
-
 Installing without a commit gives you the latest development version. That is fine for your own work, but its output can differ from what this book shows:
 
 ```r
 pak::pak("FeRx-NLME/ferx-r")
 ```
+
+## Which version do you have? {#sec-versions}
+
+```{r}
+#| label: version-chapters
+#| include: false
+# The chapters that carry each kind of version callout, read from the chapter sources,
+# so this list cannot drift from the callouts themselves.
+chapter_dir <- if (dir.exists("chapters")) "chapters" else "."
+chapter_files <- list.files(chapter_dir, pattern = "^[0-9]{2}-.*\\.qmd$", full.names = TRUE)
+chapters_with <- function(title) {
+  hits <- Filter(function(f) any(grepl(paste0("^\\s*## ", title), readLines(f))), chapter_files)
+  ids <- vapply(hits, function(f) sub(".*\\{#(sec-[a-z-]+)\\}.*", "\\1",
+                                      grep("^# .*\\{#sec-", readLines(f), value = TRUE)[1]), character(1))
+  if (length(ids)) paste0("@", ids, collapse = ", ") else "none at this pin"
+}
+needs_newer <- chapters_with("Needs ferx-r newer than")
+changed_after <- chapters_with("Changed after ferx-r")
+```
+
+The pinned build is newer than the last ferx-r release, {{< var ferx_r_release >}}. `packageVersion("ferx")` (below) tells you which one you have. With {{< var ferx_r_release >}} most of the book runs as shown, with three kinds of difference:
+
+- **Features newer than {{< var ferx_r_release >}}.** Some functions, arguments, settings and examples do not exist in the release. @sec-reference-newer lists them, and each chapter that uses one says so in a callout titled "Needs ferx-r newer than {{< var ferx_r_release >}}": `r needs_newer`.
+- **Behaviour that changed after {{< var ferx_r_release >}}.** A callout titled "Changed after ferx-r {{< var ferx_r_release >}}" marks it where the book relies on it: `r changed_after`.
+- **Numbers.** The engine changed too, so your results can differ from the printed ones. FOCE fits move most: the FOCE objective changed after {{< var ferx_r_release >}}, which shifts their OFVs and, slightly, their estimates.
+
+To get the book's output, install the pinned commit above. To stay on the release, install its tag, `pak::pak("FeRx-NLME/ferx-r@v{{< var ferx_r_release >}}")`, and read the callouts.
 
 ## Checking the installation
 

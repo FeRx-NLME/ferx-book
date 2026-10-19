@@ -69,7 +69,7 @@ identical(nca$theta, ferx_inits_from_nca(base$model, base$data, method = "nca")$
   identical(nca$theta, ferx_inits_from_nca(base$model, base$data, method = "nca_ebe")$theta)
 ```
 
-To fit from these values directly, pass `inits_from_nca` to `ferx_fit()`: `TRUE`, or one of the method names. The same option exists as the `inits_from_nca` key in `[fit_options]` or `settings`. The *Variants* section below shows that this is not always an improvement.
+To fit from these values directly, pass `inits_from_nca` to `ferx_fit()`: `TRUE`, or one of the method names. The same option exists as the `inits_from_nca` key in `[fit_options]` or `settings`. The *Variants* section below compares the two starts.
 
 ### A pilot run
 
@@ -367,7 +367,7 @@ data.frame(
 )
 ```
 
-All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient). The NCA start with finite differences, however, ended at an OFV about `r round(fit_nca$ofv - fit$ofv)` points higher than the fit from the model file's values, and nothing in its warnings says so:
+All three report `converged = TRUE` (with `gradient = "auto"`, ferx used the `r fit_nca_auto$gradient_used` gradient), and they end within `r signif(diff(range(c(fit$ofv, fit_nca$ofv, fit_nca_auto$ofv))), 2)` OFV points of each other, at nearly the same estimates. Their warnings are no more severe than the model-file fit's:
 
 ```{r}
 #| label: nca-warnings
@@ -379,14 +379,20 @@ rbind(model_file = fit$theta, nca = fit_nca$theta)
 ```{r}
 #| label: check-nca-warnings
 #| include: false
-# The paragraphs around this chunk say the fit is clearly worse yet its warnings are
-# no more severe than the model-file fit's, so either turning false has to fail the render.
+# The paragraphs around this chunk say the three starts reach the same optimum (within
+# one OFV point), with warnings no more severe than the model-file fit's.
 nca_general <- nca_warnings$message[nca_warnings$category == "general"]
-stopifnot(fit_nca$ofv - fit$ofv > 10, worst(fit_nca) == worst(fit),
+stopifnot(diff(range(c(fit$ofv, fit_nca$ofv, fit_nca_auto$ofv))) < 1,
+          worst(fit_nca) == worst(fit), worst(fit_nca_auto) == worst(fit),
           length(nca_general) > 0, all(grepl("gradient = fd|inits_from_nca", nca_general)))
 ```
 
-Its warnings are no more severe than those of the model-file fit (the worst is `r worst(fit_nca)`-level for both), and none of them says the fit is worse: the `general` notes are about the gradient setting and the NCA itself. The fit simply stopped at a different, worse point: `TVV1` ends at `r round(fit_nca$theta[["TVV1"]], 1)` instead of `r round(fit$theta[["TVV1"]], 1)`. The NCA-based absorption rate constant it started from (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the model-file fit's estimate (`r round(ferx_coef(fit, "TVKA"), 3)`). The analytic-gradient fit from the same start comes within `r abs(round(fit_nca_auto$ofv - fit$ofv, 1))` points of the model-file fit.
+The `general` notes are about the gradient setting and the NCA itself. On this model the NCA-based values are a good start: `TVV1` ends at `r round(fit_nca$theta[["TVV1"]], 1)` against `r round(fit$theta[["TVV1"]], 1)`, although the NCA-based absorption rate constant it started from (`TVKA` = `r round(nca$theta[["TVKA"]], 3)`) is far from the model-file fit's estimate (`r round(ferx_coef(fit, "TVKA"), 3)`).
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+With ferx-r {{< var ferx_r_release >}}, the NCA start with finite differences stops about 33 OFV points above the model-file fit (the book's {{< var ferx_r_release >}} edition shows −1152.6 against −1185.4), with `converged = TRUE` and warnings no more severe than the model-file fit's, and the `gradient = "auto"` fit about 3 points above. That is the case comparing starts exists to catch.
+:::
 
 Convergence only means the optimizer stopped, and a clean warning list does not mean it stopped at the best point. Fit from more than one start and compare the OFVs before accepting a fit.
 
@@ -420,7 +426,7 @@ For the same reason `fit_short$n_iterations` is `r fit_short$n_iterations` here,
 ### Warnings you may see here
 
 - `convergence` (critical): the optimizer did not converge. Reject the fit, then change starting values, method or bounds and refit. See [convergence and covariance warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence).
-- `general` (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, a misspelt data-selection column (@sec-data), and two notes about the outer gradient: that `gradient = fd` in the model file also changed the optimizer, and that some subjects "could not be given the exact analytic outer gradient" and used an approximate one (@sec-estimation-methods); giving those two a category of their own is [ferx-core #1618](https://github.com/FeRx-NLME/ferx-core/issues/1618). Read the message. See [solver, numerics and unclassified warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-solver).
+- `general` (warning): the fallback category for messages not assigned to a specific code. Examples in this book are notes from NCA starting values, the location of an optimizer trace file, a stopped fit, a misspelt data-selection column (@sec-data), and two notes about the outer gradient: that `gradient = fd` in the model file also changed the optimizer, and, on models where it applies, that some subjects "could not be given the exact analytic outer gradient" and used an approximate one (@sec-estimation-methods describes it); giving those two a category of their own is [ferx-core #1618](https://github.com/FeRx-NLME/ferx-core/issues/1618). Read the message. See [solver, numerics and unclassified warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-solver).
 
 ## Summary
 

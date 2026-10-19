@@ -134,7 +134,7 @@ track engine main, ahead of the pin.
 | TTE (exp/Weibull/Gompertz/competing risks), joint PK-TTE, `ferx_predict_survival`, binary | `[markov_model]`/CTMM (feature not built) |
 | built-in absorption inputs, per-route lag, analytic transit/IG | — |
 | SDE, `[covariate_nn]` (**verified**: warfarin_dcm fits, 32 s) | `[dynamics_nn]` (design only) |
-| compartment-free models, weighted kappa | `mbma_naproxen` (ferx-core only) |
+| compartment-free models, weighted kappa, residual `weight =`, theta level blocks (ch24 MBMA, bundled `mbma_placebo` from ferx-r `6c7d02a`) | `mbma_naproxen` (ferx-core only, CC BY-NC data) |
 | FREM (`ferx_model_to_frem`) | — |
 | **Fits from R but no bundled ferx-r example** (verified 0.6 with ferx-core pin files): `[covariate_model]` (two_cpt_oral_covmodel, 0.7 s), repeated TTE (rtte_exponential, 0.5 s), fixed-rate infusions (dose_rate, one_cpt_infusion) | Can't be run in the book without bundling (rule 2) → **D4** |
 | — | `[mixture]`, `RATE = -1/-2` modelled rate/duration: no example anywhere (ferx-core docs only) → mention + link |
@@ -231,10 +231,13 @@ diagnostic → simulate/output. Variants run in a loop.
 | D | 21 | Binary endpoints | `[binary_model]`, simulating binary outcomes | binary_logistic |
 | D | 22 | Time-to-event | TTE data; hazards; competing risks; `ferx_predict_survival(model, data, times, fit)`; `ferx_simulate(horizon)`; KM overlay (survival); joint PK-TTE | tte_exponential, tte_weibull, tte_gompertz, tte_competing_risks, pktte_joint |
 | E Adaptive dosing | 23 | Simulating adaptive dosing and TDM strategies | `[adaptive_dosing]` concepts; `ferx_simulate_adaptive(n_sim, seed, verify, max_decisions)`; `trajectories` / `doses` / `decisions` / `metrics`; target attainment; base regimen + loading; unsupported combinations; not MAP dosing | adaptive_tdm, adaptive_vanco_loading |
-| F Experimental | 24 | Experimental features | `[diffusion]` SDE; `[covariate_nn]` (+`nn_*`) | warfarin_sde, warfarin_dcm |
+| G Meta-analysis | 24 | Model-based meta-analysis | `ferx_mbma_data()` (+print); arm-level data; `weight =` on the error model and on a kappa; theta level blocks, `sum_to_zero_within`, `fit$theta_levels`; `.fitrx` round trip; `ferx_sir()` / `ferx_covariance()` on the fit | mbma_placebo |
+| F Experimental | 25 | Experimental features | `[diffusion]` SDE; `[covariate_nn]` (+`nn_*`) | warfarin_sde, warfarin_dcm |
+
+**Renumbering (2026-10-09, ferx-book#34).** The MBMA chapter took number 24, so experimental moved to 25 and the reference to 26; `aliases:` keep the published `24-experimental.html` and `25-reference.html` URLs. Entries in §7 written before then say "ch24" for the experimental chapter and "ch25" for the reference.
 
 Example count: 02:1, 03:2, 04:1, 06:2, 12:1, 14:15, 15:18, 16:6, 17:1, 18:5, 19:1,
-20:3, 21:1, 22:5, 23:2, 24:2 = **66**.
+20:3, 21:1, 22:5, 23:2, 24:2 = **66** (at the time; ch24 MBMA adds mbma_placebo, and the pin now bundles 69).
 
 ### Part IV: Reference
 
@@ -267,7 +270,9 @@ installed pinned package, plus ferx-core at the locked SHA via `git show <ferx_c
 ~128 at the pin) are *not* tracked per code, because they are error messages rather
 than features. Ch 04 explains the diagnostics list that `ferx_model_validate()`
 returns and links ferx-core `file-formats/check-report.html`. Experimental-feature
-codes (`W_EXPERIMENTAL_SDE`, `W_EXPERIMENTAL_NN`) are shown live in ch 24.
+codes (`W_EXPERIMENTAL_SDE`, `W_EXPERIMENTAL_NN`) are shown live in ch 25.
+
+**Statement modifiers** (`weight =` on an error model or a kappa, `iiv_on_ruv`, `contrast =` on a level block, `FIX`, the `(sd)` / `(variance)` tags, inline `prior()`) are *not* tracked either (decided 2026-10-09, ferx-book#34). ferx-core keeps no registry of them: each is recognised by its own parser code, so `inventory.R` could only list them by hand, which §6 rules out. Their coverage is unenforced and kept by review; `weight =` is covered in ch16 (pointer) and ch24. If ferx-core adds a `MODIFIER_REGISTRY` beside `BLOCK_REGISTRY`, add a `dsl_modifier` kind that reads it. Not filed upstream: it is a feature request, not a defect.
 
 **Warning system placement:**
 - ch 05 introduces fit warnings: the two channels `fit$warnings` /
@@ -509,7 +514,7 @@ Per-chapter loop:
   - fixed-rate infusion: `dose_rate`, `one_cpt_infusion`
 - ferx-r:
   - docs claim nn is off by default
-  - `ferx_model_validate` rejects compact TTE models
+  - ~~`ferx_model_validate` rejects compact TTE models~~ fixed by ferx-r #306 (closed 2026-10-04, in the pin from `161d28a`); ch22 says so, with a check and a "Changed after" note
   - pkgdown omits post-0.3.0 exports
 - ferx-core:
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
@@ -540,9 +545,9 @@ Per-chapter loop:
     covariances and their standard errors exactly 0; the full-block twin gives
     −283.3167 with 10 parameters. dOFV 2.83 on 2 df, and both criteria prefer the
     partial block. ch16 now shows that contrast as ordinary content, no callout.
-  - Still true and still shown: the partial block's two structural zeros make ferx-r
+  - ~~Still true and still shown: the partial block's two structural zeros make ferx-r
     warn that the correlation matrix of the estimates has non-positive diagonal
-    elements.
+    elements.~~ Gone at `161d28a`: a FIX parameter's SE is `NA` (ferx-r #451), and the warning no longer fires; the same applies to the fixed-parameter R warnings ch15, ch17 and ch22 explained. Their prose now says the SE is `NA`.
   - Also: `warfarin_iov` / `warfarin`, as bundled, use `method = foce`
   with proportional error. FOCE gives biased IOV estimates (TVCL 0.32) vs
   FOCEI/SAEM/chain (0.17); ch16 shows this. Consider changing the bundled examples
@@ -873,7 +878,10 @@ Per-chapter loop:
     initial values did not trigger it. **Not a regression:** the `6e2f701` engine (built into a scratch
     library) gives the same midpoints at k ≤ 6; 0.4.0 improved k = 7 and 10, which used to report a fit
     at the optimum as unconverged with `ebe_start_dependent` -- which is why ch06's old demo stopped
-    triggering. Fix direction: treat "no feasible evaluation" as non-convergence (critical
+    triggering. **At `161d28a` (core `826d3bb9`)** the defect is still there at `inner_maxiter = 3` (exact
+    midpoints, `converged = TRUE`, OFV 223.35, no `convergence` warning) and on `mm_oral` at 10, but 5, 6 and 7 now
+    end `converged = FALSE` with a critical `convergence` warning, so ch06's demo moved from 5 to 3.
+    Fix direction: treat "no feasible evaluation" as non-convergence (critical
     `convergence` naming the guard) instead of restoring a penalty point. Filed as [ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617). ch06
     (`starved-inner-loop`) shows it in an "at this build" callout whose guard stops the render once the
     engine reports it. Replaces the old
@@ -905,6 +913,10 @@ Per-chapter loop:
     `emax_pkpd` numbers changed as well; ch20 now fits with `gradient = "auto"` (below).
   - **ferx-core bug: a covariate exponent shared by two typical values drifts to its lower bound
     under SAEM.** Filed as [ferx-core #1620](https://github.com/FeRx-NLME/ferx-core/issues/1620).
+    **Fixed** by core 956e7951 (#1632), in the pin from `161d28a`: the shared exponent takes one joint
+    M-step, every SAEM variant lands within 2 MC errors of FOCEI on the importance-sampled objective, and
+    ch06's callout, its check and the separate-exponent remedy are gone; a "Changed after ferx-r 0.4.0"
+    callout tells 0.4.0 readers about the drift.
     Found while moving ch06's M-step demo off `warfarin_saem` (every theta there has an eta, so
     `mstep_draws = 4` was bit-identical and the demo showed nothing). In `two_cpt_oral_cov`,
     `THETA_WT` scales CL and V1; #619 records both covariate mu-references and declines V1's ("THETA_WT
@@ -1040,6 +1052,15 @@ Per-chapter loop:
     from fixed parameters), now explained and checked; (f) a deprecated
     `geom_errorbarh()` (ch10) and a misplaced ruvsearch paragraph (ch09, now computed).
 
+- ~~**ferx-r, found 2026-10-09 (ch24, at `161d28a`), filed as [ferx-r #538](https://github.com/FeRx-NLME/ferx-r/issues/538):**~~ **Fixed** in ferx-r `18c9161`, in the pin from `d18b659`: the line reads `PLACEBO[STUDY, TIME] (N coefficients)`; ch24's callout is gone and `check-fixed-study` asserts the compact form. `print.ferx_fit` collapses a level block of 20 or more free coefficients into a THETA BLOCKS line (#413), but the `Structural:` line under MODEL STRUCTURE (`.ferx_format_structural()`, `R/internal-fit-format.R:131`) still lists every level by name, so for an MBMA block with hundreds of levels that line is the long one. ferx-core has no such line; `summary()`'s `Structure:` line likewise. The pre-fit `ferx_model()` print is compact. ch24 shows it in an "At this build" callout; remove it when fixed.
+
+- **ferx-core, found 2026-10-09 (ch24, at `826d3bb9`), filed as [ferx-core #1827](https://github.com/FeRx-NLME/ferx-core/issues/1827):** the refusal of a weighted kappa in a compartment-free model's `y =` names `[scaling]`, because the parser stores a compartment-free `[structural_model]` under the `scaling` key. ch24's `weight-refusals` chunk explains it in a comment; `check-weight-refusals` fails once fixed, then remove both.
+
+- **Pin bump to ferx-r `d18b659` / ferx-core `b32f20d9` (2026-10-17, stacked on #35).** Fixed upstream and taken out of the book: ferx-core #1617 (a starved inner loop is now reported unconverged; ch06's callout became ordinary content with a "Changed after" note), #1626 (Bayes on `two_cpt_oral_cov` converges with longer chains and respects theta bounds; ch10's callout is gone and Bayes joins the interval comparison), #1625 (`emax_pkpd` no longer forces `gradient = fd`; ch20 runs the fd comparison with an explicit `gradient = "fd"`), ferx-r #538. Moved results rewritten: ch05/ch09 (the NCA start now reaches the optimum, so the 0.4.0 stop is a "Changed after" note), ch25 (the FD ODE fit now lands within 0.1 of the analytic one). New in ch24: `ferx_contrast_vpc()`, `theta_levels` `se` / `sir_lo` / `sir_hi`, fitting the `ferx_mbma_data()` table directly. Still open: ferx-core #1827.
+- **Pin bump to ferx-r `78f6359` / ferx-core `00e5b2cc` (2026-10-19, stacked on #37).** Fixed upstream and taken out of the book: ferx-core #1827 (the weighted-kappa refusal in a compartment-free `y =` now names `[structural_model]`; ch24's comment and `check-weight-refusals` are gone). One new inventory row, `fit$profiled_blocks`, homed in ch24 with a new section that profiles the 23-level fixed-study block (ferx-core #1065): same OFV to 3e-4 and same `n_parameters`, but about 5x slower than the estimated block on this model, which the section says. ch24's fixed-study fit now carries three `general` warnings, not two: ferx-core #1907 reports the all-subject finite-difference inner IOV fallback. Every other chapter renders unchanged apart from timings and computed numbers (re-read against the d18b659 render). Not taken up: residual `correlation` lines (since `e9156c98`, and now with kappa and on nested levels) and nested variability levels (`fit$kappa_levels`, `fit$ebe_kappas_by_level`) have no inventory row and no bundled example yet.
+- **Linux CI on the #35/#37/#38 stack (2026-10-19).** The first Linux run (workflow_dispatch on #38, nothing deployed) failed on three checks that hold only on macOS, all from #37: ch06 `check-outer-gradient-note` (on Linux 1 of 30 covariate-model subjects falls back at a trial point), ch06 `check-bayes` (the default base-model Bayes run ends at max R-hat 1.011 on Linux, converged on macOS) and ch20 `check-pkpd-sim-fd` (one fd gap is 1.7 on Linux, under the check's 2). The ch06 sentences are now computed from the fit and the ch20 threshold is 1. Found in one pass with the container recipe and a logging `stopifnot`; every other check passes on Linux.
+- **Review round 5 (2026-10-17): prose contradicted by its own output at `161d28a`.** A read of every rendered chapter against the output beside it found ten stale passages that no check guarded, all fixed on #35 with a check each: ch06 the bobyqa-seeded refit stalls (the prose said it does not); ch09 the search-file table listed four of eight examples, and the global-search ranking is on `fitness`, not the criterion; ch16/ch18 the bundled zero omegas are `FIX` since ferx-r #443, so ch18's chunk fitted instead of showing the refusal (now a copy without `FIX`); ch18 the state AUC falls on day 8, after the last dose; ch20 no R correlation warning (FIX SE is `NA`), no `W_NO_DOSES`/`W_CMT_DEFAULTED` on `ferx_predict()`, `TAM_TAU` is a nearest-observation count on sparse samples (12 h in window 2 from two samples), and only the typical PK values are precise; ch22 compact TTE models validate (#306); ch24 the printout's `Gradient: ANALYTIC` is the model-level route. Lesson: a claim with no `check-` chunk goes stale silently; review renders, not sources.
+
 ### Maintenance: pin bump
 
 1. Diff NAMESPACE, `formals`, settings keys, example registry (rerun
@@ -1055,10 +1076,11 @@ Per-chapter loop:
 
 | # | Decision | Outcome |
 |---|---|---|
-| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` -> `70f7fe3` (ferx-core `7abf4235`) -> `a961146` (ferx-core `d66046e`) -> `6e2f701` (ferx-core `d66046e`, unchanged) -> `5c9cc7a`, the ferx-r **v0.4.0 release tag** (ferx-core `2a6076af`, its v0.4.0 tag; read from `src/rust/Cargo.lock`); re-pin to the next release tag when cut. `_variables.yml` carries `ferx_r_tag` while the pin is a tagged release (ch01 offers it as the install ref); drop it if a later pin is not. Read the ferx-core SHA out of that ferx-r commit's `src/rust/Cargo.lock`; never infer it from `src/rust/Cargo.toml`, which says `branch = "main"` and reads as unpinned. `_variables.yml` carried a stale `ferx_core_sha` (`8372248c`) through the `70f7fe3` bump for exactly that reason |
+| D1 | Pin | **Decided:** ferx-r `origin/main`, bumped as upstream fixes land: `846aa4b` -> `67357e8` -> `078e489` -> `c08673d` -> `70f7fe3` (ferx-core `7abf4235`) -> `a961146` (ferx-core `d66046e`) -> `6e2f701` (ferx-core `d66046e`, unchanged) -> `5c9cc7a`, the ferx-r **v0.4.0 release tag** (ferx-core `2a6076af`, its v0.4.0 tag; read from `src/rust/Cargo.lock`); re-pin to the next release tag when cut. -> `161d28a` (ferx-core `826d3bb9`; 2026-10-09, ferx-book#34: `fit$theta_levels$value` and the compact level print, `.fitrx` level layouts, data selection and settings followed by `ferx_covariance()` / `ferx_sir()`). Not a release tag, so `ferx_r_tag` and its ch01 sentence are gone. -> `d18b659` (ferx-core `b32f20d9`; 2026-10-17: `ferx_contrast_vpc()`, data.frame `data`, per-level `se`/SIR, fixes for core #1617/#1625/#1626 and ferx-r #538). `_variables.yml` carries `ferx_r_tag` while the pin is a tagged release (ch01 offers it as the install ref); drop it if a later pin is not. Read the ferx-core SHA out of that ferx-r commit's `src/rust/Cargo.lock`; never infer it from `src/rust/Cargo.toml`, which says `branch = "main"` and reads as unpinned. `_variables.yml` carried a stale `ferx_core_sha` (`8372248c`) through the `70f7fe3` bump for exactly that reason |
 | D2 | xpose | **Decided:** mention only; `ferx_xpose` eval-reason |
 | D3 | Branching | **Decided:** WIP snapshot + `book/v2-workflow` from main |
 | D3b | Examples | **Decided (revised by owner 2026-09-11):** run every example that can run; variants via live loops; list only smoke failures with the recorded error |
 | D7 | Other NLME software | **Decided:** ferx only; no comparison chapter or text. **Revised by owner 2026-10-02:** an analogy to another engine is allowed when it shows what an example or feature corresponds to; no named comparison claiming ferx is better or improved (CLAUDE.md rule 6) |
 | D4 | Mirror ferx-core examples into ferx-r for features that fit from R but have no bundled example: `[covariate_model]` (two_cpt_oral_covmodel), repeated TTE (rtte_exponential, rtte_weibull_reset), fixed-rate infusion (dose_rate, one_cpt_infusion) | **Decided (2026-09-11):** the book gives **mention + link only** for now. Bundling these examples is an **open ferx-r follow-up** (Step 7). Once a ferx-r release bundles them: re-pin (rerun Step 0.2/0.5/0.7), then run them in their home chapters (17 covariates, 22 TTE, 18 dosing) |
 | D6 | Part II thread = two_cpt_oral_base → two_cpt_oral_cov | **Confirmed on timing (0.5):** base fit 0.9 s, cov fit 0.5 s, covsearch 78 s, bootstrap 50 in 13 s. The covsearch selection outcome is reported as the run gives it in ch 09 |
+| D8 | Readers on the last release vs a pin past it | **Decided by the owner (2026-10-09, ferx-book#34):** the pin may run ahead of the release, and the book says what needs more. Rows of `features.csv` missing from the release inventory (`tools/features-release.csv`) are named in a "Needs ferx-r newer than" callout in their home chapter (audit-enforced, and stale callouts fail); changed behaviour gets a hand-written "Changed after ferx-r" callout; ch01 `#sec-versions` lists both; ch26 lists the newer rows. Preferred end state: re-pin to a release tag (0.4.1) when ferx-r cuts one, which empties both callout kinds (CLAUDE.md "Versions") |
