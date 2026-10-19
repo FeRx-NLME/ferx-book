@@ -11,7 +11,7 @@ This chapter lists every ferx-r function, setting, model file block, data column
 
 ## Newer than ferx-r 0.4.0 {#sec-reference-newer}
 
-ferx-r 0.4.0 is the last release. The pinned build is newer, and these 53 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
+ferx-r 0.4.0 is the last release. The pinned build is newer, and these 54 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
 
 | Kind | Name | Chapter |
 |---|---|---|
@@ -49,10 +49,11 @@ ferx-r 0.4.0 is the last release. The pinned build is newer, and these 53 entrie
 | fit slot | `fit$covariate_stats` | @sec-reference |
 | fit slot | `fit$iov_occasion` | @sec-reference |
 | fit slot | `fit$kappa_fixed` | @sec-reference |
-| fit slot | `fit$ode_linear_exact` | @sec-reference |
+| fit slot | `fit$ode_linear_exact` | @sec-structural-models |
 | fit slot | `fit$omega_fixed` | @sec-reference |
 | fit slot | `fit$packed_estimate` | @sec-reference |
 | fit slot | `fit$population_fingerprint` | @sec-reference |
+| fit slot | `fit$profiled_blocks` | @sec-mbma |
 | fit slot | `fit$reader_settings` | @sec-reference |
 | fit slot | `fit$scoring_settings` | @sec-reference |
 | fit slot | `fit$sigma_fixed` | @sec-reference |
@@ -479,13 +480,14 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 
 ## Check report codes
 
-Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused call raises a condition of class `ferx_engine_error` -- from `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and the other entry points alike -- that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 87 codes below (59 errors, 28 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
+Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused call raises a condition of class `ferx_engine_error` -- from `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and the other entry points alike -- that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 94 codes below (65 errors, 29 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
 
 | Code | Severity | Meaning |
 |---|---|---|
-| `E_ADAPTIVE_OPTIONS` | error | `AdaptiveSimulateOptions` with no usable schedule (`decision_times` empty, not finite, or not strictly increasing), or with `decision_times` / `monitors` set alongside an `[adaptive_dosing]` spec that owns them. |
-| `E_ADAPTIVE_SPEC` | error | An `[adaptive_dosing]` spec that does not compile against the model: an invariant the block parser checks (on a spec built in code), an `assay_cmt` out of range, or an `observe` expression that does not compile. |
-| `E_ADAPTIVE_UNSUPPORTED` | error | A model the adaptive-dosing driver cannot simulate faithfully (no `[odes]` block, an SDE, a covariate-selected `[error_model]`, a residual `correlation` line), or an `auc_target` on a subject with a time-varying covariate, IOV or a reset. |
+| `E_ADAPTIVE_CONTROLLER_ACTION` | error | The controller returned an action the driver refuses (#1983): a dose into compartment 0 or one past the model's states, an amount that is negative or not finite, an infusion rate that is not positive and finite, a dose into a compartment fed by a built-in input-rate function or carrying a lag, or a `Stop` followed by another action. |
+| `E_ADAPTIVE_OPTIONS` | error | `AdaptiveSimulateOptions` with no usable schedule (`decision_times` empty, not finite, not strictly increasing, or longer than `max_decisions`), a monitor on a compartment the model does not have, a `Dv` monitor on a compartment no `[error_model]` covers, or `decision_times` / `monitors` set alongside an `[adaptive_dosing]` spec that owns them. |
+| `E_ADAPTIVE_SPEC` | error | An `[adaptive_dosing]` spec that does not compile against the model: an invariant the block parser checks (on a spec built in code), an `assay_cmt` out of range or with no `[error_model]` to draw the assay from, a `route` compartment out of range or fed by a built-in input-rate function, or an `observe` expression that does not compile. |
+| `E_ADAPTIVE_UNSUPPORTED` | error | A model the adaptive-dosing driver cannot simulate faithfully (no `[odes]` block, an SDE, a covariate-selected `[error_model]`, a residual `correlation` line), an `auc_target` on a subject with a time-varying covariate, IOV or a reset, or a pre-scheduled base regimen with an EVID=3/4 reset under a time-varying covariate or IOV, refused before any subject is simulated. |
 | `E_BLOCK_FEATURE_DISABLED` | error | A recognised block needs a cargo feature this binary was not built with — `[event_model]` / `[binary_model]` need `--features survival`, `[markov_model]` needs `--features markov`. |
 | `E_BLOCK_INSTANCE_NAME` | error | A `[block NAME]` instance name is given for a block that takes none (e.g. `[fit_options DOSE]`), or omitted for one that requires it (`[covariate_nn NAME]`). |
 | `E_BLOCK_VARIANCE_ONLY` | error | A scale tag (`(sd)`, `(variance)` or `(var)`) on a `block_omega`, `block_sigma` or `block_kappa` declaration. |
@@ -507,22 +509,23 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_FIT_INPUT_MODEL` | error | The model the step would run on is not the one the fit was made with: a model passed in bound with other data-derived bindings than the fit's, a model passed in whose covariate statistics the population does not reproduce (on a fit that records no bindings), a model whose η count is not the width of the fit's per-subject η̂, a `[mixture]` fit whose packed estimate has another layout or no longer reproduces its reported estimates, or a covariance matrix that is not the size of the model's packed parameters. |
 | `E_IMP_CHAIN` | error | `imp` is mis-placed in a method chain — repeated, or (with `imp_eval_only = true`) not the terminal stage. |
 | `E_INIT_BOUNDS_INVERTED` | error | A coordinate whose packed box is **empty**, so no start can be placed in it at all. |
-| `E_IOV_MISSING_OCC` | error | Model declares kappa (IOV) parameters but no occasion labels were found in the dataset. |
+| `E_IOV_MISSING_OCC` | error | Model declares kappa (IOV) parameters but no occasion labels were found. Set `iov_column` to read them from a dataset column, or `iov_occasion = dose` / `time(...)` to derive them in the model, both in `[fit_options]`. |
 | `E_LEVEL_MISSING_LABEL` | error | A record (observation, dose, `EVID=2` / `MDV=1` row or reset) has no numeric value in a level column (a blank cell is missing, not carried forward from the row before; a text label such as `NCT01` has to be written as a numeric code). |
-| `E_LEVEL_MIXED_WITH_IOV_COLUMN` | error | A `level` declaration together with `iov_column` or `iov_occasion` in `[fit_options]`, an `iov_occasion` rule other than `column` in the fit options of a model with nested levels (block `fit_options`), or a `kappa` with no `at LEVEL` in a model that declares levels. |
+| `E_LEVEL_MIXED_WITH_IOV_COLUMN` | error | A `level` declaration together with `iov_column` or `iov_occasion` in `[fit_options]`, an `iov_occasion` rule other than `column` in the fit options or `SimulateOptions` of a model with nested levels (block `fit_options`), or a `kappa` with no `at LEVEL` in a model that declares levels. |
 | `E_LEVEL_SINGLE_MEMBER` | error | A level has at most one group inside every group of its parent, and one of its kappas enters the model through the same parameters as a random effect of the parent level (the subject's η for the first level). |
+| `E_LOGIT_THETA_OUT_OF_RANGE` | error | A free θ used as `inv_logit(logit(θ) + ETA)` whose estimate is not strictly inside (0, 1), so it has no logit-scale draw (#2044). |
 | `E_METHOD_NO_RANDOM_EFFECTS` | error | `method = imp`, `impmap` or `bayes` (anywhere in a method chain) on a model with no random effects (`n_eta = 0`). |
 | `E_MISSING_BLOCK` | error | A required `[block]` is absent. `block` names which one. |
 | `E_MISSING_COVARIATE` | error | The model references a covariate not present in the data (case-sensitive). On block `covariates`, a column the `[covariates]` block declares is missing from the file. |
 | `E_MODEL_READ` | error | The model file could not be read: it does not exist, cannot be opened, or is not UTF-8. |
-| `E_NESTED_LEVEL_CORRELATION_UNSUPPORTED` | error | A residual `correlation … by` line on a model with nested levels. Block `error_model`. |
 | `E_NESTED_LEVEL_METHOD_UNSUPPORTED` | error | A model with nested levels (more than one `level`) fitted with a method other than `foce` / `focei` at `n_agq = 1`: SAEM, IMP, IMPMAP, Bayes, VI, Laplace, FOCEI quadrature or GN anywhere in the chain, or with a `[mixture]` or FREM. |
-| `E_NESTED_LEVEL_SIMULATE_UNSUPPORTED` | error | A model with nested levels (more than one `level`) reached a `simulate*` or adaptive-dosing entry point. |
+| `E_NESTED_LEVEL_SIMULATE_UNSUPPORTED` | error | A model with nested levels (more than one `level`) reached an adaptive-dosing entry point. |
 | `E_NESTED_LEVEL_THETA_BLOCK_UNSUPPORTED` | error | A `theta NAME[COL, …]` level block on a model with nested levels, whose levels each lie inside one group of a level that carries a kappa (the innermost such level is named). |
 | `E_NN_FEATURE_DISABLED` | error | A `[covariate_nn]` block requires building with `--features nn`. |
 | `E_NO_SCORED_OBSERVATIONS` | error | The population has no record the likelihood scores: no Gaussian observation and no endpoint (TTE / binary / categorical / Markov) record on any subject. |
 | `E_NONFINITE_DV` | error | A subject carries a non-finite (`NaN`/`Inf`) observation. Usually a population read by `read_population_for_simulation()` — a simulation input — passed to `fit()`. |
 | `E_ODE_METHOD_LINEAR` | error | `ode_method = linear` was passed in a caller's fit options (`fit()`, `run_covariance`, `run_sir`) for a model that cannot take the exact linear path: it has no `[odes]` block, or an equation is nonlinear in the states, reads model time, or uses an absorption input function, or it is a `[diffusion]` model. |
+| `E_ODE_SOLVER_OPTIONS` | error | ODE solver settings on a `FitOptions` built in code that no solver can run with: an `ode_reltol` or `ode_abstol` that is not finite and positive, or `ode_max_steps = 0` (#2044). |
 | `E_OMEGA_INIT_AT_RAIL` | error | A **free** `omega` / `kappa` / `[mixture] omega(k)` variance whose initial value packs onto the optimizer's `-6` lower rail — every variance ≤ 6.1e-6, and `~ 0.0` in particular (a declared zero is regularised to 1e-8, packing to `ln(L) = -9.21`). |
 | `E_OPTIMIZER_AGQ` | error | `optimizer = trust_region` used with a quadrature stage (`method = laplace`, or `method = focei` with `n_agq > 1`). |
 | `E_OPTIMIZER_IOV` | error | `optimizer = trust_region` used with an IOV model (`n_kappa > 0`). |
@@ -530,8 +533,12 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_PARSE` | error | The model file failed to parse (catch-all for parser errors). |
 | `E_PER_CMT_ERROR_MODEL` | error | An observed compartment lacks a per-CMT `[error_model]` entry. |
 | `E_PER_CMT_SCALING` | error | An observed compartment lacks a per-CMT scaling entry. |
+| `E_PROFILE_NOT_LINEAR` | error | A profiled block that a prediction does not read as `c × block` plus terms that do not read it, with `c` from the data alone. |
+| `E_PROFILE_SCOPE` | error | A profiled block that cannot be fitted that way: `profile` on a single θ, with `FIX` or with bounds; a method other than `foce` / `focei`, or `n_agq > 1`; a non-Gaussian endpoint; a residual error that is not additive, or log-transformed; M3 censoring; a `correlation` line (not yet); a `[mixture]`, `[diffusion]` or FREM model; `covariance_method = s` or `rsr`; `optimizer = trust_region` or `mma`; `global_search`; a parameter prior. |
 | `E_PROPENSITY_INPUT` | error | Propensity-score matching was requested on a population it cannot compute posthoc etas from: empty, a subject with no observations, or a subject with a non-finite `DV`. |
 | `E_READOUT_DEPOT_UNSUPPORTED` | error | An analytic `[scaling] y = …` readout reads the oral `depot` amount on a subject whose depot dose superposition cannot reconstruct: one with an EVID=3/4 reset (#650), or one dosing a compartment other than the default (#375). |
+| `E_RESIDUAL_CORRELATION_CONFOUNDED_KAPPA` | error | A `correlation cs(…) by …` line whose blocks group the observation rows exactly as the groups of a level that carries a kappa (a nested level, or the occasions of a one-level model), compared as partitions in every subject, so `cs by ARMID` beside `kappa … at ARM` counts. |
+| `E_RESIDUAL_CORRELATION_GROUPING_AMBIGUOUS` | error | A residual `correlation … by` line on a model with nested levels whose grouping a level and a data column would read two ways: a level name inside a list of columns (`by (STUDY, ARM)`), a level name that is also a different data column, or the `by` column of a level nested in another level written under another name. |
 | `E_SAEM_NO_RANDOM_EFFECTS` | error | `method = saem` (anywhere in a method chain) on a model with no random effects (`n_eta = 0`). |
 | `E_SDE_INCOMPATIBLE` | error | An SDE (`[diffusion]`) model used with an incompatible method (`saem`, `gn`, `gn_hybrid`) or gradient setting. |
 | `E_SIGMA_ORDER_MISMATCH` | error | A single-endpoint `[error_model]` names its sigmas in an order other than the `[parameters]` declaration order. |
@@ -566,6 +573,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `W_NO_DOSES` | warning | Zero dose events parsed across every subject, **although scored observations are present**. |
 | `W_OUTPUT_DUPLICATE` | warning | A name in `[output]` is already written to sdtab automatically (e.g. `TAFD`, `TAD`, an eta name). |
 | `W_PER_CMT_UNMATCHED` | warning | The other direction of the two above: a compartment the model **declares** an entry for, that no observation is recorded on. |
+| `W_RESIDUAL_CORRELATION_PARTLY_CONFOUNDED_KAPPA` | warning | The same comparison holds in some subjects but not all, e.g. `cs by STUDY` next to a kappa at `ARM` where some studies have one arm. |
 | `W_SDE_RESET` | warning | EVID=3/4 resets under an SDE `[diffusion]` model are not honoured. |
 | `W_STEADY_STATE_ABSOLUTE_TIME` | warning | An `SS=1` dose (`II > 0`) on a model whose `[odes]` right-hand side reads an **absolute** clock — `TAFD`, `T`/`t`, or the bare `TIME` built-in. |
 | `W_STEADY_STATE_II` | warning | SS=1 doses with missing / non-positive `II` (treated as non-SS). |
@@ -665,6 +673,7 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `packed_estimate` | Numeric vector: the optimizer's estimate on its packed scale (FOCE, FOCEI, Laplace and Gauss-Newton fits; NULL otherwise). ferx_covariance starts from it, which makes its result identical() to the inline covariance step, and reads a [mixture] fit's per-class overrides from it. |
 | `population_fingerprint` | Character strings holding the engine's JSON record of how the fit read its data (the model file's [data_selection] with ignore, accept, ignore_ids and settings = list(iov_column = ...) merged in) and a fingerprint of the population it read (about 270 bytes per subject). |
 | `prior_summary` | Per-parameter prior report, or NULL when the model declares no prior. One row per priored parameter with columns name, prior_value, estimate, shift_in_prior_sds (signed, in prior SDs), penalty (this parameter's contribution to ofv_prior), family ("lognormal" or "normal", decided by the parameter's declared lower bound), and the implied 95% prior interval prior_lower_95 / prior_upper_95. |
+| `profiled_blocks` | Character vector naming the level blocks declared theta NAMECOL, ... profile, in declaration order; character(0) for a fit without one. |
 | `reader_settings` | Character strings holding the engine's JSON record of how the fit read its data (the model file's [data_selection] with ignore, accept, ignore_ids and settings = list(iov_column = ...) merged in) and a fingerprint of the population it read (about 270 bytes per subject). |
 | `saem_mu_ref_m_step_evals_saved` | Number of OFV evaluations saved by mu-referencing in the SAEM M-step. Only populated for SAEM fits with mu_referencing = TRUE; NULL otherwise. |
 | `saem_n_subjects_hmc` | Integer count of subjects whose SAEM E-step proposals were generated by HMC (i.e. n_leapfrog > 0 and the AD build is active). |
@@ -693,7 +702,7 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `theta` | Named numeric vector of fixed effect estimates. A free level of a theta NAME[COL, ...] level block is named NAME[COL=value,...], e.g. PLACEBO[STUDY=1,TIME=4]. |
 | `theta_fixed` | Logical FIX flags, one per theta, per eta (the omega diagonal; every eta of a fixed block is TRUE) and per sigma. |
 | `theta_init` | Numeric vector of initial theta values as supplied to the optimizer, parallel to theta and theta_names. |
-| `theta_levels` | Data frame with one row per level of each theta NAME[COL, ...] level block, as the block was bound to the fitted data (after [data_selection] and ignore), with columns block, index (1-based level position within the block), label (COL=value,...), group (contrast group, 0-based), contrast (the resolved convention: "sum_to_zero", "sum_to_zero_within", "ref" or "none"), theta_name (the level's name in theta, NA for a level the contrast derives from the others) and value (the level's fitted value, derived levels included: minus the sum of its group's free levels under sum_to_zero / sum_to_zero_within, 0 for a ref reference level. |
+| `theta_levels` | Data frame with one row per level of each theta NAME[COL, ...] level block, as the block was bound to the fitted data (after [data_selection] and ignore), with columns block, index (1-based level position within the block), label (COL=value,...), group (contrast group, 0-based), contrast (the resolved convention: "sum_to_zero", "sum_to_zero_within", "ref" or "none"), profiled (TRUE on every level of a block declared profile: its levels were solved for at every outer step rather than searched by the optimizer, see profiled_blocks), theta_name (the level's name in theta, NA for a level the contrast derives from the others) and value (the level's fitted value, derived levels included: minus the sum of its group's free levels under sum_to_zero / sum_to_zero_within, 0 for a ref reference level. |
 | `theta_transforms` |  |
 | `total_ebe_fallbacks` | Total Nelder-Mead fallback invocations across all subjects and iterations. |
 | `uses_ode_solver` | Logical; TRUE when the model has an [odes] block, FALSE for an analytical model. |
