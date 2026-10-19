@@ -221,15 +221,15 @@ ferx_get_warnings(fit_cov, as_df = TRUE)[, c("severity", "category")]
 ```{r}
 #| label: check-outer-gradient-note
 #| include: false
-# The paragraph says the model-level route is analytic; whether a subject fell back at some
-# trial point depends on rounding (none on macOS, one on Linux CI), so the text below is computed.
+# The paragraph says the model-level route is analytic; whether a subject falls back during
+# the fit depends on rounding (none on macOS, one on Linux CI), so the text below is computed.
 stopifnot(startsWith(fit_cov$gradient_method_outer, "analytic"))
 fallback_note <- grep("could not be given the exact analytic outer gradient", fit_cov$warnings, fixed = TRUE, value = TRUE)
 fallback_n <- if (length(fallback_note)) as.integer(sub("^([0-9]+) of .*", "\\1", fallback_note[1])) else 0L
 stopifnot(length(fallback_note) <= 1, !is.na(fallback_n))
 ```
 
-`r if (fallback_n == 0) "Every subject got it here, so the fit carries no fallback note." else sprintf("Here %d of the %d subjects could not be given it at some trial point, and the fit carries a \x60general\x60 note saying so.", fallback_n, fit_cov$n_subjects)`
+`r if (fallback_n == 0) "Every subject got it here, so the fit carries no fallback note." else sprintf("Here %d of the %d subjects could not be given it during the fit, and the fit carries a \x60general\x60 note saying so.", fallback_n, fit_cov$n_subjects)`
 
 A subject outside the analytic gradient's scope falls back to an approximation that holds its random effects fixed, and the fit then carries a `general` note naming how many subjects took it. That note reports the route the gradient took, not a defect in the result; if such a fit stalls, `reconverge_gradient_interval` (below) re-solves the random effects every N-th evaluation.
 
@@ -640,7 +640,7 @@ data.frame(converged = fit_bayes$converged, max_rhat = fit_bayes$bayes$max_rhat,
 
 `fit$bayes` holds the posterior mean, median and 2.5%/97.5% quantiles, split-R-hat, effective sample sizes and Monte Carlo standard errors per parameter. R-hat compares the chains with each other: values near 1 mean they sample the same distribution, and ferx marks a run unconverged when the largest one exceeds 1.01. Here the largest is `r round(fit_bayes$bayes$max_rhat, 3)` and the smallest bulk effective sample size `r round(min(fit_bayes$bayes$ess_bulk))`, so the posterior summaries can be used. @sec-uncertainty discusses posterior intervals as a measure of parameter uncertainty.
 
-The base model of this chapter is harder. Here are the default run, four times longer chains, and four times longer chains with HMC proposals for the random effects, which `n_leapfrog` switches on:
+On the base model of this chapter, here are the default run, four times longer chains, and four times longer chains with HMC proposals for the random effects, which `n_leapfrog` switches on:
 
 ```{r}
 #| label: bayes-base
@@ -661,9 +661,9 @@ do.call(rbind, lapply(names(bayes_base), function(run) {
 #| label: check-bayes
 #| include: false
 # The section says warfarin and both longer base-model runs converge, and that the HMC run's
-# smallest bulk ESS is below that of the equally long Metropolis-Hastings run. The default
-# base-model run ends at the 1.01 limit (converged on macOS, just above it on Linux CI), so its
-# sentence is computed; the check only keeps it near the limit.
+# smallest bulk ESS is below that of the equally long Metropolis-Hastings run. Whether the
+# default base-model run converges depends on the platform (max R-hat 1.003 on macOS, 1.011 on
+# Linux CI, against the 1.01 limit), so its sentence is computed; the check keeps it near.
 stopifnot(fit_bayes$converged, fit_bayes$bayes$max_rhat < 1.01,
           all(sapply(bayes_base[c("four_times_longer", "four_times_longer_hmc")],
                      function(f) f$converged && f$bayes$max_rhat < 1.01)),

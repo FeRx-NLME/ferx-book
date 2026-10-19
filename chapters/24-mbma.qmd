@@ -389,8 +389,8 @@ grep("profiled", capture.output(print(fit_profiled)), value = TRUE)
 #| label: check-profile
 #| include: false
 # The prose: the same objective (to the optimizer's tolerance) and parameter count, the
-# structural estimates within a small fraction of their standard errors, slower on this
-# small block, every level flagged profiled, and of the three gradient warnings only the
+# structural estimates within a small fraction of their standard errors, at least twice as
+# slow on this small block (so the rounded ratio reads 2 or more), every level flagged profiled, and of the three gradient warnings only the
 # outer one gone.
 structural <- names(fit_fixed$theta)[1:4]
 general_profiled <- subset(ferx_get_warnings(fit_profiled, as_df = TRUE), category == "general")$message
@@ -398,7 +398,7 @@ stopifnot(isTRUE(fit_profiled$converged), identical(fit_profiled$profiled_blocks
           abs(fit_profiled$ofv - fit_fixed$ofv) < 1e-3,
           fit_profiled$n_parameters == fit_fixed$n_parameters,
           all(abs(fit_profiled$theta[structural] - fit_fixed$theta[structural]) < 0.1 * fit_fixed$se_theta[structural]),
-          fit_profiled$wall_time_secs > fit_fixed$wall_time_secs,
+          fit_profiled$wall_time_secs >= 2 * fit_fixed$wall_time_secs,
           all(fit_profiled$theta_levels$profiled), !any(fit_fixed$theta_levels$profiled),
           sum(grepl("^PLACEBO\\[", names(fit_profiled$theta))) == 23,
           length(general_profiled) == 2, any(grepl("past the 24-axis cap", general_profiled, fixed = TRUE)),
@@ -410,9 +410,11 @@ bounded_model <- file.path(mbma_dir, "mbma_profiled_bounded.ferx")
 writeLines(bounded_lines, bounded_model)
 bounded_code <- tryCatch({ ferx_fit(bounded_model, mbma$data, verbose = FALSE); NULL }, error = function(e) e$code)
 stopifnot(identical(bounded_code, "E_PROFILE_SCOPE"))
-# Only the r covariance step: "s" returns no standard errors, with the reason in the warnings.
-profiled_s <- ferx_covariance(fit_profiled, covariance_method = "s")
-stopifnot(profiled_s$covariance_status == "failed", any(grepl("profiled", profiled_s$warnings)))
+# Only the r covariance step: "s" and "rsr" return no standard errors, with the reason in the warnings.
+for (method in c("s", "rsr")) {
+  profiled_cov <- ferx_covariance(fit_profiled, covariance_method = method)
+  stopifnot(profiled_cov$covariance_status == "failed", any(grepl("profiled", profiled_cov$warnings)))
+}
 ```
 
 The profiled fit reaches the same objective, to the optimizer's tolerance (`r signif(abs(fit_profiled$ofv - fit_fixed$ofv), 1)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r round(fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid. Their standard errors come from the `"r"` covariance step, the only one a profiled fit has: `ferx_covariance(covariance_method = "s")` or `"rsr"` returns no standard errors and gives the reason in `fit$warnings`. The outer-gradient warning is gone, because the optimizer no longer searches the levels. The parameter-count warning stays, since it counts every parameter of the model.
@@ -587,7 +589,7 @@ No warning category has this chapter as its home. The fits above raise two that 
 - `DV ~ additive(ADD_ERR) weight = SE` with `ADD_ERR` fixed at 1 is inverse-variance weighting on the natural scale.
 - `kappa ... weight = NARM` is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, `sqrt(gamma2 / fit$kappa_weight_typical)`.
 - With `contrast = sum_to_zero_within`, `TVE0` is each study's mean placebo level over its visits, not its week-0 level.
-- A level block read linearly can be declared `profile`: the levels are solved at every step instead of searched, with the same objective and estimates.
+- A level block read linearly can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors.
 - `fit$theta_levels` holds every placebo level's value and standard error, derived ones included, and its SIR interval after `ferx_sir(sir_keep_samples = TRUE)`. Large blocks print as one THETA BLOCKS line.
 - `ferx_contrast_vpc()` checks the model on the treatment contrast within a study, where the between-study variability cancels.
 - `.fitrx` files keep the level layout, and `ferx_sir()` and `ferx_covariance()` follow the fit's settings.
