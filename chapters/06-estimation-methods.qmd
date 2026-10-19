@@ -208,25 +208,35 @@ cat(strwrap(optimizer_note, 90), sep = "\n")
 stopifnot(length(optimizer_note) == 1)
 ```
 
-To measure the gradient alone, pin `optimizer` in both fits; `settings = list(optimizer = "bobyqa")` on the model-file fit removes the note. A fit on the analytic gradient can carry a different `general` note: some subjects could not be given the exact analytic outer gradient and used an approximation that holds their random effects fixed. The covariate model of @sec-model-selection shows it:
+To measure the gradient alone, pin `optimizer` in both fits; `settings = list(optimizer = "bobyqa")` on the model-file fit removes the note. `fit$gradient_method_outer` records the route the outer gradient took. On the covariate model of @sec-model-selection the route is the exact analytic gradient:
 
 ```{r}
 #| label: outer-gradient-note
 cov <- ferx_example("two_cpt_oral_cov")
 fit_cov <- ferx_fit(cov$model, cov$data, verbose = FALSE)
-gradient_note <- grep("could not be given the exact analytic outer gradient", fit_cov$warnings,
-                      value = TRUE, fixed = TRUE)
-cat(strwrap(gradient_note, 90), sep = "\n")
+fit_cov$gradient_method_outer
+ferx_get_warnings(fit_cov, as_df = TRUE)[, c("severity", "category")]
 ```
 
 ```{r}
 #| label: check-outer-gradient-note
 #| include: false
-# The paragraph above says the covariate model carries this note.
-stopifnot(length(gradient_note) == 1)
+# The paragraph says the model-level route is analytic; whether a subject falls back during
+# the fit depends on rounding (none on macOS, one on Linux CI), so the text below is computed.
+stopifnot(startsWith(fit_cov$gradient_method_outer, "analytic"))
+fallback_note <- grep("could not be given the exact analytic outer gradient", fit_cov$warnings, fixed = TRUE, value = TRUE)
+fallback_n <- if (length(fallback_note)) as.integer(sub("^([0-9]+) of .*", "\\1", fallback_note[1])) else 0L
+stopifnot(length(fallback_note) <= 1, !is.na(fallback_n))
 ```
 
-The note reports the route the gradient took, not a defect in the result: it names how many subjects took the approximation, and if a fit stalls, `reconverge_gradient_interval` (below) re-solves the random effects every N-th evaluation.
+`r if (fallback_n == 0) "Every subject got it here, so the fit carries no fallback note." else sprintf("Here %d of the %d subjects could not be given it during the fit, and the fit carries a \x60general\x60 note saying so.", fallback_n, fit_cov$n_subjects)`
+
+A subject outside the analytic gradient's scope falls back to an approximation that holds its random effects fixed, and the fit then carries a `general` note naming how many subjects took it. That note reports the route the gradient took, not a defect in the result; if such a fit stalls, `reconverge_gradient_interval` (below) re-solves the random effects every N-th evaluation.
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+With ferx-r {{< var ferx_r_release >}}, 4 of this model's 30 subjects take the fixed-random-effect approximation, and the fit carries that `general` note.
+:::
 
 ### Helper functions
 
@@ -349,38 +359,35 @@ stopifnot(fit_bobyqa$ofv > fit_warf$ofv)
 
 `ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare.
 
+The warning also fires in the other direction, and then it does put the estimates in doubt: when the cold re-solve scores materially *lower* than the objective the optimizer minimised, some subjects' EBEs stayed in a higher mode for the whole fit, so the estimates minimise the wrong objective. ferx restarts the fit from its estimates; if the restart cannot run or leaves a gap of its own, the fit is reported with `converged = FALSE` (ferx-core [warning codes](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence-fit)). The message says which direction it is.
+
 "Materially" is a small margin relative to the OFV, so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, which stops at a saddle point, raises it on some machines and not on others.
 
-::: {.callout-warning}
-## A starved inner loop is not reported as such at this build
-
-When too many subjects' inner loops fail to converge -- a larger fraction of them than `max_unconverged_frac`, `r book_setting_default("max_unconverged_frac")` by default -- ferx rejects the outer trial and returns a penalty instead of an objective, which pushes the optimizer towards the middle of the parameter box. If *every* trial is rejected, a gradient-based optimizer converges on that penalty, and the fit reports `converged = TRUE` at the midpoint of the declared bounds, with no `convergence` or `ebe_start_dependent` warning. Cutting `inner_maxiter` far below its default does that on warfarin:
+A starved inner loop is a different failure. When too many subjects' inner loops fail to converge -- a larger fraction of them than `max_unconverged_frac`, `r book_setting_default("max_unconverged_frac")` by default -- ferx rejects the outer trial and returns a penalty instead of an objective. Cutting `inner_maxiter` far below its default does that on warfarin, and the fit says so:
 
 ```{r}
 #| label: starved-inner-loop
 fit_starved <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 3), verbose = FALSE)
 starved_warnings <- ferx_get_warnings(fit_starved, as_df = TRUE)
-# Geometric midpoints of the declared theta bounds, read from the model file.
-bounds <- regmatches(readLines(warf$model),
-                     regexec("theta (\\w+)\\([^,]+,\\s*([^,]+),\\s*([^)]+)\\)", readLines(warf$model)))
-bounds <- do.call(rbind, Filter(length, bounds))
-midpoints <- setNames(sqrt(as.numeric(bounds[, 3]) * as.numeric(bounds[, 4])), bounds[, 2])
-rbind(default_budget = fit_warf$theta, inner_maxiter_3 = fit_starved$theta,
-      bound_midpoint = midpoints[names(fit_warf$theta)])
+rbind(default_budget = fit_warf$theta, inner_maxiter_3 = fit_starved$theta)
 data.frame(converged = fit_starved$converged, ofv = fit_starved$ofv, default_ofv = fit_warf$ofv)
-starved_warnings[, c("severity", "category")]
+starved_warnings[starved_warnings$severity == "critical", c("severity", "category")]
 ```
 
 ```{r}
 #| label: check-starved-inner-loop
 #| include: false
-# The callout describes this behaviour; once the engine reports it, the render has to stop.
-stopifnot(fit_starved$converged,
-          max(abs(fit_starved$theta / midpoints[names(fit_starved$theta)] - 1)) < 1e-4,
-          !any(c("convergence", "ebe_start_dependent") %in% starved_warnings$category))
+# The paragraph says the starved fit is reported unconverged, with a critical
+# convergence warning, far above the default-budget fit.
+stopifnot(!fit_starved$converged, fit_starved$ofv - fit_warf$ofv > 100,
+          any(starved_warnings$category == "convergence" & starved_warnings$severity == "critical"))
 ```
 
-The other warnings -- the critical `condition_number` among them -- say the result is unusable, but not why. Estimates sitting exactly on the midpoints of their bounds are the sign. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it. A derivative-free `optimizer` such as `bobyqa` stalls at the initial estimates instead, which `stalled_at_init` does report ([ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617)).
+The fit ends `r round(fit_starved$ofv - fit_warf$ofv)` OFV points above the default-budget fit, is marked unconverged and carries a critical `convergence` warning, so it cannot pass for a result. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it.
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}}, a fit whose every outer trial is rejected this way converges on the penalty and reports `converged = TRUE` at the midpoint of its declared bounds, with no `convergence` warning ([ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617), fixed after that release). This warfarin fit does that there. With {{< var ferx_r_release >}}, estimates sitting exactly on the midpoints of their bounds are the sign.
 :::
 
 Choosing the outer `optimizer` on warfarin:
@@ -581,8 +588,13 @@ book_settings_table("gn_lambda")
 #| tbl-cap: "Importance sampling settings."
 book_settings_table(c("imp_samples", "imp_proposal_df", "imp_seed", "imp_low_ess_threshold",
                       "imp_iterations", "imp_averaging", "imp_auto", "imp_defensive_alpha",
-                      "imp_eval_only"))
+                      "imp_eval_only", "imp_sobol"))
 ```
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+The `imp_sobol` setting is not in ferx-r {{< var ferx_r_release >}}.
+:::
 
 A common use of `imp` is to evaluate the marginal likelihood at a FOCEI solution: the final stage of a chain, with `imp_eval_only = TRUE`. The result is in `fit$importance_sampling`:
 
@@ -628,10 +640,7 @@ data.frame(converged = fit_bayes$converged, max_rhat = fit_bayes$bayes$max_rhat,
 
 `fit$bayes` holds the posterior mean, median and 2.5%/97.5% quantiles, split-R-hat, effective sample sizes and Monte Carlo standard errors per parameter. R-hat compares the chains with each other: values near 1 mean they sample the same distribution, and ferx marks a run unconverged when the largest one exceeds 1.01. Here the largest is `r round(fit_bayes$bayes$max_rhat, 3)` and the smallest bulk effective sample size `r round(min(fit_bayes$bayes$ess_bulk))`, so the posterior summaries can be used. @sec-uncertainty discusses posterior intervals as a measure of parameter uncertainty.
 
-::: {.callout-warning}
-## Bayes does not converge on the two-compartment models with its defaults at this build
-
-On the base model of this chapter the default run ends unconverged, and its warning recommends longer chains. Four times longer chains do not help. HMC proposals for the random effects, which `n_leapfrog` switches on, do:
+On the base model of this chapter, here are the default run, four times longer chains, and four times longer chains with HMC proposals for the random effects, which `n_leapfrog` switches on:
 
 ```{r}
 #| label: bayes-base
@@ -641,8 +650,6 @@ bayes_settings <- list(default = list(), four_times_longer = list(bayes_warmup =
 bayes_base <- lapply(bayes_settings, function(s) {
   suppressWarnings(ferx_fit(base$model, base$data, method = "bayes", settings = s, verbose = FALSE))
 })
-w_bayes <- ferx_get_warnings(bayes_base$default, as_df = TRUE)
-strwrap(w_bayes$message[grepl("R-hat", w_bayes$message)], 80)
 do.call(rbind, lapply(names(bayes_base), function(run) {
   b <- bayes_base[[run]]$bayes
   data.frame(run = run, draws_per_chain = b$n_draws_per_chain, converged = bayes_base[[run]]$converged,
@@ -653,14 +660,23 @@ do.call(rbind, lapply(names(bayes_base), function(run) {
 ```{r}
 #| label: check-bayes
 #| include: false
-# The section says warfarin converges and the base model does not with the default proposals, at
-# either chain length, but does with HMC proposals.
+# The section says warfarin and both longer base-model runs converge, and that the HMC run's
+# smallest bulk ESS is below that of the equally long Metropolis-Hastings run. Whether the
+# default base-model run converges depends on the platform (max R-hat 1.003 on macOS, 1.011 on
+# Linux CI, against the 1.01 limit), so its sentence is computed; the check keeps it near.
 stopifnot(fit_bayes$converged, fit_bayes$bayes$max_rhat < 1.01,
-          !bayes_base$default$converged, !bayes_base$four_times_longer$converged,
-          bayes_base$four_times_longer_hmc$converged)
+          all(sapply(bayes_base[c("four_times_longer", "four_times_longer_hmc")],
+                     function(f) f$converged && f$bayes$max_rhat < 1.01)),
+          bayes_base$default$bayes$max_rhat < 1.05,
+          identical(bayes_base$default$converged, bayes_base$default$bayes$max_rhat <= 1.01),
+          min(bayes_base$four_times_longer_hmc$bayes$ess_bulk) < min(bayes_base$four_times_longer$bayes$ess_bulk))
 ```
 
-With the default Metropolis-Hastings proposals and `r bayes_base$four_times_longer$bayes$n_draws_per_chain` draws per chain the largest R-hat is still `r round(bayes_base$four_times_longer$bayes$max_rhat, 2)`, so the chains have not settled on one distribution and the posterior summaries of these fits are not usable. Those proposals move the random effects too slowly on this model for longer chains to make up for it ([ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626)). With `n_leapfrog = 10` each subject's random effects get HMC proposals instead, which ferx offers for analytical models without IOV, and the same chain length converges: the largest R-hat is `r round(bayes_base$four_times_longer_hmc$bayes$max_rhat, 3)` and the smallest bulk effective sample size `r round(min(bayes_base$four_times_longer_hmc$bayes$ess_bulk))`. These settings converge on this model, but they are no recipe: read `max_rhat` on every run. The covariate model of @sec-uncertainty converges with neither kind of proposal. For parameter uncertainty on that model use the covariance step, SIR or the bootstrap (@sec-uncertainty).
+`r if (bayes_base$default$converged) "All three runs converge." else sprintf("The default run ends just above the limit, at a largest R-hat of %.3f, and is marked unconverged; four times longer chains converge, with or without HMC.", bayes_base$default$bayes$max_rhat)` The largest R-hat is `r round(max(sapply(bayes_base, function(f) f$bayes$max_rhat)), 3)` across the three runs. With `n_leapfrog = 10` each subject's random effects get HMC proposals instead of Metropolis-Hastings ones, which ferx offers for analytical models without IOV. They are not needed here, and at the same chain length the smallest bulk effective sample size is `r round(min(bayes_base$four_times_longer_hmc$bayes$ess_bulk))`, against `r round(min(bayes_base$four_times_longer$bayes$ess_bulk))` with the default proposals. Read `max_rhat` and the effective sample sizes on every run. @sec-uncertainty runs the same three settings on the covariate model.
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+With ferx-r {{< var ferx_r_release >}}, the default run and the four times longer chains on this base model end unconverged, and only the HMC proposals converge ([ferx-core #1626](https://github.com/FeRx-NLME/ferx-core/issues/1626), fixed after that release). Check `max_rhat` before using posterior summaries there.
 :::
 
 ### Variational inference
@@ -776,14 +792,17 @@ See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html)
   ```{r}
   #| label: check-init-not-representable
   #| include: false
-  # The item says this start raises the warning and ends far above the model file's fit,
-  # with TVKA at its upper bound and a boundary_estimate warning.
+  # The item says this start raises the warning and still reaches the model file's optimum.
   stopifnot("init_not_representable" %in% tiny_warnings$category,
-            fit_tiny$ofv - fit_warf$ofv > 100, fit_tiny$theta[["TVKA"]] > 49.9,
-            "boundary_estimate" %in% tiny_warnings$category)
+            abs(fit_tiny$ofv - fit_warf$ofv) < 0.01)
   ```
 
-  Starting this far off also wrecks the rest of the fit. It ends at an OFV of `r round(fit_tiny$ofv, 1)`, against `r round(fit_warf$ofv, 1)` from the model file's start, with `TVKA` at its upper bound of 50. `converged` is `r fit_tiny$converged`, and the warnings that follow (`r paste0("\x60", setdiff(unique(tiny_warnings$category), "init_not_representable"), "\x60", collapse = ", ")`) are `r if ("critical" %in% tiny_warnings$severity) "critical in part" else "all of warning level"`, so read `init_not_representable` as a reason to refit, not as a note. Declare the start at a value the parameter can take.
+  Here the fit recovers: it reaches the optimum of the model file's start (OFV `r round(fit_tiny$ofv, 2)` against `r round(fit_warf$ofv, 2)`). The fit still did not start where the file says, so declare the start at a value the parameter can take.
+
+  ::: {.callout-note}
+  ## Changed after ferx-r {{< var ferx_r_release >}}
+  With ferx-r {{< var ferx_r_release >}}, starting this far off wrecks the rest of the fit, which ends far from the optimum and carries critical warnings as well.
+  :::
 - `parameter_at_runaway_guard` (warning or critical): a parameter is pinned at a hidden optimizer guard. `collapse` (warning) means remove or simplify it; `runaway` (critical) means reject the fit.
 - `importance_sampling` (warning): the effective sample size dropped to zero, or the proposal collapsed. Increase the samples or improve the proposal.
 - `vi_bad_basin` (critical): the final bound-quality check of a VI fit failed, and the fit is marked unconverged. Try new starting values, or start from another method.

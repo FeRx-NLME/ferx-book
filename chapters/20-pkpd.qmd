@@ -48,10 +48,15 @@ invisible(ferx_model_get_section(pkpd$model, "odes"))
 invisible(ferx_model_get_section(pkpd$model, "scaling"))
 invisible(ferx_model_get_section(pkpd$model, "error_model"))
 invisible(ferx_model_get_section(pkpd$model, "fit_options"))
-fit_pkpd <- ferx_fit(pkpd$model, pkpd$data, gradient = "auto", verbose = FALSE)
+fit_pkpd <- ferx_fit(pkpd$model, pkpd$data, verbose = FALSE)
 ```
 
-Both endpoints enter one likelihood, so the PK and PD parameters are estimated together. The model file asks for `gradient = fd`, and its comment calls finite differences required for this readout. At this build they are not, and the comment is out of date ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625)): ferx computes the analytic gradient for this model (`fit_pkpd$gradient_used` is "`r fit_pkpd$gradient_used`"), and the R warning above reports the override. The fits in this chapter pass `gradient = "auto"`, because the finite-difference fit stops short of the optimum, as the simulation–estimation run below shows.
+Both endpoints enter one likelihood, so the PK and PD parameters are estimated together. Both readouts are differentiated analytically, so the default `gradient = "auto"` takes the analytic gradient (`fit_pkpd$gradient_used` is "`r fit_pkpd$gradient_used`"). Finite differences stop short of the optimum on this model, as the simulation–estimation run below shows.
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}} the bundled model file sets `gradient = fd`, with a comment calling it required ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625), fixed after that release). With {{< var ferx_r_release >}}, pass `gradient = "auto"` to `ferx_fit()` for this model.
+:::
 
 ## Reading the result
 
@@ -142,8 +147,7 @@ recovery <- function(f) {
              rse_pct = f$estimates$rse_pct)
 }
 one_dose <- simulate_study(rep(100, 30), file.path(pkpd_dir, "pkpd_100.csv"))
-# suppress the R warning that reports overriding the model file's gradient
-fit_one_dose <- suppressWarnings(ferx_fit(pkpd$model, one_dose, gradient = "auto", verbose = FALSE))
+fit_one_dose <- ferx_fit(pkpd$model, one_dose, verbose = FALSE)
 recovery(fit_one_dose)
 ```
 
@@ -151,8 +155,8 @@ The PK parameters are recovered and the PD parameters are not: `TVEMAX` ends at 
 
 ```{r}
 #| label: pkpd-sim-truth
-# suppress the R warnings that report overriding the model file's gradient and covariance setting
-at_simulation_values <- suppressWarnings(ferx_fit(pkpd$model, one_dose, gradient = "auto", covariance = FALSE,
+# suppress the R warning that reports overriding the model file's covariance setting
+at_simulation_values <- suppressWarnings(ferx_fit(pkpd$model, one_dose, covariance = FALSE,
                                                   settings = list(maxiter = 0), verbose = FALSE))
 data.frame(fit = fit_one_dose$ofv, simulation_values = at_simulation_values$ofv)
 one_dose_data <- read.csv(one_dose, na.strings = ".")
@@ -164,7 +168,7 @@ The true parameters score `r round(at_simulation_values$ofv - fit_one_dose$ofv, 
 ```{r}
 #| label: pkpd-sim-doses
 dose_range <- simulate_study(rep(c(100, 300, 1000), each = 10), file.path(pkpd_dir, "pkpd_dose_range.csv"))
-fit_dose_range <- suppressWarnings(ferx_fit(pkpd$model, dose_range, gradient = "auto", verbose = FALSE))
+fit_dose_range <- ferx_fit(pkpd$model, dose_range, verbose = FALSE)
 recovery(fit_dose_range)
 ```
 
@@ -190,18 +194,17 @@ stopifnot(max(miss(fit_one_dose, pk)) < 0.1,
 
 With concentrations up to `r round(max(dose_range_data$DV[dose_range_data$CMT == 2]))`, `TVEMAX` and `TVEC50` come out at `r signif(fit_dose_range$theta[["TVEMAX"]], 3)` and `r signif(fit_dose_range$theta[["TVEC50"]], 2)`, within `r ceiling(100 * max(abs(fit_dose_range$theta[c("TVEMAX", "TVEC50")] / c(40, 5) - 1)))`% of 40 and 5 instead of several-fold off, and the largest relative standard error of any parameter is `r round(max(fit_dose_range$estimates$rse_pct))`%. One simulated study is one draw: repeat it with other seeds before settling a design. A simulation–estimation run answers the design question before the study is run.
 
-::: {.callout-warning}
-## The model file's finite-difference gradient stops short at this build
+### Finite differences stop short on this model
 
-The fits above pass `gradient = "auto"`. With the model file's own `gradient = fd`, the fits of both designs converge well above their optimum, and refitting with a gradient-based optimizer, as @sec-estimation-methods suggests when `bobyqa` stops on a slope, does not rescue them:
+The fits above take the analytic gradient. With `gradient = "fd"`, the fits of both designs converge above their optimum, and refitting with a gradient-based optimizer, as @sec-estimation-methods suggests when `bobyqa` stops on a slope, does not rescue them:
 
 ```{r}
 #| label: pkpd-sim-fd
 gradient_runs <- function(data, fit_auto) {
-  list(`gradient = fd (model file)` = ferx_fit(pkpd$model, data, verbose = FALSE),
+  list(`gradient = "fd"` = ferx_fit(pkpd$model, data, gradient = "fd", verbose = FALSE),
        # suppress the R warning that reports overriding the model file's optimizer
-       `gradient = fd, optimizer = slsqp` = suppressWarnings(
-         ferx_fit(pkpd$model, data, settings = list(optimizer = "slsqp"), verbose = FALSE)),
+       `gradient = "fd", optimizer = slsqp` = suppressWarnings(
+         ferx_fit(pkpd$model, data, gradient = "fd", settings = list(optimizer = "slsqp"), verbose = FALSE)),
        `gradient = "auto"` = fit_auto)
 }
 fd_runs <- list(`100 for all` = gradient_runs(one_dose, fit_one_dose),
@@ -218,9 +221,10 @@ do.call(rbind, lapply(names(fd_runs), function(design) {
 ```{r}
 #| label: check-pkpd-sim-fd
 #| include: false
-# The callout says every fd fit stops well above the analytic optimum, that the objective is the
+# The section says every fd fit stops above the analytic optimum (1.7 to 11.4 on Linux CI), that the objective is the
 # same on both paths (the analytic estimates, written into the model file, score the same OFV on
-# the fd path), and that on the 100 design the fd fits stay close to the simulation values.
+# the fd path), and that on the 100 design the default-optimizer fd fit stays close to the
+# simulation value of TVEMAX while slsqp moves part of the way towards the analytic optimum.
 fd_gap <- unlist(lapply(fd_runs, function(runs) sapply(runs[1:2], function(f) f$ofv - runs[[3]]$ofv)))
 at_optimum <- readLines(pkpd$model)
 est <- fit_one_dose$estimates
@@ -235,15 +239,15 @@ for (nm in fit_one_dose$sigma_names) {
 }
 at_optimum_file <- file.path(pkpd_dir, "emax_pkpd_at_optimum.ferx")
 writeLines(at_optimum, at_optimum_file)
-fd_at_optimum <- suppressWarnings(ferx_fit(at_optimum_file, one_dose, covariance = FALSE,
+fd_at_optimum <- suppressWarnings(ferx_fit(at_optimum_file, one_dose, gradient = "fd", covariance = FALSE,
                                            settings = list(maxiter = 0), verbose = FALSE))
 fd_emax <- sapply(fd_runs[[1]][1:2], function(f) f$theta[["TVEMAX"]])
-stopifnot(all(fd_gap > 2), abs(fd_at_optimum$ofv - fit_one_dose$ofv) < 0.01,
-          all(abs(fd_emax / 40 - 1) < 0.25))
+stopifnot(all(fd_gap > 1), abs(fd_at_optimum$ofv - fit_one_dose$ofv) < 0.01,
+          abs(fd_emax[[1]] / 40 - 1) < 0.25,
+          fd_emax[[2]] < fd_emax[[1]], fd_emax[[2]] > fit_one_dose$theta[["TVEMAX"]])
 ```
 
-Every finite-difference fit stops between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above the optimum that the analytic gradient finds. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the fit starts at the simulation values and stops near them, so `TVEMAX` comes out close to 40 and the design looks able to support the model, which it is not. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, pass `gradient = "auto"` until the model file drops its `gradient = fd` ([ferx-core #1625](https://github.com/FeRx-NLME/ferx-core/issues/1625)).
-:::
+Every finite-difference fit stops between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above the optimum that the analytic gradient finds. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the finite-difference fit starts at the simulation values and stops near them, so `TVEMAX` comes out at `r signif(fd_emax[[1]], 3)`, close to 40, and the design looks able to support the model, which it is not. The `slsqp` refit moves part of the way, to `r signif(fd_emax[[2]], 3)`, where the analytic optimum is at `r signif(fit_one_dose$theta[["TVEMAX"]], 3)`. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, leave the gradient to ferx.
 
 ### Effects computed from a PK fit
 

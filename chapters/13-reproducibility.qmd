@@ -99,6 +99,13 @@ The file stores the fields of the cross-language schema, not every element of th
 setdiff(names(fit), names(loaded))
 ```
 
+```{r}
+#| label: check-missing-fields
+#| include: false
+# The prose names individual_estimates as one of the fields a .fitrx file drops.
+stopifnot("individual_estimates" %in% setdiff(names(fit), names(loaded)))
+```
+
 The structured warning table `warnings_structured` is one of them, but the warnings survive as text, and `ferx_get_warnings()` classifies a loaded fit's messages again with the engine's own rules. The loaded fit therefore reports the same severities and categories as the fresh one:
 
 ```{r}
@@ -115,7 +122,7 @@ stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)[, c("severity", "catego
                     ferx_get_warnings(loaded, as_df = TRUE)[, c("severity", "category")]))
 ```
 
-Keep what you need from the missing fields (for example `individual_estimates` or `condition_number`) in your own tables. Or save the R object as well, with `saveRDS()`.
+Keep what you need from the missing fields (for example `individual_estimates`) in your own tables. Or save the R object as well, with `saveRDS()`.
 
 ## Recording provenance
 
