@@ -155,13 +155,13 @@ ferx_get_warnings(fit_if, as_df = TRUE)[, c("severity", "category", "message")]
 ```{r}
 #| label: check-warfarin-if
 #| include: false
-# The sentence below explains the general warning as the outer-gradient note, so anything else has to fail the render.
+# The sentence below explains the two entries: the mu-referencing note and the Durbin-Watson warning.
 if_warnings <- ferx_get_warnings(fit_if, as_df = TRUE)
-if_general <- if_warnings$message[if_warnings$category == "general"]
-stopifnot(length(if_general) == 1, grepl("exact analytic outer gradient", if_general, fixed = TRUE))
+stopifnot(setequal(if_warnings$category, c("mu_referencing", "dw_autocorrelation")),
+          if_warnings$severity[if_warnings$category == "mu_referencing"] == "info")
 ```
 
-A parameter assigned inside an `if` block loses mu-referencing (@sec-variability), and the fit says so with an `info` note. The `general` warning is the outer-gradient note explained in @sec-estimation-methods. On the same data, the three models compare as follows:
+A parameter assigned inside an `if` block loses mu-referencing (@sec-variability), and the fit says so with an `info` note. The `dw_autocorrelation` warning is the residual check explained in @sec-diagnostics. On the same data, the three models compare as follows:
 
 ```{r}
 #| label: tbl-covariate-models
@@ -343,12 +343,47 @@ filter(fit_tv$covtab, ID == 1, TIME %in% c(8, 12))
   grep("WT", readLines(double$model_path), value = TRUE)
   ```
 
+- **Keep clearance and volume positive.** A linear covariate term can take `CL` below zero at an extreme covariate value. Written as `1 + THETA_CRCL * (CRCL - 100) / 100` with `THETA_CRCL` fixed at 2, the CRCL effect is negative for every CRCL below 50 mL/min. Evaluated at its initial values, the model warns:
+
+  ```{r}
+  #| label: degenerate-clearance
+  linear_lines <- readLines(cov$model)
+  linear_lines <- sub("theta THETA_CRCL(0.50, 0.01, 5.0)", "theta THETA_CRCL(2.0) FIX", linear_lines, fixed = TRUE)
+  linear_lines <- sub("(CRCL / 100)^THETA_CRCL", "(1 + THETA_CRCL * (CRCL - 100) / 100)", linear_lines, fixed = TRUE)
+  stopifnot(any(grepl("theta THETA_CRCL(2.0) FIX", linear_lines, fixed = TRUE)),
+            any(grepl("(1 + THETA_CRCL * (CRCL - 100) / 100)", linear_lines, fixed = TRUE)))
+  linear_model <- file.path(covariate_dir, "two_cpt_oral_cov_linear_crcl.ferx")
+  writeLines(linear_lines, linear_model)
+  # suppress the R warning that reports overriding the model file's maxiter
+  fit_linear <- suppressWarnings(ferx_fit(linear_model, cov$data, settings = list(maxiter = 0), verbose = FALSE))
+  subset(ferx_get_warnings(fit_linear, as_df = TRUE), category == "degenerate_clearance_or_volume")$message
+  read.csv(cov$data, na.strings = ".") |> filter(CRCL < 50) |> distinct(ID, CRCL)
+  ```
+
+  The closed-form engines give such a record a concentration of 0, so the objective is finite but scores a prediction that cannot be. Use a form that stays positive (power or exponential), or bound the effect.
+
+  ```{r}
+  #| label: check-degenerate-clearance
+  #| include: false
+  # The prose: the warning fires and names the subject(s) with CRCL below 50, the only ones whose effect is negative.
+  low <- read.csv(cov$data, na.strings = ".") |> filter(CRCL < 50) |> distinct(ID)
+  degenerate <- subset(ferx_get_warnings(fit_linear, as_df = TRUE), category == "degenerate_clearance_or_volume")$message
+  stopifnot(length(degenerate) == 1, nrow(low) >= 1,
+            all(sapply(low$ID, function(id) grepl(sprintf("[%s]", id), degenerate, fixed = TRUE) |
+                                             grepl(sprintf("subject %s", id), degenerate, fixed = TRUE))))
+  ```
 - **FREM needs a suitable method.** Check the covariate–parameter correlations with SAEM: FOCEI found almost none on these data. Give `output_dir` a writable directory of your own, or the generated files land next to the model file.
 
 ### Warnings you may see here
 
 - `mu_referencing` (info): a conditional assignment switched off mu-referencing for a parameter, as for `warfarin_if` above.
+- `degenerate_clearance_or_volume` (warning): the estimates give a non-positive or non-finite `CL` or `V` on some record, as for the linear CRCL term above.
 - `general` (warning) on FREM models: a sigma declared but not used in `[error_model]`, or individual parameters that are computed but not used. For the generated covariate sigma and covariate expressions this is expected.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+The `degenerate_clearance_or_volume` warning is not in ferx-r {{< var ferx_r_release >}}.
+:::
 
 ## Summary
 

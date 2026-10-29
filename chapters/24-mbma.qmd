@@ -15,12 +15,12 @@ This chapter fits the bundled `mbma_placebo` example. It covers the arm-level da
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, a profiled level block (`profile`, `fit$profiled_blocks`) and nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`) are newer than {{< var ferx_r_release >}} as well.
+This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, a profiled level block (`profile`, `fit$profiled_blocks`, bounds on it and `fit$profiled_levels_at_bound`), nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`, the `nested_levels` example) and a within-arm residual `correlation` line are newer than {{< var ferx_r_release >}} as well.
 :::
 
 ::: {.callout-note}
 ## Maturity
-The `weight =` modifier, on the error model and on a kappa, is **experimental** in ferx-core ([residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...)). Theta level blocks are documented on the [parameters](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks) page.
+The `weight =` modifier, on the error model and on a kappa, is **experimental** in ferx-core ([residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...)). So is the residual [`correlation`](https://ferx-nlme.org/ferx-core/model-file/residual-correlation.html) line. Theta level blocks are documented on the [parameters](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks) page.
 :::
 
 ## The data
@@ -134,7 +134,7 @@ stopifnot(sum(arms_all$DOSE == 0) == n_distinct(arm_data$STUDY),
 
 Placebo and treated arms are fitted together, in one likelihood: all `r nrow(arms_all)` arms of the `r n_distinct(arm_data$STUDY)` studies, `r sum(arms_all$DOSE == 0)` on placebo and `r sum(arms_all$DOSE > 0)` on an active dose. Every arm of a study shares that study's placebo levels, and the Emax term, which is zero at `DOSE = 0`, adds the drug effect on top. The model therefore assumes that the placebo response is the same in a study's placebo and treated arms and adds to the drug effect. Within a study, the difference between a treated arm and its placebo arm is what identifies `EMAX`, `ED50` and `ET50`.
 
-`iov_column = OCC` makes each arm an occasion. The fit takes a few seconds:
+`iov_column = OCC` makes each arm an occasion. The fit is quick:
 
 ```{r}
 #| label: fit
@@ -343,36 +343,29 @@ fit_fixed
 #| label: check-fixed-study
 #| include: false
 # The prose: 23 free levels shown as one THETA BLOCKS line; every level still in
-# fit$theta; the structure line names the block once; the two general warnings
-# are the finite-difference fallback past the analytic gradient cap, in this order:
-# the parameter count, the inner (EBE) gradients, the outer gradients.
+# fit$theta; the structure line names the block once.
 printed <- capture.output(print(fit_fixed))
 structure_line <- grep("^  Structural:", printed, value = TRUE)
-general <- subset(ferx_get_warnings(fit_fixed, as_df = TRUE), category == "general")$message
 stopifnot(isTRUE(fit_fixed$converged), any(grepl("THETA BLOCKS", printed)),
           sum(!is.na(fit_fixed$theta_levels$theta_name)) == 23,
           sum(grepl("^PLACEBO\\[", names(fit_fixed$theta))) == 23,
           grepl("PLACEBO[STUDY, TIME] (23 coefficients)", structure_line, fixed = TRUE),
-          !grepl("PLACEBO[STUDY=", structure_line, fixed = TRUE),
-          length(general) == 3, grepl("past the 24-axis cap", general[1], fixed = TRUE),
-          grepl("inner gradients", general[2], fixed = TRUE),
-          grepl("outer gradient", general[3], fixed = TRUE),
-          grepl("model-level route", general[3], fixed = TRUE))
+          !grepl("PLACEBO[STUDY=", structure_line, fixed = TRUE))
 ```
 
 The THETA table now shows the four structural parameters and one line for `PLACEBO`, and the `Structural:` line under MODEL STRUCTURE names the block once with its number of coefficients, whatever its size. Every coefficient is still in `fit_fixed$theta`, and `fit_fixed$theta_levels` still has every level with its value.
 
-This model estimates more parameters than the analytic gradient path handles, so its subjects fall back to finite differences, and ferx says so in three `general` warnings: one for the parameter count, one for the inner gradients of the random effects and one for the outer gradients. The printout still reads `Gradient: ANALYTIC` because it reports the model-level route, not what each subject used, as the last warning notes. The fit is correct, only slower. The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
+The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.
 
 ### Profiling a large level block
 
-A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. A profiled block takes no bounds, so its declaration drops the `(0.0, -50.0, 50.0)` range:
+A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:
 
 ```{r}
 #| label: profile
-profiled_lines <- sub("PLACEBO[STUDY, TIME, contrast = sum_to_zero](0.0, -50.0, 50.0)",
-                      "PLACEBO[STUDY, TIME, contrast = sum_to_zero](0.0) profile", fixed_lines, fixed = TRUE)
-stopifnot(any(grepl("contrast = sum_to_zero](0.0) profile", profiled_lines, fixed = TRUE)))
+profiled_lines <- sub("contrast = sum_to_zero](0.0, -50.0, 50.0)",
+                      "contrast = sum_to_zero](0.0, -50.0, 50.0) profile", fixed_lines, fixed = TRUE)
+stopifnot(any(grepl("contrast = sum_to_zero](0.0, -50.0, 50.0) profile", profiled_lines, fixed = TRUE)))
 profiled_model <- file.path(mbma_dir, "mbma_fixed_study_profiled.ferx")
 writeLines(profiled_lines, profiled_model)
 fit_profiled <- ferx_fit(profiled_model, mbma$data, verbose = FALSE)
@@ -380,7 +373,7 @@ fit_profiled$profiled_blocks
 data.frame(levels = c("estimated", "profiled"),
            ofv = c(fit_fixed$ofv, fit_profiled$ofv),
            n_parameters = c(fit_fixed$n_parameters, fit_profiled$n_parameters),
-           seconds = round(c(fit_fixed$wall_time_secs, fit_profiled$wall_time_secs), 1))
+           seconds = round(c(fit_fixed$wall_time_secs, fit_profiled$wall_time_secs), 2))
 rbind(estimated = fit_fixed$theta[1:4], profiled = fit_profiled$theta[1:4])
 grep("profiled", capture.output(print(fit_profiled)), value = TRUE)
 ```
@@ -390,10 +383,8 @@ grep("profiled", capture.output(print(fit_profiled)), value = TRUE)
 #| include: false
 # The prose: the same objective (to the optimizer's tolerance) and parameter count, the
 # structural estimates within a small fraction of their standard errors, at least twice as
-# slow on this small block (so the rounded ratio reads 2 or more), every level flagged profiled, and of the three gradient warnings only the
-# outer one gone.
+# slow on this small block (so the rounded ratio reads 2 or more), every level flagged profiled.
 structural <- names(fit_fixed$theta)[1:4]
-general_profiled <- subset(ferx_get_warnings(fit_profiled, as_df = TRUE), category == "general")$message
 stopifnot(isTRUE(fit_profiled$converged), identical(fit_profiled$profiled_blocks, "PLACEBO"),
           abs(fit_profiled$ofv - fit_fixed$ofv) < 1e-3,
           fit_profiled$n_parameters == fit_fixed$n_parameters,
@@ -401,25 +392,204 @@ stopifnot(isTRUE(fit_profiled$converged), identical(fit_profiled$profiled_blocks
           fit_profiled$wall_time_secs >= 2 * fit_fixed$wall_time_secs,
           all(fit_profiled$theta_levels$profiled), !any(fit_fixed$theta_levels$profiled),
           sum(grepl("^PLACEBO\\[", names(fit_profiled$theta))) == 23,
-          length(general_profiled) == 2, any(grepl("past the 24-axis cap", general_profiled, fixed = TRUE)),
-          !any(grepl("outer gradient", general_profiled, fixed = TRUE)))
-# A profiled block with bounds is refused, as the prose says.
-bounded_lines <- sub("contrast = sum_to_zero](0.0, -50.0, 50.0)", "contrast = sum_to_zero](0.0, -50.0, 50.0) profile",
-                     fixed_lines, fixed = TRUE)
-bounded_model <- file.path(mbma_dir, "mbma_profiled_bounded.ferx")
-writeLines(bounded_lines, bounded_model)
-bounded_code <- tryCatch({ ferx_fit(bounded_model, mbma$data, verbose = FALSE); NULL }, error = function(e) e$code)
-stopifnot(identical(bounded_code, "E_PROFILE_SCOPE"))
-# Only the r covariance step: "s" and "rsr" return no standard errors, with the reason in the warnings.
-for (method in c("s", "rsr")) {
-  profiled_cov <- ferx_covariance(fit_profiled, covariance_method = method)
-  stopifnot(profiled_cov$covariance_status == "failed", any(grepl("profiled", profiled_cov$warnings)))
-}
+          length(fit_profiled$profiled_levels_at_bound) == 0)
+# The scope paragraph: a method other than FOCE / FOCEI is refused with E_PROFILE_SCOPE.
+saem_code <- tryCatch({
+  suppressWarnings(ferx_fit(profiled_model, mbma$data, method = "saem", settings = list(maxiter = 0), verbose = FALSE)); NULL
+}, error = function(e) e$code)
+stopifnot(identical(saem_code, "E_PROFILE_SCOPE"))
 ```
 
-The profiled fit reaches the same objective, to the optimizer's tolerance (`r signif(abs(fit_profiled$ofv - fit_fixed$ofv), 1)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r round(fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid. Their standard errors come from the `"r"` covariance step, the only one a profiled fit has: `ferx_covariance(covariance_method = "s")` or `"rsr"` returns no standard errors and gives the reason in `fit$warnings`. The outer-gradient warning is gone, because the optimizer no longer searches the levels. The parameter-count warning stays, since it counts every parameter of the model.
+The profiled fit reaches the same objective, to the optimizer's tolerance (less than `r format(10^ceiling(log10(abs(fit_profiled$ofv - fit_fixed$ofv) + 1e-15)), scientific = TRUE)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r round(fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid.
 
-`profile` needs FOCE or FOCEI and an additive residual error, and it rules out a residual `correlation` line, priors and `global_search`, among others. ferx refuses each such fit with `E_PROFILE_SCOPE`, a bounded profiled block included. See [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks) in ferx-core for the full list.
+All three covariance methods are accepted on a profiled fit. `ferx_covariance()` without `covariance_method` repeats the fit's own, which `fit$covariance_method` records:
+
+```{r}
+#| label: profile-covariance
+fit_profiled$covariance_method
+profiled_s <- ferx_covariance(fit_profiled, covariance_method = "s")
+profiled_s$covariance_status
+profiled_rsr <- ferx_covariance(fit_profiled, covariance_method = "rsr")
+data.frame(r = fit_profiled$se_theta[1:4], rsr = profiled_rsr$se_theta[1:4])
+summary(profiled_rsr$theta_levels$se / fit_profiled$theta_levels$se)
+rsr_note <- grep("W_COV_RSR_ONE_SUBJECT_LEVELS", profiled_rsr$warnings, value = TRUE, fixed = TRUE)
+cat(strwrap(rsr_note, 90)[1:2], sep = "\n")
+```
+
+```{r}
+#| label: check-profile-covariance
+#| include: false
+# The prose: the fit's own method is r; s fails on the score cross-product; rsr runs, warns that
+# every level is read by one subject, and gives every level a smaller SE than r.
+rsr_warnings <- ferx_get_warnings(profiled_rsr, as_df = TRUE)
+stopifnot(identical(fit_profiled$covariance_method, "r"), profiled_s$covariance_status == "failed",
+          any(grepl("rank-deficient", ferx_get_warnings(profiled_s, as_df = TRUE)$message)),
+          profiled_rsr$covariance_status == "computed",
+          any(rsr_warnings$category == "covariance_step" & grepl("W_COV_RSR_ONE_SUBJECT_LEVELS", rsr_warnings$message, fixed = TRUE)),
+          all(profiled_rsr$theta_levels$se < fit_profiled$theta_levels$se))
+```
+
+`"s"` fails for the reason the uncertainty section below explains: six studies cannot determine `r fit_profiled$n_parameters` parameters. `"rsr"` runs, but each level of this block is read by a single study, and at the estimate such a level's own score is nearly zero. The sandwich then carries almost none of the level's own variability: every level's `rsr` standard error is smaller than its `r` one, at `r sprintf("%.2f", min(profiled_rsr$theta_levels$se / fit_profiled$theta_levels$se))` to `r sprintf("%.2f", max(profiled_rsr$theta_levels$se / fit_profiled$theta_levels$se))` times its size, and ferx says so in a `covariance_step` warning (`W_COV_RSR_ONE_SUBJECT_LEVELS`). Read the level standard errors from `"r"`.
+
+#### Bounds on a profiled block
+
+The bounds of a profiled block work as they do for an estimated one: the levels are then the exact minimiser over that box. The box above, −50 to 50, is far from every level. Tighten its upper bound to 5, which one level exceeds:
+
+```{r}
+#| label: profile-bounds
+tight_lines <- sub("contrast = sum_to_zero](0.0, -50.0, 50.0) profile",
+                   "contrast = sum_to_zero](0.0, -50.0, 5.0) profile", profiled_lines, fixed = TRUE)
+stopifnot(any(grepl("contrast = sum_to_zero](0.0, -50.0, 5.0) profile", tight_lines, fixed = TRUE)))
+tight_model <- file.path(mbma_dir, "mbma_fixed_study_profiled_tight.ferx")
+writeLines(tight_lines, tight_model)
+fit_tight <- ferx_fit(tight_model, mbma$data, verbose = FALSE)
+held <- fit_tight$profiled_levels_at_bound
+held
+c(unbounded = fit_profiled$theta[[held]], bounded = fit_tight$theta[[held]])
+c(unbounded = fit_profiled$ofv, bounded = fit_tight$ofv)
+subset(fit_tight$theta_levels, theta_name %in% held, c(label, value, se))
+subset(ferx_get_warnings(fit_tight, as_df = TRUE), category == "boundary_estimate")$message
+```
+
+```{r}
+#| label: check-profile-bounds
+#| include: false
+# The prose: one level held on the upper bound, which it exceeds unbounded; the objective rises;
+# its SE is NA in theta_levels; a boundary_estimate warning; every other level
+# keeps a standard error.
+held_row <- fit_tight$theta_levels$theta_name %in% held
+stopifnot(length(held) == 1, fit_tight$theta[[held]] == 5, fit_profiled$theta[[held]] > 5,
+          fit_tight$ofv > fit_profiled$ofv, isTRUE(fit_tight$converged),
+          is.na(fit_tight$theta_levels$se[held_row]), is.na(fit_tight$estimates[held, "se"]), all(is.finite(fit_tight$theta_levels$se[!held_row])),
+          "boundary_estimate" %in% ferx_get_warnings(fit_tight, as_df = TRUE)$category)
+# The callout below: ferx-r reports the held level as a non-positive variance. Fails once fixed;
+# then drop the callout.
+held_variance_warning <- character(0)
+withCallingHandlers(ferx_fit(tight_model, mbma$data, verbose = FALSE),
+                    warning = function(w) {
+                      held_variance_warning <<- c(held_variance_warning, conditionMessage(w))
+                      invokeRestart("muffleWarning")
+                    })
+stopifnot(any(grepl("Non-positive variance for estimated parameter(s)", held_variance_warning, fixed = TRUE) &
+                grepl(held, held_variance_warning, fixed = TRUE)))
+# The sentence on a box no level reaches: the same fit to the optimizer's tolerance, not bit for bit.
+unbounded_model <- file.path(mbma_dir, "mbma_fixed_study_profiled_unbounded.ferx")
+writeLines(sub("contrast = sum_to_zero](0.0, -50.0, 50.0) profile", "contrast = sum_to_zero](0.0) profile",
+               profiled_lines, fixed = TRUE), unbounded_model)
+fit_unbounded <- ferx_fit(unbounded_model, mbma$data, verbose = FALSE)
+box_gap <- max(abs(fit_unbounded$theta - fit_profiled$theta))
+stopifnot(!identical(fit_unbounded$theta, fit_profiled$theta), box_gap < 1e-4,
+          abs(fit_unbounded$ofv - fit_profiled$ofv) < 1e-8)
+```
+
+Unbounded, `r held` is `r sprintf("%.2f", fit_profiled$theta[[held]])`. With the box, the solve stops it on the bound and re-solves the other levels with it held there, so the objective rises by `r sprintf("%.2f", fit_tight$ofv - fit_profiled$ofv)`. `fit$profiled_levels_at_bound` names the held level, and a `boundary_estimate` warning reports it. The covariance step holds it as it holds a `FIX` theta: its standard error is `NA` in `theta_levels` and `fit$estimates` (and `N/A` in the THETA table of a block small enough to print in full), and every other standard error is computed with it held. The bounds apply to the free coefficients, so under a sum-to-zero contrast the derived level, which has no theta, is never held.
+
+A level on its bound says that the bound, not the data, decides its value: relax the bound unless it encodes something you know. A box that no level reaches changes nothing that matters. Dropping the `−50` to `50` bounds altogether moves the estimates by at most `r signif(box_gap, 1)`, well within the optimizer's tolerance (ferx-core's [bounds on a profiled block](https://ferx-nlme.org/ferx-core/model-file/parameters.html#bounds-on-a-profiled-block) describe the two fits as identical to the bit, which at this build they are not quite).
+
+::: {.callout-warning}
+## At this build: a held level is reported as a non-positive variance
+`ferx_fit()` on the bounded model warns "Non-positive variance for estimated parameter(s)" and names the held level, as if the covariance step had gone wrong. It has not: the step gives a held level a zero row and column on purpose, as it does for a `FIX` theta, but ferx-r treats only `FIX` thetas as held when it builds `fit$cor_matrix`. The warning can be ignored, and the held level's correlations are `NA`, which is correct.
+:::
+
+`profile` needs FOCE or FOCEI and an additive residual error, and it rules out priors and `global_search`, among others. ferx refuses each such fit with `E_PROFILE_SCOPE`. A residual `correlation` line, shown next, is allowed. See [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks) in ferx-core for the full list.
+
+## Correlated residuals within an arm
+
+The model scores an arm's visits as independent once its random effects are known: the kappa shifts every visit of an arm by the same amount, and what is left is independent. Arm means of one study arm over time can be correlated beyond that, for instance because the same patients are measured at every visit. A `correlation` line in `[error_model]` lets the residuals of the rows of one group correlate. Its parameter is an ordinary theta that only the line reads.
+
+Compound symmetry, `cs`, correlates every two rows of a group equally, and on this model that is the same covariance as the arm kappa. ferx therefore refuses `cs` grouped by the arm while a kappa is drawn per arm:
+
+```{r}
+#| label: correlation-cs
+add_correlation <- function(lines, structure, lower = "0.0") {
+  lines <- sub("  sigma ADD_ERR", sprintf("  theta RHO(0.3, %s, 0.95)\n  sigma ADD_ERR", lower), lines, fixed = TRUE)
+  sub("DV ~ additive(ADD_ERR) weight = SE",
+      sprintf("DV ~ additive(ADD_ERR) weight = SE\n  correlation %s(RHO) by OCC", structure), lines, fixed = TRUE)
+}
+cs_lines <- add_correlation(readLines(mbma$model), "cs", lower = "-0.2")
+stopifnot(any(grepl("theta RHO(0.3, -0.2, 0.95)", cs_lines, fixed = TRUE)),
+          any(grepl("correlation cs(RHO) by OCC", cs_lines, fixed = TRUE)))
+cs_model <- file.path(mbma_dir, "mbma_cs.ferx")
+writeLines(cs_lines, cs_model)
+try(ferx_fit(cs_model, mbma$data, verbose = FALSE))
+```
+
+`car1`, the continuous-time first-order autoregressive structure, correlates two visits at times $t_a$ and $t_b$ by $\rho^{|t_a - t_b|}$, so the correlation decays with the weeks between them, while the kappa keeps the part all visits share. Its `ρ` must lie in $[0, 1)$, hence the bounds 0 to 0.95:
+
+```{r}
+#| label: correlation-car1
+car1_lines <- add_correlation(readLines(mbma$model), "car1")
+stopifnot(any(grepl("theta RHO(0.3, 0.0, 0.95)", car1_lines, fixed = TRUE)),
+          any(grepl("correlation car1(RHO) by OCC", car1_lines, fixed = TRUE)))
+car1_model <- file.path(mbma_dir, "mbma_car1.ferx")
+writeLines(car1_lines, car1_model)
+fit_car1 <- ferx_fit(car1_model, mbma$data, verbose = FALSE)
+grep("Residual:|^RHO", capture.output(print(fit_car1)), value = TRUE)
+data.frame(residuals = c("independent", "car1 by OCC"),
+           ofv = c(fit$ofv, fit_car1$ofv), n_parameters = c(fit$n_parameters, fit_car1$n_parameters),
+           rho = c(NA, fit_car1$theta[["RHO"]]),
+           gamma2 = c(fit$omega_iov[1, 1], fit_car1$omega_iov[1, 1]))
+```
+
+```{r}
+#| label: check-correlation-car1
+#| include: false
+# The prose: cs is refused as confounded with the arm kappa; car1 converges one parameter up,
+# lowers the OFV by more than the chi-square 5% value, and lowers gamma^2.
+cs_code <- tryCatch({ ferx_fit(cs_model, mbma$data, verbose = FALSE); NULL }, error = function(e) e$code)
+stopifnot(identical(cs_code, "E_RESIDUAL_CORRELATION_CONFOUNDED_KAPPA"), isTRUE(fit_car1$converged),
+          fit_car1$n_parameters == fit$n_parameters + 1, fit$ofv - fit_car1$ofv > qchisq(0.95, 1),
+          fit_car1$omega_iov[1, 1] < fit$omega_iov[1, 1])
+```
+
+The correlation costs one parameter and lowers the OFV by `r sprintf("%.1f", fit$ofv - fit_car1$ofv)`. At `ρ` = `r sprintf("%.2f", fit_car1$theta[["RHO"]])`, two visits two weeks apart correlate by `r sprintf("%.2f", fit_car1$theta[["RHO"]]^2)`, and γ² falls a little, since the line now carries part of what visits of one arm share. Read against a χ² distribution with one degree of freedom, the drop would be significant. But the generator draws every visit of an arm independently, so there is no serial correlation to find. The reference distribution is what is wrong. Simulating from the fit without the line, and fitting each simulated study with and without it, shows the drops such a test produces when there is no correlation:
+
+```{r}
+#| label: correlation-null
+null_sims <- ferx_simulate(mbma$model, mbma$data, n_sim = 50, seed = 1, fit = fit)
+# suppress the R warning that reports overriding the model file's covariance setting
+null_drops <- suppressWarnings(sapply(1:50, function(i) {
+  sim_rows <- null_sims[null_sims$SIM == i, ]
+  stopifnot(all(sim_rows$ID == arm_data$ID), all(sim_rows$TIME == arm_data$TIME))
+  sim_data <- mutate(arm_data, DV = sim_rows$DV_SIM)
+  ferx_fit(mbma$model, sim_data, covariance = FALSE, verbose = FALSE)$ofv -
+    ferx_fit(car1_model, sim_data, covariance = FALSE, verbose = FALSE)$ofv
+}))
+c(at_least_observed = mean(null_drops >= fit$ofv - fit_car1$ofv),
+  above_chisq_5pct = mean(null_drops >= qchisq(0.95, 1)))
+```
+
+```{r}
+#| label: check-correlation-null
+#| include: false
+# The prose: the observed drop is not in the top 5% of the null drops, and far more than 5% of
+# the null drops exceed the chi-square critical value.
+stopifnot(mean(null_drops >= fit$ofv - fit_car1$ofv) >= 0.05, mean(null_drops >= qchisq(0.95, 1)) > 0.15)
+```
+
+`r sum(null_drops >= fit$ofv - fit_car1$ofv)` of the 50 simulated meta-analyses without any correlation give a drop at least as large as the observed one, and `r round(100 * mean(null_drops >= qchisq(0.95, 1)))`% exceed `r sprintf("%.2f", qchisq(0.95, 1))`, the χ² critical value that only 5% should exceed. With six studies and 22 arms, the likelihood-ratio test of `ρ` is far too liberal, and the observed drop is no evidence of serial correlation. Calibrate such a test by simulation, as here, before adding a correlation line to a meta-analysis of few studies. When the visits are one time unit apart, `car1` is the same as `ar1`, which counts visits rather than weeks; ferx-core's [residual correlation](https://ferx-nlme.org/ferx-core/model-file/residual-correlation.html) page describes both.
+
+A correlation line combines with a profiled block. Profiling the bundled block beside `car1` gives the same fit:
+
+```{r}
+#| label: correlation-profiled
+car1_profiled_lines <- sub("contrast = sum_to_zero_within](0.0, -50.0, 50.0)",
+                           "contrast = sum_to_zero_within](0.0, -50.0, 50.0) profile", car1_lines, fixed = TRUE)
+stopifnot(any(grepl("sum_to_zero_within](0.0, -50.0, 50.0) profile", car1_profiled_lines, fixed = TRUE)))
+car1_profiled_model <- file.path(mbma_dir, "mbma_car1_profiled.ferx")
+writeLines(car1_profiled_lines, car1_profiled_model)
+fit_car1_profiled <- ferx_fit(car1_profiled_model, mbma$data, verbose = FALSE)
+c(estimated = fit_car1$ofv, profiled = fit_car1_profiled$ofv)
+rbind(estimated = fit_car1$theta[c(1:4, which(names(fit_car1$theta) == "RHO"))],
+      profiled = fit_car1_profiled$theta[c(1:4, which(names(fit_car1_profiled$theta) == "RHO"))])
+```
+
+```{r}
+#| label: check-correlation-profiled
+#| include: false
+stopifnot(isTRUE(fit_car1_profiled$converged), abs(fit_car1_profiled$ofv - fit_car1$ofv) < 1e-3,
+          abs(fit_car1_profiled$theta[["RHO"]] - fit_car1$theta[["RHO"]]) < 1e-3)
+```
 
 ## Checking the treatment contrast
 
@@ -470,16 +640,12 @@ nested_data <- arm_data |>
 nested_data |> distinct(ID, STUDY) |> count(ID, name = "studies")
 ```
 
-The placebo time course has to change as well. Each level of `PLACEBO[STUDY, TIME]` lies inside one study, so the block could absorb a study kappa. Under nested levels ferx cannot check that yet and refuses such a block ([ferx-core #2034](https://github.com/FeRx-NLME/ferx-core/issues/2034)), except, at this build, one keyed on `TIME` (see the callout below). The nested models therefore use one placebo time course shared by all studies, `PLACEBO[TIME]`, whose levels cross the studies. Three models follow: the one-level model with that block, the same model written with levels (the study kappa `K_ST` in place of `ETA_E0`, no sponsor effect), and that model with a sponsor random effect `ETA_SP`:
+The placebo block stays as it is. Each level of `PLACEBO[STUDY, TIME]` lies inside one study, so the block could absorb a study kappa. ferx checks this when it binds the levels, and under `sum_to_zero_within` the block's levels sum to zero within each study, which leaves each study's mean to the kappa, as it left it to `ETA_E0` before. Two models follow: the bundled model written with levels (the study kappa `K_ST` in place of `ETA_E0`, no sponsor effect), and that model with a sponsor random effect `ETA_SP`:
 
 ```{r}
 #| label: nested-models
-time_lines <- sub("PLACEBO[STUDY, TIME, contrast = sum_to_zero_within]", "PLACEBO[TIME]",
-                  readLines(mbma$model), fixed = TRUE)
-one_level_model <- file.path(mbma_dir, "mbma_placebo_time.ferx")
-writeLines(time_lines, one_level_model)
-
-level_lines <- time_lines[!grepl("^\\s*iov_column", time_lines)]
+level_lines <- readLines(mbma$model)
+level_lines <- level_lines[!grepl("^\\s*iov_column", level_lines)]
 level_lines <- sub("omega ETA_E0 ~ 4.0 (sd)",
                    "level STUDY by STUDY in ID\n  level ARM by ARM in STUDY\n  kappa K_ST ~ 4.0 (sd) at STUDY",
                    level_lines, fixed = TRUE)
@@ -490,8 +656,8 @@ sponsor_lines <- sub("level STUDY by STUDY in ID", "omega ETA_SP ~ 4.0 (sd)\n  l
                      level_lines, fixed = TRUE)
 sponsor_lines <- sub("BASE = TVE0 + PLACEBO + K_ST", "BASE = TVE0 + PLACEBO + ETA_SP + K_ST", sponsor_lines, fixed = TRUE)
 # Stop unless every edit landed.
-stopifnot(any(grepl("PLACEBO[TIME](", time_lines, fixed = TRUE)), !any(grepl("^[^#]*ETA_E0", level_lines)),
-          !any(grepl("^\\s*iov_column", level_lines)), any(grepl("^\\s*kappa KAPPA_ARM.*at ARM weight = NARM", level_lines)),
+stopifnot(!any(grepl("^[^#]*ETA_E0", level_lines)), !any(grepl("^\\s*iov_column", level_lines)),
+          any(grepl("^\\s*kappa KAPPA_ARM.*at ARM weight = NARM", level_lines)),
           any(grepl("ETA_SP + K_ST + KAPPA_ARM", sponsor_lines, fixed = TRUE)))
 study_level_model <- file.path(mbma_dir, "mbma_levels.ferx")
 writeLines(level_lines, study_level_model)
@@ -499,53 +665,51 @@ sponsor_model <- file.path(mbma_dir, "mbma_levels_sponsor.ferx")
 writeLines(sponsor_lines, sponsor_model)
 invisible(ferx_model_get_section(sponsor_model, "parameters"))
 
-fit_one <- ferx_fit(one_level_model, mbma$data, verbose = FALSE)
 fit_levels <- ferx_fit(study_level_model, nested_data, verbose = FALSE)
 fit_sponsor <- ferx_fit(sponsor_model, nested_data, verbose = FALSE)
-data.frame(model = c("one level", "levels, no sponsor effect", "levels with sponsor effect"),
-           converged = c(fit_one$converged, fit_levels$converged, fit_sponsor$converged),
-           ofv = c(fit_one$ofv, fit_levels$ofv, fit_sponsor$ofv),
-           n_parameters = c(fit_one$n_parameters, fit_levels$n_parameters, fit_sponsor$n_parameters),
+data.frame(model = c("bundled (one level)", "levels, no sponsor effect", "levels with sponsor effect"),
+           converged = c(fit$converged, fit_levels$converged, fit_sponsor$converged),
+           ofv = c(fit$ofv, fit_levels$ofv, fit_sponsor$ofv),
+           n_parameters = c(fit$n_parameters, fit_levels$n_parameters, fit_sponsor$n_parameters),
            sponsor_var = c(NA, NA, fit_sponsor$omega[1, 1]),
-           study_var = c(fit_one$omega[1, 1], fit_levels$omega_iov[1, 1], fit_sponsor$omega_iov[1, 1]),
-           arm_gamma2 = c(fit_one$omega_iov[1, 1], fit_levels$omega_iov[2, 2], fit_sponsor$omega_iov[2, 2]))
+           study_var = c(fit$omega[1, 1], fit_levels$omega_iov[1, 1], fit_sponsor$omega_iov[1, 1]),
+           arm_gamma2 = c(fit$omega_iov[1, 1], fit_levels$omega_iov[2, 2], fit_sponsor$omega_iov[2, 2]))
 ```
 
 ```{r}
 #| label: check-nested-models
 #| include: false
-# The prose: the levelled model without a sponsor effect is the one-level model (same
-# objective, study kappa = ETA_E0, same arm gamma^2); the sponsor fit is lower by a few OFV
-# points with one more parameter, and the sponsor variance takes most of the between-study
-# variance, leaving a small, highly shrunk study kappa.
-stopifnot(fit_one$converged, fit_levels$converged, fit_sponsor$converged,
-          abs(fit_levels$ofv - fit_one$ofv) < 1e-3,
-          abs(fit_levels$omega_iov[1, 1] / fit_one$omega[1, 1] - 1) < 1e-3,
-          abs(fit_levels$omega_iov[2, 2] / fit_one$omega_iov[1, 1] - 1) < 1e-3,
-          fit_levels$n_parameters == fit_one$n_parameters, fit_sponsor$n_parameters == fit_one$n_parameters + 1,
-          fit_sponsor$ofv < fit_one$ofv, fit_one$ofv - fit_sponsor$ofv < 10,
+# The prose: the levelled model without a sponsor effect is the bundled model (same objective,
+# study kappa = ETA_E0, same arm gamma^2, same placebo levels); the sponsor fit is lower by a few
+# OFV points with one more parameter, and the sponsor variance takes the between-study variance,
+# leaving a study kappa collapsed at the optimizer's guard and highly shrunk.
+sponsor_warnings <- ferx_get_warnings(fit_sponsor, as_df = TRUE)
+stopifnot(fit$converged, fit_levels$converged, fit_sponsor$converged,
+          abs(fit_levels$ofv - fit$ofv) < 1e-3,
+          abs(fit_levels$omega_iov[1, 1] / fit$omega[1, 1] - 1) < 1e-3,
+          abs(fit_levels$omega_iov[2, 2] / fit$omega_iov[1, 1] - 1) < 1e-3,
+          isTRUE(all.equal(fit_levels$theta_levels$value, fit$theta_levels$value, tolerance = 1e-3)),
+          fit_levels$n_parameters == fit$n_parameters, fit_sponsor$n_parameters == fit$n_parameters + 1,
+          fit_sponsor$ofv < fit$ofv, fit$ofv - fit_sponsor$ofv < 10,
           fit_sponsor$omega[1, 1] > 5 * fit_sponsor$omega_iov[1, 1],
           fit_sponsor$shrinkage_kappa[["K_ST"]] > 0.3,
-          identical(fit_sponsor$kappa_levels, c(K_ST = "STUDY", KAPPA_ARM = "ARM")),
-          # the shared placebo course fits these data much worse than the study-specific block
-          fit_one$ofv - fit$ofv > 20)
+          any(sponsor_warnings$category == "parameter_at_runaway_guard" & grepl("K_ST", sponsor_warnings$message)),
+          identical(fit_sponsor$kappa_levels, c(K_ST = "STUDY", KAPPA_ARM = "ARM")))
 # "Another pairing gives no drop": studies 1-4, 2-5 and 3-6 under one sponsor each.
 other_pairing <- arm_data |> mutate(ID = c(1, 2, 3, 1, 2, 3)[STUDY], ARM = OCC) |> arrange(ID, STUDY)
 fit_other <- ferx_fit(sponsor_model, other_pairing, verbose = FALSE)
-stopifnot(fit_other$converged, abs(fit_one$ofv - fit_other$ofv) < 1,
+stopifnot(fit_other$converged, abs(fit$ofv - fit_other$ofv) < 1,
           fit_other$omega[1, 1] < 0.01 * fit_sponsor$omega[1, 1])
 # Nested levels: FOCE and FOCEI only.
 nested_method_codes <- sapply(c("saem", "imp", "laplace"), function(m) tryCatch({
-  ferx_fit(sponsor_model, nested_data, method = m, settings = list(maxiter = 0), verbose = FALSE); "fitted"
+  suppressWarnings(ferx_fit(sponsor_model, nested_data, method = m, settings = list(maxiter = 0), verbose = FALSE)); "fitted"
 }, error = function(e) e$code))
 stopifnot(all(nested_method_codes == "E_NESTED_LEVEL_METHOD_UNSUPPORTED"))
 ```
 
-With no sponsor effect, the levelled model is the one-level model under another layout: the same objective, a study kappa equal to `ETA_E0`, and the same arm γ². One level below the subject is what `iov_column` already declared.
+With no sponsor effect, the levelled model is the bundled model under another layout: the same objective, a study kappa equal to `ETA_E0`, the same arm γ² and the same placebo levels. One level below the subject is what `iov_column` already declared.
 
-The shared placebo course has a price. It fits these data much worse than the study-specific block of the bundled model, by `r round(fit_one$ofv - fit$ofv)` OFV points with `r fit$n_parameters - fit_one$n_parameters` fewer parameters, since the generator draws a placebo course for each study. Here it is the cost of working around ferx-core #2034, not a modelling choice; in a real MBMA, keep the study-specific placebo time course unless the nested levels are needed.
-
-Adding `ETA_SP` lowers the OFV by `r round(fit_one$ofv - fit_sponsor$ofv, 1)` for one more parameter, and the sponsor variance (`r signif(fit_sponsor$omega[1, 1], 3)`) takes nearly all the between-study variance, leaving the study kappa at `r signif(fit_sponsor$omega_iov[1, 1], 2)` with a shrinkage of `r round(100 * fit_sponsor$shrinkage_kappa[["K_ST"]])`%. That is not evidence for a sponsor effect. The generator has none, and three sponsors are too few to estimate a variance: the drop is what this particular pairing of six study effects happens to give. Pairing studies 1-4, 2-5 and 3-6 instead gives no drop at all (an OFV difference of `r sprintf("%.3f", abs(fit_one$ofv - fit_other$ofv))`), with a sponsor variance of `r signif(fit_other$omega[1, 1], 1)`. With real sponsors, judge such a split on more groups than this.
+Adding `ETA_SP` lowers the OFV by `r round(fit$ofv - fit_sponsor$ofv, 1)` for one more parameter, and the sponsor variance (`r signif(fit_sponsor$omega[1, 1], 3)`) takes all of the between-study variance. The study kappa collapses to `r signif(fit_sponsor$omega_iov[1, 1], 1)`, with a shrinkage of `r sprintf("%.1f", 100 * fit_sponsor$shrinkage_kappa[["K_ST"]])`%, on the optimizer's lower guard, and ferx says so with a `parameter_at_runaway_guard` warning. That is not evidence for a sponsor effect. The generator has none, and three sponsors are too few to estimate a variance: the drop is what this particular pairing of six study effects happens to give. Pairing studies 1-4, 2-5 and 3-6 instead gives no drop at all (an OFV difference of `r sprintf("%.3f", abs(fit$ofv - fit_other$ofv))`), with a sponsor variance of `r signif(fit_other$omega[1, 1], 1)`. With real sponsors, judge such a split on more groups than this.
 
 The print labels each kappa with its level, and each level's estimates are returned once per group:
 
@@ -567,27 +731,55 @@ stopifnot(identical(sapply(fit_sponsor$ebe_kappas_by_level, nrow), c(STUDY = 6L,
 
 `fit$kappa_levels` names each kappa's level, and `fit$ebe_kappas_by_level` has one data frame per level: each study's `K_ST` once (`r nrow(fit_sponsor$ebe_kappas_by_level$STUDY)` rows) and each arm's `KAPPA_ARM` once (`r nrow(fit_sponsor$ebe_kappas_by_level$ARM)` rows), with the labels that identify the group. The shrinkage of a kappa and its typical weight are taken over the groups of its own level. Nested levels are estimated by FOCE and FOCEI only, and other methods are refused; see [nested levels](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels) in ferx-core.
 
-::: {.callout-warning}
-## At this build: a block keyed on `TIME` escapes the nesting check
-ferx refuses a level block whose levels each lie inside one group of a kappa-carrying level, but at this build the check skips a block keyed on the time column. So `PLACEBO[STUDY, TIME]` beside `K_ST at STUDY` is fitted unchecked rather than refused, while the same block keyed on a copy of `TIME` under another name is refused with `E_NESTED_LEVEL_THETA_BLOCK_UNSUPPORTED`. Do not read the unchecked fit as a sign that the combination works: until [ferx-core #2034](https://github.com/FeRx-NLME/ferx-core/issues/2034) lands, put a study kappa beside a block whose levels cross the studies, as above.
-:::
+### A correlation line on nested levels
+
+The bundled `nested_levels` example has a nested design of its own: 12 sponsors, each with two studies of two arms, and five visits per arm. It has a random effect at every level, a sponsor `ETA_SP`, a study kappa `K_ST` and an arm kappa `K_ARM` weighted by arm size:
 
 ```{r}
-#| label: check-time-block-escapes
-#| include: false
-# The callout above: a [STUDY, TIME] block beside a study kappa is not refused, the same block
-# keyed on a renamed copy of TIME is. Fails once the check covers TIME; then drop the callout.
-visit_data <- mutate(nested_data, VISIT = TIME)
-probe <- function(columns) {
-  probe_lines <- sub("PLACEBO[TIME]", sprintf("PLACEBO[%s, contrast = sum_to_zero_within]", columns), level_lines, fixed = TRUE)
-  probe_model <- file.path(mbma_dir, sprintf("probe_%s.ferx", gsub("\\W", "", columns)))
-  writeLines(probe_lines, probe_model)
-  tryCatch({ ferx_fit(probe_model, visit_data, covariance = FALSE, settings = list(maxiter = 0), verbose = FALSE); "fitted" },
-           error = function(e) e$code)
-}
-stopifnot(identical(probe("STUDY, TIME"), "fitted"),
-          identical(probe("STUDY, VISIT"), "E_NESTED_LEVEL_THETA_BLOCK_UNSUPPORTED"))
+#| label: nested-example
+nested <- ferx_example("nested_levels")
+invisible(ferx_model_get_section(nested$model, "parameters"))
+fit_nested <- ferx_fit(nested$model, nested$data, verbose = FALSE)
+c(converged = fit_nested$converged, ofv = fit_nested$ofv)
 ```
+
+On a model with nested levels, the `by` of a `correlation` line may name a level. `by ARM` then groups the rows by that level's groups, nested by key, so arm 1 of study 1 and arm 1 of study 2 are two groups, as they are two arms:
+
+```{r}
+#| label: nested-correlation
+nested_correlation <- function(by, file) {
+  lines <- readLines(nested$model)
+  lines <- sub("  sigma ADD ~ 0.25", "  theta RHO(0.3, 0.0, 0.95)\n  sigma ADD ~ 0.25", lines, fixed = TRUE)
+  lines <- sub("DV ~ additive(ADD)", sprintf("DV ~ additive(ADD)\n  correlation car1(RHO) by %s", by),
+               lines, fixed = TRUE)
+  stopifnot(sum(grepl("RHO", lines)) == 2)
+  path <- file.path(mbma_dir, file)
+  writeLines(lines, path)
+  path
+}
+fit_nested_car1 <- ferx_fit(nested_correlation("ARM", "nested_car1.ferx"), nested$data, verbose = FALSE)
+c(independent = fit_nested$ofv, car1 = fit_nested_car1$ofv, rho = fit_nested_car1$theta[["RHO"]])
+try(ferx_fit(nested_correlation("(STUDY, ARM)", "nested_car1_list.ferx"), nested$data, verbose = FALSE))
+```
+
+```{r}
+#| label: check-nested-correlation
+#| include: false
+list_code <- tryCatch({
+  ferx_fit(nested_correlation("(STUDY, ARM)", "nested_car1_list.ferx"), nested$data, verbose = FALSE); NULL
+}, error = function(e) e$code)
+# "The same cs refusal applies ... here ARM": cs by ARM beside K_ARM at ARM.
+nested_cs <- sub("car1(RHO) by ARM", "cs(RHO) by ARM", readLines(nested_correlation("ARM", "nested_cs.ferx")), fixed = TRUE)
+writeLines(nested_cs, file.path(mbma_dir, "nested_cs.ferx"))
+nested_cs_code <- tryCatch({ ferx_fit(file.path(mbma_dir, "nested_cs.ferx"), nested$data, verbose = FALSE); NULL },
+                           error = function(e) e$code)
+stopifnot(isTRUE(fit_nested$converged), isTRUE(fit_nested_car1$converged), fit_nested_car1$ofv < fit_nested$ofv,
+          identical(list_code, "E_RESIDUAL_CORRELATION_GROUPING_AMBIGUOUS"),
+          any(grepl("cs(RHO) by ARM", nested_cs, fixed = TRUE)),
+          identical(nested_cs_code, "E_RESIDUAL_CORRELATION_CONFOUNDED_KAPPA"))
+```
+
+The line lowers the OFV by `r sprintf("%.1f", fit_nested$ofv - fit_nested_car1$ofv)` at `ρ` = `r sprintf("%.2f", fit_nested_car1$theta[["RHO"]])`; as above, calibrate that drop by simulation before reading it as serial correlation. Naming a level inside a list of columns is refused, because a level already groups rows by its whole key path. The same `cs` refusal as before applies to a level that carries a kappa, here `ARM`. The ferx-core page on [residual correlation with kappa and nested levels](https://ferx-nlme.org/ferx-core/model-file/residual-correlation.html#with-kappa-and-nested-levels) lists how each form of `by` is read.
 
 ## Saving and reloading the fit
 
@@ -652,7 +844,7 @@ stopifnot(!anyNA(tl$sir_lo), !anyNA(tl$sir_hi[is.na(tl$theta_name)]), all(tl$sir
 
 Row `r which(is.na(fit_sir$theta_levels$theta_name))[1]`, `r fit_sir$theta_levels$label[which(is.na(fit_sir$theta_levels$theta_name))[1]]`, is study 1's derived level: it has no theta of its own, so its `theta_name` is `NA` (see *The placebo levels* above), and its interval comes from the same draws as the free levels' intervals.
 
-The effective sample size, the number of resamples the weights effectively support, depends strongly on the seed for this model. Check a few seeds before trusting one set of intervals:
+The effective sample size, the number of the weighted proposal draws that effectively count, depends strongly on the seed for this model. Check a few seeds before trusting one set of intervals:
 
 ```{r}
 #| label: sir-seeds
@@ -714,22 +906,27 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
 
 ### Warnings you may see here
 
-No warning category has this chapter as its home. The fits above raise two that other chapters explain: `inflated_rse` (@sec-diagnostics), because some placebo levels are small relative to their standard errors, which is expected for an unstructured placebo time course, and, on a machine with more cores than the subjects (six studies, or three sponsors in the nested fits), the `threads` note (@sec-estimation-methods). The fits with the shared `PLACEBO[TIME]` course also raise `eps_shrinkage` (@sec-diagnostics): the bundled model's fit, with its study-specific course, does not.
+No warning category has this chapter as its home. The fits above raise these, which other chapters explain:
 
-The nested fits also carry a `general` note that `ARM` is "used in model expressions but not declared in `[covariates]`". A level column needs no declaration, and `ARM` appears only on its `level` line, so at this build the note can be ignored ([ferx-core #2166](https://github.com/FeRx-NLME/ferx-core/issues/2166)).
+- `inflated_rse` (@sec-diagnostics), because some placebo levels are small relative to their standard errors, which is expected for an unstructured placebo time course;
+- the `threads` note (@sec-estimation-methods), on a machine with more cores than the subjects (six studies, three sponsors in the nested fits);
+- `boundary_estimate` (@sec-diagnostics), on the profiled level held on its bound;
+- `parameter_at_runaway_guard` (@sec-estimation-methods), on a variance that collapses to zero: the study kappa beside the sponsor effect, and the sponsor effect itself under the second pairing, which also raises `eta_shrinkage` (@sec-diagnostics);
+- `covariance_failed` and `covariance_step` (@sec-uncertainty), from the `"s"` and `"rsr"` covariance steps.
+
+The profiled fits can also carry a `general` note (@sec-first-fit) that a subject's profile solve used finite differences for its levels' gradient, which is correct but slower.
 
 ```{r}
-#| label: check-arm-note
+#| label: check-warning-list
 #| include: false
-# The sentence above: the levelled fits name ARM as an undeclared covariate. Fails once
-# ferx-core stops listing level columns; then drop the sentence.
-stopifnot(any(grepl("not declared in [covariates]: ARM", fit_sponsor$warnings, fixed = TRUE)),
-          any(grepl("not declared in [covariates]: ARM", fit_levels$warnings, fixed = TRUE)))
-# The warnings list above: the shared-placebo fits raise eps_shrinkage, the bundled fit does not.
-nested_categories <- lapply(list(fit_one, fit_levels, fit_sponsor), function(f) ferx_get_warnings(f, as_df = TRUE)$category)
-stopifnot(all(sapply(nested_categories, function(cat) "eps_shrinkage" %in% cat)),
-          !"eps_shrinkage" %in% ferx_get_warnings(fit, as_df = TRUE)$category,
-          all(unlist(nested_categories) %in% c("general", "threads", "eps_shrinkage", "inflated_rse")))
+# The list above: every category the chapter's fits raise is named there, and each named one occurs.
+chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_car1,
+                     fit_car1_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
+chapter_categories <- unique(unlist(lapply(chapter_fits, function(f) ferx_get_warnings(f, as_df = TRUE)$category)))
+listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
+other_categories <- ferx_get_warnings(fit_other, as_df = TRUE)$category
+stopifnot(all(chapter_categories %in% c(listed, "general")), all(setdiff(listed, "threads") %in% chapter_categories),
+          all(c("parameter_at_runaway_guard", "eta_shrinkage") %in% other_categories))
 ```
 
 ## Summary
@@ -738,7 +935,8 @@ stopifnot(all(sapply(nested_categories, function(cat) "eps_shrinkage" %in% cat))
 - `DV ~ additive(ADD_ERR) weight = SE` with `ADD_ERR` fixed at 1 is inverse-variance weighting on the natural scale.
 - `kappa ... weight = NARM` is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, `sqrt(gamma2 / fit$kappa_weight_typical)`.
 - With `contrast = sum_to_zero_within`, `TVE0` is each study's mean placebo level over its visits, not its week-0 level.
-- A level block read linearly can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors.
+- A level block read linearly can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in `fit$profiled_levels_at_bound`.
+- `correlation car1(RHO) by OCC` correlates an arm's visits beside the arm kappa (`cs` there is refused). With few studies, calibrate its likelihood-ratio test by simulation.
 - `fit$theta_levels` holds every placebo level's value and standard error, derived ones included, and its SIR interval after `ferx_sir(sir_keep_samples = TRUE)`. Large blocks print as one THETA BLOCKS line.
 - `level NAME by COLUMN in PARENT` declares nested groupings below the subject, such as sponsor, study and arm, and `kappa ... at LEVEL` draws a kappa once per group of a level.
 - `ferx_contrast_vpc()` checks the model on the treatment contrast within a study, where the between-study variability cancels.
@@ -749,5 +947,5 @@ Next: @sec-experimental covers experimental model features.
 ::: {.callout-tip}
 ## Reference
 - R help: `?ferx_mbma_data`, `?ferx_fit`, `?ferx_contrast_vpc`, `?ferx_sir`, `?ferx_covariance`, `?ferx_save_fit`
-- ferx-core: [theta level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks), [residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...), [nested levels](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels)
+- ferx-core: [theta level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks), [residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...), [nested levels](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels), [residual correlation](https://ferx-nlme.org/ferx-core/model-file/residual-correlation.html), [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks)
 :::

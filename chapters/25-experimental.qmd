@@ -98,17 +98,15 @@ round(fit_sde_tight$estimates[, c("estimate", "rse_pct")], 6)
 ```{r}
 #| label: check-sde-tolerance
 #| include: false
-# The paragraph below says the tighter tolerances take the model file's own fit to a lower OFV,
-# with no regularized covariance, ordinary standard errors for every parameter but the diffusion
-# variance, and a diffusion variance of about zero.
+# The paragraph below says the tighter tolerances leave no regularized covariance, ordinary
+# standard errors for every parameter but the diffusion variance, and a diffusion variance of about zero.
 tight_rse <- fit_sde_tight$estimates$rse_pct
-stopifnot(fit_sde_tight$ofv < fit_sde$ofv,
-          !"covariance_regularized" %in% ferx_get_warnings(fit_sde_tight, as_df = TRUE)$category,
+stopifnot(!"covariance_regularized" %in% ferx_get_warnings(fit_sde_tight, as_df = TRUE)$category,
           max(tight_rse[rownames(fit_sde_tight$estimates) != "DIFF_CENTRAL"]) < 100,
           fit_sde_tight$theta[["DIFF_CENTRAL"]] < 1e-4)
 ```
 
-With those tolerances the same model, optimizer and data reach an OFV `r sprintf("%.2f", fit_sde$ofv - fit_sde_tight$ofv)` lower, and the covariance step needs no regularization. The standard errors are ordinary, except for the diffusion variance: at `r format(signif(fit_sde_tight$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)` it cannot be told apart from zero. Where the default tolerances leave the fit depends on rounding in the solver, so the bundled fit's OFV and estimates differ from one machine to the next; the refit is the one to read. Tighter default tolerances for finite-difference fits of ODE models are tracked in [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520).
+With those tolerances the same model, optimizer and data need no regularization in the covariance step. The standard errors are ordinary, except for the diffusion variance: at `r format(signif(fit_sde_tight$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)` it cannot be told apart from zero. The OFV of the refit is `r sprintf("%.2f", abs(fit_sde$ofv - fit_sde_tight$ofv))` `r if (fit_sde_tight$ofv < fit_sde$ofv) "lower" else "higher"` than the bundled fit's, but at the default tolerances the objective itself carries solver error of that size, so the difference says nothing about the model. Where the default tolerances leave the fit depends on rounding in the solver, so the bundled fit's OFV and estimates differ from one machine to the next; the refit is the one to read. Tighter default tolerances for finite-difference fits of ODE models are tracked in [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520).
 
 Removing the `[diffusion]` block gives the ordinary ODE model. That model needs no finite differences: with `gradient = "auto"` ferx uses the analytic gradient. The table also fits it with the model file's finite differences at the default tolerances:
 
@@ -158,7 +156,7 @@ stopifnot(fit_ode$ofv < fit_sde_tight$ofv, abs(fit_ode_fd$ofv - fit_ode$ofv) < 0
           abs(fit_sde_tight$dw_statistic - fit_ode$dw_statistic) < 0.05)
 ```
 
-The diffusion term does not improve on the ordinary ODE model. The SDE fit with the tighter tolerances has a diffusion variance of essentially zero and an OFV `r round(fit_sde_tight$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit; at a zero diffusion variance the two models coincide, so even that SDE fit stopped slightly short. The ODE model's own finite-difference fit, at the same default tolerances, ends within `r signif(abs(fit_ode_fd$ofv - fit_ode$ofv), 1)` of its analytic optimum. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_tight$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
+The diffusion term does not improve on the ordinary ODE model. The SDE fit with the tighter tolerances has a diffusion variance of essentially zero and an OFV `r round(fit_sde_tight$ofv - fit_ode$ofv, 2)` above the ODE model's analytic fit. At a zero diffusion variance the two models coincide, so the gap is no gain from the diffusion term; the ODE fits run at the default tolerances, whose solver error is of that size, so the gap does not say which fit stopped short.`r if (fit_sde$ofv < fit_ode$ofv) sprintf(" The bundled SDE fit at the default tolerances reports an OFV %.2f below the ODE optimum, which a diffusion variance this close to zero cannot buy: it is the solver error of the evaluation.", fit_ode$ofv - fit_sde$ofv) else ""` The ODE model's own finite-difference fit, at the same default tolerances, ends within `r format(signif(abs(fit_ode_fd$ofv - fit_ode$ofv), 1), scientific = TRUE)` of its analytic optimum. These data show no system noise. A `[diffusion]` term is not a remedy for residuals that are correlated in time within a subject (@sec-diagnostics). The filter propagates the state *variance* and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject's observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: `r round(fit_sde_tight$dw_statistic, 2)` with the block and `r round(fit_ode$dw_statistic, 2)` without. What `[diffusion]` does estimate is how much unexplained variance builds up between observations. The ferx-core page explains [what the filter does not do](https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do).
 
 ## Options that matter
 
@@ -391,7 +389,7 @@ Each updated estimate sits between those of the two studies. `r if (length(narro
 
 ## Summary
 
-- `[diffusion]` adds system noise to ODE states, estimated with an extended Kalman filter. Check the covariance step, try another optimizer, and compare with the model without it.
+- `[diffusion]` adds system noise to ODE states, estimated with an extended Kalman filter. Check the covariance step, refit with tighter ODE tolerances, and compare with the model without it.
 - `[covariate_nn]` lets a neural network produce covariate multipliers; compare its OFV and AIC with an explicit covariate model.
 - `nn_l2` and `nn_smooth` regularize a network.
 - An inline `prior(value, rse = …)` regularizes a parameter towards a value you already believe, and `[priors] from_fit` builds such priors from a fit saved with `ferx_save_fit()`; the reported OFV is then penalized.
