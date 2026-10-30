@@ -712,7 +712,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; [1] "m3"</span></span>
 <span><span class="va">fit_m3</span><span class="op">$</span><span class="va">theta</span></span>
 <span><span class="co">#&gt;      TVCL       TVV      TVKA </span></span>
-<span><span class="co">#&gt; 0.1328141 7.7317344 0.8097269</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 0.1328141 7.7317337 0.8097269</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>With M3, a censored observation contributes the probability that the prediction, with its residual error, lies below the limit. It does not contribute a residual.</p>
 </section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
@@ -720,8 +720,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">fit_m3</span><span class="op">$</span><span class="va">sdtab</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">TIME</span> <span class="op">&gt;=</span> <span class="fl">72</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">ID</span>, <span class="va">TIME</span>, <span class="va">DV</span>, <span class="va">CENS</span>, <span class="va">PRED</span>, <span class="va">IPRED</span>, <span class="va">CWRES</span>, <span class="va">IWRES</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME     DV CENS     PRED    IPRED       CWRES       IWRES</span></span>
-<span><span class="co">#&gt; 1  1   72 3.7373    0 3.836186 3.735040  0.07720539  0.05623818</span></span>
-<span><span class="co">#&gt; 2  1   96 2.5019    0 2.540121 2.512399 -0.34602312 -0.38835958</span></span>
+<span><span class="co">#&gt; 1  1   72 3.7373    0 3.836187 3.735040  0.07720517  0.05623816</span></span>
+<span><span class="co">#&gt; 2  1   96 2.5019    0 2.540121 2.512399 -0.34602317 -0.38835949</span></span>
 <span><span class="co">#&gt; 3  1  120 2.0000    1 1.681935 1.689982         NaN         NaN</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Residual plots (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>) should therefore leave out the censored rows. Their predictions show whether the model puts them below the limit.</p>
@@ -748,12 +748,12 @@ Table&nbsp;19.1: Censoring methods on <code>warfarin_bloq</code> (LLOQ 2, 10 of 
 <span><span class="fu">compare_methods</span><span class="op">(</span><span class="va">bloq</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                           method observations label      TVCL      TVV</span></span>
 <span><span class="co">#&gt; 1                             m3          110    m3 0.1328141 7.731734</span></span>
-<span><span class="co">#&gt; 2        drop (fit at the limit)          110  drop 0.1259690 8.078758</span></span>
+<span><span class="co">#&gt; 2        drop (fit at the limit)          110  drop 0.1259685 8.078765</span></span>
 <span><span class="co">#&gt; 3 exclude (ignore = "CENS == 1")          100  drop 0.1327873 7.732789</span></span>
-<span><span class="co">#&gt; 4                uncensored data          110  drop 0.1326954 7.737705</span></span>
+<span><span class="co">#&gt; 4                uncensored data          110  drop 0.1326954 7.737706</span></span>
 <span><span class="co">#&gt;        TVKA   PROP_ERR</span></span>
 <span><span class="co">#&gt; 1 0.8097269 0.01076075</span></span>
-<span><span class="co">#&gt; 2 0.8508855 0.07879910</span></span>
+<span><span class="co">#&gt; 2 0.8508847 0.07879879</span></span>
 <span><span class="co">#&gt; 3 0.8098812 0.01077597</span></span>
 <span><span class="co">#&gt; 4 0.8107962 0.01056510</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -825,14 +825,14 @@ Table&nbsp;19.1: Censoring methods on <code>warfarin_bloq</code> (LLOQ 2, 10 of 
 <span><span class="co">#&gt; 2    1 48</span></span>
 <span><span class="fu">compare_methods</span><span class="op">(</span><span class="va">lloq6_file</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                           method observations label       TVCL      TVV</span></span>
-<span><span class="co">#&gt; 1                             m3          110    m3 0.13444727 7.711496</span></span>
-<span><span class="co">#&gt; 2        drop (fit at the limit)          110  drop 0.05669192 9.464446</span></span>
+<span><span class="co">#&gt; 1                             m3          110    m3 0.13444727 7.711497</span></span>
+<span><span class="co">#&gt; 2        drop (fit at the limit)          110  drop 0.05669192 9.464445</span></span>
 <span><span class="co">#&gt; 3 exclude (ignore = "CENS == 1")           62  drop 0.13444603 7.711511</span></span>
-<span><span class="co">#&gt; 4                uncensored data          110  drop 0.13269541 7.737705</span></span>
+<span><span class="co">#&gt; 4                uncensored data          110  drop 0.13269541 7.737706</span></span>
 <span><span class="co">#&gt;        TVKA   PROP_ERR</span></span>
 <span><span class="co">#&gt; 1 0.8082726 0.01093044</span></span>
 <span><span class="co">#&gt; 2 1.6191769 0.14694432</span></span>
-<span><span class="co">#&gt; 3 0.8082749 0.01093123</span></span>
+<span><span class="co">#&gt; 3 0.8082750 0.01093123</span></span>
 <span><span class="co">#&gt; 4 0.8107962 0.01056510</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>M3 still recovers the uncensored estimates. Fitting at the limit now fails badly: clearance is less than half, and the residual error absorbs the misfit. Excluding the rows matches M3 here, because the residual error of this model is about 1%. The predictions of the censored rows lie well below the limit, where the M3 probability is essentially 1 and adds almost nothing. When predictions are close to the limit, or the residual error is larger, the censored rows carry information that exclusion throws away.</p>
@@ -852,12 +852,12 @@ Table&nbsp;19.1: Censoring methods on <code>warfarin_bloq</code> (LLOQ 2, 10 of 
 <span><span class="va">uloq_methods</span> <span class="op">&lt;-</span> <span class="fu">compare_methods</span><span class="op">(</span><span class="va">uloq_file</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="va">uloq_methods</span></span>
 <span><span class="co">#&gt;                    method observations label      TVCL      TVV      TVKA</span></span>
-<span><span class="co">#&gt; 1                      m3          110    m3 0.1327202 7.742689 0.8117853</span></span>
-<span><span class="co">#&gt; 2 drop (fit at the limit)          110  drop 0.1343149 8.033692 0.8516323</span></span>
-<span><span class="co">#&gt; 4         uncensored data          110  drop 0.1326954 7.737705 0.8107962</span></span>
+<span><span class="co">#&gt; 1                      m3          110    m3 0.1327202 7.742689 0.8117852</span></span>
+<span><span class="co">#&gt; 2 drop (fit at the limit)          110  drop 0.1343149 8.033691 0.8516323</span></span>
+<span><span class="co">#&gt; 4         uncensored data          110  drop 0.1326954 7.737706 0.8107962</span></span>
 <span><span class="co">#&gt;     PROP_ERR</span></span>
 <span><span class="co">#&gt; 1 0.01122861</span></span>
-<span><span class="co">#&gt; 2 0.03397207</span></span>
+<span><span class="co">#&gt; 2 0.03397209</span></span>
 <span><span class="co">#&gt; 4 0.01056510</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Above the limit the picture is the same as below it: M3 stays close to the uncensored fit, while fitting the 19 censored peaks at the limit inflates the residual error 3.2-fold. The exclusion row is left out of this table: <code>ignore = "CENS == 1"</code> matches only rows below a lower limit, so here it removes nothing. Rows above the limit are excluded with <code>ignore = "CENS == -1"</code>.</p>
@@ -896,7 +896,7 @@ Figure&nbsp;19.1: Fraction of observations below the LLOQ of 6: observed (points
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>focei <span class="op">=</span> <span class="va">fit_m3</span><span class="op">$</span><span class="va">theta</span>, foce <span class="op">=</span> <span class="va">fit_foce</span><span class="op">$</span><span class="va">theta</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            TVCL      TVV      TVKA</span></span>
 <span><span class="co">#&gt; focei 0.1328141 7.731734 0.8097269</span></span>
-<span><span class="co">#&gt; foce  0.1398993 7.690049 0.7048495</span></span>
+<span><span class="co">#&gt; foce  0.1398993 7.690048 0.7048495</span></span>
 <span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_foce</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   severity           category</span></span>
 <span><span class="co">#&gt; 1  warning        bloq_method</span></span>
