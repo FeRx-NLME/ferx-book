@@ -1011,6 +1011,10 @@ Per-chapter loop:
     nlopt_lbfgs (-279.55), with no regularization, DIFF_CENTRAL 2e-6 (RSE 302%) and ordinary structural
     RSEs. ch24 now prints that sentence of the message and runs the refit (`sde-tolerance`), uses it as
     the furthest SDE fit in `sde-vs-ode` and for the simulation variant, and links #520.
+    At ferx-r c2c8cea / ferx-core b259dd10 (2026-10-30) the bundled fit on macOS no longer stops at the
+    saddle: an `optimizer_health` restart takes it to -279.83, converged, no `covariance_regularized`,
+    structural RSEs at most 47% and DIFF_CENTRAL 131%. ch25's reading paragraph (`check-sde-warnings`)
+    now branches on whether the fit regularized, with checks for each branch, since Linux may differ.
   - **Platform dependence (2026-10-03): the first Linux CI run of #33 failed.** CI had never run on
     this PR: it conflicted with `main` (#32) from the start. Its first run (`f37b181`) stopped at ch06
     `check-ebe-start-dependent`. A local x86_64 Linux container that mirrors the workflow (R 4.4.3,
