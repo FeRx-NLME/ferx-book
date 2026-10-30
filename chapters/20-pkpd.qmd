@@ -194,9 +194,9 @@ stopifnot(max(miss(fit_one_dose, pk)) < 0.1,
 
 With concentrations up to `r round(max(dose_range_data$DV[dose_range_data$CMT == 2]))`, `TVEMAX` and `TVEC50` come out at `r signif(fit_dose_range$theta[["TVEMAX"]], 3)` and `r signif(fit_dose_range$theta[["TVEC50"]], 2)`, within `r ceiling(100 * max(abs(fit_dose_range$theta[c("TVEMAX", "TVEC50")] / c(40, 5) - 1)))`% of 40 and 5 instead of several-fold off, and the largest relative standard error of any parameter is `r round(max(fit_dose_range$estimates$rse_pct))`%. One simulated study is one draw: repeat it with other seeds before settling a design. A simulation–estimation run answers the design question before the study is run.
 
-### Finite differences stop short on this model
+### Finite differences on this model
 
-The fits above take the analytic gradient. With `gradient = "fd"`, the fits of both designs converge above their optimum, and refitting with a gradient-based optimizer, as @sec-estimation-methods suggests when `bobyqa` stops on a slope, does not rescue them:
+The fits above take the analytic gradient. With `gradient = "fd"`, the default optimizer reaches the same optimum on both designs. A gradient-based optimizer on finite differences, which @sec-estimation-methods suggests when `bobyqa` stops on a slope, does not:
 
 ```{r}
 #| label: pkpd-sim-fd
@@ -221,11 +221,12 @@ do.call(rbind, lapply(names(fd_runs), function(design) {
 ```{r}
 #| label: check-pkpd-sim-fd
 #| include: false
-# The section says every fd fit stops above the analytic optimum (1.7 to 11.4 on Linux CI), that the objective is the
-# same on both paths (the analytic estimates, written into the model file, score the same OFV on
-# the fd path), and that on the 100 design the default-optimizer fd fit stays close to the
-# simulation value of TVEMAX while slsqp moves part of the way towards the analytic optimum.
-fd_gap <- unlist(lapply(fd_runs, function(runs) sapply(runs[1:2], function(f) f$ofv - runs[[3]]$ofv)))
+# The section says the default-optimizer fd fits reach the analytic optimum, that the slsqp fd fits
+# stop above it, that the objective is the same on both paths (the analytic estimates, written into
+# the model file, score the same OFV on the fd path), and that on the 100 design slsqp stops between
+# the analytic TVEMAX and the simulation value 40.
+fd_default_gap <- sapply(fd_runs, function(runs) runs[[1]]$ofv - runs[[3]]$ofv)
+fd_gap <- sapply(fd_runs, function(runs) runs[[2]]$ofv - runs[[3]]$ofv)
 at_optimum <- readLines(pkpd$model)
 est <- fit_one_dose$estimates
 for (nm in names(fit_one_dose$theta)) {
@@ -242,12 +243,16 @@ writeLines(at_optimum, at_optimum_file)
 fd_at_optimum <- suppressWarnings(ferx_fit(at_optimum_file, one_dose, gradient = "fd", covariance = FALSE,
                                            settings = list(maxiter = 0), verbose = FALSE))
 fd_emax <- sapply(fd_runs[[1]][1:2], function(f) f$theta[["TVEMAX"]])
-stopifnot(all(fd_gap > 1), abs(fd_at_optimum$ofv - fit_one_dose$ofv) < 0.01,
-          abs(fd_emax[[1]] / 40 - 1) < 0.25,
-          fd_emax[[2]] < fd_emax[[1]], fd_emax[[2]] > fit_one_dose$theta[["TVEMAX"]])
+stopifnot(all(abs(fd_default_gap) < 0.01), all(fd_gap > 1), abs(fd_at_optimum$ofv - fit_one_dose$ofv) < 0.01,
+          fd_emax[[2]] < 40, fd_emax[[2]] > fit_one_dose$theta[["TVEMAX"]] + 1)
 ```
 
-Every finite-difference fit stops between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above the optimum that the analytic gradient finds. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the finite-difference fit starts at the simulation values and stops near them, so `TVEMAX` comes out at `r signif(fd_emax[[1]], 3)`, close to 40, and the design looks able to support the model, which it is not. The `slsqp` refit moves part of the way, to `r signif(fd_emax[[2]], 3)`, where the analytic optimum is at `r signif(fit_one_dose$theta[["TVEMAX"]], 3)`. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, leave the gradient to ferx.
+The default-optimizer finite-difference fits land within `r format(signif(max(abs(fd_default_gap)), 1), scientific = TRUE)` of the analytic optimum. The `slsqp` fits stop between `r round(min(fd_gap), 1)` and `r round(max(fd_gap), 1)` OFV points above it. The objective is the same on both paths (the analytic optimum scores the same OFV on the finite-difference path), so it is the optimizer on a finite-difference gradient that loses the optimum. On the 100 design this is the trap of a simulation–estimation run: the `slsqp` fit stops at a `TVEMAX` of `r signif(fd_emax[[2]], 3)`, between the analytic optimum at `r signif(fit_one_dose$theta[["TVEMAX"]], 3)` and the simulation value 40, so the design looks better able to support the model than it is. Fit a simulated study with the most reliable settings you have, and compare its OFV with the objective at the simulation values. For this model, leave the gradient to ferx.
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}}, the default-optimizer finite-difference fits also stop above the optimum on this model.
+:::
 
 ### Effects computed from a PK fit
 

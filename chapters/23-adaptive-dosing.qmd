@@ -236,6 +236,71 @@ res_load$metrics |> select(CUM_DOSE, N_DOSES, N_INCREASES, PCT_TIME_IN_WINDOW)
 
 The dose ledger and `CUM_DOSE` (`r round(res_load$metrics$CUM_DOSE, 1)` mg) contain only the controller's maintenance doses. The 1500 mg loading dose from the dataset is not counted, so the total given is `r round(res_load$metrics$CUM_DOSE + 1500, 1)` mg.
 
+### Simulating at fitted estimates
+
+So far every simulation ran at the model file's values. Once TDM data from the protocol are collected, the protocol can be re-evaluated at the estimates fitted to them: `ferx_simulate_adaptive()` takes the fit as `fit =`, as `ferx_simulate()` does (@sec-simulation). To have data to fit, run the protocol on 20 patients whose typical clearance is 6 L/h rather than the model file's 4, and measure their troughs with assay error. The doses are the ones the protocol chose; `ferx_simulate()` on those records adds the assay error the measurements carry:
+
+```{r}
+#| label: tdm-collected
+fast_lines <- sub("theta TVCL(4.0,  0.5,  20.0)", "theta TVCL(6.0,  0.5,  20.0)", readLines(ex$model), fixed = TRUE)
+stopifnot(any(grepl("theta TVCL(6.0,  0.5,  20.0)", fast_lines, fixed = TRUE)))
+fast_model <- file.path(strategy_dir, "adaptive_tdm_fast_clearance.ferx")
+writeLines(fast_lines, fast_model)
+protocol <- ferx_simulate_adaptive(fast_model, ex$data, n_sim = 4, seed = 2)
+patient <- function(d) (as.integer(d$SIM) - 1L) * 5L + as.integer(d$ID)  # 4 runs x 5 subjects -> 20 patients
+tdm_records <- bind_rows(
+  transmute(protocol$doses, ID = patient(protocol$doses), TIME, DV = NA, EVID = 1, AMT, CMT, RATE, MDV = 1),
+  protocol$trajectories |> filter(TIME > 0) |>
+    transmute(ID = patient(filter(protocol$trajectories, TIME > 0)), TIME, DV = NA, EVID = 0, AMT = NA,
+              CMT = 1, RATE = 0, MDV = 0)
+) |> arrange(ID, TIME, EVID)
+records_file <- file.path(strategy_dir, "tdm_records.csv")
+write.csv(tdm_records, records_file, row.names = FALSE, na = ".")
+# the empty DV cells raise the W_DESIGN_DV warning that every design file gets (@sec-simulation)
+measured <- suppressWarnings(ferx_simulate(fast_model, records_file, n_sim = 1, seed = 3))
+troughs <- tdm_records$EVID == 0
+tdm_records$DV[troughs] <- measured$DV_SIM[match(paste(tdm_records$ID, tdm_records$TIME)[troughs],
+                                                 paste(measured$ID, measured$TIME))]
+stopifnot(!anyNA(tdm_records$DV[troughs]))
+tdm_file <- file.path(strategy_dir, "tdm_collected.csv")
+write.csv(tdm_records, tdm_file, row.names = FALSE, na = ".")
+tdm_fit <- ferx_fit(ex$model, tdm_file, verbose = FALSE)
+rbind(model_file = tdm_fit$theta_init, estimate = tdm_fit$theta, se = tdm_fit$se_theta)
+```
+
+Each trough is recorded before the dose given at the same time, as the protocol measured it. The fit puts the typical clearance well above the model file's value. Simulating the protocol at the fit shows what that does to it:
+
+```{r}
+#| label: tbl-tdm-at-fit
+#| tbl-cap: "The 25% titration protocol simulated at the model file's values and at the estimates fitted to the collected TDM data."
+res_at_fit <- ferx_simulate_adaptive(ex$model, ex$data, n_sim = n_sim, seed = 1, fit = tdm_fit)
+at_fit <- bind_rows(`model file` = res$metrics, `fitted estimates` = res_at_fit$metrics, .id = "parameters") |>
+  group_by(parameters = factor(parameters, c("model file", "fitted estimates"))) |>
+  summarise(`mean fraction in window` = mean(PCT_TIME_IN_WINDOW),
+            `mean cumulative dose (mg)` = mean(CUM_DOSE),
+            `mean increases` = mean(N_INCREASES))
+at_fit
+```
+
+```{r}
+#| label: check-tdm-at-fit
+#| include: false
+# The prose: the fit converges with TVCL above 4 and within 3 SE of the 6 the data were made
+# with; at the fit the protocol escalates more, gives more drug and keeps less time in the window.
+stopifnot(isTRUE(tdm_fit$converged), tdm_fit$theta[["TVCL"]] > 4 + 2 * tdm_fit$se_theta[["TVCL"]],
+          abs(tdm_fit$theta[["TVCL"]] - 6) < 3 * tdm_fit$se_theta[["TVCL"]],
+          at_fit$`mean increases`[2] > at_fit$`mean increases`[1],
+          at_fit$`mean cumulative dose (mg)`[2] > at_fit$`mean cumulative dose (mg)`[1],
+          at_fit$`mean fraction in window`[2] < at_fit$`mean fraction in window`[1])
+```
+
+At the fitted clearance the protocol starts too low for these patients, so it escalates more often and gives more drug in total, and fewer of its trough readings fall in the 10 to 20 mg/L window: `r sprintf("%.2f", at_fit$"mean fraction in window"[2])` against `r sprintf("%.2f", at_fit$"mean fraction in window"[1])`. That is the case for a higher starting dose, which the loading-dose example above shows how to write. The random effects are still drawn from the fitted omega; a patient's own estimates are not carried over, and kappas are drawn per decision window.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+The `fit` argument of `ferx_simulate_adaptive()` is not in ferx-r {{< var ferx_r_release >}}.
+:::
+
 ## Pitfalls
 
 - **The dose ledger excludes base doses.** `doses`, `CUM_DOSE` and `N_DOSES` count controller doses only. Add the dose rows of your dataset to get the full regimen.

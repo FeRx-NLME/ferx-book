@@ -74,7 +74,20 @@ se_by_method <- sapply(c(r = "r", s = "s", rsr = "rsr"), function(m) {
 round(se_by_method, 4)
 ```
 
-`"r"` (inverse Hessian, the default) reproduces the inline standard errors, `"s"` is the inverse cross-product and `"rsr"` the sandwich estimator. `ferx_covariance()` also takes `mu_referencing`, which by default is the value the fit was made with, and `verbose`. It repeats the inner-loop settings the fit recorded in `fit$scoring_settings`.
+`"r"` (inverse Hessian, the default) reproduces the inline standard errors, `"s"` is the inverse cross-product and `"rsr"` the sandwich estimator. `ferx_covariance()` also takes `mu_referencing`, which by default is the value the fit was made with, and `verbose`. It repeats the inner-loop settings the fit recorded in `fit$scoring_settings`. `threads =` sets the worker threads of the step (by default the width the fit ran on, `fit$n_threads_used`). It changes the resources the step uses, not the result:
+
+```{r}
+#| label: covariance-threads
+one_thread <- ferx_covariance(fit_nocov, threads = 1)
+one_thread$n_threads_used
+identical(one_thread$se_theta, se_by_method[, "r"])
+```
+
+```{r}
+#| label: check-covariance-threads
+#| include: false
+stopifnot(one_thread$n_threads_used == 1, identical(one_thread$se_theta, se_by_method[, "r"]))
+```
 
 ## SIR
 
@@ -87,11 +100,11 @@ fit_sir$sir_ess
 fit_sir$sir_ci_theta
 ```
 
-`sir_ci_omega` and `sir_ci_sigma` hold the intervals for the variances and residual error. `sir_ess` is the effective sample size of the resampled set; the closer it is to `sir_resamples`, the better the proposal matches the data. `sir_keep_samples = TRUE` keeps the resampled vectors on the fit, which `ferx_simulate_with_uncertainty()` needs (@sec-simulation). `verbose = TRUE` prints progress.
+`sir_ci_omega` and `sir_ci_sigma` hold the intervals for the variances and residual error. `sir_ess` is the effective sample size of the `sir_samples` weighted draws: the larger it is, the better the proposal matches the data. The ferx-core [SIR](https://ferx-nlme.org/ferx-core/estimation/sir.html#diagnostics) page reads one above `sir_resamples` as a well-matched proposal and one below 100 as too few draws for the intervals. `sir_keep_samples = TRUE` keeps the resampled vectors on the fit, which `ferx_simulate_with_uncertainty()` needs (@sec-simulation). `verbose = TRUE` prints progress, and `threads =` sets the worker threads, as for `ferx_covariance()` above: `identical(ferx_sir(fit, sir_samples = 1000, sir_resamples = 250, threads = 1)$sir_ci_theta, fit_sir$sir_ci_theta)` is `r identical(ferx_sir(fit, sir_samples = 1000, sir_resamples = 250, threads = 1)$sir_ci_theta, fit_sir$sir_ci_theta)`.
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-The `sir_df` and `sir_scale` arguments of `ferx_sir()`, and the `sir_scale` setting, are not in ferx-r {{< var ferx_r_release >}}.
+The `sir_df`, `sir_scale` and `threads` arguments of `ferx_sir()`, the `threads` argument of `ferx_covariance()`, and the `sir_scale` setting, are not in ferx-r {{< var ferx_r_release >}}.
 :::
 
 ::: {.callout-note}
