@@ -142,17 +142,30 @@ data.frame(optimizer = c(fit_bobyqa$optimizer_label, fit_lbfgs$optimizer_label),
 round(fit_bobyqa$final_gradient, 4)
 ```
 
+The run log's convergence check reads the same vector. It scales each component by its parameter and compares it with `gradient_tol`:
+
+```{r}
+#| label: final-gradient-runlog
+bobyqa_log <- strsplit(ferx_runlog(fit_bobyqa, verbose = FALSE), "\n")[[1]]
+start_gradient <- grep("Relative gradient", bobyqa_log)
+cat(bobyqa_log[(start_gradient - 1):(start_gradient + 1)], sep = "\n")
+```
+
 ```{r}
 #| label: check-final-gradient
 #| include: false
-# The sentence below says bobyqa stopped on a slope that the gradient-based fit got past.
-stopifnot(fit_bobyqa$converged, fit_lbfgs$converged, fit_bobyqa$ofv > fit_lbfgs$ofv,
-          max(abs(fit_bobyqa$final_gradient)) > 100 * max(abs(fit_lbfgs$final_gradient)))
+# The paragraph below says both fits converge to the same optimum (OFVs within 0.001),
+# that bobyqa's largest gradient component is the larger one (measured minimum 7.4x,
+# Linux CI; 2x leaves headroom), and that every bobyqa component passes the run log's check.
+stopifnot(fit_bobyqa$converged, fit_lbfgs$converged,
+          abs(fit_bobyqa$ofv - fit_lbfgs$ofv) < 1e-3,
+          max(abs(fit_bobyqa$final_gradient)) > 2 * max(abs(fit_lbfgs$final_gradient)),
+          any(grepl("All [0-9]+ relative gradient components satisfy", bobyqa_log)))
 ```
 
-Both fits report convergence, but `bobyqa` stopped where the objective still slopes: its largest gradient component is `r signif(max(abs(fit_bobyqa$final_gradient)), 1)`, against `r signif(max(abs(fit_lbfgs$final_gradient)), 1)` for `nlopt_lbfgs`, which reached an OFV `r signif(fit_bobyqa$ofv - fit_lbfgs$ofv, 2)` lower. The gap is small on this model; a gradient clearly larger than a gradient-based optimizer's beside `converged = TRUE` is the sign to refit with a gradient-based optimizer and compare.
+Both fits report convergence at the same optimum: their OFVs differ by less than 0.001. The largest gradient component of the `bobyqa` fit, `r signif(max(abs(fit_bobyqa$final_gradient)), 1)`, is larger than the `r signif(max(abs(fit_lbfgs$final_gradient)), 1)` of `nlopt_lbfgs`, but neither is a yardstick on its own. `bobyqa` stops on the change in the objective and the size of its steps, not on the gradient (see [its polish legs](https://ferx-nlme.org/ferx-core/estimation/optimizers.html#bobyqa-tolerance-polish)), and `nlopt_lbfgs` stops on its own tolerances. The run log's check is the yardstick: every component of the `bobyqa` fit passes it at the default `gradient_tol` of `r formals(ferx_runlog)$gradient_tol`. A component that fails it beside `converged = TRUE` is the sign to refit with a gradient-based optimizer and compare.
 
-That costs one gradient's worth of extra objective evaluations -- two per free parameter -- after the fit, and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
+The finite-difference gradient costs one gradient's worth of extra objective evaluations -- two per free parameter -- after the fit, and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
 
 ```{r}
 #| label: report-final-gradient-off
