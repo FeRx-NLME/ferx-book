@@ -353,7 +353,7 @@ stopifnot("stalled_at_init" %in% restart_warnings$category,
 
 Here the start really was the optimum, so `stalled_at_init` is expected and harmless. What `converged` says beside it can depend on the optimizer: here it is `r fit_restart_slsqp$converged` under `slsqp` and `r fit_restart$converged` under `bobyqa`. A stalled fit reported as converged is the case the warning exists for, since nothing else would flag it. Either way, read `stalled_at_init` first. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
 
-The same rewrite can seed a refit from the `bobyqa` fit of the final-gradient comparison above, which stopped `r signif(fit_bobyqa$ofv - fit_warf$ofv, 1)` OFV units short of the optimum:
+The same rewrite can seed a refit from the `bobyqa` fit of the final-gradient comparison above, whose OFV is `r format(signif(abs(fit_bobyqa$ofv - fit_warf$ofv), 1), scientific = TRUE)` `r if (fit_bobyqa$ofv >= fit_warf$ofv) "above" else "below"` the converged fit's:
 
 ```{r}
 #| label: stalled-at-init-seed
@@ -369,7 +369,7 @@ data.frame(seed = c("converged fit", "bobyqa fit"),
 ```{r}
 #| label: check-stalled-at-init-seed
 #| include: false
-# The paragraph says the bobyqa seed is short of the optimum; the rest follows the computed flag.
+# The size and direction of the bobyqa seed's OFV gap are computed; the rest follows the computed flag.
 stopifnot(fit_bobyqa$ofv > fit_warf$ofv)
 ```
 
@@ -377,7 +377,7 @@ stopifnot(fit_bobyqa$ofv > fit_warf$ofv)
 
 `ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare. The cold starts that `inner_restarts` adds begin with a quasi-random screen of `inner_screen` points, which finds a mode that lies off every single axis; `inner_screen = 0` leaves only the per-axis starts. On a closed-form `one_cpt_oral` model with log-normal random effects of their own on `V` and `KA`, `inner_twin_seed` (`r book_setting_default("inner_twin_seed")` by default) first seeds them with one descent from the subject's flip-flop twin, the mode where absorption and elimination swap roles, before the screen; on such a model the seed reaches the twin even with `inner_screen = 0`.
 
-The warning also fires in the other direction, and then it does put the estimates in doubt: when the cold re-solve scores materially *lower* than the objective the optimizer minimised, some subjects' EBEs stayed in a higher mode for the whole fit, so the estimates minimise the wrong objective. ferx restarts the fit from its estimates; if the restart cannot run or leaves a gap of its own, the fit is reported with `converged = FALSE` (ferx-core [warning codes](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence-fit)). The message says which direction it is.
+The warning also fires in the other direction, and then it does put the estimates in doubt: when the cold re-solve scores materially *lower* than the objective the optimizer minimised, some subjects' EBEs stayed in a higher mode for the whole fit, so the estimates minimise the wrong objective. ferx then restarts the optimizer from that point on the remaining `maxiter` budget, and a restart it adopts leaves an `optimizer_health` note instead of this warning. Only when the gap survives, because no budget was left or the restarts ran out, is the fit reported with `converged = FALSE` and `ebe_start_dependent`, whose message says how far below the cold solve landed; refit from the reported estimates (ferx-core [warning codes](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence-fit), [when the cold solve is better](https://ferx-nlme.org/ferx-core/estimation/foce.html#cold-solve-better)). The message says which direction it is.
 
 "Materially" is a small margin relative to the OFV, so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, whose end point depends on rounding in the ODE solver, raises it on some machines and not on others.
 
@@ -783,7 +783,7 @@ ferx_stop(job)               # or: stop the job
 
 See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html) for the full descriptions.
 
-- `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.
+- `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated, or a fit that stopped mid-descent or minimised against EBEs held in a higher mode was restarted from its best point. Try a different optimizer or rescale parameters; a restarted fit that ends converged needs no action.
 - `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. It can arrive alongside `converged = TRUE`, which is why it is a warning of its own rather than a `convergence` warning; whether `converged` agrees depends on the optimizer (above).
 - `ebe_start_dependent` (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise `inner_maxiter`, or `inner_restarts` for a suspected second mode (above).
 - `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
