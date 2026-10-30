@@ -145,12 +145,15 @@ round(fit_bobyqa$final_gradient, 4)
 ```{r}
 #| label: check-final-gradient
 #| include: false
-# The sentence below says bobyqa stopped on a slope that the gradient-based fit got past.
-stopifnot(fit_bobyqa$converged, fit_lbfgs$converged, fit_bobyqa$ofv > fit_lbfgs$ofv,
-          max(abs(fit_bobyqa$final_gradient)) > 100 * max(abs(fit_lbfgs$final_gradient)))
+# The paragraph below says both fits converge to the same optimum (OFVs within 0.001)
+# and that bobyqa's largest gradient component is the larger one. Measured at this pin:
+# 7.4x on Linux CI, 632x on macOS; 2x leaves headroom below the smaller.
+stopifnot(fit_bobyqa$converged, fit_lbfgs$converged,
+          abs(fit_bobyqa$ofv - fit_lbfgs$ofv) < 1e-3,
+          max(abs(fit_bobyqa$final_gradient)) > 2 * max(abs(fit_lbfgs$final_gradient)))
 ```
 
-Both fits report convergence, but `bobyqa` stopped where the objective still slopes: its largest gradient component is `r signif(max(abs(fit_bobyqa$final_gradient)), 1)`, against `r signif(max(abs(fit_lbfgs$final_gradient)), 1)` for `nlopt_lbfgs`, which reached an OFV `r signif(fit_bobyqa$ofv - fit_lbfgs$ofv, 2)` lower. The gap is small on this model; a gradient clearly larger than a gradient-based optimizer's beside `converged = TRUE` is the sign to refit with a gradient-based optimizer and compare.
+Both fits report convergence at the same optimum: their OFVs differ by less than 0.001. `bobyqa` still stopped where the objective slopes a little: its largest gradient component is `r signif(max(abs(fit_bobyqa$final_gradient)), 1)`, against `r signif(max(abs(fit_lbfgs$final_gradient)), 1)` for `nlopt_lbfgs`. It stops on the change in the objective and the size of its steps, not on a gradient test, so a small leftover slope is expected. The ratio between the two is not a stable number: the gradient-based fit's leftover gradient sits at the level of numerical noise and differs from one machine to another. Read the size of `bobyqa`'s gradient instead. Here the slope costs nothing; a large gradient beside `converged = TRUE` is the sign to refit with a gradient-based optimizer and compare.
 
 That costs one gradient's worth of extra objective evaluations -- two per free parameter -- after the fit, and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
 
