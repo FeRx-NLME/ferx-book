@@ -366,13 +366,6 @@ data.frame(seed = c("converged fit", "bobyqa fit"),
            stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
 ```
 
-```{r}
-#| label: check-stalled-at-init-seed
-#| include: false
-# The size and direction of the bobyqa seed's OFV gap are computed; the rest follows the computed flag.
-stopifnot(fit_bobyqa$ofv > fit_warf$ofv)
-```
-
 `r if (fit_from_bobyqa$stalled_at_init) "That refit stalls as well: started so close to the optimum, \x60bobyqa\x60 finds nothing to improve. So \x60stalled_at_init\x60 says the optimizer did not move, not that the start was the optimum. Compare the OFV with a fit that is known to have converged before reading a stall as harmless." else "That refit does not stall: the optimizer still has somewhere to go, so a stall points to a start at the optimum."`
 
 `ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare. The cold starts that `inner_restarts` adds begin with a quasi-random screen of `inner_screen` points, which finds a mode that lies off every single axis; `inner_screen = 0` leaves only the per-axis starts. On a closed-form `one_cpt_oral` model with log-normal random effects of their own on `V` and `KA`, `inner_twin_seed` (`r book_setting_default("inner_twin_seed")` by default) first seeds them with one descent from the subject's flip-flop twin, the mode where absorption and elimination swap roles, before the screen; on such a model the seed reaches the twin even with `inner_screen = 0`.

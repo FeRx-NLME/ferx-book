@@ -135,9 +135,34 @@ tight_rse <- fit_sde_tight$estimates$rse_pct
 stopifnot(!"covariance_regularized" %in% ferx_get_warnings(fit_sde_tight, as_df = TRUE)$category,
           max(tight_rse[rownames(fit_sde_tight$estimates) != "DIFF_CENTRAL"]) < 100,
           fit_sde_tight$theta[["DIFF_CENTRAL"]] < 1e-4)
+# How much of the gap between the two fits is noise in evaluating the objective: the bundled
+# fit's own estimates, scored without moving (maxiter = 0) at the default and at the tighter
+# tolerances. The sentence on the gap reads all of it as solver error only when that noise is at
+# least the gap; otherwise it says the gap mixes the two, which needs 0 < noise < gap.
+at_sde <- readLines(sde$model)
+for (nm in setdiff(names(fit_sde$theta), "DIFF_CENTRAL")) {
+  at_sde <- sub(sprintf("theta %s\\(([^,]+),", nm), sprintf("theta %s(%.12g,", nm, fit_sde$theta[[nm]]), at_sde)
+}
+for (nm in rownames(fit_sde$omega)) {
+  at_sde <- sub(sprintf("omega %s\\s*~.*$", nm), sprintf("omega %s ~ %.12g", nm, fit_sde$omega[nm, nm]), at_sde)
+}
+at_sde <- sub("sigma PROP_ERR\\s*~.*$", sprintf("sigma PROP_ERR ~ %.12g (sd)", fit_sde$sigma[[1]]), at_sde)
+at_sde <- sub("^(\\s*)central ~ .*$", sprintf("\\1central ~ %.12g", fit_sde$theta[["DIFF_CENTRAL"]]), at_sde)
+stopifnot(any(grepl(sprintf("theta TVCL(%.12g,", fit_sde$theta[["TVCL"]]), at_sde, fixed = TRUE)),
+          any(grepl(sprintf("central ~ %.12g", fit_sde$theta[["DIFF_CENTRAL"]]), at_sde, fixed = TRUE)))
+at_sde_file <- file.path(experimental_dir, "warfarin_sde_at_bundled_estimates.ferx")
+writeLines(at_sde, at_sde_file)
+rescore_sde <- function(settings) {
+  suppressWarnings(ferx_fit(at_sde_file, sde$data, covariance = FALSE, verbose = FALSE,
+                            settings = c(list(maxiter = 0), settings)))$ofv
+}
+sde_noise <- abs(rescore_sde(list()) - rescore_sde(list(ode_reltol = 1e-6, ode_abstol = 1e-8)))
+sde_gap <- abs(fit_sde$ofv - fit_sde_tight$ofv)
+sde_gap_is_noise <- sde_noise >= sde_gap
+stopifnot(sde_noise > 0)
 ```
 
-With those tolerances the same model, optimizer and data need no regularization in the covariance step. The standard errors are ordinary, except for the diffusion variance: at `r format(signif(fit_sde_tight$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)` it cannot be told apart from zero. The OFV of the refit is `r sprintf("%.2f", abs(fit_sde$ofv - fit_sde_tight$ofv))` `r if (fit_sde_tight$ofv < fit_sde$ofv) "lower" else "higher"` than the bundled fit's, but at the default tolerances the objective itself carries solver error of that size, so the difference says nothing about the model. Where the default tolerances leave the fit depends on rounding in the solver, so the bundled fit's OFV and estimates differ from one machine to the next; the refit is the one to read. Tighter default tolerances for finite-difference fits of ODE models are tracked in [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520).
+With those tolerances the same model, optimizer and data need no regularization in the covariance step. The standard errors are ordinary, except for the diffusion variance: at `r format(signif(fit_sde_tight$theta[["DIFF_CENTRAL"]], 1), scientific = TRUE)` it cannot be told apart from zero. The OFV of the refit is `r sprintf("%.2f", sde_gap)` `r if (fit_sde_tight$ofv < fit_sde$ofv) "lower" else "higher"` than the bundled fit's. Scored without moving, the bundled fit's own estimates give OFVs `r sprintf("%.2f", sde_noise)` apart at the default and at the tighter tolerances. `r if (sde_gap_is_noise) "So at the default tolerances the objective itself carries solver error of the size of the gap, and the difference says nothing about the model." else "So the gap is part solver error in evaluating the objective and part the two fits ending at different points."` Where the default tolerances leave the fit depends on rounding in the solver, so the bundled fit's OFV and estimates differ from one machine to the next; the refit is the one to read. Tighter default tolerances for finite-difference fits of ODE models are tracked in [ferx-core #520](https://github.com/FeRx-NLME/ferx-core/issues/520).
 
 Removing the `[diffusion]` block gives the ordinary ODE model. That model needs no finite differences: with `gradient = "auto"` ferx uses the analytic gradient. The table also fits it with the model file's finite differences at the default tolerances:
 
