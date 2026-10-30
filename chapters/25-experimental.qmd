@@ -89,24 +89,27 @@ if (sde_saddle) {
     "(`covariance_regularized`): the fit stopped at a saddle point, not at a minimum, and standard",
     "errors computed there mean nothing."), format(round(min(sde_rse)), big.mark = ","))
 } else {
+  sde_restart <- any(grepl("higher individual mode", sde_warning_table$message[sde_warning_table$category == "optimizer_health"],
+                           fixed = TRUE))
   stopifnot(fit_sde$converged, "inflated_rse" %in% sde_warning_table$category,
             max(sde_rse_other) < 100, sde_rse[["DIFF_CENTRAL"]] > 100)
   sde_reading <- sprintf(paste(
-    "Here the fit stopped at a minimum: the covariance step needed no regularization, and the relative",
-    "standard errors are ordinary (at most %s%%) except that of `DIFF_CENTRAL`, at %s%% (`inflated_rse`).",
-    "%sThat is not guaranteed. Where the default tolerances leave this fit depends on rounding in the",
+    "Here the fit converged and the covariance step needed no regularization: the relative standard",
+    "errors are ordinary (at most %s%%) except that of `DIFF_CENTRAL`, at %s%% (`inflated_rse`).",
+    "%sConverging is not the same as reaching the optimum, and even this much is not guaranteed. Where the",
+    "default tolerances leave this fit depends on rounding in the",
     "solver, and on other machines and builds the same file stops at a saddle point: the covariance step",
     "finds a direction of negative curvature and floors it (`covariance_regularized`), every standard",
     "error runs to hundreds of percent, and standard errors computed there mean nothing."),
     round(max(sde_rse_other)), format(round(sde_rse[["DIFF_CENTRAL"]]), big.mark = ","),
-    if ("optimizer_health" %in% sde_warning_table$category)
+    if (sde_restart)
       paste("The `optimizer_health` warning says how it got there: the optimizer had minimised against random",
             "effects that some subjects held in a higher mode, and resumed from the best point a cold re-solve",
             "found (@sec-estimation-methods). ") else "")
 }
 ```
 
-`r sde_reading` `[diffusion]` needs finite-difference gradients, so the model file sets `gradient_method = fd`, and with it `optimizer = auto` resolves to `bobyqa` (@sec-estimation-methods). When the covariance step regularizes, the last sentence of its `covariance_regularized` message points at the ODE tolerances: the finite differences of the covariance step amplify the integration errors of the solver, and the message suggests tighter tolerances than the defaults. A refit at those tolerances does not depend on where the default ones leave the fit:
+`r sde_reading` `[diffusion]` needs finite-difference gradients, so the model file sets `gradient_method = fd`, and with it `optimizer = auto` resolves to `bobyqa` (@sec-estimation-methods). When the covariance step regularizes, the last sentence of its `covariance_regularized` message points at the ODE tolerances: the finite differences of the covariance step amplify the integration errors of the solver, and the message suggests `ode_reltol = 1e-6` and `ode_abstol = 1e-8`, tighter than the defaults of `r book_setting_default("ode_reltol")` and `r book_setting_default("ode_abstol")`. A refit at those tolerances does not depend on where the default ones leave the fit:
 
 ```{r}
 #| label: sde-tolerance
