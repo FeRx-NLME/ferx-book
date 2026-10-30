@@ -115,6 +115,9 @@ comparison |>
 # The paragraph below reads this ranking, these warnings and the biphasic fit's covariance.
 ranked <- comparison$model[order(comparison$ofv)]
 igd_warnings <- ferx_get_warnings(fits$igd_inverse_gaussian, as_df = TRUE)
+# whether the inverse-Gaussian fit carries the outer-gradient note depends on rounding, so the
+# clause naming it is computed; any other general warning there fails the check below
+igd_gradient_note <- "general" %in% igd_warnings$category
 biphasic_cor <- fits$biphasic_igd_absorption$cor_matrix
 diag(biphasic_cor) <- 0
 stopifnot(identical(ranked[1:5], c("biphasic_igd_absorption", "transit_savic", "one_cpt_transit",
@@ -126,7 +129,7 @@ stopifnot(identical(ranked[1:5], c("biphasic_igd_absorption", "transit_savic", "
           max(abs(biphasic_cor), na.rm = TRUE) > 0.999)
 ```
 
-`transit_savic` agrees with the simulation model and reaches the second-lowest OFV with no warnings. `one_cpt_transit`, which has no `KA` step, follows with no warnings, then the Weibull and inverse-Gaussian models; the `general` warning of the inverse-Gaussian fit is the outer-gradient note of @sec-estimation-methods. The biphasic inverse-Gaussian model reaches a slightly lower OFV with two more parameters. Its warnings show that the data cannot inform them: relative standard errors in the thousands of percent, correlations of ±1 and a condition number of about `r signif(fits$biphasic_igd_absorption$condition_number / 1e10, 2)` × 10^10^. `parallel_absorption` collapses to a single route (both absorption rate constants end at the same value), and `mixed_absorption` ends with parameters at their bounds:
+`transit_savic` agrees with the simulation model and reaches the second-lowest OFV with no warnings. `one_cpt_transit`, which has no `KA` step, follows with no warnings, then the Weibull and inverse-Gaussian models`r if (igd_gradient_note) "; the \x60general\x60 warning of the inverse-Gaussian fit is the outer-gradient note of @sec-estimation-methods" else ""`. The biphasic inverse-Gaussian model reaches a slightly lower OFV with two more parameters. Its warnings show that the data cannot inform them: relative standard errors in the thousands of percent, correlations of ±1 and a condition number of about `r signif(fits$biphasic_igd_absorption$condition_number / 1e10, 2)` × 10^10^. `parallel_absorption` collapses to a single route (both absorption rate constants end at the same value), and `mixed_absorption` ends with parameters at their bounds:
 
 ```{r}
 #| label: collapsed-fits

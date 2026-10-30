@@ -235,7 +235,7 @@ ferx_get_warnings(fit_cov, as_df = TRUE)[, c("severity", "category")]
 #| label: check-outer-gradient-note
 #| include: false
 # The paragraph says the model-level route is analytic; whether a subject falls back during
-# the fit depends on rounding (none on macOS, one on Linux CI), so the text below is computed.
+# the fit depends on rounding (it has differed between macOS and Linux CI), so the text below is computed.
 stopifnot(startsWith(fit_cov$gradient_method_outer, "analytic"))
 fallback_note <- grep("could not be given the exact analytic outer gradient", fit_cov$warnings, fixed = TRUE, value = TRUE)
 fallback_n <- if (length(fallback_note)) as.integer(sub("^([0-9]+) of .*", "\\1", fallback_note[1])) else 0L
@@ -288,12 +288,12 @@ book_settings_table(c("optimizer", "outer_xtol", "outer_ftol", "stagnation_guard
 #| echo: false
 #| tbl-cap: "Inner loop settings (individual random effects)."
 book_settings_table(c("inner_optimizer", "inner_maxiter", "inner_tol", "inner_restarts", "inner_screen",
-                      "ebe_warm_start", "max_unconverged_frac", "min_obs_for_convergence_check"))
+                      "inner_twin_seed", "ebe_warm_start", "max_unconverged_frac", "min_obs_for_convergence_check"))
 ```
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-The `inner_screen` setting is not in ferx-r {{< var ferx_r_release >}}.
+The `inner_screen` and `inner_twin_seed` settings are not in ferx-r {{< var ferx_r_release >}}.
 :::
 
 #### Two warnings about where a fit started
@@ -353,7 +353,7 @@ stopifnot("stalled_at_init" %in% restart_warnings$category,
 
 Here the start really was the optimum, so `stalled_at_init` is expected and harmless. What `converged` says beside it can depend on the optimizer: here it is `r fit_restart_slsqp$converged` under `slsqp` and `r fit_restart$converged` under `bobyqa`. A stalled fit reported as converged is the case the warning exists for, since nothing else would flag it. Either way, read `stalled_at_init` first. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
 
-The same rewrite can seed a refit from the `bobyqa` fit of the final-gradient comparison above, which stopped `r signif(fit_bobyqa$ofv - fit_warf$ofv, 1)` OFV units short of the optimum:
+The same rewrite can seed a refit from the `bobyqa` fit of the final-gradient comparison above, whose OFV is `r format(signif(abs(fit_bobyqa$ofv - fit_warf$ofv), 1), scientific = TRUE)` `r if (fit_bobyqa$ofv >= fit_warf$ofv) "above" else "below"` the converged fit's:
 
 ```{r}
 #| label: stalled-at-init-seed
@@ -366,20 +366,13 @@ data.frame(seed = c("converged fit", "bobyqa fit"),
            stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
 ```
 
-```{r}
-#| label: check-stalled-at-init-seed
-#| include: false
-# The paragraph says the bobyqa seed is short of the optimum; the rest follows the computed flag.
-stopifnot(fit_bobyqa$ofv > fit_warf$ofv)
-```
-
 `r if (fit_from_bobyqa$stalled_at_init) "That refit stalls as well: started so close to the optimum, \x60bobyqa\x60 finds nothing to improve. So \x60stalled_at_init\x60 says the optimizer did not move, not that the start was the optimum. Compare the OFV with a fit that is known to have converged before reading a stall as harmless." else "That refit does not stall: the optimizer still has somewhere to go, so a stall points to a start at the optimum."`
 
-`ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare. The cold starts that `inner_restarts` adds begin with a quasi-random screen of `inner_screen` points, which finds a mode that lies off every single axis; `inner_screen = 0` leaves only the per-axis starts.
+`ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare. The cold starts that `inner_restarts` adds begin with a quasi-random screen of `inner_screen` points, which finds a mode that lies off every single axis; `inner_screen = 0` leaves only the per-axis starts. On a closed-form `one_cpt_oral` model with log-normal random effects of their own on `V` and `KA`, `inner_twin_seed` (`r book_setting_default("inner_twin_seed")` by default) first seeds them with one descent from the subject's flip-flop twin, the mode where absorption and elimination swap roles, before the screen; on such a model the seed reaches the twin even with `inner_screen = 0`.
 
-The warning also fires in the other direction, and then it does put the estimates in doubt: when the cold re-solve scores materially *lower* than the objective the optimizer minimised, some subjects' EBEs stayed in a higher mode for the whole fit, so the estimates minimise the wrong objective. ferx restarts the fit from its estimates; if the restart cannot run or leaves a gap of its own, the fit is reported with `converged = FALSE` (ferx-core [warning codes](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence-fit)). The message says which direction it is.
+The warning also fires in the other direction, and then it does put the estimates in doubt: when the cold re-solve scores materially *lower* than the objective the optimizer minimised, some subjects' EBEs stayed in a higher mode for the whole fit, so the estimates minimise the wrong objective. ferx then restarts the optimizer from that point on the remaining `maxiter` budget, and a restart it adopts leaves an `optimizer_health` note instead of this warning. Only when the gap survives, because no budget was left or the restarts ran out, is the fit reported with `converged = FALSE` and `ebe_start_dependent`, whose message says how far below the cold solve landed; refit from the reported estimates (ferx-core [warning codes](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence-fit), [when the cold solve is better](https://ferx-nlme.org/ferx-core/estimation/foce.html#cold-solve-better)). The message says which direction it is.
 
-"Materially" is a small margin relative to the OFV, so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, which stops at a saddle point, raises it on some machines and not on others.
+"Materially" is a small margin relative to the OFV, so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, whose end point depends on rounding in the ODE solver, raises it on some machines and not on others.
 
 A starved inner loop is a different failure. When too many subjects' inner loops fail to converge -- a larger fraction of them than `max_unconverged_frac`, `r book_setting_default("max_unconverged_frac")` by default -- ferx rejects the outer trial and returns a penalty instead of an objective. Cutting `inner_maxiter` far below its default does that on warfarin, and the fit says so:
 
@@ -783,7 +776,7 @@ ferx_stop(job)               # or: stop the job
 
 See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html) for the full descriptions.
 
-- `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated. Try a different optimizer or rescale parameters.
+- `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated, or a fit that stopped mid-descent or minimised against EBEs held in a higher mode was restarted from its best point. Try a different optimizer or rescale parameters; a restarted fit that ends converged needs no action.
 - `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. It can arrive alongside `converged = TRUE`, which is why it is a warning of its own rather than a `convergence` warning; whether `converged` agrees depends on the optimizer (above).
 - `ebe_start_dependent` (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise `inner_maxiter`, or `inner_restarts` for a suspected second mode (above).
 - `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
