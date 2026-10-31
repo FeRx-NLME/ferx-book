@@ -11,7 +11,7 @@ This chapter lists every ferx-r function, setting, model file block, data column
 
 ## Newer than ferx-r 0.4.0 {#sec-reference-newer}
 
-ferx-r 0.4.0 is the last release. The pinned build is newer, and these 67 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
+ferx-r 0.4.0 is the last release. The pinned build is newer, and these 68 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
 
 | Kind | Name | Chapter |
 |---|---|---|
@@ -41,6 +41,7 @@ ferx-r 0.4.0 is the last release. The pinned build is newer, and these 67 entrie
 | argument | `se` of `ferx_mbma_data()` | @sec-mbma |
 | argument | `study` of `ferx_mbma_data()` | @sec-mbma |
 | argument | `time` of `ferx_mbma_data()` | @sec-mbma |
+| argument | `type` of `ferx_predict_survival()` | @sec-time-to-event |
 | argument | `fit` of `ferx_simulate_adaptive()` | @sec-adaptive-dosing |
 | argument | `sir_df` of `ferx_sir()` | @sec-uncertainty |
 | argument | `sir_scale` of `ferx_sir()` | @sec-uncertainty |
@@ -129,7 +130,7 @@ Help pages: `?name`. Function reference on the web: [ferx-r reference](https://f
 | `ferx_model_validate()` | Validate a ferx model file for syntax and structural errors | `path`, `data = NULL` | @sec-model-files |
 | `ferx_modelsearch()` | Structural PK model search | `model = NULL`, `data = NULL`, `search_space = NULL`, `config = NULL`, `algorithm = NULL`, `iiv_strategy = NULL`, `rank = NULL`, `cutoff = NULL`, `threads = NULL`, `retries = NULL`, `directory = NULL`, `resume = FALSE`, `progress` | @sec-model-selection |
 | `ferx_predict()` | Population predictions from a NLME model | `model`, `data = NULL`, `fit = NULL` | @sec-simulation |
-| `ferx_predict_survival()` | Survival-function predictions for time-to-event endpoints | `model`, `data = NULL`, `times`, `fit = NULL` | @sec-time-to-event |
+| `ferx_predict_survival()` | Survival-function predictions for time-to-event endpoints | `model`, `data = NULL`, `times`, `fit = NULL`, `type` | @sec-time-to-event |
 | `ferx_runlog()` | Run log for a ferx fit | `fit`, `gradient_tol = 0.1`, `show_iterations = TRUE`, `verbose = TRUE` | @sec-estimation-methods |
 | `ferx_runlog_iters()` | Print the full optimizer iteration history for a ferx fit | `fit`, `verbose = TRUE` | @sec-estimation-methods |
 | `ferx_ruvsearch()` | Residual-error model search | `model = NULL`, `data = NULL`, `config = NULL`, `groups = NULL`, `p_value = NULL`, `skip = NULL`, `max_iter = NULL`, `cwres_prescreen = NULL`, `threads = NULL`, `retries = NULL`, `directory = NULL`, `resume = FALSE`, `progress` | @sec-model-selection |
@@ -281,7 +282,7 @@ Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The cha
 | `outer_xtol` | float | `1e-4` | Relative **step** tolerance: how far the optimizer's step must shrink before it declares success. | @sec-estimation-methods |
 | `parameter_scaling` | `auto`, `none`, `abs`, `rescale2` | `auto` | Parameter-scaling strategy for the outer optimizer (supersedes `scale_params` when non-`none`). | @sec-variability |
 | `reconverge_gradient_interval` | integer ≥ 0 | `0` | How often to re-solve each subject's inner EBE loop during the population gradient instead of holding the EBEs (η̂) and FOCE Hessian fixed. | @sec-estimation-methods |
-| `report_final_gradient` | `true`, `false` | `true` | Compute a finite-difference gradient at the reported estimates when the optimizer supplied none of its own, and report it as `final_gradient` with `final_gradient_source = "finite_difference"`. | @sec-estimation-methods |
+| `report_final_gradient` | `true`, `false` | `true` | Compute a gradient at the reported estimates when the optimizer supplied none of its own, and report it as `final_gradient`: the exact one, with `final_gradient_source = "analytic"`, when every subject is in the analytic gradient's scope, else a central difference with `final_gradient_source = "finite_difference"`. | @sec-estimation-methods |
 | `scale_adaptation` |  | `robbins_monro` | How the MH step scales are adapted. `interval` is the historical rule (×1.1 / ×0.9 every `adapt_interval`); `robbins_monro` steps `log δ` every iteration by `c·k^-0.6·(accept − target)`. | @sec-estimation-methods |
 | `scale_deadband` |  | `0.15,0.60` | Acceptance window `lo,hi` in which the `robbins_monro` step is **skipped**, leaving the scale untouched; outside it the ordinary step applies. | @sec-estimation-methods |
 | `scale_params` |  | `false` | Legacy boolean alias for `parameter_scaling = abs`. Divide each packed (log/Cholesky) coordinate by its initial magnitude before passing it to the optimizer. | @sec-variability |
@@ -460,7 +461,7 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 | `boundary_estimate` | Warning | One or more THETA **estimates** are pinned to an optimizer bound. | @sec-diagnostics |
 | `cancelled` | Info | Run cancelled by the user. | @sec-estimation-methods |
 | `condition_number` | Critical | Ill-conditioned covariance / high condition number. The figure is only meaningful next to the estimator that produced it — read `covariance_method` from the `details` payload, or from the fit (Which covariance estimator produced these numbers). | @sec-diagnostics |
-| `convergence` | Critical | Optimizer did not converge; **or** (`W_NONFINITE_OBJECTIVE`) the objective at the final estimates is `NaN`, infinite, or at or above the `1e14` divergence cutoff; **or** (`W_NO_FEASIBLE_EVAL`) not one outer trial was feasible — the EBE guard rejected them all, or every objective was non-finite — so nothing was minimised and the estimates are the ones the fit started from (#1617). | @sec-first-fit |
+| `convergence` | Critical | Optimizer did not converge; **or** (`W_NONFINITE_OBJECTIVE`) the objective at the final estimates is `NaN`, infinite, or at or above the `1e14` divergence cutoff; **or** (`W_NO_FEASIBLE_EVAL`) not one outer trial was feasible — the EBE guard rejected them all, or every objective was non-finite — so nothing was minimised and the estimates are the ones the fit started from (#1617); **or** (`W_ABOVE_START`) the fit reported an objective materially above the one its starting estimates scored, restarts included, typically because the EBE guard rejected that first evaluation (#2461). | @sec-first-fit |
 | `covariance_failed` | Critical | Covariance step failed — no standard errors. Every message that starts `Covariance step failed` gets this code, whatever reason it goes on to give (a message carrying a `W_` token is classified by its token first): a profiled fit's "the profile solve did not converge at the estimates" is a covariance failure, not `convergence`, and says nothing about whether the fit converged (#2158). | @sec-uncertainty |
 | `covariance_regularized` | Warning | Covariance step succeeded but an eigenvalue floor was applied, or an off-diagonal stencil was non-finite, or (`W_COV_NON_STATIONARY_ESTIMATE`, #1781) `S⁻¹` replaced an `r` / `rsr` whose R needed an eigenvalue floor at a sampler's estimate. | @sec-uncertainty |
 | `covariance_step` | Info / Warning | Covariance-step note (e.g. evaluation cost). `W_COV_ODE_TOLERANCE_NOT_TIGHTENED` (Warning): an integrated model's covariance step, which finite-differences its R or S matrix, could not be run at `ode_reltol = 1e-6` / `ode_abstol = 1e-8` and ran at the fit's looser tolerance, so the SEs may be inflated; pin those tolerances to compute them at the plateau (#520). | @sec-uncertainty |
@@ -497,7 +498,7 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 
 ## Check report codes
 
-Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused call raises a condition of class `ferx_engine_error` -- from `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and the other entry points alike -- that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 210 codes below (134 errors, 76 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
+Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused call raises a condition of class `ferx_engine_error` -- from `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and the other entry points alike -- that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 212 codes below (133 errors, 79 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
 
 | Code | Severity | Meaning |
 |---|---|---|
@@ -518,14 +519,13 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_AGQ_NODES_TOO_LARGE` | error | A quadrature stage — `method = laplace`, or `method = focei` with `n_agq > 1` — with `n_agq` above `MAX_AGQ_NODES` (21), where the Golub–Welsch rule loses accuracy. |
 | `E_AGQ_NODES_ZERO` | error | `n_agq = 0`, under any method. Zero nodes must not silently disable FOCEI quadrature or be coerced to one-node Laplace, and a method that ignores `n_agq` still records it in the fit, where a `.fitrx` holding 0 does not load (#1770); use `n_agq = 1`. |
 | `E_BINARY_GN_UNSUPPORTED` | error | `gn` or `gn_hybrid` anywhere in the method chain on a model with a `[binary_model]` (binary or categorical) endpoint. |
-| `E_BINARY_IOV_UNSUPPORTED` | error | A `[binary_model]` (binary or categorical) endpoint on a model with inter-occasion variability (`n_kappa > 0`), whatever the method. |
 | `E_BINARY_STATE` | error | A `[binary_model]` record whose DV is not 0 or 1. The reader accepts any non-negative integer on a discrete compartment, since it cannot tell binary from ordinal. |
 | `E_BLOCK_FEATURE_DISABLED` | error | A recognised block needs a cargo feature this binary was not built with — `[event_model]` / `[binary_model]` need `--features survival`, `[markov_model]` needs `--features markov`. |
 | `E_BLOCK_INSTANCE_NAME` | error | A `[block NAME]` instance name is given for a block that takes none (e.g. `[fit_options DOSE]`), or omitted for one that requires it (`[covariate_nn NAME]`). |
 | `E_BLOCK_SIGMA_CHAIN_UNSUPPORTED` | error | A `block_sigma` model with at least one free (non-`FIX`) correlation, whose method chain places a stage that cannot read the estimated correlation (anything but `foce`, `focei`, `laplace`) after a stage that estimates it. |
 | `E_BLOCK_SIGMA_FREM_UNSUPPORTED` | error | A `block_sigma` (correlated residual error) model that is also a FREM model with covariate pseudo-observations; the combination is not supported. |
 | `E_BLOCK_SIGMA_IIV_ON_RUV_UNSUPPORTED` | error | A `block_sigma` (correlated residual error) model that also scales the residual error by a random effect (`iiv_on_ruv`); the combination is not supported. |
-| `E_BLOCK_SIGMA_IOV_UNSUPPORTED` | error | A `block_sigma` (correlated residual error) model with inter-occasion variability (`n_kappa > 0`), whatever the method. |
+| `E_BLOCK_SIGMA_IOV_UNSUPPORTED` | error | A `block_sigma` (correlated residual error) model with inter-occasion variability (`n_kappa > 0`) fitted by a method other than `foce` / `focei`, or with `n_agq > 1`. |
 | `E_BLOCK_SIGMA_METHOD_UNSUPPORTED` | error | A `block_sigma` (correlated residual error) model whose method chain contains a stage outside `foce`, `focei`, `saem`, `imp`, `laplace` and `vi` — that is, `gn`, `gn_hybrid`, `impmap` or `bayes`. |
 | `E_BLOCK_SIGMA_SDE_UNSUPPORTED` | error | A `block_sigma` (correlated residual error) model with a `[diffusion]` block and a `saem` stage in the method chain. |
 | `E_BLOCK_SIGMA_TTE_UNSUPPORTED` | error | A `block_sigma` (correlated residual error) model that also declares a non-Gaussian endpoint (`[event_model]`, `[binary_model]` or `[markov_model]`), whatever the method. |
@@ -620,7 +620,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_SIMULATION_DESIGN` | error | A `[simulation]` design that gives the model nothing to observe: no `times` for a continuous (residual-error) or `[binary_model]` endpoint, or no `times` and no TTE endpoint to observe at a `horizon`. |
 | `E_SIR_NOTHING_TO_SAMPLE` | error | every estimated parameter of the fit is FIX (θ, Ω and σ, and Ω_IOV, `block_sigma` correlations and `[mixture]` overrides where the model has them), so `run_sir()` has nothing to sample. |
 | `E_SIR_OPTIONS` | error | SIR settings `run_sir()` cannot run with: `sir_resamples` above `sir_samples`, a `sir_df` that is not a valid Student-t degrees of freedom, or `sir_scale = natural` on a model with `prior(...)`. |
-| `E_SUPPLIED_ETAS` | error | Per-subject η supplied to an adaptive run that cannot be used as given (#1594). From `SuppliedEtas::from_table` or `from_fit`: IDs and rows that differ in count, a row that is not one finite value per named η, a repeated subject ID, or a fit whose η names are not the model's. |
+| `E_SUPPLIED_ETAS` | error | Per-subject η supplied to an adaptive run, or to `predict_survival_at_etas_diag`, that cannot be used as given (#1594, #1885). |
 | `E_THETA_GATHER_INDEX_MISSING` | error | A `theta NAME[...]` block gathered by a bare data column, where some observation or dose record of a subject has no value in that column. |
 | `E_THETA_GATHER_INDEX_RANGE` | error | A `theta NAME[...]` block's index column holds a value on some record that is not finite, not a whole number, or outside `1..=N` for the block's `N` levels. |
 | `E_THETA_INIT_OUTSIDE_BOUNDS` | error | A `theta` whose initial value is **strictly outside** its own declared range. The optimizer clamps the start into its box, so `theta TVCL(0.05, 0.1, 10.0)` fits from `0.1` — a factor of two — silently, on every run. |
@@ -635,6 +635,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_UNKNOWN_BLOCK` | error | A `[block]` header is not a recognised block name. The message lists every offending header with its line, the valid set **this build accepts**, and a did-you-mean when there is a near match; `suggestion` carries the near match on its own. |
 | `E_VI_MODEL_UNSUPPORTED` | error | `method = vi` (anywhere in a method chain) on a model whose likelihood VI's data term — the fixed-η Gaussian observation NLL — does not cover: one with a non-Gaussian endpoint (time-to-event, binary, categorical; under the `survival` feature), or an SDE (`[diffusion]`) model scored by the EKF. |
 | `E_VI_NAGQ_UNSUPPORTED` | error | `n_agq > 1` set on a method chain that contains `vi` and no stage that uses a quadrature grid (`laplace` or `focei`). |
+| `W_ABOVE_START` | warning | The fit reported an objective materially above (the plateau check's relative $10^{-3}$ bound) the one its starting estimates scored — after any restart, which is measured against the fit's start, not its own, so the fit is `converged: false`. |
 | `W_ABSORPTION_TWIN_DECLINED` | warning | An analytic transit / inverse-Gaussian model's ODE twin could not be built, so the model stays closed-form with no ODE fallback. |
 | `W_ADDITIVE_INIT_SCALE` | warning | A `combined` error model's additive SD initial estimate is below 1% of the data scale (the median `abs(DV)` of the observations that endpoint covers). |
 | `W_ADDL_MISSING_II` | warning | ADDL > 0 on a dose row but II is zero or missing; additional doses were not expanded. |
@@ -684,6 +685,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `W_MODELED_DURATION_NONPOSITIVE` | warning | For a `RATE=-2` dose into compartment `n`, the modeled duration `D{n}` evaluated at that dose's typical-value snapshot (initial θ, η = 0) is at or below `1e-8`. |
 | `W_MODELED_RATE_NONPOSITIVE` | warning | For a `RATE=-1` dose into compartment `n`, the modeled rate `R{n}` evaluated at that dose's typical-value snapshot (initial θ, η = 0) is at or below `1e-8`. |
 | `W_NEGATIVE_LAGTIME` | warning | `predict()` / `simulate()` only: the same finding as `E_NEGATIVE_LAGTIME`, on entry points that run no data errors. |
+| `W_NN_BARE_OUTPUT_START` | warning | A `[covariate_nn]` block declares no `init`, so every output starts at the output activation's value at 0 (0.693 for `softplus`) whatever parameter it feeds. |
 | `W_NN_WEIGHT_DIRECT_REFERENCE` | warning | An expression references a generated `[covariate_nn]` weight or bias θ directly rather than through the network's declared outputs. |
 | `W_NO_DOSES` | warning | Zero dose events parsed across every subject, **although scored observations are present**. |
 | `W_NO_FEASIBLE_EVAL` | warning | The outer optimizer finished without one feasible objective evaluation: every trial was rejected by the EBE convergence guard (`max_unconverged_frac`) or returned a non-finite objective. |
@@ -693,6 +695,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `W_OUTPUT_DUPLICATE` | warning | A name in `[output]` is already written to sdtab automatically (e.g. `TAFD`, `TAD`, an eta name). |
 | `W_PARSE` | warning | A warning the parser recorded while building the model that has no dedicated code. |
 | `W_PER_CMT_UNMATCHED` | warning | The other direction of the two above: a compartment the model **declares** an entry for, that no observation is recorded on. |
+| `W_PROFILE_FD_GRADIENT` | warning | A fit with a `profile`d θ level block, on the analytic gradient route, where the adjoint could not give some subjects the exact gradient of their terms over the profiled levels. |
 | `W_RESIDUAL_CORRELATION_INERT` | warning | The model declares a serial residual `correlation` line, but in every subject each block formed by its `by` column(s) holds at most one observation. |
 | `W_RESIDUAL_CORRELATION_PARTLY_CONFOUNDED_KAPPA` | warning | The same comparison holds in some subjects but not all, e.g. `cs by STUDY` next to a kappa at `ARM` where some studies have one arm. |
 | `W_RTTE_DEGENERATE` | warning | While simulating a repeated-event (RTTE) stream, a subject's expected number of events before the horizon is non-finite or exceeds 1,000,000, so the stream is skipped; or a stream that passed that check produced more than 1,000,000 events, so it is truncated. |
@@ -905,4 +908,10 @@ The maturity label of each ferx-core feature at the pinned engine (ferx-core {{<
 | Importance sampling (IMP) | beta | [Importance Sampling](https://ferx-nlme.org/ferx-core/estimation/importance-sampling.html) |
 | Outer optimizers (BOBYQA, SLSQP, L-BFGS, MMA, trust-region) | beta | [Outer Optimizers](https://ferx-nlme.org/ferx-core/estimation/optimizers.html) |
 | Time-to-event estimation (TTE) | beta | [Time-to-Event](https://ferx-nlme.org/ferx-core/estimation/tte.html) |
+| θ level blocks (`theta NAME[LEVEL]`; `sum_to_zero` / `sum_to_zero_within` / contrasts; per-level SEs) | beta | [Theta level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html) |
+| `profile`d level blocks (incl. bounded) | beta | [Profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html) |
+| Nested variability levels (`level … in …`, `kappa … at LEVEL`) | beta | [Nested levels](https://ferx-nlme.org/ferx-core/model-file/iov.html) |
+| Within-arm residual correlation (`cs` / `ar1` / `car1`, incl. with a kappa) | beta | [Within-group residual correlation](https://ferx-nlme.org/ferx-core/model-file/residual-correlation.html) |
+| Residual `weight =` and kappa `weight =` | beta | [Sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html) |
+| Compartment-free (algebraic) `[structural_model]` | beta | [Compartment-Free Models](https://ferx-nlme.org/ferx-core/model-file/structural-model.html) |
 
