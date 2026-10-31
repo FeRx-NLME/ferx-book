@@ -187,7 +187,7 @@ range(ferx_simulate(exponential$model, exponential$data, n_sim = 1, seed = 1, fi
 The `type` argument of `ferx_predict_survival()` is not in ferx-r {{< var ferx_r_release >}}.
 :::
 
-The curves so far are for a subject with random effects 0. With `type = "individual"`, `ferx_predict_survival()` evaluates each subject at its own etas from `fit$ebe_etas`, so each subject gets its own S(t), H(t), h(t), median and mean survival. It needs `fit`, and every subject in `data` needs a row in `fit$ebe_etas`. When `data` is omitted, the fitted data is used. The exponential fit gives both kinds of curve, each with the unused-`LAMBDA` diagnostic shown above:
+The curves so far are for a subject with random effects 0. With `type = "individual"`, `ferx_predict_survival()` evaluates each subject at its own etas from `fit$ebe_etas`, so each subject gets its own S(t), H(t), h(t), median and mean survival. It needs `fit`, and every subject in `data` needs a row in `fit$ebe_etas`. When `data` is omitted, the fitted data is used if it can still be found. The exponential fit gives both kinds of curve, each with the unused-`LAMBDA` diagnostic shown above:
 
 ```{r}
 #| label: individual-survival
@@ -442,7 +442,7 @@ The shape estimate changes, because the time from 0 to 4 hours no longer counts 
 
 - Event rows carry `TIME` and `DV` (1 event, 0 censored) on the `[event_model]`'s `cmt`.
 - Choose a hazard `family` (exponential, Weibull, Gompertz), or write a drug-driven `hazard` in an ODE model.
-- `ferx_predict_survival()` gives S(t), H(t), h(t) and, for competing risks, cumulative incidences; `type = "individual"` gives each fitted subject's curves at its EBEs.
+- `ferx_predict_survival()` gives S(t), H(t), h(t) and, for competing risks, cumulative incidences; `type = "individual"` gives each fitted subject's curves at its fitted etas.
 - Check TTE models with Kaplan–Meier curves of simulations, using `horizon` for follow-up.
 - `TENTRY` handles delayed entry, `DV = 2` interval censoring, and `type = rtte` repeated events.
 

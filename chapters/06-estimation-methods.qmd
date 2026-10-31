@@ -129,7 +129,7 @@ cat(head(strsplit(iters, "\n")[[1]], 10), sep = "\n")
 
 ### The gradient at the reported estimates
 
-The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes one after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported. It is the exact gradient when every subject is in the scope of the analytic gradient, as in warfarin, and a central finite difference otherwise; the fit does not record which. Beside a gradient-based fit of the same model:
+The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes one after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported. It is the exact gradient when the model can use the analytic outer gradient (every subject in its scope, and no `gradient = fd`), as in warfarin, and a central finite difference otherwise. ferx-core records which as `final_gradient_source` (see the `report_final_gradient` row below), but the R fit does not carry that field at this build. Beside a gradient-based fit of the same model:
 
 ::: {.callout-note}
 ## Changed after ferx-r {{< var ferx_r_release >}}
@@ -160,11 +160,13 @@ cat(bobyqa_log[(start_gradient - 1):(start_gradient + 1)], sep = "\n")
 #| label: check-final-gradient
 #| include: false
 # The paragraph below says both fits converge to the same optimum (OFVs within 0.001),
-# that bobyqa's largest gradient component is the larger one (measured minimum 7.4x,
-# Linux CI; 2x leaves headroom), and that every bobyqa component passes the run log's check.
-# The paragraph above says warfarin is in the analytic gradient's scope: the gradient-based
-# fit took the analytic route, and no subject fell back to finite differences, outer or inner.
-stopifnot(startsWith(fit_lbfgs$gradient_method_outer, "analytic"),
+# that bobyqa's largest gradient component is the larger one (7.4x on Linux CI with the
+# finite-difference gradient before ferx-core 93ba19fc, ~1500x on macOS at 3f87757e; 2x leaves headroom), and that every bobyqa component passes the run log's check.
+# The paragraph above says warfarin can use the analytic outer gradient. This is a proxy, since
+# the R fit has no final_gradient_source: the gradient-based fit took the analytic route (which
+# gradient = fd would turn off), and no subject fell back to finite differences, outer or inner.
+stopifnot(is.null(fit_bobyqa$final_gradient_source),
+          startsWith(fit_lbfgs$gradient_method_outer, "analytic"),
           !any(grepl("could not be given the exact analytic outer gradient", fit_lbfgs$warnings, fixed = TRUE)),
           !any(grepl("use finite-difference inner gradients", fit_lbfgs$warnings, fixed = TRUE)))
 stopifnot(fit_bobyqa$converged, fit_lbfgs$converged,
