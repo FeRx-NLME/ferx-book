@@ -914,7 +914,7 @@ No warning category has this chapter as its home. The fits above raise these, wh
 - `parameter_at_runaway_guard` (@sec-estimation-methods), on a variance that collapses to zero: the study kappa beside the sponsor effect, and the sponsor effect itself under the second pairing, which also raises `eta_shrinkage` (@sec-diagnostics);
 - `covariance_failed` and `covariance_step` (@sec-uncertainty), from the `"s"` and `"rsr"` covariance steps.
 
-The profiled fits can also carry a `general` note (@sec-first-fit) that a subject's profile solve used finite differences for its levels' gradient, which is correct but slower.
+The profiled fits can also carry a `gradient_fallback` note (@sec-estimation-methods), `W_PROFILE_FD_GRADIENT`: a subject's profiled levels got a finite-difference gradient instead of the exact one, which is correct but slower.
 
 ```{r}
 #| label: check-warning-list
@@ -923,9 +923,12 @@ The profiled fits can also carry a `general` note (@sec-first-fit) that a subjec
 chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_car1,
                      fit_car1_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
 chapter_categories <- unique(unlist(lapply(chapter_fits, function(f) ferx_get_warnings(f, as_df = TRUE)$category)))
-listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
+listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step",
+            "gradient_fallback")
 other_categories <- ferx_get_warnings(fit_other, as_df = TRUE)$category
-stopifnot(all(chapter_categories %in% c(listed, "general")), all(setdiff(listed, "threads") %in% chapter_categories),
+profiled_messages <- unlist(lapply(list(fit_profiled, profiled_s, profiled_rsr, fit_car1_profiled),
+                                    function(f) ferx_get_warnings(f, as_df = TRUE)$message))
+stopifnot(any(startsWith(profiled_messages, "W_PROFILE_FD_GRADIENT")), all(chapter_categories %in% listed), all(setdiff(listed, "threads") %in% chapter_categories),
           all(c("parameter_at_runaway_guard", "eta_shrinkage") %in% other_categories))
 ```
 

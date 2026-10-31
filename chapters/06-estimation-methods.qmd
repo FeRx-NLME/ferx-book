@@ -129,7 +129,12 @@ cat(head(strsplit(iters, "\n")[[1]], 10), sep = "\n")
 
 ### The gradient at the reported estimates
 
-The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes a central finite-difference gradient after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported. Beside a gradient-based fit of the same model:
+The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes one after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported. It is the exact gradient when the model can use the analytic outer gradient (every subject in its scope, and no `gradient = fd`), as in warfarin, and a central finite difference otherwise. ferx-core records which as `final_gradient_source` (see the `report_final_gradient` row below), but the R fit does not carry that field at this build. Beside a gradient-based fit of the same model:
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}} the gradient after a derivative-free fit is always a central finite difference (ferx-r NEWS for {{< var ferx_r_release >}}). The exact one came with ferx-core [93ba19fc](https://github.com/FeRx-NLME/ferx-core/commit/93ba19fc309cbba526b3e6b99d7f9262b2550a12), after that release, so the `bobyqa` gradient below can differ there.
+:::
 
 ```{r}
 #| label: final-gradient
@@ -155,8 +160,15 @@ cat(bobyqa_log[(start_gradient - 1):(start_gradient + 1)], sep = "\n")
 #| label: check-final-gradient
 #| include: false
 # The paragraph below says both fits converge to the same optimum (OFVs within 0.001),
-# that bobyqa's largest gradient component is the larger one (measured minimum 7.4x,
-# Linux CI; 2x leaves headroom), and that every bobyqa component passes the run log's check.
+# that bobyqa's largest gradient component is the larger one (7.4x on Linux CI with the
+# finite-difference gradient before ferx-core 93ba19fc, ~1500x on macOS at 3f87757e; 2x leaves headroom), and that every bobyqa component passes the run log's check.
+# The paragraph above says warfarin can use the analytic outer gradient. This is a proxy, since
+# the R fit has no final_gradient_source: the gradient-based fit took the analytic route (which
+# gradient = fd would turn off), and no subject fell back to finite differences, outer or inner.
+stopifnot(is.null(fit_bobyqa$final_gradient_source),
+          startsWith(fit_lbfgs$gradient_method_outer, "analytic"),
+          !any(grepl("could not be given the exact analytic outer gradient", fit_lbfgs$warnings, fixed = TRUE)),
+          !any(grepl("use finite-difference inner gradients", fit_lbfgs$warnings, fixed = TRUE)))
 stopifnot(fit_bobyqa$converged, fit_lbfgs$converged,
           abs(fit_bobyqa$ofv - fit_lbfgs$ofv) < 1e-3,
           max(abs(fit_bobyqa$final_gradient)) > 2 * max(abs(fit_lbfgs$final_gradient)),
@@ -165,7 +177,7 @@ stopifnot(fit_bobyqa$converged, fit_lbfgs$converged,
 
 Both fits report convergence at the same optimum: their OFVs differ by less than 0.001. The largest gradient component of the `bobyqa` fit, `r signif(max(abs(fit_bobyqa$final_gradient)), 1)`, is larger than the `r signif(max(abs(fit_lbfgs$final_gradient)), 1)` of `nlopt_lbfgs`, but neither is a yardstick on its own. `bobyqa` stops on the change in the objective and the size of its steps, not on the gradient (see [its polish legs](https://ferx-nlme.org/ferx-core/estimation/optimizers.html#bobyqa-tolerance-polish)), and `nlopt_lbfgs` stops on its own tolerances. The run log's check is the yardstick: every component of the `bobyqa` fit passes it at the default `gradient_tol` of `r formals(ferx_runlog)$gradient_tol`. A component that fails it beside `converged = TRUE` is the sign to refit with a gradient-based optimizer and compare.
 
-The finite-difference gradient costs one gradient's worth of extra objective evaluations -- two per free parameter -- after the fit, and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
+This gradient costs one extra gradient evaluation after the fit (for a finite difference, two objective evaluations per free parameter), and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
 
 ```{r}
 #| label: report-final-gradient-off
