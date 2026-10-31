@@ -163,9 +163,10 @@ cat(bobyqa_log[(start_gradient - 1):(start_gradient + 1)], sep = "\n")
 # that bobyqa's largest gradient component is the larger one (measured minimum 7.4x,
 # Linux CI; 2x leaves headroom), and that every bobyqa component passes the run log's check.
 # The paragraph above says warfarin is in the analytic gradient's scope: the gradient-based
-# fit took the analytic route with no subject falling back.
+# fit took the analytic route, and no subject fell back to finite differences, outer or inner.
 stopifnot(startsWith(fit_lbfgs$gradient_method_outer, "analytic"),
-          !any(grepl("could not be given the exact analytic", fit_lbfgs$warnings, fixed = TRUE)))
+          !any(grepl("could not be given the exact analytic outer gradient", fit_lbfgs$warnings, fixed = TRUE)),
+          !any(grepl("use finite-difference inner gradients", fit_lbfgs$warnings, fixed = TRUE)))
 stopifnot(fit_bobyqa$converged, fit_lbfgs$converged,
           abs(fit_bobyqa$ofv - fit_lbfgs$ofv) < 1e-3,
           max(abs(fit_bobyqa$final_gradient)) > 2 * max(abs(fit_lbfgs$final_gradient)),
@@ -174,7 +175,7 @@ stopifnot(fit_bobyqa$converged, fit_lbfgs$converged,
 
 Both fits report convergence at the same optimum: their OFVs differ by less than 0.001. The largest gradient component of the `bobyqa` fit, `r signif(max(abs(fit_bobyqa$final_gradient)), 1)`, is larger than the `r signif(max(abs(fit_lbfgs$final_gradient)), 1)` of `nlopt_lbfgs`, but neither is a yardstick on its own. `bobyqa` stops on the change in the objective and the size of its steps, not on the gradient (see [its polish legs](https://ferx-nlme.org/ferx-core/estimation/optimizers.html#bobyqa-tolerance-polish)), and `nlopt_lbfgs` stops on its own tolerances. The run log's check is the yardstick: every component of the `bobyqa` fit passes it at the default `gradient_tol` of `r formals(ferx_runlog)$gradient_tol`. A component that fails it beside `converged = TRUE` is the sign to refit with a gradient-based optimizer and compare.
 
-This gradient costs one extra gradient evaluation after the fit (a finite difference, two objective evaluations per free parameter), and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
+This gradient costs one extra gradient evaluation after the fit (for a finite difference, two objective evaluations per free parameter), and never feeds the optimizer, so the estimates are the same either way. `report_final_gradient = FALSE` turns it off when those evaluations are expensive, as in a large ODE model:
 
 ```{r}
 #| label: report-final-gradient-off
