@@ -235,18 +235,23 @@ stopifnot(nrow(ratios) == nrow(eta_hat) * (length(times) - 1),
           max(abs(ratios$median_ratio - exp(-ratios$ETA_LAMBDA))) < 1e-10)
 ```
 
+The etas are point estimates (EBEs, or posterior means for a VI fit), and with one record per subject they shrink towards 0: their standard deviation is `r signif(sd(eta_hat$ETA_LAMBDA), 2)`, against `r signif(sqrt(fit_exponential$omega[1, 1]), 2)` for the fitted between-subject standard deviation. A subject with little information gets a curve close to the typical one. The subjects censored at the end of follow-up have the same data, no event by then, so they get the same eta, the lowest one:
+
 ```{r}
 #| label: individual-censored
-#| include: false
 exponential_data <- read.csv(exponential$data, na.strings = ".")
 censored_ids <- as.character(exponential_data$ID[exponential_data$DV == 0])
-censored_eta <- eta_hat$ETA_LAMBDA[eta_hat$ID %in% censored_ids]
+censored_eta <- filter(eta_hat, ID %in% censored_ids)$ETA_LAMBDA
+c(n_censored = length(censored_ids), censored_at = max(exponential_data$TIME))
+range(censored_eta)
+range(eta_hat$ETA_LAMBDA)
 ```
 
 ```{r}
 #| label: check-individual-censored
 #| include: false
-# The paragraph below says the censored subjects share one eta, the lowest, at the end of follow-up.
+# The paragraphs around this say the EBEs shrink, and that the censored subjects, all at
+# the end of follow-up, share one eta, the lowest.
 stopifnot(length(censored_ids) > 1,
           all(exponential_data$TIME[exponential_data$DV == 0] == max(exponential_data$TIME)),
           diff(range(censored_eta)) < 1e-8,
@@ -254,7 +259,7 @@ stopifnot(length(censored_ids) > 1,
           sd(eta_hat$ETA_LAMBDA) < sqrt(fit_exponential$omega[1, 1]))
 ```
 
-The etas are point estimates (EBEs, or posterior means for a VI fit), and with one record per subject they shrink towards 0: their standard deviation is `r signif(sd(eta_hat$ETA_LAMBDA), 2)`, against `r signif(sqrt(fit_exponential$omega[1, 1]), 2)` for the fitted between-subject standard deviation. A subject with little information gets a curve close to the typical one. The `r length(censored_ids)` subjects censored at `r max(exponential_data$TIME)` hours have the same data, so they share one eta (`r signif(censored_eta[1], 3)`, the lowest) and one curve, the highest in the figure. Individual curves describe the fitted subjects; they are not a prediction for new ones.
+These `r length(censored_ids)` subjects share one curve, the highest in the figure. Individual curves describe the fitted subjects; they are not a prediction for new ones.
 
 A subject the fit never saw has no eta, and is refused with a `ferx_engine_error` whose code is `E_SUPPLIED_ETAS`:
 
@@ -276,7 +281,28 @@ refusal$code
 stopifnot(inherits(refusal, "ferx_engine_error"), identical(refusal$code, "E_SUPPLIED_ETAS"))
 ```
 
-A `[mixture]` model is refused the same way. A fit without random effects gives the population curves, and IOV kappas are taken as 0, which is exact because no hazard can read a kappa.
+`?ferx_predict_survival` adds that a `[mixture]` model is refused the same way, and that IOV kappas are taken as 0, which is exact because no hazard can read a kappa. A fit without random effects has no etas, so its individual curves are the population ones:
+
+```{r}
+#| label: individual-no-eta
+no_eta_model <- file.path(tte_dir, "tte_weibull_no_eta.ferx")
+no_eta_lines <- sub("scale  = TVSCALE * exp(ETA_SCALE)", "scale  = TVSCALE", readLines(weibull$model), fixed = TRUE)
+no_eta_lines <- no_eta_lines[!grepl("omega ETA_SCALE", no_eta_lines, fixed = TRUE)]
+stopifnot(!any(grepl("ETA_SCALE", sub("#.*", "", no_eta_lines))))
+writeLines(no_eta_lines, no_eta_model)
+fit_no_eta <- ferx_fit(no_eta_model, weibull$data, verbose = FALSE)
+all.equal(ferx_predict_survival(no_eta_model, times = times, fit = fit_no_eta),
+          ferx_predict_survival(no_eta_model, times = times, fit = fit_no_eta, type = "individual"))
+```
+
+```{r}
+#| label: check-individual-no-eta
+#| include: false
+stopifnot(is.null(fit_no_eta$ebe_etas) || nrow(fit_no_eta$ebe_etas) == 0,
+          isTRUE(all.equal(ferx_predict_survival(no_eta_model, times = times, fit = fit_no_eta),
+                           ferx_predict_survival(no_eta_model, times = times, fit = fit_no_eta,
+                                                 type = "individual"))))
+```
 
 ### Competing risks
 
@@ -331,12 +357,16 @@ fit_joint$estimates[, c("estimate", "rse_pct")]
 ```{r}
 #| label: check-joint
 #| include: false
-# The sentence below says clearance, volume and TVBETA are not determined.
+# The sentence below says clearance, volume and TVBETA are not determined: the covariance
+# step was regularized and the three are perfectly correlated.
 joint_rse <- fit_joint$estimates[c("TVCL", "TVV", "TVBETA"), "rse_pct"]
-stopifnot(all(is.finite(joint_rse)), all(joint_rse > 100))
+joint_cor <- fit_joint$cor_matrix[c("TVCL", "TVV", "TVBETA"), c("TVCL", "TVV", "TVBETA")]
+stopifnot(all(is.finite(joint_rse)), all(joint_rse > 100),
+          "covariance_regularized" %in% ferx_get_warnings(fit_joint, as_df = TRUE)$category,
+          all(abs(joint_cor[upper.tri(joint_cor)]) > 0.99))
 ```
 
-With 6 subjects, clearance, volume and the concentration effect `TVBETA` are not determined (relative standard errors of `r signif(min(joint_rse), 2)`% and more). The example shows the syntax; a real analysis needs more data. `sdtab` holds the concentration rows. Simulating a drug-driven hazard needs `horizon`:
+With 6 subjects, clearance, volume and the concentration effect `TVBETA` are not determined. Their estimates are essentially perfectly correlated, and the covariance step had to be regularized (`covariance_regularized`, @sec-uncertainty), so their huge standard errors reflect that repair, not the data. The example shows the syntax; a real analysis needs more data. `sdtab` holds the concentration rows. Simulating a drug-driven hazard needs `horizon`:
 
 ```{r}
 #| label: joint-simulate
