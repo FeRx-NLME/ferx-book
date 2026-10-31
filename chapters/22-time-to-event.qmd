@@ -357,16 +357,17 @@ fit_joint$estimates[, c("estimate", "rse_pct")]
 ```{r}
 #| label: check-joint
 #| include: false
-# The sentence below says clearance, volume and TVBETA are not determined: the covariance
-# step was regularized and the three are perfectly correlated.
+# The sentence below says clearance, volume and TVBETA are not determined. Whether the covariance
+# step is regularized differs by platform (yes on macOS, no on Linux CI at 3f87757e), so that
+# clause and the correlation are computed from the fit.
 joint_rse <- fit_joint$estimates[c("TVCL", "TVV", "TVBETA"), "rse_pct"]
+stopifnot(all(is.finite(joint_rse)), all(joint_rse > 100))
+joint_regularized <- "covariance_regularized" %in% ferx_get_warnings(fit_joint, as_df = TRUE)$category
 joint_cor <- fit_joint$cor_matrix[c("TVCL", "TVV", "TVBETA"), c("TVCL", "TVV", "TVBETA")]
-stopifnot(all(is.finite(joint_rse)), all(joint_rse > 100),
-          "covariance_regularized" %in% ferx_get_warnings(fit_joint, as_df = TRUE)$category,
-          all(abs(joint_cor[upper.tri(joint_cor)]) > 0.99))
+joint_min_r <- min(abs(joint_cor[upper.tri(joint_cor)]))
 ```
 
-With 6 subjects, clearance, volume and the concentration effect `TVBETA` are not determined. Their estimates are essentially perfectly correlated, and the covariance step had to be regularized (`covariance_regularized`, @sec-uncertainty), so their huge standard errors reflect that repair, not the data. The example shows the syntax; a real analysis needs more data. `sdtab` holds the concentration rows. Simulating a drug-driven hazard needs `horizon`:
+With 6 subjects, clearance, volume and the concentration effect `TVBETA` are not determined: their relative standard errors are `r signif(min(joint_rse), 2)`% and more, and their estimates are correlated with \|r\| of at least `r round(joint_min_r, 2)`. `r if (joint_regularized) "The covariance step had to be regularized (\x60covariance_regularized\x60, @sec-uncertainty), so the size of those standard errors reflects that repair, not the data. " else ""`The example shows the syntax; a real analysis needs more data. `sdtab` holds the concentration rows. Simulating a drug-driven hazard needs `horizon`:
 
 ```{r}
 #| label: joint-simulate
