@@ -294,11 +294,76 @@ stopifnot(isTRUE(tdm_fit$converged), tdm_fit$theta[["TVCL"]] > 4 + 2 * tdm_fit$s
           at_fit$`mean fraction in window`[2] < at_fit$`mean fraction in window`[1])
 ```
 
-At the fitted clearance the protocol starts too low for these patients, so it escalates more often and gives more drug in total, and fewer of its trough readings fall in the 10 to 20 mg/L window: `r sprintf("%.2f", at_fit$"mean fraction in window"[2])` against `r sprintf("%.2f", at_fit$"mean fraction in window"[1])`. That is the case for a higher starting dose, which the loading-dose example above shows how to write. The random effects are still drawn from the fitted omega; a patient's own estimates are not carried over, and kappas are drawn per decision window.
+At the fitted clearance the protocol starts too low for these patients, so it escalates more often and gives more drug in total, and fewer of its trough readings fall in the 10 to 20 mg/L window: `r sprintf("%.2f", at_fit$"mean fraction in window"[2])` against `r sprintf("%.2f", at_fit$"mean fraction in window"[1])`. That is the case for a higher starting dose, which the loading-dose example above shows how to write. The random effects are still drawn from the fitted omega, so each run is a new virtual patient from the fitted population, and kappas are drawn per decision window.
+
+### Simulating the fitted patients themselves
+
+The 20 patients in the fit are known patients now: the fit estimated each one's clearance deviation, and `tdm_fit$ebe_etas` holds those estimates as a data frame with `ID` and one column per eta in the model's order. Passed as `etas =`, they replace the omega draw for each subject whose `ID` has a row, so the protocol is re-run on these patients rather than on new ones. The design gives the 20 patients the dataset's observation grid and no doses, as `adaptive_tdm` does:
+
+```{r}
+#| label: tdm-known
+grid <- read.csv(ex$data, na.strings = ".") |> filter(ID == 1)
+known_design <- bind_rows(lapply(as.integer(tdm_fit$ebe_etas$ID), \(id) mutate(grid, ID = id)))
+known_file <- file.path(strategy_dir, "tdm_known_patients.csv")
+write.csv(known_design, known_file, row.names = FALSE, na = ".")
+res_known <- ferx_simulate_adaptive(ex$model, known_file, n_sim = 20, seed = 1,
+                                    fit = tdm_fit, etas = tdm_fit$ebe_etas)
+per_patient <- res_known$metrics |>
+  group_by(ID) |>
+  summarise(in_window = mean(PCT_TIME_IN_WINDOW), cum_dose = mean(CUM_DOSE), sd_cum_dose = sd(CUM_DOSE)) |>
+  left_join(tdm_fit$ebe_etas, by = "ID") |>
+  relocate(ETA_CL, .after = ID) |>
+  arrange(ETA_CL)
+per_patient |> mutate(across(where(is.numeric), \(x) round(x, 2))) |> print(n = Inf)
+```
+
+```{r}
+#| label: check-tdm-known
+#| include: false
+# The prose: every run used its row of etas; the patients the protocol never brings into
+# the window are the highest-clearance ones and all run at the dose cap; replicates differ.
+never <- per_patient$in_window == 0
+stopifnot(all(res_known$metrics$ETA_SUPPLIED), any(never),
+          min(per_patient$ETA_CL[never]) > max(per_patient$ETA_CL[per_patient$in_window > 0.5]),
+          with(res_known$doses |> filter(ID %in% per_patient$ID[never]) |> group_by(SIM, ID) |>
+                 mutate(dose_no = rank(TIME)) |> ungroup(),
+               all(AMT[dose_no >= 4] == 2000) && all(AMT[dose_no < 4] < 2000)),
+          sum(per_patient$sd_cum_dose > 0) > 10,
+          all(per_patient$cum_dose[per_patient$sd_cum_dose == 0] == max(per_patient$cum_dose)))
+# The design-only adaptive_tdm file gives every patient an EBE of 0 (the second caution).
+design_fit <- suppressWarnings(ferx_fit(ex$model, ex$data, verbose = FALSE))
+stopifnot(all(design_fit$ebe_etas$ETA_CL == 0))
+```
+
+The population summary of the previous section hides who the protocol fails. Here the answer has names: `r sum(never)` of the 20 patients, the ones with the highest estimated clearance, never have a trough in the window. The protocol has them at the 2000 mg cap from the fourth dose on, and their troughs stay below 10 mg/L there. Every `ETA_SUPPLIED` in `res_known$metrics` is `TRUE`.
+
+A patient's replicates share their etas, so what still varies between them is what is drawn per run: the kappas (this model has none) and the assay error the controller titrates on. That is why most patients' cumulative dose has a nonzero SD (`sd_cum_dose`). The patients with an SD of 0 reach the cap in every replicate: noise in the trough does not change a dose that is already at its bound.
+
+Known and virtual patients can run in one population. A design subject without a row in `etas` is refused by default (`unmatched = "refuse"`); `unmatched = "draw"` draws its etas from the fitted omega instead. Add five new patients, IDs 101 to 105, to the 20 known ones:
+
+```{r}
+#| label: tdm-mixed
+mixed_design <- bind_rows(known_design, filter(known_design, ID <= 5) |> mutate(ID = ID + 100L))
+mixed_file <- file.path(strategy_dir, "tdm_mixed.csv")
+write.csv(mixed_design, mixed_file, row.names = FALSE, na = ".")
+res_mixed <- ferx_simulate_adaptive(ex$model, mixed_file, n_sim = 20, seed = 1,
+                                    fit = tdm_fit, etas = tdm_fit$ebe_etas, unmatched = "draw")
+res_mixed$metrics |> count(new_patient = as.integer(ID) > 100, ETA_SUPPLIED)
+```
+
+```{r}
+#| label: check-tdm-mixed
+#| include: false
+stopifnot(identical(res_mixed$metrics$ETA_SUPPLIED, as.integer(res_mixed$metrics$ID) <= 20L))
+```
+
+`$metrics$ETA_SUPPLIED` tells the two apart: `TRUE` for a run at a patient's supplied etas, `FALSE` for a drawn one.
+
+Two cautions. First, a supplied eta is a point estimate, and the simulation treats it as exact. Each patient here has eight troughs and the eta shrinkage is `r sprintf("%.1f%%", 100 * tdm_fit$shrinkage_eta[[1]])`, so the estimates are informative. With sparse TDM and high shrinkage the EBEs sit near zero and the spread between patients is understated, which makes the protocol look better than it is. Second, the fit has to be on data with observations. A fit to a design-only file such as `adaptive_tdm`, whose `DV` column is a placeholder, would give every patient an EBE of 0.
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-The `fit` argument of `ferx_simulate_adaptive()` is not in ferx-r {{< var ferx_r_release >}}.
+The `fit`, `etas` and `unmatched` arguments of `ferx_simulate_adaptive()` and the `ETA_SUPPLIED` column of its `metrics` are not in ferx-r {{< var ferx_r_release >}}.
 :::
 
 ## Pitfalls
@@ -314,6 +379,7 @@ The `fit` argument of `ferx_simulate_adaptive()` is not in ferx-r {{< var ferx_r
 - Declare the dosing policy in `[adaptive_dosing]` and simulate it with `ferx_simulate_adaptive()`.
 - Read `decisions` and `doses` to see how individual patients were titrated. Use `metrics` to compare strategies across the population.
 - Compare strategies by editing a copy of the model and simulating each version with the same seed.
+- Re-run a protocol on fitted patients with `fit = fit, etas = fit$ebe_etas`, and mix in new patients with `unmatched = "draw"`.
 
 ## Reference
 
