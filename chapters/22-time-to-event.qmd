@@ -79,12 +79,31 @@ ggplot() +
 
 The model curve is for a subject with random effect 0. With between-subject variability, the population survival curve is flatter than that, which is why a simulation-based check (below) is the better comparison.
 
-`sdtab` has no rows for a TTE-only model: there are no concentration-type predictions or residuals.
+`sdtab` has one row per TTE record. There is no concentration-type prediction, so `PRED`, `IPRED` and the weighted residuals are `NaN`, and `DV` is the event indicator. Four residuals take their place, computed at each subject's EBE: `COXSNELL` (the cumulative hazard over the record's interval), `MARTINGALE` (the event indicator minus that hazard), `DEVIANCE` and `PIT` (the probability-integral transform, the survival over the interval). See [time-to-event residuals](https://ferx-nlme.org/ferx-core/estimation/tte.html#tte-residuals) in ferx-core for their definitions:
 
 ```{r}
 #| label: tte-sdtab
 nrow(fit_weibull$sdtab)
+head(fit_weibull$sdtab[, c("ID", "TIME", "DV", "IPRED", "COXSNELL", "MARTINGALE", "DEVIANCE", "PIT")], 4)
 ```
+
+```{r}
+#| label: check-tte-sdtab
+#| include: false
+# The paragraph above: one row per TTE record, DV the event indicator, NaN predictions and
+# finite TTE residuals, MARTINGALE = DV - COXSNELL and PIT = exp(-COXSNELL).
+tte_sd <- fit_weibull$sdtab
+stopifnot(nrow(tte_sd) == nrow(weibull_data), all(sort(tte_sd$DV) == sort(weibull_data$DV)),
+          all(is.nan(tte_sd$PRED)), all(is.nan(tte_sd$IPRED)),
+          all(is.finite(c(tte_sd$COXSNELL, tte_sd$MARTINGALE, tte_sd$DEVIANCE, tte_sd$PIT))),
+          isTRUE(all.equal(tte_sd$MARTINGALE, tte_sd$DV - tte_sd$COXSNELL)),
+          isTRUE(all.equal(tte_sd$PIT, exp(-tte_sd$COXSNELL))))
+```
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}}, `sdtab` has no rows for a TTE-only model and no `COXSNELL`, `MARTINGALE`, `DEVIANCE` or `PIT` columns.
+:::
 
 ## Options that matter
 
@@ -365,9 +384,14 @@ stopifnot(all(is.finite(joint_rse)), all(joint_rse > 100))
 joint_regularized <- "covariance_regularized" %in% ferx_get_warnings(fit_joint, as_df = TRUE)$category
 joint_cor <- fit_joint$cor_matrix[c("TVCL", "TVV", "TVBETA"), c("TVCL", "TVV", "TVBETA")]
 joint_min_r <- min(abs(joint_cor[upper.tri(joint_cor)]))
+# "sdtab holds the concentration rows, followed by one row per event record": TTE residuals
+# only on the event rows (after the concentration rows), predictions only on the others.
+joint_tte <- is.finite(fit_joint$sdtab$COXSNELL)
+stopifnot(any(joint_tte), any(!joint_tte), all(diff(joint_tte) >= 0),
+          all(is.finite(fit_joint$sdtab$IPRED[!joint_tte])), all(is.nan(fit_joint$sdtab$IPRED[joint_tte])))
 ```
 
-With 6 subjects, clearance, volume and the concentration effect `TVBETA` are not determined: their relative standard errors are `r signif(min(joint_rse), 2)`% and more, and their estimates are correlated with \|r\| of at least `r round(joint_min_r, 2)`. `r if (joint_regularized) "The covariance step had to be regularized (\x60covariance_regularized\x60, @sec-uncertainty), so the size of those standard errors reflects that repair, not the data. " else ""`The example shows the syntax; a real analysis needs more data. `sdtab` holds the concentration rows. Simulating a drug-driven hazard needs `horizon`:
+With 6 subjects, clearance, volume and the concentration effect `TVBETA` are not determined: their relative standard errors are `r signif(min(joint_rse), 2)`% and more, and their estimates are correlated with \|r\| of at least `r round(joint_min_r, 2)`. `r if (joint_regularized) "The covariance step had to be regularized (\x60covariance_regularized\x60, @sec-uncertainty), so the size of those standard errors reflects that repair, not the data. " else ""`The example shows the syntax; a real analysis needs more data. `sdtab` holds the concentration rows, followed by one row per event record with the residuals shown for `tte_weibull`; `COXSNELL` and the other three are `NaN` on the concentration rows. Simulating a drug-driven hazard needs `horizon`:
 
 ```{r}
 #| label: joint-simulate

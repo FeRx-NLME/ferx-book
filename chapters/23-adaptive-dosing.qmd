@@ -51,7 +51,7 @@ The PK part is an ordinary one-compartment ODE model. The `[adaptive_dosing]` bl
 | `confirm = 1` | Act on the first breach of a rule |
 | `when signal < 10 : increase 25%` | Rules, evaluated top to bottom; the first match wins |
 
-The block supports more than this example uses. `observe = <expression>` titrates on a latent, noise-free quantity instead of a measured one. `levels` defines a discrete dose ladder. `auc_target` reports exposure attainment. The `hold` and `stop` actions skip or discontinue dosing. All are specified on the ferx-core [adaptive dosing page](https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html).
+The block supports more than this example uses. `observe = <expression>` titrates on a latent, noise-free quantity instead of a measured one. `levels` defines a discrete dose ladder. `auc_target` reports exposure attainment. The `hold` and `stop` actions skip or discontinue dosing. `intervals` with `start_interval` gives a ladder of dosing intervals that the `lengthen` and `shorten` effects step through, so a rule can change how often a dose is given as well as how much ([changing the dosing interval](https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html#changing-the-dosing-interval)). All are specified on the ferx-core [adaptive dosing page](https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html).
 
 The dataset supplies only the patients and the observation grid. It contains no doses, because the controller issues all of them:
 
@@ -390,7 +390,7 @@ stopifnot(all(read.csv(ex$data, na.strings = ".")$DV == 0),
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-The `fit`, `etas` and `unmatched` arguments of `ferx_simulate_adaptive()` and the `ETA_SUPPLIED` column of its `metrics` are not in ferx-r {{< var ferx_r_release >}}.
+The `fit`, `etas` and `unmatched` arguments of `ferx_simulate_adaptive()` and the `ETA_SUPPLIED` column of its `metrics` are not in ferx-r {{< var ferx_r_release >}}, and neither are the dosing-interval ladder (`intervals`, `start_interval`, `lengthen`, `shorten`), the `"not_due"` decision outcome and the `INTERVAL` and `N_NOT_DUE` columns it adds.
 :::
 
 ## Pitfalls
