@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.20">
+<meta name="generator" content="quarto-1.11.9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Model-based meta-analysis – FeRx NLME - R package (ferx)</title>
 <style>
@@ -72,18 +72,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-4fb18a4e3025729c045ae2a2b77a683d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-8e54f3b44ae85a4e33659ff2791ab8dc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-600029c0d66f4e5df764ccbf24e706b3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-a05a9893f770427474681fd859838e9c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -136,7 +137,7 @@ window.Quarto = {
 };
 </script>
 </head>
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -159,6 +160,7 @@ window.Quarto = {
       for (let i=0; i < toggles.length; i++) {
         const toggle = toggles[i];
         if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
           if (alternate) {
             toggle.classList.add("alternate");
           } else {
@@ -188,13 +190,19 @@ window.Quarto = {
       manageTransitions('#quarto-margin-sidebar .nav-link', true);
       // Switch the toggles
       setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
       if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
         manageTransitions("body", false);
-        window.scrollTo(0, 1);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
         setTimeout(() => {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, scrollY);
           manageTransitions("body", true);
         }, 40);
       }
@@ -288,6 +296,7 @@ window.Quarto = {
       // Read the current dark / light value
       let toAlternate = !hasAlternateSentinel();
       toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
       setStyleSentinel(toAlternate);
       toggleGiscusIfUsed(toAlternate, darkModeDefault);
       window.dispatchEvent(new Event('resize'));
@@ -301,7 +310,7 @@ window.Quarto = {
   </script>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site"><div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="https://ferx-nlme.org/" class="navbar-brand navbar-brand-logo">
     <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
@@ -309,8 +318,7 @@ window.Quarto = {
     <span class="navbar-title">FeRx NLME - R package (ferx)</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -362,20 +370,21 @@ window.Quarto = {
 </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
     <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
-    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+    </nav><nav class="quarto-secondary-nav" aria-label="Toolbar"><div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/24-mbma.html">Scenarios: meta-analysis</a></li><li class="breadcrumb-item"><a href="../chapters/24-mbma.html"><span class="chapter-title">Model-based meta-analysis</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/24-mbma.html">Scenarios: meta-analysis</a></li><li class="breadcrumb-item"><a href="../chapters/24-mbma.html"><span class="chapter-title">Model-based meta-analysis</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Section"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
       <a href="../index.html" class="sidebar-logo-link">
       <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
       </div>
@@ -389,13 +398,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Getting started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Getting started</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
@@ -410,13 +416,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">The analysis workflow</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">The analysis workflow</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
@@ -476,13 +479,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: general PK modeling</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Scenarios: general PK modeling</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
@@ -502,13 +502,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: covariates</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Scenarios: covariates</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Covariate modeling</span></a>
@@ -518,13 +515,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: dosing and data</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Scenarios: dosing and data</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
@@ -539,13 +533,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Scenarios: endpoints beyond PK</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
@@ -565,13 +556,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: adaptive dosing</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Scenarios: adaptive dosing</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
@@ -581,13 +569,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: meta-analysis</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Scenarios: meta-analysis</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/24-mbma.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Model-based meta-analysis</span></a>
@@ -597,13 +582,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: experimental</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-controls="quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-9-label">Scenarios: experimental</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-9" aria-labelledby="quarto-sidebar-section-9-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/25-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
@@ -613,13 +595,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" aria-controls="quarto-sidebar-section-10" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-10-label">Reference</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-10" aria-labelledby="quarto-sidebar-section-10-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/26-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
@@ -632,7 +611,7 @@ window.Quarto = {
 </nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
 <li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
@@ -674,7 +653,7 @@ window.Quarto = {
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/24-mbma.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/24-mbma.html">Scenarios: meta-analysis</a></li><li class="breadcrumb-item"><a href="../chapters/24-mbma.html"><span class="chapter-title">Model-based meta-analysis</span></a></li></ol></nav><div class="quarto-title">
+<main class="content" id="quarto-document-content" tabindex="-1"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/24-mbma.html">Scenarios: meta-analysis</a></li><li class="breadcrumb-item"><a href="../chapters/24-mbma.html"><span class="chapter-title">Model-based meta-analysis</span></a></li></ol></nav><div class="quarto-title">
 <h1 class="title"><span id="sec-mbma" class="quarto-section-identifier"><span class="chapter-title">Model-based meta-analysis</span></span></h1>
 </div>
 
@@ -772,7 +751,7 @@ window.Quarto = {
 <span><span class="fu"><a href="https://rdrr.io/r/base/sys.source.html">sys.source</a></span><span class="op">(</span><span class="va">generator</span>, envir <span class="op">=</span> <span class="va">gen</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Realised TVE0 truth (nominal 50 + mean study eta 0.7173 + mean placebo deviation -2.5225): 48.1949</span></span>
 <span><span class="co">#&gt; Converted `sd` to a standard error as sd / sqrt(n).</span></span>
-<span><span class="co">#&gt; Wrote 88 rows to /tmp/Rtmp7NDYdG/mbma/rebuilt.csv</span></span>
+<span><span class="co">#&gt; Wrote 88 rows to /tmp/RtmpkDsKDJ/mbma/rebuilt.csv</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">gen</span><span class="op">$</span><span class="va">arms</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   trial arm DOSE week   mean     sd   n</span></span>
 <span><span class="co">#&gt; 1   T01   1    0    0 49.630  9.986  88</span></span>
@@ -890,7 +869,7 @@ window.Quarto = {
 <span><span class="co">#&gt;  Model: mbma_placebo             Dataset: mbma_placebo</span></span>
 <span><span class="co">#&gt;  Method: FOCEI | Gradient: ANALYTIC | Subjects: 6 | Obs: 88</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   75 iterations   1.0s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   77 iterations   0.1s</span></span>
 <span><span class="co">#&gt;  OFV: 97.0700    AIC: 145.0700    BIC: 204.5261</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -905,35 +884,35 @@ window.Quarto = {
 <span><span class="co">#&gt; Parameter            Estimate           SE       %RSE</span></span>
 <span><span class="co">#&gt; ----------------------------------------------------</span></span>
 <span><span class="co">#&gt; TVE0                48.576417     0.952125        2.0</span></span>
-<span><span class="co">#&gt; EMAX                13.603909     2.200108       16.2</span></span>
-<span><span class="co">#&gt; ED50                33.243638     9.243660       27.8</span></span>
+<span><span class="co">#&gt; EMAX                13.603908     2.200108       16.2</span></span>
+<span><span class="co">#&gt; ED50                33.243632     9.243659       27.8</span></span>
 <span><span class="co">#&gt; ET50                 4.293362     1.684338       39.2</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=1,TIME=0]     2.640457     0.441468       16.7</span></span>
-<span><span class="co">#&gt; PLACEBO[STUDY=1,TIME=2]     0.388113     0.439728      113.3</span></span>
+<span><span class="co">#&gt; PLACEBO[STUDY=1,TIME=2]     0.388112     0.439728      113.3</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=1,TIME=8]    -0.477603     0.392646       82.2</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=2,TIME=0]     1.468815     0.469156       31.9</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=2,TIME=2]    -0.831342     0.491619       59.1</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=2,TIME=8]    -0.364033     0.483667      132.9</span></span>
-<span><span class="co">#&gt; PLACEBO[STUDY=3,TIME=0]     4.422586     0.512881       11.6</span></span>
+<span><span class="co">#&gt; PLACEBO[STUDY=3,TIME=0]     4.422587     0.512881       11.6</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=3,TIME=2]     0.188345     0.476674      253.1</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=3,TIME=4]    -2.133692     0.478273       22.4</span></span>
-<span><span class="co">#&gt; PLACEBO[STUDY=4,TIME=0]     3.150460     0.413109       13.1</span></span>
+<span><span class="co">#&gt; PLACEBO[STUDY=4,TIME=0]     3.150461     0.413109       13.1</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=4,TIME=4]    -0.485580     0.376749       77.6</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=4,TIME=8]    -0.436483     0.374109       85.7</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=5,TIME=0]     2.354294     0.358350       15.2</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=5,TIME=2]     0.671846     0.343126       51.1</span></span>
-<span><span class="co">#&gt; PLACEBO[STUDY=5,TIME=4]    -1.385586     0.320100       23.1</span></span>
-<span><span class="co">#&gt; PLACEBO[STUDY=6,TIME=0]    -0.087538     0.447265      510.9</span></span>
-<span><span class="co">#&gt; PLACEBO[STUDY=6,TIME=2]     0.384720     0.401966      104.5</span></span>
+<span><span class="co">#&gt; PLACEBO[STUDY=5,TIME=4]    -1.385587     0.320100       23.1</span></span>
+<span><span class="co">#&gt; PLACEBO[STUDY=6,TIME=0]    -0.087537     0.447265      510.9</span></span>
+<span><span class="co">#&gt; PLACEBO[STUDY=6,TIME=2]     0.384719     0.401966      104.5</span></span>
 <span><span class="co">#&gt; PLACEBO[STUDY=6,TIME=4]    -0.261347     0.391184      149.7</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; OMEGA  (between-subject variability)</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;   ETA_E0               [additive]   = 4.813424  (SD = 2.1940)  SE = 2.987764  [initial specified as SD]</span></span>
+<span><span class="co">#&gt;   ETA_E0               [additive]   = 4.813425  (SD = 2.1940)  SE = 2.987766  [initial specified as SD]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; OMEGA_IOV  (inter-occasion variability)</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;   KAPPA_ARM            = 156.036882  (SD = 12.4915 at weight 1)  SE = 64.209570</span></span>
+<span><span class="co">#&gt;   KAPPA_ARM            = 156.036821  (SD = 12.4915 at weight 1)  SE = 64.209539</span></span>
 <span><span class="co">#&gt;                          weight = NARM  →  SD = 1.0033 at NARM = 155.0000 (κ ~ N(0, KAPPA_ARM/NARM))</span></span>
 <span><span class="co">#&gt;   --- Shrinkage by occasion ---</span></span>
 <span><span class="co">#&gt;   Occasion 1: KAPPA_ARM 29.0%</span></span>
@@ -983,10 +962,10 @@ window.Quarto = {
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"TIME"</span>, <span class="st">"DV"</span>, <span class="st">"IPRED"</span>, <span class="st">"IWRES"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME     DV    IPRED      IWRES</span></span>
-<span><span class="co">#&gt; 1  1    0 49.630 49.35917  0.2544192</span></span>
-<span><span class="co">#&gt; 2  1    2 46.720 47.10682 -0.3853785</span></span>
+<span><span class="co">#&gt; 1  1    0 49.630 49.35917  0.2544190</span></span>
+<span><span class="co">#&gt; 2  1    2 46.720 47.10682 -0.3853784</span></span>
 <span><span class="co">#&gt; 3  1    8 46.387 46.24111  0.1440162</span></span>
-<span><span class="co">#&gt; 4  1   12 43.638 44.16774 -0.4537883</span></span>
+<span><span class="co">#&gt; 4  1   12 43.638 44.16774 -0.4537884</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">$</span><span class="va">IWRES</span>, <span class="op">(</span><span class="va">arm_data</span><span class="op">$</span><span class="va">DV</span> <span class="op">-</span> <span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">$</span><span class="va">IPRED</span><span class="op">)</span> <span class="op">/</span> <span class="va">arm_data</span><span class="op">$</span><span class="va">SE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -999,7 +978,7 @@ window.Quarto = {
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">gamma2</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">omega_iov</span><span class="op">[</span><span class="st">"KAPPA_ARM"</span>, <span class="st">"KAPPA_ARM"</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>gamma2 <span class="op">=</span> <span class="va">gamma2</span>, se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html">unname</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">se_kappa</span><span class="op">[</span><span class="st">"KAPPA_ARM"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    gamma2        se </span></span>
-<span><span class="co">#&gt; 156.03688  64.20957</span></span>
+<span><span class="co">#&gt; 156.03682  64.20954</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">kappa_weights</span></span>
 <span><span class="co">#&gt; KAPPA_ARM </span></span>
 <span><span class="co">#&gt;    "NARM"</span></span>
@@ -1018,10 +997,10 @@ window.Quarto = {
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>between_arm_sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">sqrt</a></span><span class="op">(</span><span class="va">gamma2</span> <span class="op">/</span> <span class="va">NARM</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  arm NARM between_arm_sd</span></span>
-<span><span class="co">#&gt; 1        one patient    1     12.4914724</span></span>
-<span><span class="co">#&gt; 2       smallest arm   42      1.9274760</span></span>
-<span><span class="co">#&gt; 3 typical arm (ferx)  155      1.0033392</span></span>
-<span><span class="co">#&gt; 4        largest arm  249      0.7916149</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1        one patient    1     12.4914699</span></span>
+<span><span class="co">#&gt; 2       smallest arm   42      1.9274757</span></span>
+<span><span class="co">#&gt; 3 typical arm (ferx)  155      1.0033390</span></span>
+<span><span class="co">#&gt; 4        largest arm  249      0.7916147</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>So the convention for a report is: give the estimate as the unweighted γ² (156, standard error 64.2), and print beside it the effective between-arm SD at the median arm, 1.00 score points at <code>NARM</code> = 155. The generator used γ² = 100, inside the estimate’s 95% interval. With 22 arms the median falls between two arm sizes. R’s <code><a href="https://rdrr.io/r/stats/median.html">median()</a></code> averages them (154.5), while ferx takes an observed arm size, so read the typical arm from <code>fit$kappa_weight_typical</code> rather than recomputing it.</p>
 <p><code>KAPPA_ARM</code> enters <code>BASE</code> additively, so <code>fit$kappa_param_types</code> is <code>additive</code>, and the print shows an SD rather than a CV%. The kappa’s shrinkage, <code>fit$shrinkage_kappa</code>, is a fraction (0.196), not a percentage.</p>
@@ -1057,10 +1036,10 @@ window.Quarto = {
 <span>           lower95 <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">truth</span><span class="op">)</span><span class="op">]</span> <span class="op">-</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">fit</span><span class="op">$</span><span class="va">se_theta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">truth</span><span class="op">)</span><span class="op">]</span>,</span>
 <span>           upper95 <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">truth</span><span class="op">)</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">fit</span><span class="op">$</span><span class="va">se_theta</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">truth</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         truth  estimate    lower95   upper95</span></span>
-<span><span class="co">#&gt; TVE0 48.19485 48.576417 46.7102523 50.442581</span></span>
-<span><span class="co">#&gt; EMAX 12.00000 13.603909  9.2916964 17.916121</span></span>
-<span><span class="co">#&gt; ED50 40.00000 33.243638 15.1260640 51.361212</span></span>
-<span><span class="co">#&gt; ET50  3.00000  4.293362  0.9920588  7.594666</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVE0 48.19485 48.576417 46.7102524 50.442582</span></span>
+<span><span class="co">#&gt; EMAX 12.00000 13.603908  9.2916957 17.916120</span></span>
+<span><span class="co">#&gt; ED50 40.00000 33.243632 15.1260616 51.361203</span></span>
+<span><span class="co">#&gt; ET50  3.00000  4.293362  0.9920586  7.594665</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="the-placebo-levels-fittheta_levels" class="level3"><h3 class="anchored" data-anchor-id="the-placebo-levels-fittheta_levels">The placebo levels: <code>fit$theta_levels</code>
 </h3>
@@ -1074,11 +1053,11 @@ window.Quarto = {
 <span><span class="co">#&gt; 4 PLACEBO     4 STUDY=1,TIME=12     0 sum_to_zero_within    FALSE</span></span>
 <span><span class="co">#&gt; 5 PLACEBO     5  STUDY=2,TIME=0     1 sum_to_zero_within    FALSE</span></span>
 <span><span class="co">#&gt;                theta_name      value        se sir_lo sir_hi</span></span>
-<span><span class="co">#&gt; 1 PLACEBO[STUDY=1,TIME=0]  2.6404572 0.4414684     NA     NA</span></span>
-<span><span class="co">#&gt; 2 PLACEBO[STUDY=1,TIME=2]  0.3881125 0.4397278     NA     NA</span></span>
+<span><span class="co">#&gt; 1 PLACEBO[STUDY=1,TIME=0]  2.6404573 0.4414684     NA     NA</span></span>
+<span><span class="co">#&gt; 2 PLACEBO[STUDY=1,TIME=2]  0.3881124 0.4397278     NA     NA</span></span>
 <span><span class="co">#&gt; 3 PLACEBO[STUDY=1,TIME=8] -0.4776026 0.3926456     NA     NA</span></span>
-<span><span class="co">#&gt; 4                    &lt;NA&gt; -2.5509672 0.4453818     NA     NA</span></span>
-<span><span class="co">#&gt; 5 PLACEBO[STUDY=2,TIME=0]  1.4688146 0.4691563     NA     NA</span></span>
+<span><span class="co">#&gt; 4                    &lt;NA&gt; -2.5509671 0.4453818     NA     NA</span></span>
+<span><span class="co">#&gt; 5 PLACEBO[STUDY=2,TIME=0]  1.4688148 0.4691563     NA     NA</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">levels_fit</span><span class="op">$</span><span class="va">theta_name</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 6</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tapply.html">tapply</a></span><span class="op">(</span><span class="va">levels_fit</span><span class="op">$</span><span class="va">value</span>, <span class="va">levels_fit</span><span class="op">$</span><span class="va">group</span>, <span class="va">sum</span><span class="op">)</span>, <span class="fl">10</span><span class="op">)</span></span>
@@ -1129,7 +1108,7 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span><span class="co">#&gt;  Model: mbma_fixed_study         Dataset: mbma_placebo</span></span>
 <span><span class="co">#&gt;  Method: FOCEI | Gradient: ANALYTIC | Subjects: 6 | Obs: 88</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   156 iterations   0.3s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   162 iterations   0.3s</span></span>
 <span><span class="co">#&gt;  OFV: 73.9719    AIC: 129.9719    BIC: 199.3374</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -1144,9 +1123,9 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span><span class="co">#&gt; Parameter            Estimate           SE       %RSE</span></span>
 <span><span class="co">#&gt; ----------------------------------------------------</span></span>
 <span><span class="co">#&gt; TVE0                48.573722     0.289402        0.6</span></span>
-<span><span class="co">#&gt; EMAX                13.594868     2.104645       15.5</span></span>
-<span><span class="co">#&gt; ED50                34.019890     8.968267       26.4</span></span>
-<span><span class="co">#&gt; ET50                 4.049484     1.534506       37.9</span></span>
+<span><span class="co">#&gt; EMAX                13.594870     2.104646       15.5</span></span>
+<span><span class="co">#&gt; ED50                34.019892     8.968267       26.4</span></span>
+<span><span class="co">#&gt; ET50                 4.049485     1.534506       37.9</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; THETA BLOCKS</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
@@ -1156,7 +1135,7 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; OMEGA_IOV  (inter-occasion variability)</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;   KAPPA_ARM            = 106.130472  (SD = 10.3020 at weight 1)  SE = 39.688249</span></span>
+<span><span class="co">#&gt;   KAPPA_ARM            = 106.130482  (SD = 10.3020 at weight 1)  SE = 39.688253</span></span>
 <span><span class="co">#&gt;                          weight = NARM  →  SD = 0.8275 at NARM = 155.0000 (κ ~ N(0, KAPPA_ARM/NARM))</span></span>
 <span><span class="co">#&gt;   --- Shrinkage by occasion ---</span></span>
 <span><span class="co">#&gt;   Occasion 1: KAPPA_ARM 21.3%</span></span>
@@ -1209,18 +1188,18 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span>           n_parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_fixed</span><span class="op">$</span><span class="va">n_parameters</span>, <span class="va">fit_profiled</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span>,</span>
 <span>           seconds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_fixed</span><span class="op">$</span><span class="va">wall_time_secs</span>, <span class="va">fit_profiled</span><span class="op">$</span><span class="va">wall_time_secs</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      levels      ofv n_parameters seconds</span></span>
-<span><span class="co">#&gt; 1 estimated 73.97193           28     0.3</span></span>
-<span><span class="co">#&gt; 2  profiled 73.97193           28     1.2</span></span>
+<span><span class="co">#&gt; 1 estimated 73.97193           28    0.27</span></span>
+<span><span class="co">#&gt; 2  profiled 73.97193           28    0.87</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>estimated <span class="op">=</span> <span class="va">fit_fixed</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, profiled <span class="op">=</span> <span class="va">fit_profiled</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               TVE0     EMAX     ED50     ET50</span></span>
-<span><span class="co">#&gt; estimated 48.57372 13.59487 34.01989 4.049484</span></span>
+<span><span class="co">#&gt; estimated 48.57372 13.59487 34.01989 4.049485</span></span>
 <span><span class="co">#&gt; profiled  48.57372 13.59488 34.01992 4.049488</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"profiled"</span>, <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit_profiled</span><span class="op">)</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] " Model: mbma_fixed_study_profiled Dataset: mbma_placebo"                                                    </span></span>
 <span><span class="co">#&gt; [2] "  Structural:  compartment-free  (TVE0, EMAX, ED50, ET50, PLACEBO[STUDY, TIME] (23 coefficients, profiled))"</span></span>
 <span><span class="co">#&gt; [3] "PLACEBO  23 free coefficients, profiled (not searched)   min -5.2472  median -0.7611  max 5.7102"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The profiled fit reaches the same objective, to the optimizer’s tolerance (less than 1e-08 OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took 4 times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in <code>fit_profiled$theta</code> and in <code>theta_levels</code>, whose <code>profiled</code> column marks them, and they count in <code>n_parameters</code> and BIC, so a likelihood-ratio test against an unprofiled model is valid.</p>
+<p>The profiled fit reaches the same objective, to the optimizer’s tolerance (less than 1e-08 OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took 3 times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in <code>fit_profiled$theta</code> and in <code>theta_levels</code>, whose <code>profiled</code> column marks them, and they count in <code>n_parameters</code> and BIC, so a likelihood-ratio test against an unprofiled model is valid.</p>
 <p>All three covariance methods are accepted on a profiled fit. <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> without <code>covariance_method</code> repeats the fit’s own, which <code>fit$covariance_method</code> records:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_profiled</span><span class="op">$</span><span class="va">covariance_method</span></span>
@@ -1285,7 +1264,7 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <p><code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> on the bounded model warns “Non-positive variance for estimated parameter(s)” and names the held level, as if the covariance step had gone wrong. It has not: the step gives a held level a zero row and column on purpose, as it does for a <code>FIX</code> theta, but ferx-r treats only <code>FIX</code> thetas as held when it builds <code>fit$cor_matrix</code>. The warning can be ignored, and the held level’s correlations are <code>NA</code>, which is correct.</p>
 </div>
 </div>
-<p><code>profile</code> needs FOCE or FOCEI and an additive residual error, and it rules out priors and <code>global_search</code>, among others. ferx refuses each such fit with <code>E_PROFILE_SCOPE</code>. A residual <code>correlation</code> line, shown next, is allowed. See <a href="https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks">profiled level blocks</a> in ferx-core for the full list.</p>
+<p><code>profile</code> needs FOCE, FOCEI or Laplace (with or without adaptive quadrature, <code>n_agq</code>) and an additive residual error, and it rules out priors and <code>global_search</code>, among others. ferx refuses each such fit with <code>E_PROFILE_SCOPE</code>. A residual <code>correlation</code> line, shown next, is allowed. See <a href="https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks">profiled level blocks</a> in ferx-core for the full list.</p>
 </section></section></section><section id="correlated-residuals-within-an-arm" class="level2"><h2 class="anchored" data-anchor-id="correlated-residuals-within-an-arm">Correlated residuals within an arm</h2>
 <p>The model scores an arm’s visits as independent once its random effects are known: the kappa shifts every visit of an arm by the same amount, and what is left is independent. Arm means of one study arm over time can be correlated beyond that, for instance because the same patients are measured at every visit. A <code>correlation</code> line in <code>[error_model]</code> lets the residuals of the rows of one group correlate. Its parameter is an ordinary theta that only the line reads.</p>
 <p>Compound symmetry, <code>cs</code>, correlates every two rows of a group equally, and on this model that is the same covariance as the arm kappa. ferx therefore refuses <code>cs</code> grouped by the arm while a kappa is drawn per arm:</p>
@@ -1320,7 +1299,7 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span>           rho <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">fit_car1</span><span class="op">$</span><span class="va">theta</span><span class="op">[[</span><span class="st">"RHO"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>           gamma2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">omega_iov</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">fit_car1</span><span class="op">$</span><span class="va">omega_iov</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     residuals      ofv n_parameters       rho   gamma2</span></span>
-<span><span class="co">#&gt; 1 independent 97.07004           24        NA 156.0369</span></span>
+<span><span class="co">#&gt; 1 independent 97.07004           24        NA 156.0368</span></span>
 <span><span class="co">#&gt; 2 car1 by OCC 89.45128           25 0.7597988 141.2311</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The correlation costs one parameter and lowers the OFV by 7.6. At <code>ρ</code> = 0.76, two visits two weeks apart correlate by 0.58, and γ² falls a little, since the line now carries part of what visits of one arm share. Read against a χ² distribution with one degree of freedom, the drop would be significant. But the generator draws every visit of an arm independently, so there is no serial correlation to find. The reference distribution is what is wrong. Simulating from the fit without the line, and fitting each simulated study with and without it, shows the drops such a test produces when there is no correlation:</p>
@@ -1369,10 +1348,10 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span><span class="co">#&gt;   observed median outside the band in 2 of 24 DOSE x TIME cells</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">contrast</span><span class="op">$</span><span class="va">pairs</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID TIME ARM DOSE DV_REF DV_ACTIVE CONTRAST    SIM_LO     SIM_MED     SIM_HI</span></span>
-<span><span class="co">#&gt; 1  1    0   2   25 49.630    50.967    1.337 -3.417584 -0.07854353  3.2329182</span></span>
-<span><span class="co">#&gt; 2  1    2   2   25 46.720    46.678   -0.042 -5.587402 -1.96941733  1.2044457</span></span>
-<span><span class="co">#&gt; 3  1    8   2   25 46.387    42.465   -3.922 -7.193854 -3.93106757 -0.5010871</span></span>
-<span><span class="co">#&gt; 4  1   12   2   25 43.638    40.843   -2.795 -7.998330 -4.62257125 -0.8612419</span></span>
+<span><span class="co">#&gt; 1  1    0   2   25 49.630    50.967    1.337 -3.417584 -0.07854348  3.2329176</span></span>
+<span><span class="co">#&gt; 2  1    2   2   25 46.720    46.678   -0.042 -5.587402 -1.96941738  1.2044450</span></span>
+<span><span class="co">#&gt; 3  1    8   2   25 46.387    42.465   -3.922 -7.193854 -3.93106789 -0.5010880</span></span>
+<span><span class="co">#&gt; 4  1   12   2   25 43.638    40.843   -2.795 -7.998330 -4.62257159 -0.8612427</span></span>
 <span><span class="co">#&gt;    PCTL</span></span>
 <span><span class="co">#&gt; 1 0.756</span></span>
 <span><span class="co">#&gt; 2 0.832</span></span>
@@ -1459,8 +1438,8 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <span><span class="co">#&gt; 2  levels, no sponsor effect      TRUE 97.07004           24          NA</span></span>
 <span><span class="co">#&gt; 3 levels with sponsor effect      TRUE 90.90039           25    4.903742</span></span>
 <span><span class="co">#&gt;      study_var arm_gamma2</span></span>
-<span><span class="co">#&gt; 1 4.813424e+00   156.0369</span></span>
-<span><span class="co">#&gt; 2 4.813424e+00   156.0369</span></span>
+<span><span class="co">#&gt; 1 4.813425e+00   156.0368</span></span>
+<span><span class="co">#&gt; 2 4.813425e+00   156.0368</span></span>
 <span><span class="co">#&gt; 3 6.144212e-06   153.6416</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>With no sponsor effect, the levelled model is the bundled model under another layout: the same objective, a study kappa equal to <code>ETA_E0</code>, the same arm γ² and the same placebo levels. One level below the subject is what <code>iov_column</code> already declared.</p>
@@ -1469,7 +1448,7 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">" at (STUDY|ARM)"</span>, <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit_sponsor</span><span class="op">)</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "  K_ST at STUDY        = 0.000006  (SD = 0.0025)  SE = 0.004773"                    </span></span>
-<span><span class="co">#&gt; [2] "  KAPPA_ARM at ARM     = 153.641644  (SD = 12.3952 at weight 1)  SE = 58.263662"    </span></span>
+<span><span class="co">#&gt; [2] "  KAPPA_ARM at ARM     = 153.641646  (SD = 12.3952 at weight 1)  SE = 58.263662"    </span></span>
 <span><span class="co">#&gt; [3] " ETA_SP: 1.7%   K_ST at STUDY: 99.7% [!]   KAPPA_ARM at ARM: 13.4%   EPS: 32.4% [!]"</span></span>
 <span><span class="va">fit_sponsor</span><span class="op">$</span><span class="va">kappa_levels</span></span>
 <span><span class="co">#&gt;      K_ST KAPPA_ARM </span></span>
@@ -1526,7 +1505,7 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <span><span class="va">fit_nested_car1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="fu">nested_correlation</span><span class="op">(</span><span class="st">"ARM"</span>, <span class="st">"nested_car1.ferx"</span><span class="op">)</span>, <span class="va">nested</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>independent <span class="op">=</span> <span class="va">fit_nested</span><span class="op">$</span><span class="va">ofv</span>, car1 <span class="op">=</span> <span class="va">fit_nested_car1</span><span class="op">$</span><span class="va">ofv</span>, rho <span class="op">=</span> <span class="va">fit_nested_car1</span><span class="op">$</span><span class="va">theta</span><span class="op">[[</span><span class="st">"RHO"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; independent        car1         rho </span></span>
-<span><span class="co">#&gt; 107.0435709 102.4041241   0.3744262</span></span>
+<span><span class="co">#&gt; 107.0435709 102.4041241   0.3744223</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="fu">nested_correlation</span><span class="op">(</span><span class="st">"(STUDY, ARM)"</span>, <span class="st">"nested_car1_list.ferx"</span><span class="op">)</span>, <span class="va">nested</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_fit(model_path = normalizePath(model), data_path = normalizePath(data),  : </span></span>
 <span><span class="co">#&gt;   Fit error: `correlation car1(RHO) by STUDY, ARM` names the levels `STUDY`, `ARM` in a list of columns. A level groups rows by its whole key path, its parent levels included, so it does not combine with other columns. Write `by ARM` alone. [E_RESIDUAL_CORRELATION_GROUPING_AMBIGUOUS]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1564,14 +1543,14 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <span><span class="co">#&gt; $keep_samples</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ess</span></span>
-<span><span class="co">#&gt; [1] 343.7751</span></span>
+<span><span class="co">#&gt; [1] 343.7753</span></span>
 <span><span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ci_kappa</span></span>
 <span><span class="co">#&gt;              lower    upper</span></span>
-<span><span class="co">#&gt; KAPPA_ARM 90.24061 415.9099</span></span>
+<span><span class="co">#&gt; KAPPA_ARM 90.24058 415.9096</span></span>
 <span><span class="va">fit_sir_again</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir</a></span><span class="op">(</span><span class="va">fit_sir</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="va">fit_sir_again</span><span class="op">$</span><span class="va">sir_seed_used</span>, ess <span class="op">=</span> <span class="va">fit_sir_again</span><span class="op">$</span><span class="va">sir_ess</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     seed      ess </span></span>
-<span><span class="co">#&gt;   7.0000 343.7751</span></span>
+<span><span class="co">#&gt;   7.0000 343.7753</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/identical.html">identical</a></span><span class="op">(</span><span class="va">fit_sir_again</span><span class="op">$</span><span class="va">sir_ci_theta</span>, <span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ci_theta</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1579,21 +1558,21 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit_sir</span><span class="op">$</span><span class="va">theta_levels</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"label"</span>, <span class="st">"theta_name"</span>, <span class="st">"value"</span>, <span class="st">"se"</span>, <span class="st">"sir_lo"</span>, <span class="st">"sir_hi"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             label              theta_name      value        se     sir_lo</span></span>
-<span><span class="co">#&gt; 1  STUDY=1,TIME=0 PLACEBO[STUDY=1,TIME=0]  2.6404572 0.4414684  2.0091998</span></span>
-<span><span class="co">#&gt; 2  STUDY=1,TIME=2 PLACEBO[STUDY=1,TIME=2]  0.3881125 0.4397278 -0.3490625</span></span>
+<span><span class="co">#&gt; 1  STUDY=1,TIME=0 PLACEBO[STUDY=1,TIME=0]  2.6404573 0.4414684  2.0092000</span></span>
+<span><span class="co">#&gt; 2  STUDY=1,TIME=2 PLACEBO[STUDY=1,TIME=2]  0.3881124 0.4397278 -0.3490626</span></span>
 <span><span class="co">#&gt; 3  STUDY=1,TIME=8 PLACEBO[STUDY=1,TIME=8] -0.4776026 0.3926456 -1.3869488</span></span>
-<span><span class="co">#&gt; 4 STUDY=1,TIME=12                    &lt;NA&gt; -2.5509672 0.4453818 -3.4684596</span></span>
+<span><span class="co">#&gt; 4 STUDY=1,TIME=12                    &lt;NA&gt; -2.5509671 0.4453818 -3.4684595</span></span>
 <span><span class="co">#&gt;       sir_hi</span></span>
-<span><span class="co">#&gt; 1  3.5050164</span></span>
-<span><span class="co">#&gt; 2  1.2817827</span></span>
+<span><span class="co">#&gt; 1  3.5050166</span></span>
+<span><span class="co">#&gt; 2  1.2817825</span></span>
 <span><span class="co">#&gt; 3  0.1627807</span></span>
-<span><span class="co">#&gt; 4 -1.6306081</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 4 -1.6306080</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Row 4, STUDY=1,TIME=12, is study 1’s derived level: it has no theta of its own, so its <code>theta_name</code> is <code>NA</code> (see <em>The placebo levels</em> above), and its interval comes from the same draws as the free levels’ intervals.</p>
 <p>The effective sample size, the number of the weighted proposal draws that effectively count, depends strongly on the seed for this model. Check a few seeds before trusting one set of intervals:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">7</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir</a></span><span class="op">(</span><span class="va">fit</span>, sir_seed <span class="op">=</span> <span class="va">s</span><span class="op">)</span><span class="op">$</span><span class="va">sir_ess</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1]  11.7450 240.7415 343.7751</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; [1]  11.74503 240.74152 343.77525</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> likewise takes <code>mu_referencing</code> from the fit when you do not pass it. The sandwich estimator <code>"rsr"</code> gives standard errors that do not rely on the residual model being right:</p>
 <div class="cell" data-layout-align="center">
@@ -1602,10 +1581,10 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <span><span class="va">fit_rsr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance</a></span><span class="op">(</span><span class="va">fit</span>, covariance_method <span class="op">=</span> <span class="st">"rsr"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>r <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">se_theta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, rsr <span class="op">=</span> <span class="va">fit_rsr</span><span class="op">$</span><span class="va">se_theta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              r      rsr</span></span>
-<span><span class="co">#&gt; TVE0 0.9521247 1.012305</span></span>
+<span><span class="co">#&gt; TVE0 0.9521248 1.012305</span></span>
 <span><span class="co">#&gt; EMAX 2.2001082 2.644331</span></span>
-<span><span class="co">#&gt; ED50 9.2436601 8.194098</span></span>
-<span><span class="co">#&gt; ET50 1.6843385 1.925839</span></span>
+<span><span class="co">#&gt; ED50 9.2436586 8.194097</span></span>
+<span><span class="co">#&gt; ET50 1.6843383 1.925839</span></span>
 <span><span class="va">fit_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance</a></span><span class="op">(</span><span class="va">fit</span>, covariance_method <span class="op">=</span> <span class="st">"s"</span><span class="op">)</span></span>
 <span><span class="va">fit_s</span><span class="op">$</span><span class="va">covariance_status</span></span>
 <span><span class="co">#&gt; [1] "failed"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1661,7 +1640,7 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <li>
 <code>covariance_failed</code> and <code>covariance_step</code> (<a href="10-uncertainty.html" class="quarto-xref"><span>Parameter uncertainty</span></a>), from the <code>"s"</code> and <code>"rsr"</code> covariance steps.</li>
 </ul>
-<p>The profiled fits can also carry a <code>gradient_fallback</code> note (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>), <code>W_PROFILE_FD_GRADIENT</code>: a subject’s profiled levels got a finite-difference gradient instead of the exact one, which is correct but slower.</p>
+<p>A profiled fit can also carry a <code>gradient_fallback</code> note (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>), <code>W_PROFILE_FD_GRADIENT</code>: a subject’s profiled levels got a finite-difference gradient instead of the exact one, which is correct but slower. None of the profiled fits in this chapter needs it.</p>
 </section></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <ul>
 <li>Arm-level data have one row per study, arm and visit; <code><a href="https://ferx-nlme.org/reference/ferx_mbma_data.html">ferx_mbma_data()</a></code> builds and checks that layout from a published table.</li>
@@ -1707,15 +1686,50 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
       const i = window.document.createElement("i");
       i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
     }
     setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
@@ -1794,7 +1808,8 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -1803,8 +1818,69 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -1818,6 +1894,7 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -1980,44 +2057,54 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -2115,7 +2202,9 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
       }
     }
   });
-  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+  </script><script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script><nav class="page-navigation" aria-label="Page"><div class="nav-page nav-page-previous">
       <a href="../chapters/23-adaptive-dosing.html" class="pagination-link" aria-label="Adaptive dosing and TDM strategies">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Adaptive dosing and TDM strategies</span></span>
       </a>          

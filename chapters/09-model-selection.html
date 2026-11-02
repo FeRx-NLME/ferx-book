@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.20">
+<meta name="generator" content="quarto-1.11.9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Model development and selection – FeRx NLME - R package (ferx)</title>
 <style>
@@ -72,18 +72,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-4fb18a4e3025729c045ae2a2b77a683d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-8e54f3b44ae85a4e33659ff2791ab8dc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-600029c0d66f4e5df764ccbf24e706b3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-a05a9893f770427474681fd859838e9c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -111,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 </head>
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -134,6 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       for (let i=0; i < toggles.length; i++) {
         const toggle = toggles[i];
         if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
           if (alternate) {
             toggle.classList.add("alternate");
           } else {
@@ -163,13 +165,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       manageTransitions('#quarto-margin-sidebar .nav-link', true);
       // Switch the toggles
       setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
       if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
         manageTransitions("body", false);
-        window.scrollTo(0, 1);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
         setTimeout(() => {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, scrollY);
           manageTransitions("body", true);
         }, 40);
       }
@@ -263,6 +271,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       // Read the current dark / light value
       let toAlternate = !hasAlternateSentinel();
       toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
       setStyleSentinel(toAlternate);
       toggleGiscusIfUsed(toAlternate, darkModeDefault);
       window.dispatchEvent(new Event('resize'));
@@ -276,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site"><div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="https://ferx-nlme.org/" class="navbar-brand navbar-brand-logo">
     <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
@@ -284,8 +293,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">FeRx NLME - R package (ferx)</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -337,20 +345,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
     <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
-    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+    </nav><nav class="quarto-secondary-nav" aria-label="Toolbar"><div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/09-model-selection.html"><span class="chapter-title">Model development and selection</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/09-model-selection.html"><span class="chapter-title">Model development and selection</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Section"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
       <a href="../index.html" class="sidebar-logo-link">
       <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
       </div>
@@ -364,13 +373,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Getting started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Getting started</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
@@ -385,13 +391,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">The analysis workflow</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">The analysis workflow</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
@@ -451,13 +454,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: general PK modeling</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Scenarios: general PK modeling</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
@@ -477,13 +477,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: covariates</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Scenarios: covariates</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Covariate modeling</span></a>
@@ -493,13 +490,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: dosing and data</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Scenarios: dosing and data</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
@@ -514,13 +508,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Scenarios: endpoints beyond PK</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
@@ -540,13 +531,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: adaptive dosing</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Scenarios: adaptive dosing</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
@@ -556,13 +544,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: meta-analysis</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Scenarios: meta-analysis</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/24-mbma.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model-based meta-analysis</span></a>
@@ -572,13 +557,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: experimental</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-controls="quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-9-label">Scenarios: experimental</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-9" aria-labelledby="quarto-sidebar-section-9-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/25-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
@@ -588,13 +570,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" aria-controls="quarto-sidebar-section-10" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-10-label">Reference</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-10" aria-labelledby="quarto-sidebar-section-10-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/26-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
@@ -607,7 +586,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
 <li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
@@ -645,7 +624,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/09-model-selection.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/09-model-selection.html"><span class="chapter-title">Model development and selection</span></a></li></ol></nav><div class="quarto-title">
+<main class="content" id="quarto-document-content" tabindex="-1"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/09-model-selection.html"><span class="chapter-title">Model development and selection</span></a></li></ol></nav><div class="quarto-title">
 <h1 class="title"><span id="sec-model-selection" class="quarto-section-identifier"><span class="chapter-title">Model development and selection</span></span></h1>
 </div>
 
@@ -920,7 +899,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">cs</span></span>
 <span><span class="co">#&gt; ferx covariate search (scm-forward-then-backward)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/two_cpt_oral_cov.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpkLhSrv/searches/covsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpX50lFM/searches/covsearch</span></span>
 <span><span class="co">#&gt;   OFV:   -1185 (base) -&gt; -1185 (step 3)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Steps (the candidate selected at each step):</span></span>
@@ -977,7 +956,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">ms</span></span>
 <span><span class="co">#&gt; ferx structural model search (reduced_stepwise, ranked on bic_mixed)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpkLhSrv/searches/modelsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpX50lFM/searches/modelsearch</span></span>
 <span><span class="co">#&gt;   Base:  base - FO, 0 peripherals</span></span>
 <span><span class="co">#&gt;   bic_mixed:   -261.8 (base) -&gt; -261.8 (base)</span></span>
 <span><span class="co">#&gt;   5 models over 2 layers</span></span>
@@ -1029,7 +1008,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">rs</span></span>
 <span><span class="co">#&gt; ferx residual-error search (likelihood-ratio test at p = 0.05)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/transit_oral.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpkLhSrv/searches/ruvsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpX50lFM/searches/ruvsearch</span></span>
 <span><span class="co">#&gt;   OFV:   -1063.880 (input) -&gt; -1070.083 (time_varying1-1, dOFV 6.203)</span></span>
 <span><span class="co">#&gt;   2 iterations, 10 models fitted</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1093,9 +1072,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">iiv</span></span>
 <span><span class="co">#&gt; ferx variability-structure search (top_down_exhaustive + block structure, ranked on bic_iiv)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin_block_omega.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpkLhSrv/searches/iivsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpX50lFM/searches/iivsearch</span></span>
 <span><span class="co">#&gt;   Input: [ETA_CL,ETA_V]+[ETA_KA]</span></span>
-<span><span class="co">#&gt;   bic_iiv:   -271.3 (input) -&gt; -273.5 (run8)</span></span>
+<span><span class="co">#&gt;   bic_iiv:   -271.3 (input) -&gt; -272.2 (run9)</span></span>
 <span><span class="co">#&gt;   12 models over 3 steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 1 (no_of_etas), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
@@ -1111,22 +1090,22 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 2 (block_structure), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
 <span><span class="co">#&gt;  rank    id                 structure criterion d_criterion  best</span></span>
-<span><span class="co">#&gt;     1  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5      2.1810  TRUE</span></span>
-<span><span class="co">#&gt;     2 run10   [ETA_KA,ETA_V]+[ETA_CL]    -272.5      1.1920 FALSE</span></span>
-<span><span class="co">#&gt;     3  run9   [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9039 FALSE</span></span>
-<span><span class="co">#&gt;     4 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
-<span><span class="co">#&gt;     5 run11     [ETA_CL,ETA_KA,ETA_V]    -269.5     -1.7740 FALSE</span></span>
+<span><span class="co">#&gt;     1  run9   [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9039  TRUE</span></span>
+<span><span class="co">#&gt;     2 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
+<span><span class="co">#&gt;     3 run11     [ETA_CL,ETA_KA,ETA_V]    -269.5     -1.7740 FALSE</span></span>
+<span><span class="co">#&gt;    NA  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5      2.1810 FALSE</span></span>
+<span><span class="co">#&gt;    NA run10   [ETA_KA,ETA_V]+[ETA_CL]    -272.5      1.1920 FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 3 (compare_to_input), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
-<span><span class="co">#&gt;  rank    id                 structure criterion d_criterion  best</span></span>
-<span><span class="co">#&gt;     1  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5       2.181  TRUE</span></span>
-<span><span class="co">#&gt;     2 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3       0.000 FALSE</span></span>
+<span><span class="co">#&gt;  rank    id               structure criterion d_criterion  best</span></span>
+<span><span class="co">#&gt;     1  run9 [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9039  TRUE</span></span>
+<span><span class="co">#&gt;     2 input [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 1 model excluded by the strictness gate; summary() lists them.</span></span>
+<span><span class="co">#&gt; 3 models excluded by the strictness gate; summary() lists them.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Selected variability structure (run8):</span></span>
+<span><span class="co">#&gt; Selected variability structure (run9):</span></span>
 <span><span class="co">#&gt;   IIV:         ETA_CL, ETA_KA, ETA_V</span></span>
-<span><span class="co">#&gt;   Correlated:  (none - every eta is diagonal)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   Correlated:  ETA_KA ~ ETA_CL</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The printed output has three steps. The eta-count stage removes etas from the input structure – <code>top_down_exhaustive</code> tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. The third step, <code>compare_to_input</code>, puts the winner of the block stage back against the input structure, and it is there that the selection is made. Candidates are ranked on the BIC(iiv), which is what <code>rank = "bic"</code> means for this tool.</p>
 <p>Read the printed output carefully. The input model is a candidate in its own right, and the step tables rank it beside the candidates. The strictness gate is separate from that ranking; <code>$models</code> shows both:</p>
@@ -1141,16 +1120,16 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; 6   run5                  [ETA_KA]   96.73518    4   TRUE</span></span>
 <span><span class="co">#&gt; 7   run6                   [ETA_V]  178.27810    6   TRUE</span></span>
 <span><span class="co">#&gt; 8   run7                            181.73650    7   TRUE</span></span>
-<span><span class="co">#&gt; 9   run8 [ETA_CL]+[ETA_KA]+[ETA_V] -273.45175    1   TRUE</span></span>
-<span><span class="co">#&gt; 10  run9   [ETA_CL,ETA_KA]+[ETA_V] -272.17501    3   TRUE</span></span>
-<span><span class="co">#&gt; 11 run10   [ETA_KA,ETA_V]+[ETA_CL] -272.46344    2   TRUE</span></span>
-<span><span class="co">#&gt; 12 run11     [ETA_CL,ETA_KA,ETA_V] -269.49727    5   TRUE</span></span>
+<span><span class="co">#&gt; 9   run8 [ETA_CL]+[ETA_KA]+[ETA_V] -273.45175   NA  FALSE</span></span>
+<span><span class="co">#&gt; 10  run9   [ETA_CL,ETA_KA]+[ETA_V] -272.17501    1   TRUE</span></span>
+<span><span class="co">#&gt; 11 run10   [ETA_KA,ETA_V]+[ETA_CL] -272.46344   NA  FALSE</span></span>
+<span><span class="co">#&gt; 12 run11     [ETA_CL,ETA_KA,ETA_V] -269.49727    3   TRUE</span></span>
 <span><span class="va">eta_stage</span> <span class="op">&lt;-</span> <span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">$</span><span class="va">kind</span> <span class="op">==</span> <span class="st">"no_of_etas"</span>, <span class="op">]</span></span>
 <span><span class="va">input_rank</span> <span class="op">&lt;-</span> <span class="va">eta_stage</span><span class="op">$</span><span class="va">rank</span><span class="op">[</span><span class="va">eta_stage</span><span class="op">$</span><span class="va">id</span> <span class="op">==</span> <span class="st">"input"</span><span class="op">]</span></span>
 <span><span class="va">gated</span> <span class="op">&lt;-</span> <span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">[</span><span class="op">!</span><span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">passed</span>, <span class="op">]</span></span>
 <span><span class="va">diagonal</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">","</span>, <span class="va">iiv</span><span class="op">$</span><span class="va">final_structure</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>In the eta-count stage the input ranks first: removing any eta costs more than it saves. The search selects the diagonal structure [ETA_CL]+[ETA_KA]+[ETA_V]: the block stage drops the covariance block, and <code>compare_to_input</code> confirms it. The gate rejected <code>run2</code>, which carries no rank. Its criterion was worse than the winner’s anyway, but a gated model is excluded whatever it scores. Note where that verdict lives: <code>converged</code> and <code>passed</code> are columns of the tables that report on fitted candidates – <code>$models</code> here, <code>$candidates</code> and <code>$steps</code> elsewhere – and not of the per-stage ranking summary, which ranks models those rows already judged:</p>
+<p>In the eta-count stage the input ranks first: removing any eta costs more than it saves. The search keeps a covariance block: [ETA_CL,ETA_KA]+[ETA_V]. The gate rejected <code>run2</code> and <code>run8</code> and <code>run10</code>, which carry no rank. At least one reached a better criterion than the winner and is out only because it did not pass. Note where that verdict lives: <code>converged</code> and <code>passed</code> are columns of the tables that report on fitted candidates – <code>$models</code> here, <code>$candidates</code> and <code>$steps</code> elsewhere – and not of the per-stage ranking summary, which ranks models those rows already judged:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "step"        "kind"        "parent"      "id"          "criterion"  </span></span>
@@ -1161,7 +1140,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <p>The input carries no rank in the combined table above because it is the parent each stage starts from. A search result is a ranking of what passed, not proof that the winner is the best model fitted.</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv</span><span class="op">$</span><span class="va">final_structure</span></span>
-<span><span class="co">#&gt; [1] "[ETA_CL]+[ETA_KA]+[ETA_V]"</span></span>
+<span><span class="co">#&gt; [1] "[ETA_CL,ETA_KA]+[ETA_V]"</span></span>
 <span><span class="va">iiv</span><span class="op">$</span><span class="va">final_etas</span></span>
 <span><span class="co">#&gt; [1] "ETA_CL" "ETA_KA" "ETA_V"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1174,14 +1153,14 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span>                            block_retries <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                            directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"iivsearch-block"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">iiv_block</span><span class="op">$</span><span class="va">input_structure</span>, final <span class="op">=</span> <span class="va">iiv_block</span><span class="op">$</span><span class="va">final_structure</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                       input                       final </span></span>
-<span><span class="co">#&gt;   "[ETA_CL,ETA_V]+[ETA_KA]" "[ETA_CL]+[ETA_KA]+[ETA_V]"</span></span>
+<span><span class="co">#&gt;                     input                     final </span></span>
+<span><span class="co">#&gt; "[ETA_CL,ETA_V]+[ETA_KA]" "[ETA_CL,ETA_V]+[ETA_KA]"</span></span>
 <span><span class="va">iiv_block</span><span class="op">$</span><span class="va">models</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"structure"</span>, <span class="st">"criterion"</span>, <span class="st">"rank"</span>, <span class="st">"passed"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;      id                 structure criterion rank passed</span></span>
 <span><span class="co">#&gt; 1 input   [ETA_CL,ETA_V]+[ETA_KA] -271.2711   NA   TRUE</span></span>
-<span><span class="co">#&gt; 2  run1 [ETA_CL]+[ETA_KA]+[ETA_V] -273.4518    1   TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2  run1 [ETA_CL]+[ETA_KA]+[ETA_V] -273.4518   NA  FALSE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Two structures are compared here: the input’s <code>block_omega (ETA_CL, ETA_V)</code> and the diagonal alternative. The diagonal one is selected, the same answer as the full search above, from 2 fits instead of 12. When a candidate does fail the gate, the <code>failures</code> column of <code>$models</code> gives the reason, as <code>$steps</code> does for the covariate search above.</p>
+<p>Two structures are compared here: the input’s <code>block_omega (ETA_CL, ETA_V)</code> and the diagonal alternative. The block is kept, a different answer from the full search above, which also decided which etas to keep, from 2 fits instead of 12. When a candidate does fail the gate, the <code>failures</code> column of <code>$models</code> gives the reason, as <code>$steps</code> does for the covariate search above.</p>
 </section><section id="inter-occasion-variability-search" class="level2"><h2 class="anchored" data-anchor-id="inter-occasion-variability-search">Inter-occasion variability search</h2>
 <p><code><a href="https://ferx-nlme.org/reference/ferx_iovsearch.html">ferx_iovsearch()</a></code> decides which parameters carry an occasion random effect. It reads the occasion column from the base model’s <code>iov_column</code>, so a model without one has nothing to search. The bundled <code>warfarin_iov</code> configuration offers a kappa on every parameter that has an eta:</p>
 <div class="cell" data-layout-align="center">
@@ -1191,7 +1170,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; ferx inter-occasion variability search (same-as-iiv, ranked on bic_random)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin_iov.csv</span></span>
 <span><span class="co">#&gt;   Occasions: OCC</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpkLhSrv/searches/iovsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpX50lFM/searches/iovsearch</span></span>
 <span><span class="co">#&gt;   Input: IIV([ETA_CL]+[ETA_KA]+[ETA_V]);IOV([KAPPA_CL])</span></span>
 <span><span class="co">#&gt;   bic_random:   223.5 (input) -&gt; -312.3 (run5)</span></span>
 <span><span class="co">#&gt;   7 models over 2 steps</span></span>
@@ -1245,7 +1224,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">gs</span></span>
 <span><span class="co">#&gt; ferx global model search (exhaustive, ranked on penalized)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/two_cpt_oral_cov.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpkLhSrv/searches/globalsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpX50lFM/searches/globalsearch</span></span>
 <span><span class="co">#&gt;   Grid:  16 points over 4 axes</span></span>
 <span><span class="co">#&gt;     LAGTIME: OFF | ON</span></span>
 <span><span class="co">#&gt;     PERIPHERALS: 0 | 1</span></span>
@@ -1433,22 +1412,22 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; ferx AMD pipeline (default strategy, retries all_final)</span></span>
 <span><span class="co">#&gt;   Model: /home/runner/work/_temp/Library/ferx/examples/search/../models/warfarin_amd.ferx</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpkLhSrv/searches/amd</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpX50lFM/searches/amd</span></span>
 <span><span class="co">#&gt;   OFV:   -286.004 (start) -&gt; -286.004 (final, dOFV 0.000)</span></span>
-<span><span class="co">#&gt;   3 of 6 steps ran, 28 models fitted, 1.9 s across the steps</span></span>
+<span><span class="co">#&gt;   3 of 6 steps ran, 28 models fitted, 1.5 s across the steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Pipeline:</span></span>
 <span><span class="co">#&gt;  index       step  status criterion value_before value_after    d_value</span></span>
-<span><span class="co">#&gt;      1 structural     ran bic_mixed       -267.5      -267.5  1.262e-10</span></span>
-<span><span class="co">#&gt;      2  iivsearch     ran   bic_iiv       -279.1      -279.1  1.251e-12</span></span>
-<span><span class="co">#&gt;      3   residual     ran       ofv       -286.0      -286.0 -8.527e-13</span></span>
+<span><span class="co">#&gt;      1 structural     ran bic_mixed       -267.5      -267.5 -2.331e-12</span></span>
+<span><span class="co">#&gt;      2  iivsearch     ran   bic_iiv       -279.1      -279.1 -3.695e-12</span></span>
+<span><span class="co">#&gt;      3   residual     ran       ofv       -286.0      -286.0  4.047e-11</span></span>
 <span><span class="co">#&gt;      4  iovsearch skipped      &lt;NA&gt;           NA          NA         NA</span></span>
 <span><span class="co">#&gt;      5  allometry skipped      &lt;NA&gt;           NA          NA         NA</span></span>
 <span><span class="co">#&gt;      6 covariates skipped      &lt;NA&gt;           NA          NA         NA</span></span>
 <span><span class="co">#&gt;       d_ofv candidates converged passed seconds</span></span>
-<span><span class="co">#&gt;   1.262e-10          5      TRUE   TRUE  0.5459</span></span>
-<span><span class="co">#&gt;   1.251e-12         12      TRUE   TRUE  0.7130</span></span>
-<span><span class="co">#&gt;  -8.527e-13          7      TRUE   TRUE  0.6168</span></span>
+<span><span class="co">#&gt;  -2.331e-12          5      TRUE   TRUE  0.4860</span></span>
+<span><span class="co">#&gt;  -3.695e-12         12      TRUE   TRUE  0.5327</span></span>
+<span><span class="co">#&gt;   4.047e-11          7        NA     NA  0.4407</span></span>
 <span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
 <span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
 <span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
@@ -1467,7 +1446,8 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Notes:</span></span>
 <span><span class="co">#&gt;   - [strictness] reject_init_stall is off inside every step: the model a step is handed starts at its own optimum, where "did not leave the initial estimates" (#751) is the expected outcome rather than a failed fit. It still applies to the pipeline's own start fit, and every other gate applies throughout</span></span>
-<span><span class="co">#&gt;   - the retries pass on `02-iivsearch-retries` did not improve the fit (OFV -286.004 against -286.004); the selected model was kept</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   - the retries pass on `02-iivsearch-retries` did not improve the fit (OFV -286.004 against -286.004); the selected model was kept</span></span>
+<span><span class="co">#&gt;   - the retries pass on `03-ruvsearch-retries` did not improve the fit (OFV -286.004 against -286.004); the selected model was kept</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The pipeline improved nothing: <code>warfarin_amd.ferx</code> is already the model these three steps would choose, so each step re-selected its own input and the final OFV equals the starting one. That is a useful result to see printed rather than hidden – the step table carries each step’s criterion before and after, its candidate count, the strictness verdict and its wall clock, so a step that “won” by having its siblings rejected looks different from one that found something. <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> adds every candidate of every step, and the same two tables are written to the run directory as <code>steps.csv</code> and <code>candidates.csv</code>.</p>
 <p>Getting the result out of an AMD run takes a little care, because two fields both look final and are not the same thing. <code>$final_model</code> is the model <em>text</em> the pipeline ended on, written to <code>$final_model_path</code>; the fitted object is <code>$fit</code>. <code>$final_ofv</code> and <code>$d_ofv</code> give the end point and the change from the start, negative being an improvement:</p>
@@ -1477,7 +1457,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; "character"  "ferx_fit"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>input_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">input_ofv</span>, final_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">final_ofv</span>, d_ofv <span class="op">=</span> <span class="va">amd</span><span class="op">$</span><span class="va">d_ofv</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   input_ofv final_ofv        d_ofv</span></span>
-<span><span class="co">#&gt; 1 -286.0042 -286.0042 1.265903e-10</span></span>
+<span><span class="co">#&gt; 1 -286.0042 -286.0042 3.444711e-11</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/basename.html">basename</a></span><span class="op">(</span><span class="va">amd</span><span class="op">$</span><span class="va">final_model_path</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "final.ferx"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1524,8 +1504,8 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span>                    retries <span class="op">=</span> <span class="fl">0</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"amd-sir"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">amd_sir</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"step"</span>, <span class="st">"status"</span>, <span class="st">"criterion"</span>, <span class="st">"candidates"</span>, <span class="st">"seconds"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         step  status criterion candidates    seconds</span></span>
-<span><span class="co">#&gt; 1 structural     ran bic_mixed          2 0.07088844</span></span>
-<span><span class="co">#&gt; 2  iivsearch     ran   bic_iiv          8 0.14610020</span></span>
+<span><span class="co">#&gt; 1 structural     ran bic_mixed          2 0.05227319</span></span>
+<span><span class="co">#&gt; 2  iivsearch     ran   bic_iiv          8 0.12012127</span></span>
 <span><span class="co">#&gt; 3   residual skipped      &lt;NA&gt;          0 0.00000000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="configuration-sections-with-no-r-tool" class="level2"><h2 class="anchored" data-anchor-id="configuration-sections-with-no-r-tool">Configuration sections with no R tool</h2>
@@ -1683,15 +1663,50 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
       const i = window.document.createElement("i");
       i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
     }
     setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
@@ -1770,7 +1785,8 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -1779,8 +1795,69 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -1794,6 +1871,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -1956,44 +2034,54 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -2091,7 +2179,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
       }
     }
   });
-  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+  </script><script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script><nav class="page-navigation" aria-label="Page"><div class="nav-page nav-page-previous">
       <a href="../chapters/08-vpc.html" class="pagination-link" aria-label="Simulation-based evaluation: VPC">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Simulation-based evaluation: VPC</span></span>
       </a>          

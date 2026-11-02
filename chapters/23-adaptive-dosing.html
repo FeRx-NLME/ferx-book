@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.20">
+<meta name="generator" content="quarto-1.11.9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Adaptive dosing and TDM strategies – FeRx NLME - R package (ferx)</title>
 <style>
@@ -72,18 +72,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-4fb18a4e3025729c045ae2a2b77a683d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-8e54f3b44ae85a4e33659ff2791ab8dc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-600029c0d66f4e5df764ccbf24e706b3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-a05a9893f770427474681fd859838e9c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -111,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 </head>
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -134,6 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       for (let i=0; i < toggles.length; i++) {
         const toggle = toggles[i];
         if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
           if (alternate) {
             toggle.classList.add("alternate");
           } else {
@@ -163,13 +165,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       manageTransitions('#quarto-margin-sidebar .nav-link', true);
       // Switch the toggles
       setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
       if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
         manageTransitions("body", false);
-        window.scrollTo(0, 1);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
         setTimeout(() => {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, scrollY);
           manageTransitions("body", true);
         }, 40);
       }
@@ -263,6 +271,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       // Read the current dark / light value
       let toAlternate = !hasAlternateSentinel();
       toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
       setStyleSentinel(toAlternate);
       toggleGiscusIfUsed(toAlternate, darkModeDefault);
       window.dispatchEvent(new Event('resize'));
@@ -276,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site"><div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="https://ferx-nlme.org/" class="navbar-brand navbar-brand-logo">
     <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
@@ -284,8 +293,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">FeRx NLME - R package (ferx)</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -337,20 +345,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
     <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
-    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+    </nav><nav class="quarto-secondary-nav" aria-label="Toolbar"><div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html">Scenarios: adaptive dosing</a></li><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html">Scenarios: adaptive dosing</a></li><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Section"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
       <a href="../index.html" class="sidebar-logo-link">
       <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
       </div>
@@ -364,13 +373,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Getting started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Getting started</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
@@ -385,13 +391,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">The analysis workflow</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">The analysis workflow</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
@@ -451,13 +454,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: general PK modeling</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Scenarios: general PK modeling</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
@@ -477,13 +477,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: covariates</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Scenarios: covariates</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Covariate modeling</span></a>
@@ -493,13 +490,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: dosing and data</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Scenarios: dosing and data</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
@@ -514,13 +508,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Scenarios: endpoints beyond PK</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
@@ -540,13 +531,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: adaptive dosing</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Scenarios: adaptive dosing</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
@@ -556,13 +544,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: meta-analysis</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Scenarios: meta-analysis</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/24-mbma.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model-based meta-analysis</span></a>
@@ -572,13 +557,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: experimental</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-controls="quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-9-label">Scenarios: experimental</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-9" aria-labelledby="quarto-sidebar-section-9-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/25-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
@@ -588,13 +570,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" aria-controls="quarto-sidebar-section-10" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-10-label">Reference</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-10" aria-labelledby="quarto-sidebar-section-10-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/26-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
@@ -607,7 +586,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
 <li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
@@ -630,7 +609,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/23-adaptive-dosing.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html">Scenarios: adaptive dosing</a></li><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a></li></ol></nav><div class="quarto-title">
+<main class="content" id="quarto-document-content" tabindex="-1"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html">Scenarios: adaptive dosing</a></li><li class="breadcrumb-item"><a href="../chapters/23-adaptive-dosing.html"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a></li></ol></nav><div class="quarto-title">
 <h1 class="title"><span id="sec-adaptive-dosing" class="quarto-section-identifier"><span class="chapter-title">Adaptive dosing and TDM strategies</span></span></h1>
 </div>
 
@@ -770,7 +749,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<p>The block supports more than this example uses. <code>observe = &lt;expression&gt;</code> titrates on a latent, noise-free quantity instead of a measured one. <code>levels</code> defines a discrete dose ladder. <code>auc_target</code> reports exposure attainment. The <code>hold</code> and <code>stop</code> actions skip or discontinue dosing. All are specified on the ferx-core <a href="https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html">adaptive dosing page</a>.</p>
+<p>The block supports more than this example uses. <code>observe = &lt;expression&gt;</code> titrates on a latent, noise-free quantity instead of a measured one. <code>levels</code> defines a discrete dose ladder. <code>auc_target</code> reports exposure attainment, returned as <code>metrics$AUC_TARGET_ATTAINMENT</code>. The <code>hold</code> and <code>stop</code> actions skip or discontinue dosing. <code>intervals</code> with <code>start_interval</code> gives a ladder of dosing intervals that the <code>lengthen</code> and <code>shorten</code> effects step through, so a rule can change how often a dose is given as well as how much (<a href="https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html#changing-the-dosing-interval">changing the dosing interval</a>). All are specified on the ferx-core <a href="https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html">adaptive dosing page</a>.</p>
 <p>The dataset supplies only the patients and the observation grid. It contains no doses, because the controller issues all of them:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">tdm_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
@@ -803,16 +782,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><code>decisions</code> has one row per decision time: the signal the controller read and what it did. The signals are rounded here for display; with assay error the “zero” trough at time 0 is a tiny number, which would otherwise push the column into scientific notation.</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">decisions</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">SIM</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">ID</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>SIGNAL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">SIGNAL</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   DRAW SIM ID DECISION TIME SIGNAL OUTCOME N_DOSED</span></span>
-<span><span class="co">#&gt; 1    1   1  1        0    0   0.00   dosed       1</span></span>
-<span><span class="co">#&gt; 2    1   1  1        1   12   4.78   dosed       1</span></span>
-<span><span class="co">#&gt; 3    1   1  1        2   24   8.57   dosed       1</span></span>
-<span><span class="co">#&gt; 4    1   1  1        3   36  12.10   dosed       1</span></span>
-<span><span class="co">#&gt; 5    1   1  1        4   48  10.19   dosed       1</span></span>
-<span><span class="co">#&gt; 6    1   1  1        5   60  10.97   dosed       1</span></span>
-<span><span class="co">#&gt; 7    1   1  1        6   72   9.83   dosed       1</span></span>
-<span><span class="co">#&gt; 8    1   1  1        7   84  10.56   dosed       1</span></span>
-<span><span class="co">#&gt; 9    1   1  1        8   96  12.39   dosed       1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   DRAW SIM ID DECISION TIME SIGNAL OUTCOME N_DOSED INTERVAL</span></span>
+<span><span class="co">#&gt; 1    1   1  1        0    0   0.00   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 2    1   1  1        1   12   4.78   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 3    1   1  1        2   24   8.57   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 4    1   1  1        3   36  12.10   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 5    1   1  1        4   48  10.19   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 6    1   1  1        5   60  10.97   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 7    1   1  1        6   72   9.83   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 8    1   1  1        7   84  10.56   dosed       1       NA</span></span>
+<span><span class="co">#&gt; 9    1   1  1        8   96  12.39   dosed       1       NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>doses</code> is the dose ledger. It records the amount given, the signal and the rule that fired. When no rule matches, the running dose is given again and <code>RULE</code> shows the route (here <code>infuse</code>).</p>
 <div class="cell" data-layout-align="center">
@@ -846,27 +825,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><code>metrics</code> has one row per virtual patient run, summarising the whole course:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">metrics</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html">starts_with</a></span><span class="op">(</span><span class="st">"SIGNAL"</span><span class="op">)</span>, \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">x</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   DRAW SIM ID  CUM_DOSE N_DOSES N_INCREASES N_DECREASES N_HOLDS DISCONTINUED</span></span>
-<span><span class="co">#&gt; 1    1   1  1 16625.000       9           3           0       0        FALSE</span></span>
-<span><span class="co">#&gt; 2    1   1  2 13750.000       9           1           0       0        FALSE</span></span>
-<span><span class="co">#&gt; 3    1   1  3  9941.406       9           1           2       0        FALSE</span></span>
-<span><span class="co">#&gt; 4    1   1  4  9687.500       9           0           1       0        FALSE</span></span>
-<span><span class="co">#&gt; 5    1   1  5  7656.250       9           0           2       0        FALSE</span></span>
-<span><span class="co">#&gt; 6    1   2  1 16765.625       9           3           0       0        FALSE</span></span>
-<span><span class="co">#&gt;   TIME_TO_DISCONT SIGNAL_MIN SIGNAL_MAX SIGNAL_MEAN PCT_TIME_IN_WINDOW</span></span>
-<span><span class="co">#&gt; 1              NA          0      12.39        8.82          0.5555556</span></span>
-<span><span class="co">#&gt; 2              NA          0      14.60       11.21          0.7777778</span></span>
-<span><span class="co">#&gt; 3              NA          0      20.61       12.97          0.5555556</span></span>
-<span><span class="co">#&gt; 4              NA          0      23.54       15.97          0.7777778</span></span>
-<span><span class="co">#&gt; 5              NA          0      22.88       13.33          0.6666667</span></span>
-<span><span class="co">#&gt; 6              NA          0      11.04        7.75          0.2222222</span></span>
-<span><span class="co">#&gt;   ETA_SUPPLIED</span></span>
-<span><span class="co">#&gt; 1        FALSE</span></span>
-<span><span class="co">#&gt; 2        FALSE</span></span>
-<span><span class="co">#&gt; 3        FALSE</span></span>
-<span><span class="co">#&gt; 4        FALSE</span></span>
-<span><span class="co">#&gt; 5        FALSE</span></span>
-<span><span class="co">#&gt; 6        FALSE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   DRAW SIM ID  CUM_DOSE N_DOSES N_INCREASES N_DECREASES N_HOLDS N_NOT_DUE</span></span>
+<span><span class="co">#&gt; 1    1   1  1 16625.000       9           3           0       0         0</span></span>
+<span><span class="co">#&gt; 2    1   1  2 13750.000       9           1           0       0         0</span></span>
+<span><span class="co">#&gt; 3    1   1  3  9941.406       9           1           2       0         0</span></span>
+<span><span class="co">#&gt; 4    1   1  4  9687.500       9           0           1       0         0</span></span>
+<span><span class="co">#&gt; 5    1   1  5  7656.250       9           0           2       0         0</span></span>
+<span><span class="co">#&gt; 6    1   2  1 16765.625       9           3           0       0         0</span></span>
+<span><span class="co">#&gt;   DISCONTINUED TIME_TO_DISCONT SIGNAL_MIN SIGNAL_MAX SIGNAL_MEAN</span></span>
+<span><span class="co">#&gt; 1        FALSE              NA          0      12.39        8.82</span></span>
+<span><span class="co">#&gt; 2        FALSE              NA          0      14.60       11.21</span></span>
+<span><span class="co">#&gt; 3        FALSE              NA          0      20.61       12.97</span></span>
+<span><span class="co">#&gt; 4        FALSE              NA          0      23.54       15.97</span></span>
+<span><span class="co">#&gt; 5        FALSE              NA          0      22.88       13.33</span></span>
+<span><span class="co">#&gt; 6        FALSE              NA          0      11.04        7.75</span></span>
+<span><span class="co">#&gt;   PCT_TIME_IN_WINDOW AUC_TARGET_ATTAINMENT ETA_SUPPLIED</span></span>
+<span><span class="co">#&gt; 1          0.5555556                    NA        FALSE</span></span>
+<span><span class="co">#&gt; 2          0.7777778                    NA        FALSE</span></span>
+<span><span class="co">#&gt; 3          0.5555556                    NA        FALSE</span></span>
+<span><span class="co">#&gt; 4          0.7777778                    NA        FALSE</span></span>
+<span><span class="co">#&gt; 5          0.6666667                    NA        FALSE</span></span>
+<span><span class="co">#&gt; 6          0.2222222                    NA        FALSE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>PCT_TIME_IN_WINDOW</code> is the <em>fraction</em> (between 0 and 1) of that patient’s decisions at which the signal was inside <code>target_window</code>. <code>CUM_DOSE</code> and <code>N_DOSES</code> count the controller’s doses.</p>
 <p>Summaries across all runs show how the policy performs in the population. The trough at each decision time:</p>
@@ -1011,23 +990,23 @@ Figure&nbsp;23.2: Dose issued at each decision for the five subjects in the firs
 Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 </figcaption><div aria-describedby="tbl-strategies-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="jopnmniffy" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#jopnmniffy table {
+<div id="gpzjspntce" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#gpzjspntce table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#jopnmniffy thead, #jopnmniffy tbody, #jopnmniffy tfoot, #jopnmniffy tr, #jopnmniffy td, #jopnmniffy th {
+#gpzjspntce thead, #gpzjspntce tbody, #gpzjspntce tfoot, #gpzjspntce tr, #gpzjspntce td, #gpzjspntce th {
   border-style: none;
 }
 
-#jopnmniffy p {
+#gpzjspntce p {
   margin: 0;
   padding: 0;
 }
 
-#jopnmniffy .gt_table {
+#gpzjspntce .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1053,12 +1032,12 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-left-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_caption {
+#gpzjspntce .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#jopnmniffy .gt_title {
+#gpzjspntce .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1070,7 +1049,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-width: 0;
 }
 
-#jopnmniffy .gt_subtitle {
+#gpzjspntce .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1082,7 +1061,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-top-width: 0;
 }
 
-#jopnmniffy .gt_heading {
+#gpzjspntce .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1094,13 +1073,13 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_bottom_border {
+#gpzjspntce .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_col_headings {
+#gpzjspntce .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1115,7 +1094,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_col_heading {
+#gpzjspntce .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1135,7 +1114,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   overflow-x: hidden;
 }
 
-#jopnmniffy .gt_column_spanner_outer {
+#gpzjspntce .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1147,15 +1126,15 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 4px;
 }
 
-#jopnmniffy .gt_column_spanner_outer:first-child {
+#gpzjspntce .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#jopnmniffy .gt_column_spanner_outer:last-child {
+#gpzjspntce .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#jopnmniffy .gt_column_spanner {
+#gpzjspntce .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1167,11 +1146,11 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   width: 100%;
 }
 
-#jopnmniffy .gt_spanner_row {
+#gpzjspntce .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#jopnmniffy .gt_group_heading {
+#gpzjspntce .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1197,7 +1176,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   text-align: left;
 }
 
-#jopnmniffy .gt_empty_group_heading {
+#gpzjspntce .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1212,15 +1191,15 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   vertical-align: middle;
 }
 
-#jopnmniffy .gt_from_md > :first-child {
+#gpzjspntce .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#jopnmniffy .gt_from_md > :last-child {
+#gpzjspntce .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#jopnmniffy .gt_row {
+#gpzjspntce .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1239,7 +1218,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   overflow-x: hidden;
 }
 
-#jopnmniffy .gt_stub {
+#gpzjspntce .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1252,7 +1231,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#jopnmniffy .gt_stub_row_group {
+#gpzjspntce .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1266,15 +1245,15 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   vertical-align: top;
 }
 
-#jopnmniffy .gt_row_group_first td {
+#gpzjspntce .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#jopnmniffy .gt_row_group_first th {
+#gpzjspntce .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#jopnmniffy .gt_summary_row {
+#gpzjspntce .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1284,16 +1263,16 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#jopnmniffy .gt_first_summary_row {
+#gpzjspntce .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_first_summary_row.thick {
+#gpzjspntce .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#jopnmniffy .gt_last_summary_row {
+#gpzjspntce .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1303,7 +1282,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_grand_summary_row {
+#gpzjspntce .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1313,7 +1292,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#jopnmniffy .gt_first_grand_summary_row {
+#gpzjspntce .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1323,7 +1302,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-top-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_last_grand_summary_row_top {
+#gpzjspntce .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1333,11 +1312,11 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_striped {
+#gpzjspntce .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#jopnmniffy .gt_table_body {
+#gpzjspntce .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1346,7 +1325,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-bottom-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_footnotes {
+#gpzjspntce .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1360,7 +1339,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_footnote {
+#gpzjspntce .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1369,7 +1348,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#jopnmniffy .gt_sourcenotes {
+#gpzjspntce .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1383,7 +1362,7 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   border-right-color: #D3D3D3;
 }
 
-#jopnmniffy .gt_sourcenote {
+#gpzjspntce .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1391,72 +1370,72 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
   padding-right: 5px;
 }
 
-#jopnmniffy .gt_left {
+#gpzjspntce .gt_left {
   text-align: left;
 }
 
-#jopnmniffy .gt_center {
+#gpzjspntce .gt_center {
   text-align: center;
 }
 
-#jopnmniffy .gt_right {
+#gpzjspntce .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#jopnmniffy .gt_font_normal {
+#gpzjspntce .gt_font_normal {
   font-weight: normal;
 }
 
-#jopnmniffy .gt_font_bold {
+#gpzjspntce .gt_font_bold {
   font-weight: bold;
 }
 
-#jopnmniffy .gt_font_italic {
+#gpzjspntce .gt_font_italic {
   font-style: italic;
 }
 
-#jopnmniffy .gt_super {
+#gpzjspntce .gt_super {
   font-size: 65%;
 }
 
-#jopnmniffy .gt_footnote_marks {
+#gpzjspntce .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#jopnmniffy .gt_asterisk {
+#gpzjspntce .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#jopnmniffy .gt_indent_1 {
+#gpzjspntce .gt_indent_1 {
   text-indent: 5px;
 }
 
-#jopnmniffy .gt_indent_2 {
+#gpzjspntce .gt_indent_2 {
   text-indent: 10px;
 }
 
-#jopnmniffy .gt_indent_3 {
+#gpzjspntce .gt_indent_3 {
   text-indent: 15px;
 }
 
-#jopnmniffy .gt_indent_4 {
+#gpzjspntce .gt_indent_4 {
   text-indent: 20px;
 }
 
-#jopnmniffy .gt_indent_5 {
+#gpzjspntce .gt_indent_5 {
   text-indent: 25px;
 }
 
-#jopnmniffy .katex-display {
+#gpzjspntce .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#jopnmniffy div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#gpzjspntce div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1560,8 +1539,8 @@ Table&nbsp;23.1: Two titration strategies, 1000 virtual patient runs each.
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>model_file <span class="op">=</span> <span class="va">tdm_fit</span><span class="op">$</span><span class="va">theta_init</span>, estimate <span class="op">=</span> <span class="va">tdm_fit</span><span class="op">$</span><span class="va">theta</span>, se <span class="op">=</span> <span class="va">tdm_fit</span><span class="op">$</span><span class="va">se_theta</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                 TVCL      TVV</span></span>
 <span><span class="co">#&gt; model_file 4.0000000 50.00000</span></span>
-<span><span class="co">#&gt; estimate   6.9498876 56.19009</span></span>
-<span><span class="co">#&gt; se         0.4742188  4.31254</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; estimate   6.9498879 56.19010</span></span>
+<span><span class="co">#&gt; se         0.4742187  4.31254</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Each trough is recorded before the dose given at the same time, as the protocol measured it. The fit puts the typical clearance well above the model file’s value. Simulating the protocol at the fit shows what that does to it:</p>
 <div id="tbl-tdm-at-fit" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-layout-align="center">
@@ -1651,21 +1630,31 @@ Table&nbsp;23.2: The 25% titration protocol simulated at the model file’s valu
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The <code>fit</code>, <code>etas</code> and <code>unmatched</code> arguments of <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive()</a></code> and the <code>ETA_SUPPLIED</code> column of its <code>metrics</code> are not in ferx-r 0.4.0.</p>
+<p>The <code>fit</code>, <code>etas</code> and <code>unmatched</code> arguments of <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive()</a></code> and the <code>ETA_SUPPLIED</code> column of its <code>metrics</code> are not in ferx-r 0.4.0, and neither are the dosing-interval ladder (<code>intervals</code>, <code>start_interval</code>, <code>lengthen</code>, <code>shorten</code>), the <code>"not_due"</code> decision outcome and the <code>INTERVAL</code> and <code>N_NOT_DUE</code> columns it adds, or the <code>AUC_TARGET_ATTAINMENT</code> column of <code>metrics</code>.</p>
 </div>
 </div>
 </section></section><section id="pitfalls" class="level2"><h2 class="anchored" data-anchor-id="pitfalls">Pitfalls</h2>
 <ul>
+<li><p><strong>The dose ledger excludes base doses.</strong> <code>doses</code>, <code>CUM_DOSE</code> and <code>N_DOSES</code> count controller doses only. Add the dose rows of your dataset to get the full regimen.</p></li>
+<li><p><strong>Signals are read before the dose; trajectories at the same time include a bolus.</strong> The controller reads the level <em>before</em> the dose given at that decision time. A <code>trajectories</code> row at the same time already includes a bolus given then. In the loading-dose run the first signal is 5.65 mg/L, while the trajectory at 24 h is 17.37 mg/L. The difference is the 937.5 mg bolus divided by the volume of 80 L. Use <code>decisions$SIGNAL</code> for trough-based attainment.</p></li>
+<li><p><strong><code>PCT_TIME_IN_WINDOW</code> is a fraction of decisions.</strong> Despite its name, it is a proportion between 0 and 1 of the signal-bearing decisions, not a percentage of time.</p></li>
+<li><p><strong><code>target_window</code> does not steer dosing.</strong> Only the <code>when</code> rules change doses. The window only feeds the attainment metric.</p></li>
 <li>
-<strong>The dose ledger excludes base doses.</strong> <code>doses</code>, <code>CUM_DOSE</code> and <code>N_DOSES</code> count controller doses only. Add the dose rows of your dataset to get the full regimen.</li>
-<li>
-<strong>Signals are read before the dose; trajectories at the same time include a bolus.</strong> The controller reads the level <em>before</em> the dose given at that decision time. A <code>trajectories</code> row at the same time already includes a bolus given then. In the loading-dose run the first signal is 5.65 mg/L, while the trajectory at 24 h is 17.37 mg/L. The difference is the 937.5 mg bolus divided by the volume of 80 L. Use <code>decisions$SIGNAL</code> for trough-based attainment.</li>
-<li>
-<strong><code>PCT_TIME_IN_WINDOW</code> is a fraction of decisions.</strong> Despite its name, it is a proportion between 0 and 1 of the signal-bearing decisions, not a percentage of time.</li>
-<li>
-<strong><code>target_window</code> does not steer dosing.</strong> Only the <code>when</code> rules change doses. The window only feeds the attainment metric.</li>
-<li>
-<strong>Scope.</strong> The controller runs on ODE models, titrates on one signal per block, and rejects stochastic (<code>[diffusion]</code>) models. Some combinations of base doses with time-varying covariates, IOV or system resets are rejected with an error. <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">?ferx_simulate_adaptive</a></code> and the ferx-core page list them.</li>
+<p><strong>Scope.</strong> The controller runs on ODE models, titrates on one signal per block, and rejects stochastic (<code>[diffusion]</code>) models. A steady-state, lag-timed or modelled-rate (<code>RATE</code>) base dose under a time-varying covariate or IOV is rejected with an error; base doses with system resets (<code>EVID = 3</code>/<code>4</code>) run on every path. <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">?ferx_simulate_adaptive</a></code> and the ferx-core page list the rest.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Changed after ferx-r 0.4.0
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>ferx-r 0.4.0 also rejects a base regimen with system resets under a time-varying covariate or IOV, and an <code>auc_target</code> metric combined with a time-varying covariate, a <code>TIME</code>-dependent PK parameter, IOV or a reset.</p>
+</div>
+</div>
+</li>
 </ul></section><section id="summary" class="level2"><h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <ul>
 <li>Declare the dosing policy in <code>[adaptive_dosing]</code> and simulate it with <code><a href="https://ferx-nlme.org/reference/ferx_simulate_adaptive.html">ferx_simulate_adaptive()</a></code>.</li>
@@ -1696,15 +1685,50 @@ Table&nbsp;23.2: The 25% titration protocol simulated at the model file’s valu
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
       const i = window.document.createElement("i");
       i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
     }
     setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
@@ -1783,7 +1807,8 @@ Table&nbsp;23.2: The 25% titration protocol simulated at the model file’s valu
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -1792,8 +1817,69 @@ Table&nbsp;23.2: The 25% titration protocol simulated at the model file’s valu
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -1807,6 +1893,7 @@ Table&nbsp;23.2: The 25% titration protocol simulated at the model file’s valu
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -1969,44 +2056,54 @@ Table&nbsp;23.2: The 25% titration protocol simulated at the model file’s valu
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -2104,7 +2201,9 @@ Table&nbsp;23.2: The 25% titration protocol simulated at the model file’s valu
       }
     }
   });
-  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+  </script><script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script><nav class="page-navigation" aria-label="Page"><div class="nav-page nav-page-previous">
       <a href="../chapters/22-time-to-event.html" class="pagination-link" aria-label="Time-to-event models">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Time-to-event models</span></span>
       </a>          

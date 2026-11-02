@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.20">
+<meta name="generator" content="quarto-1.11.9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Tables and figures – FeRx NLME - R package (ferx)</title>
 <style>
@@ -72,18 +72,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-4fb18a4e3025729c045ae2a2b77a683d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-8e54f3b44ae85a4e33659ff2791ab8dc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-600029c0d66f4e5df764ccbf24e706b3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-a05a9893f770427474681fd859838e9c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -111,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 </head>
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -134,6 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       for (let i=0; i < toggles.length; i++) {
         const toggle = toggles[i];
         if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
           if (alternate) {
             toggle.classList.add("alternate");
           } else {
@@ -163,13 +165,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       manageTransitions('#quarto-margin-sidebar .nav-link', true);
       // Switch the toggles
       setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
       if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
         manageTransitions("body", false);
-        window.scrollTo(0, 1);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
         setTimeout(() => {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, scrollY);
           manageTransitions("body", true);
         }, 40);
       }
@@ -263,6 +271,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       // Read the current dark / light value
       let toAlternate = !hasAlternateSentinel();
       toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
       setStyleSentinel(toAlternate);
       toggleGiscusIfUsed(toAlternate, darkModeDefault);
       window.dispatchEvent(new Event('resize'));
@@ -276,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site"><div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="https://ferx-nlme.org/" class="navbar-brand navbar-brand-logo">
     <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
@@ -284,8 +293,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">FeRx NLME - R package (ferx)</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -337,20 +345,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
     <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
-    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+    </nav><nav class="quarto-secondary-nav" aria-label="Toolbar"><div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/12-tables-figures.html"><span class="chapter-title">Tables and figures</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/12-tables-figures.html"><span class="chapter-title">Tables and figures</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Section"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
       <a href="../index.html" class="sidebar-logo-link">
       <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
       </div>
@@ -364,13 +373,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Getting started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Getting started</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
@@ -385,13 +391,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">The analysis workflow</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">The analysis workflow</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
@@ -451,13 +454,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: general PK modeling</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Scenarios: general PK modeling</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
@@ -477,13 +477,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: covariates</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Scenarios: covariates</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Covariate modeling</span></a>
@@ -493,13 +490,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: dosing and data</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Scenarios: dosing and data</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
@@ -514,13 +508,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Scenarios: endpoints beyond PK</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
@@ -540,13 +531,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: adaptive dosing</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Scenarios: adaptive dosing</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
@@ -556,13 +544,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: meta-analysis</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Scenarios: meta-analysis</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/24-mbma.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model-based meta-analysis</span></a>
@@ -572,13 +557,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: experimental</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-controls="quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-9-label">Scenarios: experimental</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-9" aria-labelledby="quarto-sidebar-section-9-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/25-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
@@ -588,13 +570,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" aria-controls="quarto-sidebar-section-10" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-10-label">Reference</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-10" aria-labelledby="quarto-sidebar-section-10-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/26-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
@@ -607,7 +586,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
 <li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
@@ -622,7 +601,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/12-tables-figures.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/12-tables-figures.html"><span class="chapter-title">Tables and figures</span></a></li></ol></nav><div class="quarto-title">
+<main class="content" id="quarto-document-content" tabindex="-1"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/12-tables-figures.html"><span class="chapter-title">Tables and figures</span></a></li></ol></nav><div class="quarto-title">
 <h1 class="title"><span id="sec-tables-figures" class="quarto-section-identifier"><span class="chapter-title">Tables and figures</span></span></h1>
 </div>
 
@@ -694,23 +673,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Table&nbsp;12.1: Parameter estimates of the final covariate model.
 </figcaption><div aria-describedby="tbl-parameters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="hupncaamlr" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#hupncaamlr table {
+<div id="kpgtuvoyzm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#kpgtuvoyzm table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#hupncaamlr thead, #hupncaamlr tbody, #hupncaamlr tfoot, #hupncaamlr tr, #hupncaamlr td, #hupncaamlr th {
+#kpgtuvoyzm thead, #kpgtuvoyzm tbody, #kpgtuvoyzm tfoot, #kpgtuvoyzm tr, #kpgtuvoyzm td, #kpgtuvoyzm th {
   border-style: none;
 }
 
-#hupncaamlr p {
+#kpgtuvoyzm p {
   margin: 0;
   padding: 0;
 }
 
-#hupncaamlr .gt_table {
+#kpgtuvoyzm .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -736,12 +715,12 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-left-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_caption {
+#kpgtuvoyzm .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#hupncaamlr .gt_title {
+#kpgtuvoyzm .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -753,7 +732,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-width: 0;
 }
 
-#hupncaamlr .gt_subtitle {
+#kpgtuvoyzm .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -765,7 +744,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-top-width: 0;
 }
 
-#hupncaamlr .gt_heading {
+#kpgtuvoyzm .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -777,13 +756,13 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_bottom_border {
+#kpgtuvoyzm .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_col_headings {
+#kpgtuvoyzm .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -798,7 +777,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_col_heading {
+#kpgtuvoyzm .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -818,7 +797,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   overflow-x: hidden;
 }
 
-#hupncaamlr .gt_column_spanner_outer {
+#kpgtuvoyzm .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -830,15 +809,15 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 4px;
 }
 
-#hupncaamlr .gt_column_spanner_outer:first-child {
+#kpgtuvoyzm .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#hupncaamlr .gt_column_spanner_outer:last-child {
+#kpgtuvoyzm .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#hupncaamlr .gt_column_spanner {
+#kpgtuvoyzm .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -850,11 +829,11 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   width: 100%;
 }
 
-#hupncaamlr .gt_spanner_row {
+#kpgtuvoyzm .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#hupncaamlr .gt_group_heading {
+#kpgtuvoyzm .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -880,7 +859,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   text-align: left;
 }
 
-#hupncaamlr .gt_empty_group_heading {
+#kpgtuvoyzm .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -895,15 +874,15 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   vertical-align: middle;
 }
 
-#hupncaamlr .gt_from_md > :first-child {
+#kpgtuvoyzm .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#hupncaamlr .gt_from_md > :last-child {
+#kpgtuvoyzm .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#hupncaamlr .gt_row {
+#kpgtuvoyzm .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -922,7 +901,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   overflow-x: hidden;
 }
 
-#hupncaamlr .gt_stub {
+#kpgtuvoyzm .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -935,7 +914,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#hupncaamlr .gt_stub_row_group {
+#kpgtuvoyzm .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -949,15 +928,15 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   vertical-align: top;
 }
 
-#hupncaamlr .gt_row_group_first td {
+#kpgtuvoyzm .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#hupncaamlr .gt_row_group_first th {
+#kpgtuvoyzm .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#hupncaamlr .gt_summary_row {
+#kpgtuvoyzm .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -967,16 +946,16 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#hupncaamlr .gt_first_summary_row {
+#kpgtuvoyzm .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_first_summary_row.thick {
+#kpgtuvoyzm .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#hupncaamlr .gt_last_summary_row {
+#kpgtuvoyzm .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -986,7 +965,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_grand_summary_row {
+#kpgtuvoyzm .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -996,7 +975,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#hupncaamlr .gt_first_grand_summary_row {
+#kpgtuvoyzm .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1006,7 +985,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-top-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_last_grand_summary_row_top {
+#kpgtuvoyzm .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1016,11 +995,11 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_striped {
+#kpgtuvoyzm .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#hupncaamlr .gt_table_body {
+#kpgtuvoyzm .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1029,7 +1008,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-bottom-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_footnotes {
+#kpgtuvoyzm .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1043,7 +1022,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_footnote {
+#kpgtuvoyzm .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1052,7 +1031,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#hupncaamlr .gt_sourcenotes {
+#kpgtuvoyzm .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1066,7 +1045,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   border-right-color: #D3D3D3;
 }
 
-#hupncaamlr .gt_sourcenote {
+#kpgtuvoyzm .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1074,72 +1053,72 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
   padding-right: 5px;
 }
 
-#hupncaamlr .gt_left {
+#kpgtuvoyzm .gt_left {
   text-align: left;
 }
 
-#hupncaamlr .gt_center {
+#kpgtuvoyzm .gt_center {
   text-align: center;
 }
 
-#hupncaamlr .gt_right {
+#kpgtuvoyzm .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#hupncaamlr .gt_font_normal {
+#kpgtuvoyzm .gt_font_normal {
   font-weight: normal;
 }
 
-#hupncaamlr .gt_font_bold {
+#kpgtuvoyzm .gt_font_bold {
   font-weight: bold;
 }
 
-#hupncaamlr .gt_font_italic {
+#kpgtuvoyzm .gt_font_italic {
   font-style: italic;
 }
 
-#hupncaamlr .gt_super {
+#kpgtuvoyzm .gt_super {
   font-size: 65%;
 }
 
-#hupncaamlr .gt_footnote_marks {
+#kpgtuvoyzm .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#hupncaamlr .gt_asterisk {
+#kpgtuvoyzm .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#hupncaamlr .gt_indent_1 {
+#kpgtuvoyzm .gt_indent_1 {
   text-indent: 5px;
 }
 
-#hupncaamlr .gt_indent_2 {
+#kpgtuvoyzm .gt_indent_2 {
   text-indent: 10px;
 }
 
-#hupncaamlr .gt_indent_3 {
+#kpgtuvoyzm .gt_indent_3 {
   text-indent: 15px;
 }
 
-#hupncaamlr .gt_indent_4 {
+#kpgtuvoyzm .gt_indent_4 {
   text-indent: 20px;
 }
 
-#hupncaamlr .gt_indent_5 {
+#kpgtuvoyzm .gt_indent_5 {
   text-indent: 25px;
 }
 
-#hupncaamlr .katex-display {
+#kpgtuvoyzm .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#hupncaamlr div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#kpgtuvoyzm div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1273,7 +1252,7 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
 <span><span class="co">#&gt; [1] 33.7 33.5 22.9 19.7 43.8</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"CV%"</span>, <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html">capture.output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] "  ETA_CL               [log-normal] = 0.107531  (CV% = 33.7)  SE = 0.028096"</span></span>
-<span><span class="co">#&gt; [2] "  ETA_V1               [log-normal] = 0.106348  (CV% = 33.5)  SE = 0.028679"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; [2] "  ETA_V1               [log-normal] = 0.106348  (CV% = 33.5)  SE = 0.028678"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="reading-the-result-a-model-comparison-table" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result-a-model-comparison-table">Reading the result: a model comparison table</h2>
 <p>A report also records the models that led to the final one. The fit objects carry all the numbers:</p>
@@ -1292,23 +1271,23 @@ Table&nbsp;12.1: Parameter estimates of the final covariate model.
 Table&nbsp;12.2: Models compared during development.
 </figcaption><div aria-describedby="tbl-runs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="cnwixvwpdg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#cnwixvwpdg table {
+<div id="zgvxsykrea" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#zgvxsykrea table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#cnwixvwpdg thead, #cnwixvwpdg tbody, #cnwixvwpdg tfoot, #cnwixvwpdg tr, #cnwixvwpdg td, #cnwixvwpdg th {
+#zgvxsykrea thead, #zgvxsykrea tbody, #zgvxsykrea tfoot, #zgvxsykrea tr, #zgvxsykrea td, #zgvxsykrea th {
   border-style: none;
 }
 
-#cnwixvwpdg p {
+#zgvxsykrea p {
   margin: 0;
   padding: 0;
 }
 
-#cnwixvwpdg .gt_table {
+#zgvxsykrea .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1334,12 +1313,12 @@ Table&nbsp;12.2: Models compared during development.
   border-left-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_caption {
+#zgvxsykrea .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#cnwixvwpdg .gt_title {
+#zgvxsykrea .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1351,7 +1330,7 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-width: 0;
 }
 
-#cnwixvwpdg .gt_subtitle {
+#zgvxsykrea .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1363,7 +1342,7 @@ Table&nbsp;12.2: Models compared during development.
   border-top-width: 0;
 }
 
-#cnwixvwpdg .gt_heading {
+#zgvxsykrea .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1375,13 +1354,13 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_bottom_border {
+#zgvxsykrea .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_col_headings {
+#zgvxsykrea .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1396,7 +1375,7 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_col_heading {
+#zgvxsykrea .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1416,7 +1395,7 @@ Table&nbsp;12.2: Models compared during development.
   overflow-x: hidden;
 }
 
-#cnwixvwpdg .gt_column_spanner_outer {
+#zgvxsykrea .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1428,15 +1407,15 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 4px;
 }
 
-#cnwixvwpdg .gt_column_spanner_outer:first-child {
+#zgvxsykrea .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#cnwixvwpdg .gt_column_spanner_outer:last-child {
+#zgvxsykrea .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#cnwixvwpdg .gt_column_spanner {
+#zgvxsykrea .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1448,11 +1427,11 @@ Table&nbsp;12.2: Models compared during development.
   width: 100%;
 }
 
-#cnwixvwpdg .gt_spanner_row {
+#zgvxsykrea .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#cnwixvwpdg .gt_group_heading {
+#zgvxsykrea .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1478,7 +1457,7 @@ Table&nbsp;12.2: Models compared during development.
   text-align: left;
 }
 
-#cnwixvwpdg .gt_empty_group_heading {
+#zgvxsykrea .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1493,15 +1472,15 @@ Table&nbsp;12.2: Models compared during development.
   vertical-align: middle;
 }
 
-#cnwixvwpdg .gt_from_md > :first-child {
+#zgvxsykrea .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#cnwixvwpdg .gt_from_md > :last-child {
+#zgvxsykrea .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#cnwixvwpdg .gt_row {
+#zgvxsykrea .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1520,7 +1499,7 @@ Table&nbsp;12.2: Models compared during development.
   overflow-x: hidden;
 }
 
-#cnwixvwpdg .gt_stub {
+#zgvxsykrea .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1533,7 +1512,7 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#cnwixvwpdg .gt_stub_row_group {
+#zgvxsykrea .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1547,15 +1526,15 @@ Table&nbsp;12.2: Models compared during development.
   vertical-align: top;
 }
 
-#cnwixvwpdg .gt_row_group_first td {
+#zgvxsykrea .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#cnwixvwpdg .gt_row_group_first th {
+#zgvxsykrea .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#cnwixvwpdg .gt_summary_row {
+#zgvxsykrea .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1565,16 +1544,16 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#cnwixvwpdg .gt_first_summary_row {
+#zgvxsykrea .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_first_summary_row.thick {
+#zgvxsykrea .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#cnwixvwpdg .gt_last_summary_row {
+#zgvxsykrea .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1584,7 +1563,7 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_grand_summary_row {
+#zgvxsykrea .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1594,7 +1573,7 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#cnwixvwpdg .gt_first_grand_summary_row {
+#zgvxsykrea .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1604,7 +1583,7 @@ Table&nbsp;12.2: Models compared during development.
   border-top-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_last_grand_summary_row_top {
+#zgvxsykrea .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1614,11 +1593,11 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_striped {
+#zgvxsykrea .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#cnwixvwpdg .gt_table_body {
+#zgvxsykrea .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1627,7 +1606,7 @@ Table&nbsp;12.2: Models compared during development.
   border-bottom-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_footnotes {
+#zgvxsykrea .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1641,7 +1620,7 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_footnote {
+#zgvxsykrea .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1650,7 +1629,7 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#cnwixvwpdg .gt_sourcenotes {
+#zgvxsykrea .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1664,7 +1643,7 @@ Table&nbsp;12.2: Models compared during development.
   border-right-color: #D3D3D3;
 }
 
-#cnwixvwpdg .gt_sourcenote {
+#zgvxsykrea .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1672,72 +1651,72 @@ Table&nbsp;12.2: Models compared during development.
   padding-right: 5px;
 }
 
-#cnwixvwpdg .gt_left {
+#zgvxsykrea .gt_left {
   text-align: left;
 }
 
-#cnwixvwpdg .gt_center {
+#zgvxsykrea .gt_center {
   text-align: center;
 }
 
-#cnwixvwpdg .gt_right {
+#zgvxsykrea .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#cnwixvwpdg .gt_font_normal {
+#zgvxsykrea .gt_font_normal {
   font-weight: normal;
 }
 
-#cnwixvwpdg .gt_font_bold {
+#zgvxsykrea .gt_font_bold {
   font-weight: bold;
 }
 
-#cnwixvwpdg .gt_font_italic {
+#zgvxsykrea .gt_font_italic {
   font-style: italic;
 }
 
-#cnwixvwpdg .gt_super {
+#zgvxsykrea .gt_super {
   font-size: 65%;
 }
 
-#cnwixvwpdg .gt_footnote_marks {
+#zgvxsykrea .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#cnwixvwpdg .gt_asterisk {
+#zgvxsykrea .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#cnwixvwpdg .gt_indent_1 {
+#zgvxsykrea .gt_indent_1 {
   text-indent: 5px;
 }
 
-#cnwixvwpdg .gt_indent_2 {
+#zgvxsykrea .gt_indent_2 {
   text-indent: 10px;
 }
 
-#cnwixvwpdg .gt_indent_3 {
+#zgvxsykrea .gt_indent_3 {
   text-indent: 15px;
 }
 
-#cnwixvwpdg .gt_indent_4 {
+#zgvxsykrea .gt_indent_4 {
   text-indent: 20px;
 }
 
-#cnwixvwpdg .gt_indent_5 {
+#zgvxsykrea .gt_indent_5 {
   text-indent: 25px;
 }
 
-#cnwixvwpdg .katex-display {
+#zgvxsykrea .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#cnwixvwpdg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#zgvxsykrea div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1828,9 +1807,9 @@ Table&nbsp;12.2: Models compared during development.
 <span><span class="co">#&gt; 5   6.0 0.1245657 4.21475    1 35.689406</span></span>
 <span><span class="co">#&gt; 6   8.0 0.1245657 4.21475    1 35.689406</span></span>
 <span><span class="co">#&gt; 7  12.0 0.1245657 4.21475    1 35.689406</span></span>
-<span><span class="co">#&gt; 8  24.0 0.1245657 4.21475    1 11.635927</span></span>
-<span><span class="co">#&gt; 9  36.0 0.1245657 4.21475    1 11.635927</span></span>
-<span><span class="co">#&gt; 10 48.0 0.1245657 4.21475    1  8.208649</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 8  24.0 0.1245657 4.21475    1 11.635928</span></span>
+<span><span class="co">#&gt; 9  36.0 0.1245657 4.21475    1 11.635928</span></span>
+<span><span class="co">#&gt; 10 48.0 0.1245657 4.21475    1  8.208648</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>CMAX</code> and <code>TMAX</code> have one value per subject, repeated on every row. <code>AUC_TAU</code> has one value per 24-hour window.</p>
 <p>The same blocks can be added to the final model. <code><a href="https://ferx-nlme.org/reference/ferx_model_set_section.html">ferx_model_set_section()</a></code> only replaces existing blocks, so append them to a copy of the model file:</p>
@@ -1857,11 +1836,11 @@ Table&nbsp;12.2: Models compared during development.
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">exposure</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID       CL       V1   WT  CRCL     CMAX TMAX AUC_0_48</span></span>
 <span><span class="co">#&gt; 1  1 4.360698 42.75776 70.6  73.7 4.134007    1 46.05033</span></span>
-<span><span class="co">#&gt; 2  2 5.971806 60.81854 80.9  80.7 3.222541    1 36.35207</span></span>
-<span><span class="co">#&gt; 3  3 4.944089 50.23568 90.7  99.1 3.274867    2 43.58047</span></span>
-<span><span class="co">#&gt; 4  4 3.055909 21.72425 75.7  51.3 5.475072    2 60.77471</span></span>
-<span><span class="co">#&gt; 5  5 5.824481 40.27096 86.5 124.0 3.452935    1 40.04630</span></span>
-<span><span class="co">#&gt; 6  6 7.727280 45.64975 71.2 129.5 3.434671    1 29.04905</span></span>
+<span><span class="co">#&gt; 2  2 5.971806 60.81853 80.9  80.7 3.222542    1 36.35207</span></span>
+<span><span class="co">#&gt; 3  3 4.944089 50.23567 90.7  99.1 3.274867    2 43.58047</span></span>
+<span><span class="co">#&gt; 4  4 3.055909 21.72424 75.7  51.3 5.475072    2 60.77471</span></span>
+<span><span class="co">#&gt; 5  5 5.824481 40.27095 86.5 124.0 3.452935    1 40.04630</span></span>
+<span><span class="co">#&gt; 6  6 7.727280 45.64974 71.2 129.5 3.434671    1 29.04905</span></span>
 <span></span>
 <span><span class="va">exposure</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>weight_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html">cut</a></span><span class="op">(</span><span class="va">WT</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">60</span>, <span class="fl">80</span>, <span class="cn">Inf</span><span class="op">)</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"&lt; 60 kg"</span>, <span class="st">"60–80 kg"</span>, <span class="st">"&gt; 80 kg"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -1874,23 +1853,23 @@ Table&nbsp;12.2: Models compared during development.
 Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by body weight group.
 </figcaption><div aria-describedby="tbl-exposure-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="yrxvknqbqb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#yrxvknqbqb table {
+<div id="lzqoevnpvj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#lzqoevnpvj table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#yrxvknqbqb thead, #yrxvknqbqb tbody, #yrxvknqbqb tfoot, #yrxvknqbqb tr, #yrxvknqbqb td, #yrxvknqbqb th {
+#lzqoevnpvj thead, #lzqoevnpvj tbody, #lzqoevnpvj tfoot, #lzqoevnpvj tr, #lzqoevnpvj td, #lzqoevnpvj th {
   border-style: none;
 }
 
-#yrxvknqbqb p {
+#lzqoevnpvj p {
   margin: 0;
   padding: 0;
 }
 
-#yrxvknqbqb .gt_table {
+#lzqoevnpvj .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1916,12 +1895,12 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-left-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_caption {
+#lzqoevnpvj .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#yrxvknqbqb .gt_title {
+#lzqoevnpvj .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1933,7 +1912,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-width: 0;
 }
 
-#yrxvknqbqb .gt_subtitle {
+#lzqoevnpvj .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1945,7 +1924,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-top-width: 0;
 }
 
-#yrxvknqbqb .gt_heading {
+#lzqoevnpvj .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1957,13 +1936,13 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_bottom_border {
+#lzqoevnpvj .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_col_headings {
+#lzqoevnpvj .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1978,7 +1957,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_col_heading {
+#lzqoevnpvj .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1998,7 +1977,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   overflow-x: hidden;
 }
 
-#yrxvknqbqb .gt_column_spanner_outer {
+#lzqoevnpvj .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2010,15 +1989,15 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 4px;
 }
 
-#yrxvknqbqb .gt_column_spanner_outer:first-child {
+#lzqoevnpvj .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#yrxvknqbqb .gt_column_spanner_outer:last-child {
+#lzqoevnpvj .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#yrxvknqbqb .gt_column_spanner {
+#lzqoevnpvj .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2030,11 +2009,11 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   width: 100%;
 }
 
-#yrxvknqbqb .gt_spanner_row {
+#lzqoevnpvj .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#yrxvknqbqb .gt_group_heading {
+#lzqoevnpvj .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2060,7 +2039,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   text-align: left;
 }
 
-#yrxvknqbqb .gt_empty_group_heading {
+#lzqoevnpvj .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2075,15 +2054,15 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   vertical-align: middle;
 }
 
-#yrxvknqbqb .gt_from_md > :first-child {
+#lzqoevnpvj .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#yrxvknqbqb .gt_from_md > :last-child {
+#lzqoevnpvj .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#yrxvknqbqb .gt_row {
+#lzqoevnpvj .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2102,7 +2081,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   overflow-x: hidden;
 }
 
-#yrxvknqbqb .gt_stub {
+#lzqoevnpvj .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2115,7 +2094,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#yrxvknqbqb .gt_stub_row_group {
+#lzqoevnpvj .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2129,15 +2108,15 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   vertical-align: top;
 }
 
-#yrxvknqbqb .gt_row_group_first td {
+#lzqoevnpvj .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#yrxvknqbqb .gt_row_group_first th {
+#lzqoevnpvj .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#yrxvknqbqb .gt_summary_row {
+#lzqoevnpvj .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2147,16 +2126,16 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#yrxvknqbqb .gt_first_summary_row {
+#lzqoevnpvj .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_first_summary_row.thick {
+#lzqoevnpvj .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#yrxvknqbqb .gt_last_summary_row {
+#lzqoevnpvj .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2166,7 +2145,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_grand_summary_row {
+#lzqoevnpvj .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2176,7 +2155,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#yrxvknqbqb .gt_first_grand_summary_row {
+#lzqoevnpvj .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2186,7 +2165,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-top-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_last_grand_summary_row_top {
+#lzqoevnpvj .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2196,11 +2175,11 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_striped {
+#lzqoevnpvj .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#yrxvknqbqb .gt_table_body {
+#lzqoevnpvj .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2209,7 +2188,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-bottom-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_footnotes {
+#lzqoevnpvj .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2223,7 +2202,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_footnote {
+#lzqoevnpvj .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2232,7 +2211,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#yrxvknqbqb .gt_sourcenotes {
+#lzqoevnpvj .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2246,7 +2225,7 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   border-right-color: #D3D3D3;
 }
 
-#yrxvknqbqb .gt_sourcenote {
+#lzqoevnpvj .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2254,72 +2233,72 @@ Table&nbsp;12.3: Individual exposure after a single 250 mg dose, summarised by b
   padding-right: 5px;
 }
 
-#yrxvknqbqb .gt_left {
+#lzqoevnpvj .gt_left {
   text-align: left;
 }
 
-#yrxvknqbqb .gt_center {
+#lzqoevnpvj .gt_center {
   text-align: center;
 }
 
-#yrxvknqbqb .gt_right {
+#lzqoevnpvj .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#yrxvknqbqb .gt_font_normal {
+#lzqoevnpvj .gt_font_normal {
   font-weight: normal;
 }
 
-#yrxvknqbqb .gt_font_bold {
+#lzqoevnpvj .gt_font_bold {
   font-weight: bold;
 }
 
-#yrxvknqbqb .gt_font_italic {
+#lzqoevnpvj .gt_font_italic {
   font-style: italic;
 }
 
-#yrxvknqbqb .gt_super {
+#lzqoevnpvj .gt_super {
   font-size: 65%;
 }
 
-#yrxvknqbqb .gt_footnote_marks {
+#lzqoevnpvj .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#yrxvknqbqb .gt_asterisk {
+#lzqoevnpvj .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#yrxvknqbqb .gt_indent_1 {
+#lzqoevnpvj .gt_indent_1 {
   text-indent: 5px;
 }
 
-#yrxvknqbqb .gt_indent_2 {
+#lzqoevnpvj .gt_indent_2 {
   text-indent: 10px;
 }
 
-#yrxvknqbqb .gt_indent_3 {
+#lzqoevnpvj .gt_indent_3 {
   text-indent: 15px;
 }
 
-#yrxvknqbqb .gt_indent_4 {
+#lzqoevnpvj .gt_indent_4 {
   text-indent: 20px;
 }
 
-#yrxvknqbqb .gt_indent_5 {
+#lzqoevnpvj .gt_indent_5 {
   text-indent: 25px;
 }
 
-#yrxvknqbqb .katex-display {
+#lzqoevnpvj .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#yrxvknqbqb div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#lzqoevnpvj div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2528,15 +2507,50 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
       const i = window.document.createElement("i");
       i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
     }
     setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
@@ -2615,7 +2629,8 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -2624,8 +2639,69 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -2639,6 +2715,7 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -2801,44 +2878,54 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -2936,7 +3023,9 @@ Figure&nbsp;12.2: Individual clearance against creatinine clearance, with the ty
       }
     }
   });
-  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+  </script><script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script><nav class="page-navigation" aria-label="Page"><div class="nav-page nav-page-previous">
       <a href="../chapters/11-simulation.html" class="pagination-link" aria-label="Simulating scenarios">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Simulating scenarios</span></span>
       </a>          

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.20">
+<meta name="generator" content="quarto-1.11.9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>A complete analysis in one chapter – FeRx NLME - R package (ferx)</title>
 <style>
@@ -72,18 +72,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-4fb18a4e3025729c045ae2a2b77a683d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-8e54f3b44ae85a4e33659ff2791ab8dc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-600029c0d66f4e5df764ccbf24e706b3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-a05a9893f770427474681fd859838e9c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -111,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 </head>
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -134,6 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       for (let i=0; i < toggles.length; i++) {
         const toggle = toggles[i];
         if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
           if (alternate) {
             toggle.classList.add("alternate");
           } else {
@@ -163,13 +165,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       manageTransitions('#quarto-margin-sidebar .nav-link', true);
       // Switch the toggles
       setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
       if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
         manageTransitions("body", false);
-        window.scrollTo(0, 1);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
         setTimeout(() => {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, scrollY);
           manageTransitions("body", true);
         }, 40);
       }
@@ -263,6 +271,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       // Read the current dark / light value
       let toAlternate = !hasAlternateSentinel();
       toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
       setStyleSentinel(toAlternate);
       toggleGiscusIfUsed(toAlternate, darkModeDefault);
       window.dispatchEvent(new Event('resize'));
@@ -276,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site"><div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="https://ferx-nlme.org/" class="navbar-brand navbar-brand-logo">
     <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
@@ -284,8 +293,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">FeRx NLME - R package (ferx)</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -337,20 +345,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
     <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
-    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+    </nav><nav class="quarto-secondary-nav" aria-label="Toolbar"><div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/02-complete-analysis.html"><span class="chapter-title">A complete analysis in one chapter</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/02-complete-analysis.html"><span class="chapter-title">A complete analysis in one chapter</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Section"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
       <a href="../index.html" class="sidebar-logo-link">
       <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
       </div>
@@ -364,13 +373,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Getting started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Getting started</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
@@ -385,13 +391,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">The analysis workflow</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">The analysis workflow</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
@@ -451,13 +454,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: general PK modeling</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Scenarios: general PK modeling</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
@@ -477,13 +477,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: covariates</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Scenarios: covariates</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Covariate modeling</span></a>
@@ -493,13 +490,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: dosing and data</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Scenarios: dosing and data</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
@@ -514,13 +508,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Scenarios: endpoints beyond PK</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
@@ -540,13 +531,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: adaptive dosing</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Scenarios: adaptive dosing</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
@@ -556,13 +544,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: meta-analysis</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Scenarios: meta-analysis</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/24-mbma.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model-based meta-analysis</span></a>
@@ -572,13 +557,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: experimental</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-controls="quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-9-label">Scenarios: experimental</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-9" aria-labelledby="quarto-sidebar-section-9-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/25-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
@@ -588,13 +570,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" aria-controls="quarto-sidebar-section-10" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-10-label">Reference</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-10" aria-labelledby="quarto-sidebar-section-10-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/26-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
@@ -607,7 +586,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
 <li><a href="#the-data" id="toc-the-data" class="nav-link active" data-scroll-target="#the-data">The data</a></li>
@@ -620,7 +599,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/02-complete-analysis.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/02-complete-analysis.html"><span class="chapter-title">A complete analysis in one chapter</span></a></li></ol></nav><div class="quarto-title">
+<main class="content" id="quarto-document-content" tabindex="-1"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-installation.html">Getting started</a></li><li class="breadcrumb-item"><a href="../chapters/02-complete-analysis.html"><span class="chapter-title">A complete analysis in one chapter</span></a></li></ol></nav><div class="quarto-title">
 <h1 class="title"><span id="sec-complete-analysis" class="quarto-section-identifier"><span class="chapter-title">A complete analysis in one chapter</span></span></h1>
 </div>
 
@@ -637,7 +616,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header><p>This chapter runs one small population PK analysis from start to finish. It uses the bundled warfarin example (a one-compartment oral model) and moves through every stage of the workflow the book is built around:</p>
 <p><strong>data → model → estimate → evaluate → simulate → report</strong></p>
-<p>Each section is deliberately short. It shows the one call you need and ends with a pointer to the chapter that covers that stage in depth. Every result below was produced by the code shown, on the pinned ferx-r build (<code>96f6a5e</code>).</p>
+<p>Each section is deliberately short. It shows the one call you need and ends with a pointer to the chapter that covers that stage in depth. Every result below was produced by the code shown, on the pinned ferx-r build (<code>d851d3b</code>).</p>
 <section id="the-data" class="level2"><h2 class="anchored" data-anchor-id="the-data">The data</h2>
 <p>Every chapter starts by loading ferx, plus dplyr and ggplot2 for data handling and plots:</p>
 <div class="cell" data-layout-align="center">
@@ -750,7 +729,7 @@ Figure&nbsp;2.1: Observed warfarin concentrations, one line per subject.
 <span><span class="co">#&gt;  Model: warfarin                 Dataset: warfarin</span></span>
 <span><span class="co">#&gt;  Method: FOCE | Gradient: ANALYTIC | Subjects: 10 | Obs: 110</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   49 iterations   0.0s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   40 iterations   0.0s</span></span>
 <span><span class="co">#&gt;  OFV: -280.3595    AIC: -266.3595    BIC: -247.4561</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -766,13 +745,13 @@ Figure&nbsp;2.1: Observed warfarin concentrations, one line per subject.
 <span><span class="co">#&gt; ----------------------------------------------------</span></span>
 <span><span class="co">#&gt; TVCL                 0.132974     0.006628        5.0</span></span>
 <span><span class="co">#&gt; TVV                  7.730568     0.234046        3.0</span></span>
-<span><span class="co">#&gt; TVKA                 0.725258     0.124477       17.2</span></span>
+<span><span class="co">#&gt; TVKA                 0.725259     0.124477       17.2</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; OMEGA  (between-subject variability)</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
 <span><span class="co">#&gt;   ETA_CL               [log-normal] = 0.028597  (CV% = 17.0)  SE = 0.012799</span></span>
 <span><span class="co">#&gt;   ETA_V                [log-normal] = 0.009578  (CV% = 9.8)  SE = 0.004298</span></span>
-<span><span class="co">#&gt;   ETA_KA               [log-normal] = 0.348919  (CV% = 64.6)  SE = 0.160785</span></span>
+<span><span class="co">#&gt;   ETA_KA               [log-normal] = 0.348920  (CV% = 64.6)  SE = 0.160785</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; SIGMA  (residual error)</span></span>
 <span><span class="co">#&gt; ------------------------------------------------------------</span></span>
@@ -804,21 +783,21 @@ Figure&nbsp;2.1: Observed warfarin concentrations, one line per subject.
 <p>The fit converged (<code>fit$converged</code> is TRUE) with an objective function value of -280.36. The printout also reports shrinkage, a diagnostics line, the settings that were used, and a count of warnings. The estimates are also available as a data frame, ready for your own tables:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"param"</span>, <span class="st">"transform"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;             param    transform    estimate           se   rse_pct    lower_95</span></span>
-<span><span class="co">#&gt; TVCL         TVCL     identity 0.132974254 0.0066277664  4.984248 0.119983832</span></span>
-<span><span class="co">#&gt; TVV           TVV     identity 7.730567857 0.2340458173  3.027537 7.271838055</span></span>
-<span><span class="co">#&gt; TVKA         TVKA     identity 0.725258279 0.1244769548 17.163121 0.481283448</span></span>
-<span><span class="co">#&gt; ETA_CL     ETA_CL     variance 0.028597262 0.0127991738 44.756640 0.003510882</span></span>
-<span><span class="co">#&gt; ETA_V       ETA_V     variance 0.009578163 0.0042978692 44.871542 0.001154339</span></span>
-<span><span class="co">#&gt; ETA_KA     ETA_KA     variance 0.348919137 0.1607847317 46.080801 0.033781063</span></span>
-<span><span class="co">#&gt; PROP_ERR PROP_ERR proportional 0.010748071 0.0009415829  8.760482 0.008902569</span></span>
+<span><span class="co">#&gt;             param    transform    estimate          se   rse_pct    lower_95</span></span>
+<span><span class="co">#&gt; TVCL         TVCL     identity 0.132974266 0.006627764  4.984245 0.119983849</span></span>
+<span><span class="co">#&gt; TVV           TVV     identity 7.730567624 0.234046424  3.027545 7.271836634</span></span>
+<span><span class="co">#&gt; TVKA         TVKA     identity 0.725258611 0.124477063 17.163128 0.481283568</span></span>
+<span><span class="co">#&gt; ETA_CL     ETA_CL     variance 0.028597228 0.012799151 44.756614 0.003510892</span></span>
+<span><span class="co">#&gt; ETA_V       ETA_V     variance 0.009578215 0.004297905 44.871664 0.001154322</span></span>
+<span><span class="co">#&gt; ETA_KA     ETA_KA     variance 0.348919535 0.160784993 46.080823 0.033780949</span></span>
+<span><span class="co">#&gt; PROP_ERR PROP_ERR proportional 0.010748072 0.000941583  8.760483 0.008902569</span></span>
 <span><span class="co">#&gt;            upper_95</span></span>
 <span><span class="co">#&gt; TVCL     0.14596468</span></span>
-<span><span class="co">#&gt; TVV      8.18929766</span></span>
-<span><span class="co">#&gt; TVKA     0.96923311</span></span>
-<span><span class="co">#&gt; ETA_CL   0.05368364</span></span>
-<span><span class="co">#&gt; ETA_V    0.01800199</span></span>
-<span><span class="co">#&gt; ETA_KA   0.66405721</span></span>
+<span><span class="co">#&gt; TVV      8.18929861</span></span>
+<span><span class="co">#&gt; TVKA     0.96923365</span></span>
+<span><span class="co">#&gt; ETA_CL   0.05368356</span></span>
+<span><span class="co">#&gt; ETA_V    0.01800211</span></span>
+<span><span class="co">#&gt; ETA_KA   0.66405812</span></span>
 <span><span class="co">#&gt; PROP_ERR 0.01259357</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>➜ Initial estimates and reading a fit: <a href="05-first-fit.html" class="quarto-xref"><span>Initial estimates and a first fit</span></a>. Choosing and tuning estimation methods: <a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>.</p>
@@ -826,13 +805,13 @@ Figure&nbsp;2.1: Observed warfarin concentrations, one line per subject.
 <p><code>fit$sdtab</code> holds one row per observation with population (<code>PRED</code>) and individual (<code>IPRED</code>) predictions and residuals:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">sdtab</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   ID TIME      DV      PRED     IPRED       CWRES       IWRES   EBE_OFV N_OBS</span></span>
-<span><span class="co">#&gt; 1  1  0.5  5.3653  3.916566  5.354089  0.83698336  0.19482336 -27.11702    11</span></span>
-<span><span class="co">#&gt; 2  1  1.0  8.2578  6.608347  8.285651  0.12500694 -0.31273957 -27.11702    11</span></span>
-<span><span class="co">#&gt; 3  1  2.0 10.7063  9.695406 10.708975  0.04455454 -0.02324235 -27.11702    11</span></span>
-<span><span class="co">#&gt; 4  1  4.0 11.4142 11.640615 11.381964 -0.11907416  0.26350692 -27.11702    11</span></span>
-<span><span class="co">#&gt; 5  1  8.0 10.9232 11.506465 10.756208  0.92646124  1.44446413 -27.11702    11</span></span>
-<span><span class="co">#&gt; 6  1 12.0  9.9442 10.776561 10.067873 -1.44290845 -1.14289581 -27.11702    11</span></span>
+<span><span class="co">#&gt;   ID TIME      DV      PRED     IPRED       CWRES      IWRES   EBE_OFV N_OBS</span></span>
+<span><span class="co">#&gt; 1  1  0.5  5.3653  3.916568  5.354089  0.83698224  0.1948233 -27.11702    11</span></span>
+<span><span class="co">#&gt; 2  1  1.0  8.2578  6.608349  8.285651  0.12500628 -0.3127395 -27.11702    11</span></span>
+<span><span class="co">#&gt; 3  1  2.0 10.7063  9.695409 10.708975  0.04455456 -0.0232423 -27.11702    11</span></span>
+<span><span class="co">#&gt; 4  1  4.0 11.4142 11.640616 11.381964 -0.11907341  0.2635070 -27.11702    11</span></span>
+<span><span class="co">#&gt; 5  1  8.0 10.9232 11.506465 10.756208  0.92646198  1.4444641 -27.11702    11</span></span>
+<span><span class="co">#&gt; 6  1 12.0  9.9442 10.776561 10.067873 -1.44290759 -1.1428956 -27.11702    11</span></span>
 <span><span class="co">#&gt;   TAFD  TAD</span></span>
 <span><span class="co">#&gt; 1  0.5  0.5</span></span>
 <span><span class="co">#&gt; 2  1.0  1.0</span></span>
@@ -891,10 +870,10 @@ Figure&nbsp;2.2: Observations against population and individual predictions (lef
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">42</span>, fit <span class="op">=</span> <span class="va">fit</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   DRAW SIM ID TIME CMT     IPRED    DV_SIM OBSERVED</span></span>
-<span><span class="co">#&gt; 1    1   1  1  0.5   1  4.387839  4.377214       NA</span></span>
-<span><span class="co">#&gt; 2    1   1  1  1.0   1  7.223339  7.171771       NA</span></span>
-<span><span class="co">#&gt; 3    1   1  1  2.0   1 10.197132 10.173525       NA</span></span>
-<span><span class="co">#&gt; 4    1   1  1  4.0   1 11.727006 11.751449       NA</span></span>
+<span><span class="co">#&gt; 1    1   1  1  0.5   1  4.387841  4.377216       NA</span></span>
+<span><span class="co">#&gt; 2    1   1  1  1.0   1  7.223342  7.171773       NA</span></span>
+<span><span class="co">#&gt; 3    1   1  1  2.0   1 10.197134 10.173527       NA</span></span>
+<span><span class="co">#&gt; 4    1   1  1  4.0   1 11.727007 11.751450       NA</span></span>
 <span><span class="co">#&gt; 5    1   1  1  8.0   1 11.344413 11.524433       NA</span></span>
 <span><span class="co">#&gt; 6    1   1  1 12.0   1 10.604424 10.455109       NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -952,23 +931,23 @@ Figure&nbsp;2.3: Visual predictive check: observed 10th, 50th and 90th percentil
 Table&nbsp;2.1: Warfarin parameter estimates.
 </figcaption><div aria-describedby="tbl-parameters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="wyyggudqcx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#wyyggudqcx table {
+<div id="ylryfbqwtt" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ylryfbqwtt table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#wyyggudqcx thead, #wyyggudqcx tbody, #wyyggudqcx tfoot, #wyyggudqcx tr, #wyyggudqcx td, #wyyggudqcx th {
+#ylryfbqwtt thead, #ylryfbqwtt tbody, #ylryfbqwtt tfoot, #ylryfbqwtt tr, #ylryfbqwtt td, #ylryfbqwtt th {
   border-style: none;
 }
 
-#wyyggudqcx p {
+#ylryfbqwtt p {
   margin: 0;
   padding: 0;
 }
 
-#wyyggudqcx .gt_table {
+#ylryfbqwtt .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -994,12 +973,12 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-left-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_caption {
+#ylryfbqwtt .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#wyyggudqcx .gt_title {
+#ylryfbqwtt .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1011,7 +990,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-bottom-width: 0;
 }
 
-#wyyggudqcx .gt_subtitle {
+#ylryfbqwtt .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1023,7 +1002,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-top-width: 0;
 }
 
-#wyyggudqcx .gt_heading {
+#ylryfbqwtt .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1035,13 +1014,13 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-right-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_bottom_border {
+#ylryfbqwtt .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_col_headings {
+#ylryfbqwtt .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1056,7 +1035,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-right-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_col_heading {
+#ylryfbqwtt .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1076,7 +1055,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   overflow-x: hidden;
 }
 
-#wyyggudqcx .gt_column_spanner_outer {
+#ylryfbqwtt .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1088,15 +1067,15 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   padding-right: 4px;
 }
 
-#wyyggudqcx .gt_column_spanner_outer:first-child {
+#ylryfbqwtt .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#wyyggudqcx .gt_column_spanner_outer:last-child {
+#ylryfbqwtt .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#wyyggudqcx .gt_column_spanner {
+#ylryfbqwtt .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1108,11 +1087,11 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   width: 100%;
 }
 
-#wyyggudqcx .gt_spanner_row {
+#ylryfbqwtt .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#wyyggudqcx .gt_group_heading {
+#ylryfbqwtt .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1138,7 +1117,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   text-align: left;
 }
 
-#wyyggudqcx .gt_empty_group_heading {
+#ylryfbqwtt .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1153,15 +1132,15 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   vertical-align: middle;
 }
 
-#wyyggudqcx .gt_from_md > :first-child {
+#ylryfbqwtt .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#wyyggudqcx .gt_from_md > :last-child {
+#ylryfbqwtt .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#wyyggudqcx .gt_row {
+#ylryfbqwtt .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1180,7 +1159,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   overflow-x: hidden;
 }
 
-#wyyggudqcx .gt_stub {
+#ylryfbqwtt .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1193,7 +1172,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   padding-right: 5px;
 }
 
-#wyyggudqcx .gt_stub_row_group {
+#ylryfbqwtt .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1207,15 +1186,15 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   vertical-align: top;
 }
 
-#wyyggudqcx .gt_row_group_first td {
+#ylryfbqwtt .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#wyyggudqcx .gt_row_group_first th {
+#ylryfbqwtt .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#wyyggudqcx .gt_summary_row {
+#ylryfbqwtt .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1225,16 +1204,16 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   padding-right: 5px;
 }
 
-#wyyggudqcx .gt_first_summary_row {
+#ylryfbqwtt .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_first_summary_row.thick {
+#ylryfbqwtt .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#wyyggudqcx .gt_last_summary_row {
+#ylryfbqwtt .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1244,7 +1223,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-bottom-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_grand_summary_row {
+#ylryfbqwtt .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1254,7 +1233,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   padding-right: 5px;
 }
 
-#wyyggudqcx .gt_first_grand_summary_row {
+#ylryfbqwtt .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1264,7 +1243,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-top-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_last_grand_summary_row_top {
+#ylryfbqwtt .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1274,11 +1253,11 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-bottom-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_striped {
+#ylryfbqwtt .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#wyyggudqcx .gt_table_body {
+#ylryfbqwtt .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1287,7 +1266,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-bottom-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_footnotes {
+#ylryfbqwtt .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1301,7 +1280,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-right-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_footnote {
+#ylryfbqwtt .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1310,7 +1289,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   padding-right: 5px;
 }
 
-#wyyggudqcx .gt_sourcenotes {
+#ylryfbqwtt .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1324,7 +1303,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   border-right-color: #D3D3D3;
 }
 
-#wyyggudqcx .gt_sourcenote {
+#ylryfbqwtt .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1332,72 +1311,72 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   padding-right: 5px;
 }
 
-#wyyggudqcx .gt_left {
+#ylryfbqwtt .gt_left {
   text-align: left;
 }
 
-#wyyggudqcx .gt_center {
+#ylryfbqwtt .gt_center {
   text-align: center;
 }
 
-#wyyggudqcx .gt_right {
+#ylryfbqwtt .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#wyyggudqcx .gt_font_normal {
+#ylryfbqwtt .gt_font_normal {
   font-weight: normal;
 }
 
-#wyyggudqcx .gt_font_bold {
+#ylryfbqwtt .gt_font_bold {
   font-weight: bold;
 }
 
-#wyyggudqcx .gt_font_italic {
+#ylryfbqwtt .gt_font_italic {
   font-style: italic;
 }
 
-#wyyggudqcx .gt_super {
+#ylryfbqwtt .gt_super {
   font-size: 65%;
 }
 
-#wyyggudqcx .gt_footnote_marks {
+#ylryfbqwtt .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#wyyggudqcx .gt_asterisk {
+#ylryfbqwtt .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#wyyggudqcx .gt_indent_1 {
+#ylryfbqwtt .gt_indent_1 {
   text-indent: 5px;
 }
 
-#wyyggudqcx .gt_indent_2 {
+#ylryfbqwtt .gt_indent_2 {
   text-indent: 10px;
 }
 
-#wyyggudqcx .gt_indent_3 {
+#ylryfbqwtt .gt_indent_3 {
   text-indent: 15px;
 }
 
-#wyyggudqcx .gt_indent_4 {
+#ylryfbqwtt .gt_indent_4 {
   text-indent: 20px;
 }
 
-#wyyggudqcx .gt_indent_5 {
+#ylryfbqwtt .gt_indent_5 {
   text-indent: 25px;
 }
 
-#wyyggudqcx .katex-display {
+#ylryfbqwtt .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#wyyggudqcx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ylryfbqwtt div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1510,15 +1489,50 @@ Table&nbsp;2.1: Warfarin parameter estimates.
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
       const i = window.document.createElement("i");
       i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
     }
     setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
@@ -1597,7 +1611,8 @@ Table&nbsp;2.1: Warfarin parameter estimates.
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -1606,8 +1621,69 @@ Table&nbsp;2.1: Warfarin parameter estimates.
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -1621,6 +1697,7 @@ Table&nbsp;2.1: Warfarin parameter estimates.
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -1783,44 +1860,54 @@ Table&nbsp;2.1: Warfarin parameter estimates.
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -1918,7 +2005,9 @@ Table&nbsp;2.1: Warfarin parameter estimates.
       }
     }
   });
-  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+  </script><script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script><nav class="page-navigation" aria-label="Page"><div class="nav-page nav-page-previous">
       <a href="../chapters/01-installation.html" class="pagination-link" aria-label="Installing ferx">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Installing ferx</span></span>
       </a>          

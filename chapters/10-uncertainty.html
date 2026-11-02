@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.20">
+<meta name="generator" content="quarto-1.11.9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Parameter uncertainty – FeRx NLME - R package (ferx)</title>
 <style>
@@ -72,18 +72,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../assets/ferx-favicon.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-4fb18a4e3025729c045ae2a2b77a683d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-e7db77271c5f5604b2064cb93af1acbb.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-8e54f3b44ae85a4e33659ff2791ab8dc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-600029c0d66f4e5df764ccbf24e706b3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-853d94bc21ca35c98748b48b00812566.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-a05a9893f770427474681fd859838e9c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -111,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 </head>
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -134,6 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       for (let i=0; i < toggles.length; i++) {
         const toggle = toggles[i];
         if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
           if (alternate) {
             toggle.classList.add("alternate");
           } else {
@@ -163,13 +165,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       manageTransitions('#quarto-margin-sidebar .nav-link', true);
       // Switch the toggles
       setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
       if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
         manageTransitions("body", false);
-        window.scrollTo(0, 1);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
         setTimeout(() => {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, scrollY);
           manageTransitions("body", true);
         }, 40);
       }
@@ -263,6 +271,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       // Read the current dark / light value
       let toAlternate = !hasAlternateSentinel();
       toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
       setStyleSentinel(toAlternate);
       toggleGiscusIfUsed(toAlternate, darkModeDefault);
       window.dispatchEvent(new Event('resize'));
@@ -276,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark"><div class="navbar-container container-fluid">
+  <header id="quarto-header" class="headroom fixed-top"><nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site"><div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="https://ferx-nlme.org/" class="navbar-brand navbar-brand-logo">
     <img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo light-content"><img src="../assets/ferx-dsl-brackets.svg" alt="ferx" class="navbar-logo dark-content"></a>
@@ -284,8 +293,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <span class="navbar-title">FeRx NLME - R package (ferx)</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -337,20 +345,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
     <a href="https://github.com/FeRx-NLME/ferx-book" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
-    </nav><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+    </nav><nav class="quarto-secondary-nav" aria-label="Toolbar"><div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/10-uncertainty.html"><span class="chapter-title">Parameter uncertainty</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/10-uncertainty.html"><span class="chapter-title">Parameter uncertainty</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Section"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
       <a href="../index.html" class="sidebar-logo-link">
       <img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none"><img src="../assets/ferx-favicon.svg" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none"></a>
       </div>
@@ -364,13 +373,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Getting started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Getting started</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/01-installation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Installing ferx</span></a>
@@ -385,13 +391,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">The analysis workflow</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">The analysis workflow</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/03-data.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Preparing and checking the analysis dataset</span></a>
@@ -451,13 +454,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: general PK modeling</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Scenarios: general PK modeling</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/14-structural-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Structural models: analytical and ODE</span></a>
@@ -477,13 +477,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: covariates</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Scenarios: covariates</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/17-covariates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Covariate modeling</span></a>
@@ -493,13 +490,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: dosing and data</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Scenarios: dosing and data</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/18-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Dosing regimens and exposure metrics</span></a>
@@ -514,13 +508,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: endpoints beyond PK</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Scenarios: endpoints beyond PK</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/20-pkpd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">PK/PD and multiple endpoints</span></a>
@@ -540,13 +531,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: adaptive dosing</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Scenarios: adaptive dosing</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/23-adaptive-dosing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Adaptive dosing and TDM strategies</span></a>
@@ -556,13 +544,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: meta-analysis</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Scenarios: meta-analysis</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/24-mbma.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Model-based meta-analysis</span></a>
@@ -572,13 +557,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
- <span class="menu-text">Scenarios: experimental</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-controls="quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-9-label">Scenarios: experimental</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-9" aria-labelledby="quarto-sidebar-section-9-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/25-experimental.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Experimental features</span></a>
@@ -588,13 +570,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" aria-controls="quarto-sidebar-section-10" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-10-label">Reference</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">
+      <ul id="quarto-sidebar-section-10" aria-labelledby="quarto-sidebar-section-10-label" class="collapse list-unstyled sidebar-section depth1 show">
 <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../chapters/26-reference.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Function, option and example index</span></a>
@@ -607,7 +586,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Table of contents</h2>
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active"><h2 id="toc-title">Table of contents</h2>
    
   <ul>
 <li><a href="#where-you-are" id="toc-where-you-are" class="nav-link active" data-scroll-target="#where-you-are">Where you are</a></li>
@@ -632,7 +611,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/10-uncertainty.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/10-uncertainty.html"><span class="chapter-title">Parameter uncertainty</span></a></li></ol></nav><div class="quarto-title">
+<main class="content" id="quarto-document-content" tabindex="-1"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/03-data.html">The analysis workflow</a></li><li class="breadcrumb-item"><a href="../chapters/10-uncertainty.html"><span class="chapter-title">Parameter uncertainty</span></a></li></ol></nav><div class="quarto-title">
 <h1 class="title"><span id="sec-uncertainty" class="quarto-section-identifier"><span class="chapter-title">Parameter uncertainty</span></span></h1>
 </div>
 
@@ -680,19 +659,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; [1] "computed"</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"rse_pct"</span>, <span class="st">"lower_95"</span>, <span class="st">"upper_95"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;               estimate          se   rse_pct    lower_95     upper_95</span></span>
-<span><span class="co">#&gt; TVCL        4.94780419 0.359477910  7.265403  4.24322749   5.65238089</span></span>
-<span><span class="co">#&gt; TVV1       48.58748115 2.952191548  6.076033 42.80118571  54.37377658</span></span>
-<span><span class="co">#&gt; TVQ         9.57693235 0.407843590  4.258604  8.77755892  10.37630579</span></span>
-<span><span class="co">#&gt; TVV2       94.17330655 3.423846362  3.635687 87.46256768 100.88404542</span></span>
-<span><span class="co">#&gt; TVKA        1.25593572 0.098051846  7.807075  1.06375410   1.44811734</span></span>
-<span><span class="co">#&gt; THETA_WT    0.65349461 0.236123925 36.132498  0.19069172   1.11629751</span></span>
-<span><span class="co">#&gt; THETA_CRCL  0.56462085 0.221497694 39.229457  0.13048537   0.99875633</span></span>
-<span><span class="co">#&gt; ETA_CL      0.10753072 0.028096223 26.128554  0.05246213   0.16259932</span></span>
-<span><span class="co">#&gt; ETA_V1      0.10634845 0.028678588 26.966625  0.05013842   0.16255848</span></span>
-<span><span class="co">#&gt; ETA_Q       0.05124970 0.014007720 27.332296  0.02379457   0.07870483</span></span>
-<span><span class="co">#&gt; ETA_V2      0.03793972 0.010328773 27.224168  0.01769532   0.05818411</span></span>
-<span><span class="co">#&gt; ETA_KA      0.17543732 0.048574917 27.687903  0.08023049   0.27064416</span></span>
-<span><span class="co">#&gt; PROP_ERR    0.01961856 0.001123479  5.726614  0.01741655   0.02182058</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL        4.94779482 0.359479607  7.265451  4.24321479   5.65237485</span></span>
+<span><span class="co">#&gt; TVV1       48.58746315 2.952179258  6.076010 42.80119181  54.37373450</span></span>
+<span><span class="co">#&gt; TVQ         9.57692886 0.407841779  4.258586  8.77755898  10.37629875</span></span>
+<span><span class="co">#&gt; TVV2       94.17330535 3.423849312  3.635690 87.46256070 100.88405000</span></span>
+<span><span class="co">#&gt; TVKA        1.25592770 0.098051252  7.807078  1.06374725   1.44810816</span></span>
+<span><span class="co">#&gt; THETA_WT    0.65345745 0.236130854 36.135613  0.19064098   1.11627393</span></span>
+<span><span class="co">#&gt; THETA_CRCL  0.56461168 0.221501166 39.230709  0.13046940   0.99875397</span></span>
+<span><span class="co">#&gt; ETA_CL      0.10753126 0.028096431 26.128617  0.05246225   0.16260026</span></span>
+<span><span class="co">#&gt; ETA_V1      0.10634762 0.028678266 26.966534  0.05013822   0.16255702</span></span>
+<span><span class="co">#&gt; ETA_Q       0.05124926 0.014007549 27.332194  0.02379447   0.07870406</span></span>
+<span><span class="co">#&gt; ETA_V2      0.03793979 0.010328798 27.224185  0.01769534   0.05818423</span></span>
+<span><span class="co">#&gt; ETA_KA      0.17543723 0.048574875 27.687895  0.08023047   0.27064398</span></span>
+<span><span class="co">#&gt; PROP_ERR    0.01961856 0.001123479  5.726613  0.01741654   0.02182058</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The full variance-covariance matrix of the estimates is <code>fit$cov_matrix</code>, and its correlation form is <code>fit$cor_matrix</code> (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>).</p>
 <section id="choosing-the-covariance-estimator" class="level3"><h3 class="anchored" data-anchor-id="choosing-the-covariance-estimator">Choosing the covariance estimator</h3>
@@ -702,23 +681,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Table&nbsp;10.1: Covariance step settings.
 </figcaption><div aria-describedby="tbl-settings-covariance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="zofnwwojbp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#zofnwwojbp table {
+<div id="vaptxxwjnu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#vaptxxwjnu table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#zofnwwojbp thead, #zofnwwojbp tbody, #zofnwwojbp tfoot, #zofnwwojbp tr, #zofnwwojbp td, #zofnwwojbp th {
+#vaptxxwjnu thead, #vaptxxwjnu tbody, #vaptxxwjnu tfoot, #vaptxxwjnu tr, #vaptxxwjnu td, #vaptxxwjnu th {
   border-style: none;
 }
 
-#zofnwwojbp p {
+#vaptxxwjnu p {
   margin: 0;
   padding: 0;
 }
 
-#zofnwwojbp .gt_table {
+#vaptxxwjnu .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -744,12 +723,12 @@ Table&nbsp;10.1: Covariance step settings.
   border-left-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_caption {
+#vaptxxwjnu .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#zofnwwojbp .gt_title {
+#vaptxxwjnu .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -761,7 +740,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-bottom-width: 0;
 }
 
-#zofnwwojbp .gt_subtitle {
+#vaptxxwjnu .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -773,7 +752,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-top-width: 0;
 }
 
-#zofnwwojbp .gt_heading {
+#vaptxxwjnu .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -785,13 +764,13 @@ Table&nbsp;10.1: Covariance step settings.
   border-right-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_bottom_border {
+#vaptxxwjnu .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_col_headings {
+#vaptxxwjnu .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -806,7 +785,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-right-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_col_heading {
+#vaptxxwjnu .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -826,7 +805,7 @@ Table&nbsp;10.1: Covariance step settings.
   overflow-x: hidden;
 }
 
-#zofnwwojbp .gt_column_spanner_outer {
+#vaptxxwjnu .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -838,15 +817,15 @@ Table&nbsp;10.1: Covariance step settings.
   padding-right: 4px;
 }
 
-#zofnwwojbp .gt_column_spanner_outer:first-child {
+#vaptxxwjnu .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#zofnwwojbp .gt_column_spanner_outer:last-child {
+#vaptxxwjnu .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#zofnwwojbp .gt_column_spanner {
+#vaptxxwjnu .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -858,11 +837,11 @@ Table&nbsp;10.1: Covariance step settings.
   width: 100%;
 }
 
-#zofnwwojbp .gt_spanner_row {
+#vaptxxwjnu .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#zofnwwojbp .gt_group_heading {
+#vaptxxwjnu .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -888,7 +867,7 @@ Table&nbsp;10.1: Covariance step settings.
   text-align: left;
 }
 
-#zofnwwojbp .gt_empty_group_heading {
+#vaptxxwjnu .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -903,15 +882,15 @@ Table&nbsp;10.1: Covariance step settings.
   vertical-align: middle;
 }
 
-#zofnwwojbp .gt_from_md > :first-child {
+#vaptxxwjnu .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#zofnwwojbp .gt_from_md > :last-child {
+#vaptxxwjnu .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#zofnwwojbp .gt_row {
+#vaptxxwjnu .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -930,7 +909,7 @@ Table&nbsp;10.1: Covariance step settings.
   overflow-x: hidden;
 }
 
-#zofnwwojbp .gt_stub {
+#vaptxxwjnu .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -943,7 +922,7 @@ Table&nbsp;10.1: Covariance step settings.
   padding-right: 5px;
 }
 
-#zofnwwojbp .gt_stub_row_group {
+#vaptxxwjnu .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -957,15 +936,15 @@ Table&nbsp;10.1: Covariance step settings.
   vertical-align: top;
 }
 
-#zofnwwojbp .gt_row_group_first td {
+#vaptxxwjnu .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#zofnwwojbp .gt_row_group_first th {
+#vaptxxwjnu .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#zofnwwojbp .gt_summary_row {
+#vaptxxwjnu .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -975,16 +954,16 @@ Table&nbsp;10.1: Covariance step settings.
   padding-right: 5px;
 }
 
-#zofnwwojbp .gt_first_summary_row {
+#vaptxxwjnu .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_first_summary_row.thick {
+#vaptxxwjnu .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#zofnwwojbp .gt_last_summary_row {
+#vaptxxwjnu .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -994,7 +973,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-bottom-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_grand_summary_row {
+#vaptxxwjnu .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1004,7 +983,7 @@ Table&nbsp;10.1: Covariance step settings.
   padding-right: 5px;
 }
 
-#zofnwwojbp .gt_first_grand_summary_row {
+#vaptxxwjnu .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1014,7 +993,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-top-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_last_grand_summary_row_top {
+#vaptxxwjnu .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1024,11 +1003,11 @@ Table&nbsp;10.1: Covariance step settings.
   border-bottom-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_striped {
+#vaptxxwjnu .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#zofnwwojbp .gt_table_body {
+#vaptxxwjnu .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1037,7 +1016,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-bottom-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_footnotes {
+#vaptxxwjnu .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1051,7 +1030,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-right-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_footnote {
+#vaptxxwjnu .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1060,7 +1039,7 @@ Table&nbsp;10.1: Covariance step settings.
   padding-right: 5px;
 }
 
-#zofnwwojbp .gt_sourcenotes {
+#vaptxxwjnu .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1074,7 +1053,7 @@ Table&nbsp;10.1: Covariance step settings.
   border-right-color: #D3D3D3;
 }
 
-#zofnwwojbp .gt_sourcenote {
+#vaptxxwjnu .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1082,72 +1061,72 @@ Table&nbsp;10.1: Covariance step settings.
   padding-right: 5px;
 }
 
-#zofnwwojbp .gt_left {
+#vaptxxwjnu .gt_left {
   text-align: left;
 }
 
-#zofnwwojbp .gt_center {
+#vaptxxwjnu .gt_center {
   text-align: center;
 }
 
-#zofnwwojbp .gt_right {
+#vaptxxwjnu .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#zofnwwojbp .gt_font_normal {
+#vaptxxwjnu .gt_font_normal {
   font-weight: normal;
 }
 
-#zofnwwojbp .gt_font_bold {
+#vaptxxwjnu .gt_font_bold {
   font-weight: bold;
 }
 
-#zofnwwojbp .gt_font_italic {
+#vaptxxwjnu .gt_font_italic {
   font-style: italic;
 }
 
-#zofnwwojbp .gt_super {
+#vaptxxwjnu .gt_super {
   font-size: 65%;
 }
 
-#zofnwwojbp .gt_footnote_marks {
+#vaptxxwjnu .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#zofnwwojbp .gt_asterisk {
+#vaptxxwjnu .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#zofnwwojbp .gt_indent_1 {
+#vaptxxwjnu .gt_indent_1 {
   text-indent: 5px;
 }
 
-#zofnwwojbp .gt_indent_2 {
+#vaptxxwjnu .gt_indent_2 {
   text-indent: 10px;
 }
 
-#zofnwwojbp .gt_indent_3 {
+#vaptxxwjnu .gt_indent_3 {
   text-indent: 15px;
 }
 
-#zofnwwojbp .gt_indent_4 {
+#vaptxxwjnu .gt_indent_4 {
   text-indent: 20px;
 }
 
-#zofnwwojbp .gt_indent_5 {
+#vaptxxwjnu .gt_indent_5 {
   text-indent: 25px;
 }
 
-#zofnwwojbp .katex-display {
+#vaptxxwjnu .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#zofnwwojbp div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#vaptxxwjnu div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1225,7 +1204,7 @@ Table&nbsp;10.1: Covariance step settings.
 <span><span class="co">#&gt; TVQ        0.4078 0.6359 0.3967</span></span>
 <span><span class="co">#&gt; TVV2       3.4238 4.7218 3.3730</span></span>
 <span><span class="co">#&gt; TVKA       0.0981 0.1320 0.0954</span></span>
-<span><span class="co">#&gt; THETA_WT   0.2361 0.2322 0.3254</span></span>
+<span><span class="co">#&gt; THETA_WT   0.2361 0.2322 0.3255</span></span>
 <span><span class="co">#&gt; THETA_CRCL 0.2215 0.3284 0.2159</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>"r"</code> (inverse Hessian, the default) reproduces the inline standard errors, <code>"s"</code> is the inverse cross-product and <code>"rsr"</code> the sandwich estimator. <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> also takes <code>mu_referencing</code>, which by default is the value the fit was made with, and <code>verbose</code>. It repeats the inner-loop settings the fit recorded in <code>fit$scoring_settings</code>. <code>threads =</code> sets the worker threads of the step (by default the width the fit ran on, <code>fit$n_threads_used</code>). It changes the resources the step uses, not the result:</p>
@@ -1241,16 +1220,16 @@ Table&nbsp;10.1: Covariance step settings.
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir</a></span><span class="op">(</span><span class="va">fit</span>, sir_samples <span class="op">=</span> <span class="fl">1000</span>, sir_resamples <span class="op">=</span> <span class="fl">250</span><span class="op">)</span></span>
 <span><span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ess</span></span>
-<span><span class="co">#&gt; [1] 190.8266</span></span>
+<span><span class="co">#&gt; [1] 190.8624</span></span>
 <span><span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ci_theta</span></span>
 <span><span class="co">#&gt;                 lower       upper</span></span>
-<span><span class="co">#&gt; TVCL        4.1551129   5.7218011</span></span>
-<span><span class="co">#&gt; TVV1       39.3153437  55.8374117</span></span>
-<span><span class="co">#&gt; TVQ         8.8920114  10.6185635</span></span>
-<span><span class="co">#&gt; TVV2       87.0715861 101.6714684</span></span>
-<span><span class="co">#&gt; TVKA        1.0740946   1.4939737</span></span>
-<span><span class="co">#&gt; THETA_WT    0.2489222   1.2139498</span></span>
-<span><span class="co">#&gt; THETA_CRCL  0.1568684   0.9282925</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL        4.1551002   5.7217957</span></span>
+<span><span class="co">#&gt; TVV1       39.3153608  55.8373623</span></span>
+<span><span class="co">#&gt; TVQ         8.8920108  10.7101110</span></span>
+<span><span class="co">#&gt; TVV2       87.0715792 101.6714739</span></span>
+<span><span class="co">#&gt; TVKA        1.0740876   1.4939643</span></span>
+<span><span class="co">#&gt; THETA_WT    0.2488871   1.2221405</span></span>
+<span><span class="co">#&gt; THETA_CRCL  0.1568595   0.9282956</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>sir_ci_omega</code> and <code>sir_ci_sigma</code> hold the intervals for the variances and residual error. <code>sir_ess</code> is the effective sample size of the <code>sir_samples</code> weighted draws: the larger it is, the better the proposal matches the data. The ferx-core <a href="https://ferx-nlme.org/ferx-core/estimation/sir.html#diagnostics">SIR</a> page reads one above <code>sir_resamples</code> as a well-matched proposal and one below 100 as too few draws for the intervals. <code>sir_keep_samples = TRUE</code> keeps the resampled vectors on the fit, which <code><a href="https://ferx-nlme.org/reference/ferx_simulate_with_uncertainty.html">ferx_simulate_with_uncertainty()</a></code> needs (<a href="11-simulation.html" class="quarto-xref"><span>Simulating scenarios</span></a>). <code>verbose = TRUE</code> prints progress, and <code>threads =</code> sets the worker threads, as for <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> above: <code>identical(ferx_sir(fit, sir_samples = 1000, sir_resamples = 250, threads = 1)$sir_ci_theta, fit_sir$sir_ci_theta)</code> is TRUE.</p>
 <div class="callout callout-style-default callout-important callout-titled">
@@ -1284,14 +1263,14 @@ Table&nbsp;10.1: Covariance step settings.
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit_sir_natural</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir</a></span><span class="op">(</span><span class="va">fit</span>, sir_samples <span class="op">=</span> <span class="fl">1000</span>, sir_resamples <span class="op">=</span> <span class="fl">250</span>, sir_scale <span class="op">=</span> <span class="st">"natural"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>packed <span class="op">=</span> <span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ess</span>, natural <span class="op">=</span> <span class="va">fit_sir_natural</span><span class="op">$</span><span class="va">sir_ess</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   packed  natural </span></span>
-<span><span class="co">#&gt; 190.8266 231.7495</span></span>
+<span><span class="co">#&gt; 190.8624 231.7793</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span><span class="op">(</span>packed <span class="op">=</span> <span class="va">fit_sir</span><span class="op">$</span><span class="va">sir_ci_omega</span>, natural <span class="op">=</span> <span class="va">fit_sir_natural</span><span class="op">$</span><span class="va">sir_ci_omega</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             lower      upper      lower      upper</span></span>
-<span><span class="co">#&gt; ETA_CL 0.07671544 0.24934419 0.07657554 0.31573227</span></span>
-<span><span class="co">#&gt; ETA_V1 0.07162652 0.22892431 0.07253420 0.24691347</span></span>
-<span><span class="co">#&gt; ETA_Q  0.03222094 0.09465005 0.03579165 0.10680789</span></span>
-<span><span class="co">#&gt; ETA_V2 0.02668865 0.07609283 0.02711917 0.08214631</span></span>
-<span><span class="co">#&gt; ETA_KA 0.12017724 0.33033801 0.13246195 0.35602976</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; ETA_CL 0.07671637 0.24934689 0.07657660 0.31573914</span></span>
+<span><span class="co">#&gt; ETA_V1 0.07162684 0.22892543 0.07353742 0.24691423</span></span>
+<span><span class="co">#&gt; ETA_Q  0.03222074 0.09464903 0.03579140 0.10680637</span></span>
+<span><span class="co">#&gt; ETA_V2 0.02668870 0.07609299 0.02711921 0.08214648</span></span>
+<span><span class="co">#&gt; ETA_KA 0.12017729 0.33033935 0.13288935 0.35603110</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Every SIR argument you leave out is taken from the SIR the fit already records in <code>fit$sir_settings</code>, and only otherwise from the defaults. So <code><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir()</a></code> on a fit that carries an SIR repeats it with the same draws, seed, <code>sir_df</code> and <code>sir_scale</code>:</p>
 <div class="cell" data-layout-align="center">
@@ -1319,23 +1298,23 @@ Table&nbsp;10.1: Covariance step settings.
 Table&nbsp;10.2: SIR settings.
 </figcaption><div aria-describedby="tbl-settings-sir-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="tnikwrxkuz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#tnikwrxkuz table {
+<div id="jsjedlbbuf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#jsjedlbbuf table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#tnikwrxkuz thead, #tnikwrxkuz tbody, #tnikwrxkuz tfoot, #tnikwrxkuz tr, #tnikwrxkuz td, #tnikwrxkuz th {
+#jsjedlbbuf thead, #jsjedlbbuf tbody, #jsjedlbbuf tfoot, #jsjedlbbuf tr, #jsjedlbbuf td, #jsjedlbbuf th {
   border-style: none;
 }
 
-#tnikwrxkuz p {
+#jsjedlbbuf p {
   margin: 0;
   padding: 0;
 }
 
-#tnikwrxkuz .gt_table {
+#jsjedlbbuf .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1361,12 +1340,12 @@ Table&nbsp;10.2: SIR settings.
   border-left-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_caption {
+#jsjedlbbuf .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#tnikwrxkuz .gt_title {
+#jsjedlbbuf .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1378,7 +1357,7 @@ Table&nbsp;10.2: SIR settings.
   border-bottom-width: 0;
 }
 
-#tnikwrxkuz .gt_subtitle {
+#jsjedlbbuf .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1390,7 +1369,7 @@ Table&nbsp;10.2: SIR settings.
   border-top-width: 0;
 }
 
-#tnikwrxkuz .gt_heading {
+#jsjedlbbuf .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1402,13 +1381,13 @@ Table&nbsp;10.2: SIR settings.
   border-right-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_bottom_border {
+#jsjedlbbuf .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_col_headings {
+#jsjedlbbuf .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1423,7 +1402,7 @@ Table&nbsp;10.2: SIR settings.
   border-right-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_col_heading {
+#jsjedlbbuf .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1443,7 +1422,7 @@ Table&nbsp;10.2: SIR settings.
   overflow-x: hidden;
 }
 
-#tnikwrxkuz .gt_column_spanner_outer {
+#jsjedlbbuf .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1455,15 +1434,15 @@ Table&nbsp;10.2: SIR settings.
   padding-right: 4px;
 }
 
-#tnikwrxkuz .gt_column_spanner_outer:first-child {
+#jsjedlbbuf .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#tnikwrxkuz .gt_column_spanner_outer:last-child {
+#jsjedlbbuf .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#tnikwrxkuz .gt_column_spanner {
+#jsjedlbbuf .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1475,11 +1454,11 @@ Table&nbsp;10.2: SIR settings.
   width: 100%;
 }
 
-#tnikwrxkuz .gt_spanner_row {
+#jsjedlbbuf .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#tnikwrxkuz .gt_group_heading {
+#jsjedlbbuf .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1505,7 +1484,7 @@ Table&nbsp;10.2: SIR settings.
   text-align: left;
 }
 
-#tnikwrxkuz .gt_empty_group_heading {
+#jsjedlbbuf .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1520,15 +1499,15 @@ Table&nbsp;10.2: SIR settings.
   vertical-align: middle;
 }
 
-#tnikwrxkuz .gt_from_md > :first-child {
+#jsjedlbbuf .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#tnikwrxkuz .gt_from_md > :last-child {
+#jsjedlbbuf .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#tnikwrxkuz .gt_row {
+#jsjedlbbuf .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1547,7 +1526,7 @@ Table&nbsp;10.2: SIR settings.
   overflow-x: hidden;
 }
 
-#tnikwrxkuz .gt_stub {
+#jsjedlbbuf .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1560,7 +1539,7 @@ Table&nbsp;10.2: SIR settings.
   padding-right: 5px;
 }
 
-#tnikwrxkuz .gt_stub_row_group {
+#jsjedlbbuf .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1574,15 +1553,15 @@ Table&nbsp;10.2: SIR settings.
   vertical-align: top;
 }
 
-#tnikwrxkuz .gt_row_group_first td {
+#jsjedlbbuf .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#tnikwrxkuz .gt_row_group_first th {
+#jsjedlbbuf .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#tnikwrxkuz .gt_summary_row {
+#jsjedlbbuf .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1592,16 +1571,16 @@ Table&nbsp;10.2: SIR settings.
   padding-right: 5px;
 }
 
-#tnikwrxkuz .gt_first_summary_row {
+#jsjedlbbuf .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_first_summary_row.thick {
+#jsjedlbbuf .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#tnikwrxkuz .gt_last_summary_row {
+#jsjedlbbuf .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1611,7 +1590,7 @@ Table&nbsp;10.2: SIR settings.
   border-bottom-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_grand_summary_row {
+#jsjedlbbuf .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1621,7 +1600,7 @@ Table&nbsp;10.2: SIR settings.
   padding-right: 5px;
 }
 
-#tnikwrxkuz .gt_first_grand_summary_row {
+#jsjedlbbuf .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1631,7 +1610,7 @@ Table&nbsp;10.2: SIR settings.
   border-top-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_last_grand_summary_row_top {
+#jsjedlbbuf .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1641,11 +1620,11 @@ Table&nbsp;10.2: SIR settings.
   border-bottom-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_striped {
+#jsjedlbbuf .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#tnikwrxkuz .gt_table_body {
+#jsjedlbbuf .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1654,7 +1633,7 @@ Table&nbsp;10.2: SIR settings.
   border-bottom-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_footnotes {
+#jsjedlbbuf .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1668,7 +1647,7 @@ Table&nbsp;10.2: SIR settings.
   border-right-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_footnote {
+#jsjedlbbuf .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1677,7 +1656,7 @@ Table&nbsp;10.2: SIR settings.
   padding-right: 5px;
 }
 
-#tnikwrxkuz .gt_sourcenotes {
+#jsjedlbbuf .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1691,7 +1670,7 @@ Table&nbsp;10.2: SIR settings.
   border-right-color: #D3D3D3;
 }
 
-#tnikwrxkuz .gt_sourcenote {
+#jsjedlbbuf .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1699,72 +1678,72 @@ Table&nbsp;10.2: SIR settings.
   padding-right: 5px;
 }
 
-#tnikwrxkuz .gt_left {
+#jsjedlbbuf .gt_left {
   text-align: left;
 }
 
-#tnikwrxkuz .gt_center {
+#jsjedlbbuf .gt_center {
   text-align: center;
 }
 
-#tnikwrxkuz .gt_right {
+#jsjedlbbuf .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#tnikwrxkuz .gt_font_normal {
+#jsjedlbbuf .gt_font_normal {
   font-weight: normal;
 }
 
-#tnikwrxkuz .gt_font_bold {
+#jsjedlbbuf .gt_font_bold {
   font-weight: bold;
 }
 
-#tnikwrxkuz .gt_font_italic {
+#jsjedlbbuf .gt_font_italic {
   font-style: italic;
 }
 
-#tnikwrxkuz .gt_super {
+#jsjedlbbuf .gt_super {
   font-size: 65%;
 }
 
-#tnikwrxkuz .gt_footnote_marks {
+#jsjedlbbuf .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#tnikwrxkuz .gt_asterisk {
+#jsjedlbbuf .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#tnikwrxkuz .gt_indent_1 {
+#jsjedlbbuf .gt_indent_1 {
   text-indent: 5px;
 }
 
-#tnikwrxkuz .gt_indent_2 {
+#jsjedlbbuf .gt_indent_2 {
   text-indent: 10px;
 }
 
-#tnikwrxkuz .gt_indent_3 {
+#jsjedlbbuf .gt_indent_3 {
   text-indent: 15px;
 }
 
-#tnikwrxkuz .gt_indent_4 {
+#jsjedlbbuf .gt_indent_4 {
   text-indent: 20px;
 }
 
-#tnikwrxkuz .gt_indent_5 {
+#jsjedlbbuf .gt_indent_5 {
   text-indent: 25px;
 }
 
-#tnikwrxkuz .katex-display {
+#jsjedlbbuf .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#tnikwrxkuz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#jsjedlbbuf div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1833,7 +1812,7 @@ Table&nbsp;10.2: SIR settings.
 <span>  <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir</a></span><span class="op">(</span><span class="va">fit</span>, sir_samples <span class="op">=</span> <span class="fl">1000</span>, sir_resamples <span class="op">=</span> <span class="fl">250</span>, sir_seed <span class="op">=</span> <span class="va">s</span><span class="op">)</span><span class="op">$</span><span class="va">sir_ess</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    seed_1    seed_2 </span></span>
-<span><span class="co">#&gt;  70.54593 126.93703</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;  70.56072 126.95625</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Check <code>sir_ess</code> on every run. When it is low, increase <code>sir_samples</code> and confirm that the intervals are stable across seeds before using them.</p>
 </section><section id="bootstrap" class="level2"><h2 class="anchored" data-anchor-id="bootstrap">Bootstrap</h2>
@@ -1848,36 +1827,36 @@ Table&nbsp;10.2: SIR settings.
 <span><span class="co">#&gt;   Data:   /home/runner/work/_temp/Library/ferx/examples/data/two_cpt_oral_cov.csv</span></span>
 <span><span class="co">#&gt;   Samples: 100 completed of 100 requested; 99 included</span></span>
 <span><span class="co">#&gt;     excluded 1: estimate near boundary</span></span>
-<span><span class="co">#&gt;   Wrote:  /tmp/RtmpTFdikZ/bootstrap</span></span>
+<span><span class="co">#&gt;   Wrote:  /tmp/RtmphVoTzi/bootstrap</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 95% confidence intervals (percentile / normal approximation):</span></span>
 <span><span class="co">#&gt;             parameter original     mean       bias standard_error   median</span></span>
-<span><span class="co">#&gt;                  TVCL  4.94800  4.94200 -0.0060040      0.2979000  4.97200</span></span>
-<span><span class="co">#&gt;                  TVV1 48.59000 48.60000  0.0108500      2.9000000 48.69000</span></span>
-<span><span class="co">#&gt;                   TVQ  9.57700  9.54800 -0.0292400      0.4055000  9.54100</span></span>
-<span><span class="co">#&gt;                  TVV2 94.17000 94.60000  0.4295000      3.2640000 94.99000</span></span>
-<span><span class="co">#&gt;                  TVKA  1.25600  1.26500  0.0089840      0.0891300  1.25300</span></span>
-<span><span class="co">#&gt;              THETA_WT  0.65350  0.69630  0.0428300      0.2355000  0.67730</span></span>
-<span><span class="co">#&gt;            THETA_CRCL  0.56460  0.55130 -0.0132900      0.2110000  0.54180</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_CL,ETA_CL)  0.10750  0.09938 -0.0081550      0.0246600  0.09537</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_V1,ETA_V1)  0.10630  0.09886 -0.0074930      0.0299700  0.09476</span></span>
-<span><span class="co">#&gt;    OMEGA(ETA_Q,ETA_Q)  0.05125  0.04855 -0.0026960      0.0146700  0.04815</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_V2,ETA_V2)  0.03794  0.03858  0.0006401      0.0102200  0.03829</span></span>
-<span><span class="co">#&gt;  OMEGA(ETA_KA,ETA_KA)  0.17540  0.16810 -0.0073810      0.0587300  0.16190</span></span>
-<span><span class="co">#&gt;              PROP_ERR  0.01962  0.01948 -0.0001430      0.0009457  0.01952</span></span>
+<span><span class="co">#&gt;                  TVCL  4.94800  4.94100 -0.0069850      0.2974000  4.97200</span></span>
+<span><span class="co">#&gt;                  TVV1 48.59000 48.59000  0.0048650      2.9110000 48.69000</span></span>
+<span><span class="co">#&gt;                   TVQ  9.57700  9.54700 -0.0295300      0.4053000  9.54100</span></span>
+<span><span class="co">#&gt;                  TVV2 94.17000 94.60000  0.4281000      3.2660000 94.99000</span></span>
+<span><span class="co">#&gt;                  TVKA  1.25600  1.26400  0.0083980      0.0896800  1.25300</span></span>
+<span><span class="co">#&gt;              THETA_WT  0.65350  0.69670  0.0432300      0.2355000  0.68190</span></span>
+<span><span class="co">#&gt;            THETA_CRCL  0.56460  0.55110 -0.0135500      0.2110000  0.53910</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_CL,ETA_CL)  0.10750  0.09946 -0.0080700      0.0246400  0.09549</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_V1,ETA_V1)  0.10630  0.09875 -0.0075980      0.0298700  0.09476</span></span>
+<span><span class="co">#&gt;    OMEGA(ETA_Q,ETA_Q)  0.05125  0.04858 -0.0026650      0.0146400  0.04815</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_V2,ETA_V2)  0.03794  0.03857  0.0006342      0.0102300  0.03828</span></span>
+<span><span class="co">#&gt;  OMEGA(ETA_KA,ETA_KA)  0.17540  0.16780 -0.0076020      0.0581200  0.16190</span></span>
+<span><span class="co">#&gt;              PROP_ERR  0.01962  0.01947 -0.0001457      0.0009433  0.01952</span></span>
 <span><span class="co">#&gt;  ci_lower  ci_upper ci_lower_normal ci_upper_normal</span></span>
-<span><span class="co">#&gt;   4.25800   5.54300         4.36400         5.53200</span></span>
-<span><span class="co">#&gt;  42.40000  54.75000        42.90000        54.27000</span></span>
+<span><span class="co">#&gt;   4.25800   5.54300         4.36500         5.53100</span></span>
+<span><span class="co">#&gt;  42.40000  54.75000        42.88000        54.29000</span></span>
 <span><span class="co">#&gt;   8.85300  10.56000         8.78200        10.37000</span></span>
-<span><span class="co">#&gt;  88.47000 101.40000        87.78000       100.60000</span></span>
-<span><span class="co">#&gt;   1.12800   1.51000         1.08100         1.43100</span></span>
+<span><span class="co">#&gt;  88.47000 101.40000        87.77000       100.60000</span></span>
+<span><span class="co">#&gt;   1.12800   1.51000         1.08000         1.43200</span></span>
 <span><span class="co">#&gt;   0.24290   1.17100         0.19190         1.11500</span></span>
-<span><span class="co">#&gt;   0.13230   0.99130         0.15110         0.97810</span></span>
-<span><span class="co">#&gt;   0.06062   0.15770         0.05919         0.15590</span></span>
-<span><span class="co">#&gt;   0.05682   0.16650         0.04761         0.16510</span></span>
-<span><span class="co">#&gt;   0.02407   0.08183         0.02250         0.08000</span></span>
-<span><span class="co">#&gt;   0.01755   0.05804         0.01791         0.05797</span></span>
-<span><span class="co">#&gt;   0.07277   0.30700         0.06034         0.29050</span></span>
+<span><span class="co">#&gt;   0.13230   0.99130         0.15110         0.97820</span></span>
+<span><span class="co">#&gt;   0.06062   0.15770         0.05925         0.15580</span></span>
+<span><span class="co">#&gt;   0.05682   0.16650         0.04780         0.16490</span></span>
+<span><span class="co">#&gt;   0.02407   0.08183         0.02255         0.07995</span></span>
+<span><span class="co">#&gt;   0.01755   0.05804         0.01789         0.05799</span></span>
+<span><span class="co">#&gt;   0.07277   0.30700         0.06152         0.28940</span></span>
 <span><span class="co">#&gt;   0.01737   0.02137         0.01777         0.02147</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on the <code>ferx_bootstrap</code> result shows the run summary and the <code>boot$parameters</code> table: original estimate, bootstrap mean, bias, standard error, median, and the percentile and normal-approximation intervals. <code>boot$raw</code> has one row per fitted replicate, and <code>boot$diagnostics</code> records the counts and exclusions:</p>
@@ -1893,8 +1872,8 @@ Table&nbsp;10.2: SIR settings.
 <span><span class="co">#&gt; 7      mean: estimate_near_boundary     0.0100000</span></span>
 <span><span class="co">#&gt; 8  mean: covariance_step_successful     0.0000000</span></span>
 <span><span class="co">#&gt; 9    mean: covariance_step_warnings     0.0000000</span></span>
-<span><span class="co">#&gt; 10                        mean: ofv -1214.7232873</span></span>
-<span><span class="co">#&gt; 11        mean: subproblem_est_time     0.5624444</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 10                        mean: ofv -1214.7329025</span></span>
+<span><span class="co">#&gt; 11        mean: subproblem_est_time     0.4843993</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>By default, replicates whose minimization terminated or whose estimate lies on a boundary are fitted but excluded from the statistics. <code><a href="https://rdrr.io/r/graphics/plot.default.html">plot()</a></code> on a <code>ferx_bootstrap</code> object draws one histogram per parameter, with the original estimate and the interval:</p>
 <div class="cell" data-layout-align="center">
@@ -1917,13 +1896,13 @@ Figure&nbsp;10.1: Bootstrap distributions of the covariate exponents.
 <span><span class="co">#&gt; [1] 100</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">relaxed</span><span class="op">$</span><span class="va">parameters</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"parameter"</span>, <span class="st">"ci_lower"</span>, <span class="st">"ci_upper"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">7</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    parameter   ci_lower    ci_upper</span></span>
-<span><span class="co">#&gt; 1       TVCL  4.3820529   5.4518309</span></span>
-<span><span class="co">#&gt; 2       TVV1 43.0779434  53.1257712</span></span>
-<span><span class="co">#&gt; 3        TVQ  8.9843230  10.2807024</span></span>
-<span><span class="co">#&gt; 4       TVV2 89.1504848 100.5879495</span></span>
-<span><span class="co">#&gt; 5       TVKA  1.1390207   1.4393716</span></span>
-<span><span class="co">#&gt; 6   THETA_WT  0.2968820   1.0969109</span></span>
-<span><span class="co">#&gt; 7 THETA_CRCL  0.1816303   0.8904125</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1       TVCL  4.3820545   5.4518400</span></span>
+<span><span class="co">#&gt; 2       TVV1 43.0484139  53.1257863</span></span>
+<span><span class="co">#&gt; 3        TVQ  8.9843180  10.2807022</span></span>
+<span><span class="co">#&gt; 4       TVV2 89.1504840 100.5879585</span></span>
+<span><span class="co">#&gt; 5       TVKA  1.1390215   1.4393714</span></span>
+<span><span class="co">#&gt; 6   THETA_WT  0.2968935   1.0969092</span></span>
+<span><span class="co">#&gt; 7 THETA_CRCL  0.1816331   0.8904115</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://ferx-nlme.org/reference/ferx_bootstrap.html">ferx_bootstrap()</a></code> arguments:</p>
 <table class="caption-top table">
@@ -2124,9 +2103,9 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
 <span><span class="co">#&gt; 3 critical condition_number</span></span>
 <span><span class="va">fit_bad</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVE0"</span>, <span class="st">"TVEMAX"</span>, <span class="st">"TVEC50"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         estimate   rse_pct</span></span>
-<span><span class="co">#&gt; TVE0    3.208102 123.48972</span></span>
-<span><span class="co">#&gt; TVEMAX 45.243481  30.55803</span></span>
-<span><span class="co">#&gt; TVEC50  3.992945  21.51871</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVE0    3.208106 123.49029</span></span>
+<span><span class="co">#&gt; TVEMAX 45.243463  30.55820</span></span>
+<span><span class="co">#&gt; TVEC50  3.992944  21.51877</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>In such a case, fix the model before quantifying uncertainty. <code>covariance_fallback = "sir"</code> runs SIR automatically when the covariance step fails.</p>
 <p><strong>Other points</strong>:</p>
@@ -2181,15 +2160,50 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
       const i = window.document.createElement("i");
       i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
     }
     setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
@@ -2268,7 +2282,8 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -2277,8 +2292,69 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -2292,6 +2368,7 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -2454,44 +2531,54 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -2589,7 +2676,9 @@ Figure&nbsp;10.2: 95% intervals for the fixed effects from the covariance step, 
       }
     }
   });
-  </script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+  </script><script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script><nav class="page-navigation" aria-label="Page"><div class="nav-page nav-page-previous">
       <a href="../chapters/09-model-selection.html" class="pagination-link" aria-label="Model development and selection">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Model development and selection</span></span>
       </a>          
