@@ -815,16 +815,20 @@ See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html)
   ```{r}
   #| label: check-init-not-representable
   #| include: false
-  # The item says this start raises the warning and ends well above the model file's optimum.
-  stopifnot("init_not_representable" %in% tiny_warnings$category,
-            fit_tiny$ofv - fit_warf$ofv > 1)
+  # The item says this start raises the warning, and that the fit still converges to the model
+  # file's optimum (same OFV, thetas, omega and sigma).
+  stopifnot("init_not_representable" %in% tiny_warnings$category, isTRUE(fit_tiny$converged),
+            abs(fit_tiny$ofv - fit_warf$ofv) < 0.01,
+            all(abs(fit_tiny$theta / fit_warf$theta - 1) < 1e-3),
+            all(abs(fit_tiny$omega - fit_warf$omega) <= 1e-3 * max(abs(fit_warf$omega))),
+            all(abs(fit_tiny$sigma / fit_warf$sigma - 1) < 1e-3))
   ```
 
-  Here the fit does not recover. It `r if (fit_tiny$converged) "reports convergence" else "stops"`, but at OFV `r round(fit_tiny$ofv, 2)` against `r round(fit_warf$ofv, 2)` from the model file's start, with `TVV` at `r signif(fit_tiny$theta[["TVV"]], 2)` instead of `r signif(fit_warf$theta[["TVV"]], 3)`: the substituted start sent the optimizer to another basin. Declare the start at a value the parameter can take, and do not read `converged` as a sign that the start did no harm.
+  On this well-informed model the fit recovers: it converges at OFV `r round(fit_tiny$ofv, 2)`, the value the model file's start reaches (`r round(fit_warf$ofv, 2)`), with the same estimates. Whether it does depends on the model and the data, and a substituted start can just as well send the optimizer to another basin while still reporting convergence. Declare the start at a value the parameter can take rather than relying on the repair, and do not read `converged` as a sign that the start did no harm.
 
   ::: {.callout-note}
   ## Changed after ferx-r {{< var ferx_r_release >}}
-  With ferx-r {{< var ferx_r_release >}}, the fit from this start also ends far from the optimum, and carries critical warnings besides.
+  With ferx-r {{< var ferx_r_release >}}, the fit from this start ends far from the optimum instead, and carries critical warnings besides.
   :::
 - `parameter_at_runaway_guard` (warning or critical): a parameter is pinned at a hidden optimizer guard. `collapse` (warning) means remove or simplify it; `runaway` (critical) means reject the fit.
 - `importance_sampling` (warning): the effective sample size dropped to zero, or the proposal collapsed. Increase the samples or improve the proposal.

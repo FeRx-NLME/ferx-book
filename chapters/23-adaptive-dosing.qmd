@@ -51,7 +51,7 @@ The PK part is an ordinary one-compartment ODE model. The `[adaptive_dosing]` bl
 | `confirm = 1` | Act on the first breach of a rule |
 | `when signal < 10 : increase 25%` | Rules, evaluated top to bottom; the first match wins |
 
-The block supports more than this example uses. `observe = <expression>` titrates on a latent, noise-free quantity instead of a measured one. `levels` defines a discrete dose ladder. `auc_target` reports exposure attainment. The `hold` and `stop` actions skip or discontinue dosing. All are specified on the ferx-core [adaptive dosing page](https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html).
+The block supports more than this example uses. `observe = <expression>` titrates on a latent, noise-free quantity instead of a measured one. `levels` defines a discrete dose ladder. `auc_target` reports exposure attainment, returned as `metrics$AUC_TARGET_ATTAINMENT`. The `hold` and `stop` actions skip or discontinue dosing. `intervals` with `start_interval` gives a ladder of dosing intervals that the `lengthen` and `shorten` effects step through, so a rule can change how often a dose is given as well as how much ([changing the dosing interval](https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html#changing-the-dosing-interval)). All are specified on the ferx-core [adaptive dosing page](https://ferx-nlme.org/ferx-core/model-file/adaptive-dosing.html).
 
 The dataset supplies only the patients and the observation grid. It contains no doses, because the controller issues all of them:
 
@@ -390,7 +390,7 @@ stopifnot(all(read.csv(ex$data, na.strings = ".")$DV == 0),
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-The `fit`, `etas` and `unmatched` arguments of `ferx_simulate_adaptive()` and the `ETA_SUPPLIED` column of its `metrics` are not in ferx-r {{< var ferx_r_release >}}.
+The `fit`, `etas` and `unmatched` arguments of `ferx_simulate_adaptive()` and the `ETA_SUPPLIED` column of its `metrics` are not in ferx-r {{< var ferx_r_release >}}, and neither are the dosing-interval ladder (`intervals`, `start_interval`, `lengthen`, `shorten`), the `"not_due"` decision outcome and the `INTERVAL` and `N_NOT_DUE` columns it adds, or the `AUC_TARGET_ATTAINMENT` column of `metrics`.
 :::
 
 ## Pitfalls
@@ -399,7 +399,12 @@ The `fit`, `etas` and `unmatched` arguments of `ferx_simulate_adaptive()` and th
 - **Signals are read before the dose; trajectories at the same time include a bolus.** The controller reads the level *before* the dose given at that decision time. A `trajectories` row at the same time already includes a bolus given then. In the loading-dose run the first signal is `r round(res_load$doses$SIGNAL[1], 2)` mg/L, while the trajectory at 24 h is `r round(res_load$trajectories$IPRED[res_load$trajectories$TIME == 24], 2)` mg/L. The difference is the `r round(res_load$doses$AMT[1], 1)` mg bolus divided by the volume of 80 L. Use `decisions$SIGNAL` for trough-based attainment.
 - **`PCT_TIME_IN_WINDOW` is a fraction of decisions.** Despite its name, it is a proportion between 0 and 1 of the signal-bearing decisions, not a percentage of time.
 - **`target_window` does not steer dosing.** Only the `when` rules change doses. The window only feeds the attainment metric.
-- **Scope.** The controller runs on ODE models, titrates on one signal per block, and rejects stochastic (`[diffusion]`) models. Some combinations of base doses with time-varying covariates, IOV or system resets are rejected with an error. `?ferx_simulate_adaptive` and the ferx-core page list them.
+- **Scope.** The controller runs on ODE models, titrates on one signal per block, and rejects stochastic (`[diffusion]`) models. A steady-state, lag-timed or modelled-rate (`RATE`) base dose under a time-varying covariate or IOV is rejected with an error; base doses with system resets (`EVID = 3`/`4`) run on every path. `?ferx_simulate_adaptive` and the ferx-core page list the rest.
+
+  ::: {.callout-note}
+  ## Changed after ferx-r {{< var ferx_r_release >}}
+  ferx-r {{< var ferx_r_release >}} also rejects a base regimen with system resets under a time-varying covariate or IOV, and an `auc_target` metric combined with a time-varying covariate, a `TIME`-dependent PK parameter, IOV or a reset.
+  :::
 
 ## Summary
 

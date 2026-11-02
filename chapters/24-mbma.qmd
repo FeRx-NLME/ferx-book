@@ -393,11 +393,15 @@ stopifnot(isTRUE(fit_profiled$converged), identical(fit_profiled$profiled_blocks
           all(fit_profiled$theta_levels$profiled), !any(fit_fixed$theta_levels$profiled),
           sum(grepl("^PLACEBO\\[", names(fit_profiled$theta))) == 23,
           length(fit_profiled$profiled_levels_at_bound) == 0)
-# The scope paragraph: a method other than FOCE / FOCEI is refused with E_PROFILE_SCOPE.
-saem_code <- tryCatch({
-  suppressWarnings(ferx_fit(profiled_model, mbma$data, method = "saem", settings = list(maxiter = 0), verbose = FALSE)); NULL
+# The scope paragraph: Laplace (one node or adaptive quadrature) is accepted, and a method other
+# than FOCE / FOCEI / Laplace is refused with E_PROFILE_SCOPE.
+profile_scope_code <- function(method, settings = list()) tryCatch({
+  suppressWarnings(ferx_fit(profiled_model, mbma$data, method = method,
+                            settings = c(list(maxiter = 0), settings), verbose = FALSE)); "fitted"
 }, error = function(e) e$code)
-stopifnot(identical(saem_code, "E_PROFILE_SCOPE"))
+stopifnot(identical(profile_scope_code("saem"), "E_PROFILE_SCOPE"),
+          identical(profile_scope_code("laplace"), "fitted"),
+          identical(profile_scope_code("laplace", list(n_agq = 3)), "fitted"))
 ```
 
 The profiled fit reaches the same objective, to the optimizer's tolerance (less than `r format(10^ceiling(log10(abs(fit_profiled$ofv - fit_fixed$ofv) + 1e-15)), scientific = TRUE)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r round(fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid.
@@ -491,7 +495,7 @@ A level on its bound says that the bound, not the data, decides its value: relax
 `ferx_fit()` on the bounded model warns "Non-positive variance for estimated parameter(s)" and names the held level, as if the covariance step had gone wrong. It has not: the step gives a held level a zero row and column on purpose, as it does for a `FIX` theta, but ferx-r treats only `FIX` thetas as held when it builds `fit$cor_matrix`. The warning can be ignored, and the held level's correlations are `NA`, which is correct.
 :::
 
-`profile` needs FOCE or FOCEI and an additive residual error, and it rules out priors and `global_search`, among others. ferx refuses each such fit with `E_PROFILE_SCOPE`. A residual `correlation` line, shown next, is allowed. See [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks) in ferx-core for the full list.
+`profile` needs FOCE, FOCEI or Laplace (with or without adaptive quadrature, `n_agq`) and an additive residual error, and it rules out priors and `global_search`, among others. ferx refuses each such fit with `E_PROFILE_SCOPE`. A residual `correlation` line, shown next, is allowed. See [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks) in ferx-core for the full list.
 
 ## Correlated residuals within an arm
 
@@ -914,21 +918,20 @@ No warning category has this chapter as its home. The fits above raise these, wh
 - `parameter_at_runaway_guard` (@sec-estimation-methods), on a variance that collapses to zero: the study kappa beside the sponsor effect, and the sponsor effect itself under the second pairing, which also raises `eta_shrinkage` (@sec-diagnostics);
 - `covariance_failed` and `covariance_step` (@sec-uncertainty), from the `"s"` and `"rsr"` covariance steps.
 
-The profiled fits can also carry a `gradient_fallback` note (@sec-estimation-methods), `W_PROFILE_FD_GRADIENT`: a subject's profiled levels got a finite-difference gradient instead of the exact one, which is correct but slower.
+A profiled fit can also carry a `gradient_fallback` note (@sec-estimation-methods), `W_PROFILE_FD_GRADIENT`: a subject's profiled levels got a finite-difference gradient instead of the exact one, which is correct but slower. None of the profiled fits in this chapter needs it.
 
 ```{r}
 #| label: check-warning-list
 #| include: false
 # The list above: every category the chapter's fits raise is named there, and each named one occurs.
-chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_car1,
+# gradient_fallback (W_PROFILE_FD_GRADIENT) is not listed, so this also backs "None of the profiled
+# fits ... needs it" for every profiled fit, fit_unbounded included.
+chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_unbounded, fit_car1,
                      fit_car1_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
 chapter_categories <- unique(unlist(lapply(chapter_fits, function(f) ferx_get_warnings(f, as_df = TRUE)$category)))
-listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step",
-            "gradient_fallback")
+listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
 other_categories <- ferx_get_warnings(fit_other, as_df = TRUE)$category
-profiled_messages <- unlist(lapply(list(fit_profiled, profiled_s, profiled_rsr, fit_car1_profiled),
-                                    function(f) ferx_get_warnings(f, as_df = TRUE)$message))
-stopifnot(any(startsWith(profiled_messages, "W_PROFILE_FD_GRADIENT")), all(chapter_categories %in% listed), all(setdiff(listed, "threads") %in% chapter_categories),
+stopifnot(all(chapter_categories %in% listed), all(setdiff(listed, "threads") %in% chapter_categories),
           all(c("parameter_at_runaway_guard", "eta_shrinkage") %in% other_categories))
 ```
 

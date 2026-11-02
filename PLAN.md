@@ -518,7 +518,7 @@ Per-chapter loop:
   - pkgdown omits post-0.3.0 exports
 - ferx-core:
   - `predict_survival` row order within a subject varies between calls on
-    multi-CMT models (#2531, open at 3f87757e); ch22 competing risks has an
+    multi-CMT models (#2531, open at 497f918b); ch22 competing risks has an
     "at this build" callout telling readers to sort or join on ID, CMT, TIME
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
@@ -760,7 +760,7 @@ Per-chapter loop:
   - **FOCE runs without complaint:** the docs say FOCE is biased for binary endpoints, but `method = "foce"` on the random-intercept model runs silently with the same OFV as FOCEI.
   - ~~**SAEM default seed:** on that model the default seed ends at a degenerate point (RSE 2e6%), while seeds 1–3 agree.~~ Gone at `5c9cc7a` with the new SAEM defaults (`scale_adaptation = robbins_monro`, `n_mh_steps = auto`): no seed needs a regularized covariance step, but the four runs now scatter (`ETA_I` 0.39-0.56). ch21 reports the spread, and how many runs needed a regularized covariance step, with inline numbers.
 - ferx-r/ferx-core (found in 4.4, ch22), to check:
-  - **Empty `sdtab`:** TTE-only fits return an empty `sdtab` (0 rows).
+  - ~~**Empty `sdtab`:** TTE-only fits return an empty `sdtab` (0 rows).~~ Gone at d851d3b (ferx-r #687): one row per TTE record with `COXSNELL`/`MARTINGALE`/`DEVIANCE`/`PIT`; ch22 shows them, with a check and a "Changed after" note.
   - **Stale model comment:** the `tte_exponential` comment says `[event_model]` cannot reference individual parameters; the docs now say it can.
   - **`ferx_simulate()` without `horizon`:** it prints "Error simulating: …" and returns NULL rather than raising an R error.
 - ferx-core/ferx-r (found in 4.5, ch24), to check:
