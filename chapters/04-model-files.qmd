@@ -72,9 +72,18 @@ probed <- sub("  CL = TVCL * exp(ETA_CL)", "  CL = TVCL * not_a_function(ETA_CL)
               original, fixed = TRUE)
 stopifnot(!identical(probed, original))   # the line must actually have been replaced
 writeLines(probed, fn_probe)
-cat(tryCatch(ferx_fit(fn_probe, ferx_example("warfarin")$data, verbose = FALSE),
-             error = function(e) sub("^Error parsing model: ", "", conditionMessage(e))),
-    fill = TRUE)
+probe_error <- tryCatch(ferx_fit(fn_probe, ferx_example("warfarin")$data, verbose = FALSE),
+                        error = function(e) e)
+cat(sub("^Error parsing model: ", "", conditionMessage(probe_error)), fill = TRUE)
+```
+
+```{r}
+#| label: check-expression-functions
+#| include: false
+# The paragraph above says the probe is a parse error that names the supported set.
+stopifnot(inherits(probe_error, "ferx_engine_error"), identical(probe_error$code, "E_PARSE"),
+          grepl("not_a_function", conditionMessage(probe_error), fixed = TRUE),
+          grepl("Supported:", conditionMessage(probe_error), fixed = TRUE))
 ```
 
 `logit()` and `inv_logit()` are how a parameter is kept inside (0, 1) -- @sec-variability gives the forms and @sec-first-fit shows how they are reported. Names match case-insensitively, so `EXP(...)` works as well as `exp(...)`.
