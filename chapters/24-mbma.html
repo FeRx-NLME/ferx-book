@@ -751,7 +751,7 @@ window.Quarto = {
 <span><span class="fu"><a href="https://rdrr.io/r/base/sys.source.html">sys.source</a></span><span class="op">(</span><span class="va">generator</span>, envir <span class="op">=</span> <span class="va">gen</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Realised TVE0 truth (nominal 50 + mean study eta 0.7173 + mean placebo deviation -2.5225): 48.1949</span></span>
 <span><span class="co">#&gt; Converted `sd` to a standard error as sd / sqrt(n).</span></span>
-<span><span class="co">#&gt; Wrote 88 rows to /tmp/RtmpkDsKDJ/mbma/rebuilt.csv</span></span>
+<span><span class="co">#&gt; Wrote 88 rows to /tmp/RtmplZspbI/mbma/rebuilt.csv</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">gen</span><span class="op">$</span><span class="va">arms</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   trial arm DOSE week   mean     sd   n</span></span>
 <span><span class="co">#&gt; 1   T01   1    0    0 49.630  9.986  88</span></span>
@@ -1108,7 +1108,7 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span><span class="co">#&gt;  Model: mbma_fixed_study         Dataset: mbma_placebo</span></span>
 <span><span class="co">#&gt;  Method: FOCEI | Gradient: ANALYTIC | Subjects: 6 | Obs: 88</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   162 iterations   0.3s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   162 iterations   0.1s</span></span>
 <span><span class="co">#&gt;  OFV: 73.9719    AIC: 129.9719    BIC: 199.3374</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -1173,7 +1173,7 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <p>The THETA table now shows the four structural parameters and one line for <code>PLACEBO</code>, and the <code>Structural:</code> line under MODEL STRUCTURE names the block once with its number of coefficients, whatever its size. Every coefficient is still in <code>fit_fixed$theta</code>, and <code>fit_fixed$theta_levels</code> still has every level with its value.</p>
 <p>The study random effect and the fixed study levels are two ways to carry between-study differences. This chapter does not compare them: with six studies the choice rests on what the analysis needs, not on one fit statistic.</p>
 </section><section id="profiling-a-large-level-block" class="level3"><h3 class="anchored" data-anchor-id="profiling-a-large-level-block">Profiling a large level block</h3>
-<p>A level block that the prediction reads linearly, as <code>BASE</code> reads <code>PLACEBO</code> here, can be declared <code>profile</code>. FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:</p>
+<p>A level block that the prediction reads linearly, as <code>BASE</code> reads <code>PLACEBO</code> here, can be declared <code>profile</code>. So can one read inside a single logit link that is the whole prediction, such as an observed proportion <code>y = inv_logit(TVL + PLACEBO + ...)</code> (<a href="https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-logit-link">through a logit link</a> in ferx-core). A <code>[binary_model]</code> predictor is not covered yet: a profiled block read there is refused with <code>E_PROFILE_SCOPE</code>. FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">profiled_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"contrast = sum_to_zero](0.0, -50.0, 50.0)"</span>,</span>
 <span>                      <span class="st">"contrast = sum_to_zero](0.0, -50.0, 50.0) profile"</span>, <span class="va">fixed_lines</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -1188,8 +1188,8 @@ Figure&nbsp;24.1: Fitted placebo levels with 95% intervals from their standard e
 <span>           n_parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_fixed</span><span class="op">$</span><span class="va">n_parameters</span>, <span class="va">fit_profiled</span><span class="op">$</span><span class="va">n_parameters</span><span class="op">)</span>,</span>
 <span>           seconds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">fit_fixed</span><span class="op">$</span><span class="va">wall_time_secs</span>, <span class="va">fit_profiled</span><span class="op">$</span><span class="va">wall_time_secs</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      levels      ofv n_parameters seconds</span></span>
-<span><span class="co">#&gt; 1 estimated 73.97193           28    0.27</span></span>
-<span><span class="co">#&gt; 2  profiled 73.97193           28    0.87</span></span>
+<span><span class="co">#&gt; 1 estimated 73.97193           28    0.13</span></span>
+<span><span class="co">#&gt; 2  profiled 73.97193           28    0.47</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>estimated <span class="op">=</span> <span class="va">fit_fixed</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, profiled <span class="op">=</span> <span class="va">fit_profiled</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               TVE0     EMAX     ED50     ET50</span></span>
 <span><span class="co">#&gt; estimated 48.57372 13.59487 34.01989 4.049485</span></span>
@@ -1649,7 +1649,7 @@ Figure&nbsp;24.2: Contrast VPC: active minus placebo within a study, by dose and
 <li>
 <code>kappa ... weight = NARM</code> is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, <code>sqrt(gamma2 / fit$kappa_weight_typical)</code>.</li>
 <li>With <code>contrast = sum_to_zero_within</code>, <code>TVE0</code> is each study’s mean placebo level over its visits, not its week-0 level.</li>
-<li>A level block read linearly can be declared <code>profile</code>: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in <code>fit$profiled_levels_at_bound</code>.</li>
+<li>A level block read linearly, or inside one logit link that is the whole prediction (not yet in a <code>[binary_model]</code> predictor), can be declared <code>profile</code>: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in <code>fit$profiled_levels_at_bound</code>.</li>
 <li>
 <code>correlation car1(RHO) by OCC</code> correlates an arm’s visits beside the arm kappa (<code>cs</code> there is refused). With few studies, calibrate its likelihood-ratio test by simulation.</li>
 <li>

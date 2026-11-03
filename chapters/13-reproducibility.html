@@ -655,6 +655,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_save_fit.html">ferx_save_fit</a></span><span class="op">(</span><span class="va">fit</span>, output <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"run1_with_data"</span><span class="op">)</span>, include_data <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p>To start the next run where this one ended, <code>ferx_update_model(fit, path)</code> writes the fitted model as a <code>.ferx</code> file with the final estimates as initial values. Only the numbers in <code>[parameters]</code> change: bounds, <code>FIX</code>, comments and the other blocks stay as written, except that a declaration written over several lines is rewritten onto its first line. Without <code>path</code> it returns the text instead, and <code>overwrite = TRUE</code> replaces an existing file. <code><a href="https://ferx-nlme.org/reference/ferx_save_fit.html">ferx_save_fit()</a></code> with <code>write_model = TRUE</code> writes the same file next to the bundle as <code>&lt;name&gt;_final.ferx</code>. <code><a href="https://ferx-nlme.org/reference/ferx_update_model.html">?ferx_update_model</a></code> lists what cannot be written back, such as a theta level block.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Needs ferx-r newer than 0.4.0
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code><a href="https://ferx-nlme.org/reference/ferx_update_model.html">ferx_update_model()</a></code> and the <code>write_model</code> argument of <code><a href="https://ferx-nlme.org/reference/ferx_save_fit.html">ferx_save_fit()</a></code> are not in ferx-r 0.4.0.</p>
+</div>
+</div>
 <p>A <code>.fitrx</code> file is a zip archive of JSON and CSV files, readable from any language with zip, JSON and CSV support:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html">unzip</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"run1_with_data.fitrx"</span><span class="op">)</span>, list <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Name"</span>, <span class="st">"Length"</span><span class="op">)</span><span class="op">]</span></span>
@@ -734,7 +748,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; 6 ferx-r version            0.4.0.9000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>fit$model_text</code> holds the model source. The hashes are what <code><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> check before reusing a fit: if the model or data file has changed, they stop.</p>
-<p>Package versions alone do not identify a development build. This book records the ferx-r commit it was built with (<code>d851d3b</code>, see <a href="01-installation.html" class="quarto-xref"><span>Installing ferx</span></a>). Do the same in your reports, together with the R session information:</p>
+<p>Package versions alone do not identify a development build. This book records the ferx-r commit it was built with (<code>e6d3535</code>, see <a href="01-installation.html" class="quarto-xref"><span>Installing ferx</span></a>). Do the same in your reports, together with the R session information:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">running</span></span>
 <span><span class="co">#&gt; [1] "Ubuntu 24.04.5 LTS"</span></span>
@@ -785,6 +799,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td></td>
 <td><code>include_data</code></td>
 <td>Embed the dataset</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>write_model</code></td>
+<td>Also write the fitted model as <code>&lt;name&gt;_final.ferx</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code><a href="https://ferx-nlme.org/reference/ferx_update_model.html">ferx_update_model()</a></code></td>
+<td><code>fit</code></td>
+<td>The fit whose final estimates become the initial values</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>path</code></td>
+<td>
+<code>.ferx</code> file to write; <code>NULL</code> returns the model text instead</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>overwrite</code></td>
+<td>Replace an existing file at <code>path</code>
+</td>
 </tr>
 <tr class="even">
 <td><code><a href="https://ferx-nlme.org/reference/ferx_load_fit.html">ferx_load_fit()</a></code></td>
@@ -864,7 +901,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_save_fit.html">?ferx_save_fit</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_load_fit.html">?ferx_load_fit</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code> (<code>output</code>, <code>include_data</code>)</li>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_save_fit.html">?ferx_save_fit</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_load_fit.html">?ferx_load_fit</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_update_model.html">?ferx_update_model</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code> (<code>output</code>, <code>include_data</code>)</li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/file-formats/fitrx.html">.fitrx file format</a>
 </li>
 </ul>

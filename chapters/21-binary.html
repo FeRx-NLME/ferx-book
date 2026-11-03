@@ -742,9 +742,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <ul>
-<li>Observation rows carry <code>DV</code> 0 or 1 and <code>EVID = 0</code>. Any other value stops the fit.</li>
-<li>Covariates enter at their subject value; a covariate column that changes over time is not yet supported in <code>logit</code> (use <code>TIME</code> for time effects).</li>
-<li>FOCEI, SAEM and IMP are suitable estimation methods (<a href="https://ferx-nlme.org/ferx-core/estimation/categorical.html">categorical estimation</a>).</li>
+<li><p>Observation rows carry <code>DV</code> 0 or 1 and <code>EVID = 0</code>. Any other value stops the fit.</p></li>
+<li>
+<p>Covariates in <code>logit</code> are read at each record’s own value, so a covariate column that changes within a subject (an arm, a dose group) works, as does <code>TIME</code>. The exception is a subject that also has time-to-event records: there a time-varying covariate in <code>logit</code> is refused (<code>E_ENDPOINT_TV_COVARIATE</code>).</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Changed after ferx-r 0.4.0
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In ferx-r 0.4.0, <code>logit</code> reads every covariate at the subject’s first record, without a warning, so a covariate column that changes over time is used at its baseline value. Use <code>TIME</code> for time effects there.</p>
+</div>
+</div>
+</li>
+<li><p>FOCEI, SAEM and IMP are suitable estimation methods (<a href="https://ferx-nlme.org/ferx-core/estimation/categorical.html">categorical estimation</a>).</p></li>
 </ul></section><section id="variants" class="level2"><h2 class="anchored" data-anchor-id="variants">Variants</h2>
 <section id="a-random-intercept" class="level3"><h3 class="anchored" data-anchor-id="a-random-intercept">A random intercept</h3>
 <p>Subjects may differ in their tendency to respond. A random intercept <code>ETA_I</code> in the log-odds makes the model a mixed-effects logistic regression:</p>
