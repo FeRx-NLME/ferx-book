@@ -34,11 +34,12 @@ export_home <- c(
   ferx_covsearch = 9, ferx_ruvsearch = 9, ferx_globalsearch = 9,
   ferx_covariance = 10, ferx_sir = 10, ferx_bootstrap = 10, ferx_bootstrap_summarize = 10,
   ferx_predict = 11, ferx_simulate_with_uncertainty = 11,
-  ferx_save_fit = 13, ferx_load_fit = 13,
+  ferx_save_fit = 13, ferx_load_fit = 13, ferx_update_model = 13,
   ferx_cov_screen = 17, ferx_gam_screen = 17, ferx_allometry = 17, ferx_model_to_frem = 17,
   ferx_predict_survival = 22,
   ferx_simulate_adaptive = 23,
-  ferx_mbma_data = 24, ferx_contrast_vpc = 24
+  ferx_mbma_data = 24, ferx_contrast_vpc = 24,
+  ferx_model_from_dcm = 25
 )
 
 # ferx_fit / ferx_simulate arguments that belong with a topic, not the parent.

@@ -359,7 +359,7 @@ The study random effect and the fixed study levels are two ways to carry between
 
 ### Profiling a large level block
 
-A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:
+A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. So can one read inside a single logit link that is the whole prediction, such as an observed proportion `y = inv_logit(TVL + PLACEBO + ...)` ([through a logit link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-logit-link) in ferx-core). A `[binary_model]` predictor is not covered yet: a profiled block read there is refused with `E_PROFILE_SCOPE`. FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:
 
 ```{r}
 #| label: profile
@@ -941,7 +941,7 @@ stopifnot(all(chapter_categories %in% listed), all(setdiff(listed, "threads") %i
 - `DV ~ additive(ADD_ERR) weight = SE` with `ADD_ERR` fixed at 1 is inverse-variance weighting on the natural scale.
 - `kappa ... weight = NARM` is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, `sqrt(gamma2 / fit$kappa_weight_typical)`.
 - With `contrast = sum_to_zero_within`, `TVE0` is each study's mean placebo level over its visits, not its week-0 level.
-- A level block read linearly can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in `fit$profiled_levels_at_bound`.
+- A level block read linearly, or inside one logit link that is the whole prediction (not yet in a `[binary_model]` predictor), can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in `fit$profiled_levels_at_bound`.
 - `correlation car1(RHO) by OCC` correlates an arm's visits beside the arm kappa (`cs` there is refused). With few studies, calibrate its likelihood-ratio test by simulation.
 - `fit$theta_levels` holds every placebo level's value and standard error, derived ones included, and its SIR interval after `ferx_sir(sir_keep_samples = TRUE)`. Large blocks print as one THETA BLOCKS line.
 - `level NAME by COLUMN in PARENT` declares nested groupings below the subject, such as sponsor, study and arm, and `kappa ... at LEVEL` draws a kappa once per group of a level.

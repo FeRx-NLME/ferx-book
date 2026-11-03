@@ -52,6 +52,13 @@ list.files(run_dir)
 ferx_save_fit(fit, output = file.path(run_dir, "run1_with_data"), include_data = TRUE)
 ```
 
+To start the next run where this one ended, `ferx_update_model(fit, path)` writes the fitted model as a `.ferx` file with the final estimates as initial values. Only the numbers in `[parameters]` change: bounds, `FIX`, comments and the other blocks stay as written, except that a declaration written over several lines is rewritten onto its first line. Without `path` it returns the text instead, and `overwrite = TRUE` replaces an existing file. `ferx_save_fit()` with `write_model = TRUE` writes the same file next to the bundle as `<name>_final.ferx`. `?ferx_update_model` lists what cannot be written back, such as a theta level block.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+`ferx_update_model()` and the `write_model` argument of `ferx_save_fit()` are not in ferx-r {{< var ferx_r_release >}}.
+:::
+
 A `.fitrx` file is a zip archive of JSON and CSV files, readable from any language with zip, JSON and CSV support:
 
 ```{r}
@@ -164,6 +171,10 @@ list.files(run_dir)
 | `ferx_save_fit()` | `fit` | The fit to save |
 | | `output` | File path (`.fitrx` appended when there is no extension) |
 | | `include_data` | Embed the dataset |
+| | `write_model` | Also write the fitted model as `<name>_final.ferx` |
+| `ferx_update_model()` | `fit` | The fit whose final estimates become the initial values |
+| | `path` | `.ferx` file to write; `NULL` returns the model text instead |
+| | `overwrite` | Replace an existing file at `path` |
 | `ferx_load_fit()` | `path` | `.fitrx` file, with or without extension |
 
 Every stochastic step in the book takes a seed. Set it explicitly so results are reproducible:
@@ -208,6 +219,6 @@ This completes *The analysis workflow*. The scenario Parts that follow apply it 
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_save_fit`, `?ferx_load_fit`, `?ferx_fit` (`output`, `include_data`)
+- R help: `?ferx_save_fit`, `?ferx_load_fit`, `?ferx_update_model`, `?ferx_fit` (`output`, `include_data`)
 - ferx-core: [.fitrx file format](https://ferx-nlme.org/ferx-core/file-formats/fitrx.html)
 :::

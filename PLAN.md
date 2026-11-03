@@ -518,7 +518,7 @@ Per-chapter loop:
   - pkgdown omits post-0.3.0 exports
 - ferx-core:
   - `predict_survival` row order within a subject varies between calls on
-    multi-CMT models (#2531, open at 497f918b); ch22 competing risks has an
+    multi-CMT models (#2531, open at bbda824e); ch22 competing risks has an
     "at this build" callout telling readers to sort or join on ID, CMT, TIME
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
