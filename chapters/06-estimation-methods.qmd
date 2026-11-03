@@ -51,9 +51,14 @@ dir.create(estimation_dir, showWarnings = FALSE)
 | `"gn"`, `"gn_hybrid"` | Gauss-Newton; the hybrid finishes with a FOCEI polish step | |
 | `"saem"` | Stochastic approximation EM | Stochastic: set `seed` for reproducibility |
 | `"imp"` | Importance-sampling Monte Carlo EM | With `imp_eval_only = TRUE` it only evaluates −2 log L and must be the last chain stage |
-| `"impmap"` | Importance sampling assisted by the mode a posteriori | Requires mu-referencing; no IOV yet |
+| `"impmap"` | Importance sampling assisted by the mode a posteriori | Requires mu-referencing; no IOV in a `[mixture]` model |
 | `"bayes"` | Full MCMC | Posterior summaries in `fit$bayes` instead of a covariance step |
 | `vi` (model file only) | Variational inference | Set in `[fit_options]`; not accepted by the `method` argument (see below) |
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}}, `method = "impmap"` refuses a model with inter-occasion variability (`E_IMPMAP_IOV_UNSUPPORTED`). Since then `imp` and `impmap` sample the random effects and the per-occasion kappas together, and only an IOV model with a `[mixture]` block is refused (`E_IMP_MIXTURE_IOV_UNSUPPORTED`).
+:::
 
 The ferx-core [estimation methods](https://ferx-nlme.org/ferx-core/estimation/index.html) pages describe each algorithm. The same warfarin model fitted with each method:
 

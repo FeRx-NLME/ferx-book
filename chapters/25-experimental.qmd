@@ -395,6 +395,13 @@ scaled_carries_typical <- min(multipliers_scaled) > 2
 
 With scaled inputs the unscaled-input warning is gone, and the fit reaches an OFV `r round(fit_dcm$ofv - fit_dcm_scaled$ofv)` units below the unscaled one. The flat multiplier above was where the optimizer stopped, not what the data say. That does not make this a better model. `r if (!fit_dcm_scaled$converged) "This fit does not report convergence" else "This fit reports convergence"``r if (scaled_at_bound) ", it holds an estimate on an optimizer bound (\x60boundary_estimate\x60)" else ""`, and the clearance multiplier now ranges from `r signif(min(multipliers_scaled), 2)` to `r signif(max(multipliers_scaled), 2)` across subjects`r if (scaled_carries_typical) ", so the network and \x60TVCL\x60 share the typical clearance between them instead of the network describing a deviation from it" else ""`. With 141 weights and 30 subjects, an OFV this far below the explicit covariate model's (`r round(fit_cov$ofv, 1)`) says more about what the network can fit than about the covariates`r if (fit_dcm_scaled$aic < fit_cov$aic) sprintf(", even though its AIC, %.1f, is now below that model's %.1f", fit_dcm_scaled$aic, fit_cov$aic) else sprintf(", and its AIC, %.1f, stays above that model's %.1f", fit_dcm_scaled$aic, fit_cov$aic)`. Scale the inputs so the network can learn at all, then judge it as the previous section did: refit it, with and without a penalty, and compare it with an explicit covariate model.
 
+A fitted network can be written out as an ordinary model. `ferx_model_from_dcm(model, fit)` replaces each `[covariate_nn]` block with its forward pass, as plain equations in `[individual_parameters]` at the fitted weights, writes it to `output_model`, and returns a `ferx_model` for prediction and simulation. The exported model is not meant to be refitted. `weights = "fixed_theta"` keeps each weight as a named `FIX` theta instead of a number, `network_only = TRUE` keeps the model file's other values, and `theta =` takes the weights from a named vector instead of a fit. `?ferx_model_from_dcm` has the details.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+`ferx_model_from_dcm()` is not in ferx-r {{< var ferx_r_release >}}.
+:::
+
 ### Parameter priors
 
 A prior pins a parameter near a value you already believe and lets the data move it only as far as the data can pay for -- penalized maximum likelihood, the mechanism behind updating a published model on local data. It is written inline on the `[parameters]` row it belongs to, as a central value and a relative standard error, both on the scale the parameter was declared on:
@@ -516,6 +523,6 @@ Next: @sec-reference lists every function, option and example with the chapter t
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_fit`, `?ferx_save_fit`
+- R help: `?ferx_fit`, `?ferx_save_fit`, `?ferx_model_from_dcm`
 - ferx-core: [SDE and diffusion](https://ferx-nlme.org/ferx-core/model-file/diffusion.html), [covariate neural networks](https://ferx-nlme.org/ferx-core/model-file/covariate-nn.html), [neural networks overview](https://ferx-nlme.org/ferx-core/model-file/neural-networks.html), [parameter priors](https://ferx-nlme.org/ferx-core/estimation/priors.html)
 :::

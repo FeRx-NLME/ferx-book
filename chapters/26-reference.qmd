@@ -11,7 +11,7 @@ This chapter lists every ferx-r function, setting, model file block, data column
 
 ## Newer than ferx-r 0.4.0 {#sec-reference-newer}
 
-ferx-r 0.4.0 is the last release. The pinned build is newer, and these 70 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
+ferx-r 0.4.0 is the last release. The pinned build is newer, and these 82 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
 
 | Kind | Name | Chapter |
 |---|---|---|
@@ -41,17 +41,29 @@ ferx-r 0.4.0 is the last release. The pinned build is newer, and these 70 entrie
 | argument | `se` of `ferx_mbma_data()` | @sec-mbma |
 | argument | `study` of `ferx_mbma_data()` | @sec-mbma |
 | argument | `time` of `ferx_mbma_data()` | @sec-mbma |
+| argument | `fit` of `ferx_model_from_dcm()` | @sec-experimental |
+| argument | `model` of `ferx_model_from_dcm()` | @sec-experimental |
+| argument | `network_only` of `ferx_model_from_dcm()` | @sec-experimental |
+| argument | `output_model` of `ferx_model_from_dcm()` | @sec-experimental |
+| argument | `theta` of `ferx_model_from_dcm()` | @sec-experimental |
+| argument | `weights` of `ferx_model_from_dcm()` | @sec-experimental |
 | argument | `type` of `ferx_predict_survival()` | @sec-time-to-event |
+| argument | `write_model` of `ferx_save_fit()` | @sec-reproducibility |
 | argument | `etas` of `ferx_simulate_adaptive()` | @sec-adaptive-dosing |
 | argument | `fit` of `ferx_simulate_adaptive()` | @sec-adaptive-dosing |
 | argument | `unmatched` of `ferx_simulate_adaptive()` | @sec-adaptive-dosing |
 | argument | `sir_df` of `ferx_sir()` | @sec-uncertainty |
 | argument | `sir_scale` of `ferx_sir()` | @sec-uncertainty |
 | argument | `threads` of `ferx_sir()` | @sec-uncertainty |
+| argument | `fit` of `ferx_update_model()` | @sec-reproducibility |
+| argument | `overwrite` of `ferx_update_model()` | @sec-reproducibility |
+| argument | `path` of `ferx_update_model()` | @sec-reproducibility |
 | example | `mbma_placebo` | @sec-mbma |
 | example | `nested_levels` | @sec-mbma |
 | function | `ferx_contrast_vpc()` | @sec-mbma |
 | function | `ferx_mbma_data()` | @sec-mbma |
+| function | `ferx_model_from_dcm()` | @sec-experimental |
+| function | `ferx_update_model()` | @sec-reproducibility |
 | fit slot | `fit$cov_fixed` | @sec-reference |
 | fit slot | `fit$covariance_method` | @sec-reference |
 | fit slot | `fit$covariance_wall_time_secs` | @sec-reference |
@@ -124,6 +136,7 @@ Help pages: `?name`. Function reference on the web: [ferx-r reference](https://f
 | `ferx_mbma_data()` | Build and validate a summary-level (MBMA) dataset | `data`, `study`, `arm`, `time`, `mean`, `se = NULL`, `sd = NULL`, `n`, `scale`, `covariates = NULL`, `levels = NULL`, `index = NULL` | @sec-mbma |
 | `ferx_model()` | Create a ferx_model object | `data = NULL`, `model = NULL`, `template = NULL`, `path = NULL`, `overwrite = FALSE`, `edit = TRUE`, `print = FALSE` | @sec-model-files |
 | `ferx_model_edit()` | Open a ferx model file in an editor | `path`, `dest = "."`, `overwrite = FALSE`, `save_as = NULL`, `.editor` | @sec-model-files |
+| `ferx_model_from_dcm()` | Export a fitted deep compartment model as a plain population PK model | `model`, `fit = NULL`, `output_model = NULL`, `weights`, `network_only = FALSE`, `theta = NULL` | @sec-experimental |
 | `ferx_model_get_section()` | Get a section from a ferx model | `x`, `section`, `strip = FALSE` | @sec-model-files |
 | `ferx_model_inspect()` | Inspect the structure of a ferx model file | `path` | @sec-model-files |
 | `ferx_model_set_section()` | Set a section in a ferx model | `x`, `section`, `lines` | @sec-model-files |
@@ -136,7 +149,7 @@ Help pages: `?name`. Function reference on the web: [ferx-r reference](https://f
 | `ferx_runlog()` | Run log for a ferx fit | `fit`, `gradient_tol = 0.1`, `show_iterations = TRUE`, `verbose = TRUE` | @sec-estimation-methods |
 | `ferx_runlog_iters()` | Print the full optimizer iteration history for a ferx fit | `fit`, `verbose = TRUE` | @sec-estimation-methods |
 | `ferx_ruvsearch()` | Residual-error model search | `model = NULL`, `data = NULL`, `config = NULL`, `groups = NULL`, `p_value = NULL`, `skip = NULL`, `max_iter = NULL`, `cwres_prescreen = NULL`, `threads = NULL`, `retries = NULL`, `directory = NULL`, `resume = FALSE`, `progress` | @sec-model-selection |
-| `ferx_save_fit()` | Save a ferx fit to a portable .fitrx bundle | `fit`, `output`, `include_data = FALSE` | @sec-reproducibility |
+| `ferx_save_fit()` | Save a ferx fit to a portable .fitrx bundle | `fit`, `output`, `include_data = FALSE`, `write_model = FALSE` | @sec-reproducibility |
 | `ferx_se()` | Pull a parameter estimate or its standard error by name | `fit`, `param = NULL` | @sec-first-fit |
 | `ferx_search_config()` | Load and validate a .ferxsearch search configuration | `path` | @sec-model-selection |
 | `ferx_search_coverage()` | Coverage of a search space against what the engine can express | `space` | @sec-model-selection |
@@ -148,6 +161,7 @@ Help pages: `?name`. Function reference on the web: [ferx-r reference](https://f
 | `ferx_sir()` | Run SIR against an existing fit | `fit`, `sir_samples = NULL`, `sir_resamples = NULL`, `sir_seed = NULL`, `sir_keep_samples = NULL`, `verbose = FALSE`, `sir_scale = NULL`, `sir_df = NULL`, `threads = NULL` | @sec-uncertainty |
 | `ferx_stop()` | Stop a background fit | `handle` | @sec-estimation-methods |
 | `ferx_trace()` | Read the optimizer trace from a ferx fit | `fit` | @sec-estimation-methods |
+| `ferx_update_model()` | Write a fitted model with its final estimates as initial values | `fit`, `path = NULL`, `overwrite = FALSE` | @sec-reproducibility |
 | `ferx_xpose()` | Build an object from a ferx fit | `fit`, `backend`, `continuous = NULL`, `categorical = NULL`, `runno = 1L`, `iterations = TRUE` | @sec-diagnostics |
 
 ### S3 methods
@@ -500,7 +514,7 @@ Categories of `ferx_get_warnings(fit, as_df = TRUE)$category`, collected by a fi
 
 ## Check report codes
 
-Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused call raises a condition of class `ferx_engine_error` -- from `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and the other entry points alike -- that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 214 codes below (133 errors, 81 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
+Stable identifiers from the model file parser and the pre-fit checks: `E_*` stops the model from running, `W_*` is a check-time note that does not. `ferx_model_validate()` returns them in `$diagnostics`, with the severity, block and line (@sec-model-files). A refused call raises a condition of class `ferx_engine_error` -- from `ferx_fit()`, `ferx_predict()`, `ferx_simulate()` and the other entry points alike -- that carries the same identifier as `$code`, with `$block`, `$line` and `$suggestion` where the engine knows them (`NA` otherwise), and appends the code to the message in square brackets, so a script can branch on it with `tryCatch(..., ferx_engine_error = function(e) e$code)`. These are a different channel from the *Warning categories* above, which a completed fit collects in `fit$warnings`. The 215 codes below (133 errors, 82 warnings) are the check report of the pinned engine, one sentence each; the ferx-core [check report](https://ferx-nlme.org/ferx-core/file-formats/check-report.html) page gives the full text.
 
 | Code | Severity | Meaning |
 |---|---|---|
@@ -551,7 +565,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_DOSE_NO_AMT` | error | The dataset has dose records (`EVID` 1 or 4) but no `AMT` column, so every dose would have amount zero and the fit would run with no drug in the system. |
 | `E_ENDPOINT_NO_RECORDS` | error | A declared non-Gaussian endpoint has no row routed to it anywhere in the data — typically the `CMT` column is missing, so every row reads as CMT 1. |
 | `E_ENDPOINT_TIME_DEPENDENT_PK` | error | The `TIME` axis of the same freeze: an ODE-accumulated (drug-driven) hazard integrates the individual parameters at their TIME=0 values, so a `[individual_parameters]` value that reads `TIME` and reaches the hazard (through the `[odes]` right-hand side or an `init()` seed) would put the PK and hazard halves of the objective on different concentration curves (#1853). |
-| `E_ENDPOINT_TV_COVARIATE` | error | A covariate that varies within a subject — on any row, endpoint rows included (#1854) — is read by an endpoint that evaluates it once, at the subject's baseline: an analytic hazard's own parameters, any covariate under an ODE-accumulated (drug-driven) hazard, a `[binary_model]` linear predictor, a `[markov_model]` transition intensity, or — on a drug-driven (time-inhomogeneous) CTMM — an individual parameter the `[odes]` solve feeds into the states the intensities read (#1854). |
+| `E_ENDPOINT_TV_COVARIATE` | error | A covariate that varies within a subject — on any row, endpoint rows included (#1854) — is read by an endpoint that evaluates it once, at the subject's baseline: an analytic hazard's own parameters, any covariate under an ODE-accumulated (drug-driven) hazard, a `[markov_model]` CTMM transition intensity, or — on a drug-driven (time-inhomogeneous) CTMM — an individual parameter the `[odes]` solve feeds into the states the intensities read (#1854). |
 | `E_ENDPOINT_UNROUTED` | error | A compartment the model declares as a non-Gaussian endpoint (`[event_model]`, `[binary_model]`, Markov) carries Gaussian observations: the population was read without endpoint routing, so the endpoint's rows would be scored as concentrations and its likelihood would contribute nothing. |
 | `E_ETA_NOT_DECLARED` | error | An unresolved identifier reads as a random effect (`ETA…` / `KAPPA…`) but no `omega` / `kappa` declaration defines it, and the data carries no such column. |
 | `E_FIT_INPUT_CHANGED` | error | The model or data file the step re-reads no longer has the SHA-256 the fit recorded. |
@@ -566,7 +580,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_IIV_ON_RUV_METHOD` | error | `iiv_on_ruv` with a non-interaction stage (`foce`, or `gn` without `interaction`) anywhere in the method chain. |
 | `E_IIV_ON_RUV_SHARED_ETA` | error | The `iiv_on_ruv` random effect is also used in `[individual_parameters]`. It must be a dedicated `omega`. |
 | `E_IMP_CHAIN` | error | `imp` is mis-placed in a method chain — repeated, or (with `imp_eval_only = true`) not the terminal stage. |
-| `E_IMPMAP_IOV_UNSUPPORTED` | error | `method = impmap` (anywhere in a method chain) on a model with inter-occasion variability (`n_kappa > 0`). |
+| `E_IMP_MIXTURE_IOV_UNSUPPORTED` | error | `imp` or `impmap` anywhere in the method chain on a `[mixture]` model with inter-occasion variability (`n_kappa > 0`). |
 | `E_INIT_BOUNDS_INVERTED` | error | A coordinate whose packed box is **empty**, so no start can be placed in it at all. |
 | `E_IOV_MISSING_OCC` | error | Model declares kappa (IOV) parameters but no occasion labels were found. Set `iov_column` to read them from a dataset column, or `iov_occasion = dose` / `time(...)` to derive them in the model, both in `[fit_options]`. |
 | `E_IOV_SINGLE_OCCASION` | error | A derived `iov_occasion` rule (`dose` or `time(...)`) gives every subject at most one occasion, so the per-occasion κ cannot be told from the η. |
@@ -603,7 +617,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_PRIOR_COV_METHOD_UNSUPPORTED` | error | A `prior(...)` is in force and the covariance step runs with `covariance_method = s` or `rsr`. |
 | `E_PRIOR_METHOD_UNSUPPORTED` | error | A `prior(...)` is in force but the last stage that estimates (a trailing evaluation-only `imp` or `laplace` does not count) is not one that applies parameter priors — only `foce`, `focei`, `laplace`, `gn` and `gn_hybrid` do. |
 | `E_PRIOR_UNRESOLVED` | error | A declared prior cannot be applied: it names no `theta` / `omega` / `sigma` / `kappa` in `[parameters]`, names a `FIX`ed parameter, an element of a `block_omega` / `block_sigma` / `block_kappa`, or a name that resolves to several coordinates; it is declared twice; its central value is not finite (or not positive for a log-packed parameter); or a `[priors] from_fit` was not expanded. |
-| `E_PROFILE_NOT_LINEAR` | error | A profiled block that a prediction does not read as `c × block` plus terms that do not read it, with `c` from the data alone. |
+| `E_PROFILE_NOT_LINEAR` | error | A profiled block that a prediction does not read as `c × block` plus terms that do not read it, with `c` from the data alone, or as one logit link around such a read that is the whole prediction (`y = inv_logit(c × block + …)`, #2111). |
 | `E_PROFILE_SCOPE` | error | A profiled block that cannot be fitted that way: `profile` on a single θ, or with `FIX`; a box that is a point, is empty or misses the init; a method other than `foce` / `focei` / `laplace` (at any `n_agq`); a non-Gaussian endpoint; a residual error that is not additive, or log-transformed; M3 censoring; a `[mixture]`, `[diffusion]` or FREM model; `optimizer = trust_region` or `mma`; `global_search`; a parameter prior. |
 | `E_PROPENSITY_INPUT` | error | Propensity-score matching was requested on a population it cannot compute posthoc etas from: empty, a subject with no observations, a subject with a non-finite `DV`, or a `[mixture]` model. |
 | `E_READOUT_DEPOT_UNSUPPORTED` | error | An analytic `[scaling] y = …` readout reads the oral `depot` amount on a subject whose depot dose superposition cannot reconstruct: one with an EVID=3/4 reset (#650), or one dosing a compartment other than the default (#375). |
@@ -639,6 +653,7 @@ Stable identifiers from the model file parser and the pre-fit checks: `E_*` stop
 | `E_VI_NAGQ_UNSUPPORTED` | error | `n_agq > 1` set on a method chain that contains `vi` and no stage that uses a quadrature grid (`laplace` or `focei`). |
 | `W_ABOVE_START` | warning | The fit reported an objective materially above (the plateau check's relative $10^{-3}$ bound) the one its starting estimates scored — after any restart, which is measured against the fit's start, not its own, so the fit is `converged: false`. |
 | `W_ABSORPTION_TWIN_DECLINED` | warning | An analytic transit / inverse-Gaussian model's ODE twin could not be built, so the model stays closed-form with no ODE fallback. |
+| `W_ADAPTIVE_DECISION_BEFORE_MOVED_RESET` | warning | An adaptive simulation has a decision point after an `EVID=3`/`4` reset as written, but before that reset on the engine clock. |
 | `W_ADDITIVE_INIT_SCALE` | warning | A `combined` error model's additive SD initial estimate is below 1% of the data scale (the median `abs(DV)` of the observations that endpoint covers). |
 | `W_ADDL_MISSING_II` | warning | ADDL > 0 on a dose row but II is zero or missing; additional doses were not expanded. |
 | `W_ALL_DOSES_ZERO` | warning | An `AMT` column is present and at least one dose event was parsed, but every parsed amount is exactly zero. |
