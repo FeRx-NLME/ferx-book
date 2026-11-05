@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="generator" content="quarto-1.11.9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Model development and selection – FeRx NLME - R package (ferx)</title>
@@ -82,9 +81,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-62b633921dd11b6f4f90199e75d354ed.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-a05a9893f770427474681fd859838e9c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-98d20d6dc1b304e9daf0390ca422b3e7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="../site_libs/bootstrap/bootstrap-91aeac83af7f3dd64b4578c865ee2ca9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-16793d1ab759f3b140b74214d70ff079.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-91aeac83af7f3dd64b4578c865ee2ca9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
   "collapse-after": 3,
@@ -899,7 +898,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">cs</span></span>
 <span><span class="co">#&gt; ferx covariate search (scm-forward-then-backward)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/two_cpt_oral_cov.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpFu7eV9/searches/covsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpAT1Hma/searches/covsearch</span></span>
 <span><span class="co">#&gt;   OFV:   -1185 (base) -&gt; -1185 (step 3)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Steps (the candidate selected at each step):</span></span>
@@ -907,7 +906,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;     1  forward        CL      CRCL linear 6.998 0.00816      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;     3 backward        CL      CRCL linear 6.998 0.00816      TRUE   TRUE</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2 candidates excluded by the strictness gate; summary() lists them.</span></span>
+<span><span class="co">#&gt; 1 candidate excluded by the strictness gate; summary() lists them.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Final covariate relations:</span></span>
 <span><span class="co">#&gt;   (none - the base model was not improved on)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -917,12 +916,8 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">excluded</span> <span class="op">&lt;-</span> <span class="va">cs</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span><span class="op">!</span><span class="va">cs</span><span class="op">$</span><span class="va">steps</span><span class="op">$</span><span class="va">passed</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"step"</span>, <span class="st">"parameter"</span>, <span class="st">"covariate"</span>, <span class="st">"form"</span>, <span class="st">"failures"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">excluded</span><span class="op">$</span><span class="va">failures</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html">trimws</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"[;(].*"</span>, <span class="st">""</span>, <span class="va">excluded</span><span class="op">$</span><span class="va">failures</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">excluded</span></span>
-<span><span class="co">#&gt;    step parameter covariate   form</span></span>
-<span><span class="co">#&gt; 20    1        KA      CRCL linear</span></span>
-<span><span class="co">#&gt; 34    2        V2      CRCL linear</span></span>
-<span><span class="co">#&gt;                                                                                       failures</span></span>
-<span><span class="co">#&gt; 20                                                  condition number 7.4618e5 exceeds 1.0000e3</span></span>
-<span><span class="co">#&gt; 34 stalled at the initial estimates: no free parameter moved more than 1% of its initial value</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;    step parameter covariate   form                                   failures</span></span>
+<span><span class="co">#&gt; 20    1        KA      CRCL linear condition number 7.4618e5 exceeds 1.0000e3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> shows the selected step of each phase. <code><a href="https://rdrr.io/r/base/summary.html">summary()</a></code> on the result adds every candidate of every step; the same table is <code>cs$steps</code>. The run directory holds the per-step journals, <code>steps.csv</code> and <code>final.ferx</code>. <code><a href="https://ferx-nlme.org/reference/ferx_search_results.html">ferx_search_results()</a></code> reads the step table back from disk:</p>
 <div class="cell" data-layout-align="center">
@@ -956,7 +951,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">ms</span></span>
 <span><span class="co">#&gt; ferx structural model search (reduced_stepwise, ranked on bic_mixed)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpFu7eV9/searches/modelsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpAT1Hma/searches/modelsearch</span></span>
 <span><span class="co">#&gt;   Base:  base - FO, 0 peripherals</span></span>
 <span><span class="co">#&gt;   bic_mixed:   -261.8 (base) -&gt; -261.8 (base)</span></span>
 <span><span class="co">#&gt;   5 models over 2 layers</span></span>
@@ -1008,7 +1003,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">rs</span></span>
 <span><span class="co">#&gt; ferx residual-error search (likelihood-ratio test at p = 0.05)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/transit_oral.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpFu7eV9/searches/ruvsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpAT1Hma/searches/ruvsearch</span></span>
 <span><span class="co">#&gt;   OFV:   -1063.880 (input) -&gt; -1070.083 (time_varying1-1, dOFV 6.203)</span></span>
 <span><span class="co">#&gt;   2 iterations, 10 models fitted</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1072,9 +1067,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">iiv</span></span>
 <span><span class="co">#&gt; ferx variability-structure search (top_down_exhaustive + block structure, ranked on bic_iiv)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin_block_omega.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpFu7eV9/searches/iivsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpAT1Hma/searches/iivsearch</span></span>
 <span><span class="co">#&gt;   Input: [ETA_CL,ETA_V]+[ETA_KA]</span></span>
-<span><span class="co">#&gt;   bic_iiv:   -271.3 (input) -&gt; -272.2 (run9)</span></span>
+<span><span class="co">#&gt;   bic_iiv:   -271.3 (input) -&gt; -273.5 (run8)</span></span>
 <span><span class="co">#&gt;   12 models over 3 steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 1 (no_of_etas), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
@@ -1090,22 +1085,22 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 2 (block_structure), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
 <span><span class="co">#&gt;  rank    id                 structure criterion d_criterion  best</span></span>
-<span><span class="co">#&gt;     1  run9   [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9039  TRUE</span></span>
-<span><span class="co">#&gt;     2 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
-<span><span class="co">#&gt;     3 run11     [ETA_CL,ETA_KA,ETA_V]    -269.5     -1.7740 FALSE</span></span>
-<span><span class="co">#&gt;    NA  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5      2.1810 FALSE</span></span>
-<span><span class="co">#&gt;    NA run10   [ETA_KA,ETA_V]+[ETA_CL]    -272.5      1.1920 FALSE</span></span>
+<span><span class="co">#&gt;     1  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5      2.1810  TRUE</span></span>
+<span><span class="co">#&gt;     2 run10   [ETA_KA,ETA_V]+[ETA_CL]    -272.5      1.1920 FALSE</span></span>
+<span><span class="co">#&gt;     3  run9   [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9039 FALSE</span></span>
+<span><span class="co">#&gt;     4 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
+<span><span class="co">#&gt;     5 run11     [ETA_CL,ETA_KA,ETA_V]    -269.5     -1.7740 FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Step 3 (compare_to_input), parent input ([ETA_CL,ETA_V]+[ETA_KA]):</span></span>
-<span><span class="co">#&gt;  rank    id               structure criterion d_criterion  best</span></span>
-<span><span class="co">#&gt;     1  run9 [ETA_CL,ETA_KA]+[ETA_V]    -272.2      0.9039  TRUE</span></span>
-<span><span class="co">#&gt;     2 input [ETA_CL,ETA_V]+[ETA_KA]    -271.3      0.0000 FALSE</span></span>
+<span><span class="co">#&gt;  rank    id                 structure criterion d_criterion  best</span></span>
+<span><span class="co">#&gt;     1  run8 [ETA_CL]+[ETA_KA]+[ETA_V]    -273.5       2.181  TRUE</span></span>
+<span><span class="co">#&gt;     2 input   [ETA_CL,ETA_V]+[ETA_KA]    -271.3       0.000 FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 3 models excluded by the strictness gate; summary() lists them.</span></span>
+<span><span class="co">#&gt; 1 model excluded by the strictness gate; summary() lists them.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Selected variability structure (run9):</span></span>
+<span><span class="co">#&gt; Selected variability structure (run8):</span></span>
 <span><span class="co">#&gt;   IIV:         ETA_CL, ETA_KA, ETA_V</span></span>
-<span><span class="co">#&gt;   Correlated:  ETA_KA ~ ETA_CL</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;   Correlated:  (none - every eta is diagonal)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The printed output has three steps. The eta-count stage removes etas from the input structure – <code>top_down_exhaustive</code> tries every subset, not one deletion at a time, so the candidates include structures with two or three etas gone. The block stage then offers covariance blocks over the etas that survived. The third step, <code>compare_to_input</code>, puts the winner of the block stage back against the input structure, and it is there that the selection is made. Candidates are ranked on the BIC(iiv), which is what <code>rank = "bic"</code> means for this tool.</p>
 <p>Read the printed output carefully. The input model is a candidate in its own right, and the step tables rank it beside the candidates. The strictness gate is separate from that ranking; <code>$models</code> shows both:</p>
@@ -1120,16 +1115,16 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; 6   run5                  [ETA_KA]   96.73518    4   TRUE</span></span>
 <span><span class="co">#&gt; 7   run6                   [ETA_V]  178.27810    6   TRUE</span></span>
 <span><span class="co">#&gt; 8   run7                            181.73650    7   TRUE</span></span>
-<span><span class="co">#&gt; 9   run8 [ETA_CL]+[ETA_KA]+[ETA_V] -273.45175   NA  FALSE</span></span>
-<span><span class="co">#&gt; 10  run9   [ETA_CL,ETA_KA]+[ETA_V] -272.17501    1   TRUE</span></span>
-<span><span class="co">#&gt; 11 run10   [ETA_KA,ETA_V]+[ETA_CL] -272.46344   NA  FALSE</span></span>
-<span><span class="co">#&gt; 12 run11     [ETA_CL,ETA_KA,ETA_V] -269.49727    3   TRUE</span></span>
+<span><span class="co">#&gt; 9   run8 [ETA_CL]+[ETA_KA]+[ETA_V] -273.45175    1   TRUE</span></span>
+<span><span class="co">#&gt; 10  run9   [ETA_CL,ETA_KA]+[ETA_V] -272.17501    3   TRUE</span></span>
+<span><span class="co">#&gt; 11 run10   [ETA_KA,ETA_V]+[ETA_CL] -272.46344    2   TRUE</span></span>
+<span><span class="co">#&gt; 12 run11     [ETA_CL,ETA_KA,ETA_V] -269.49727    5   TRUE</span></span>
 <span><span class="va">eta_stage</span> <span class="op">&lt;-</span> <span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">$</span><span class="va">kind</span> <span class="op">==</span> <span class="st">"no_of_etas"</span>, <span class="op">]</span></span>
 <span><span class="va">input_rank</span> <span class="op">&lt;-</span> <span class="va">eta_stage</span><span class="op">$</span><span class="va">rank</span><span class="op">[</span><span class="va">eta_stage</span><span class="op">$</span><span class="va">id</span> <span class="op">==</span> <span class="st">"input"</span><span class="op">]</span></span>
 <span><span class="va">gated</span> <span class="op">&lt;-</span> <span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">[</span><span class="op">!</span><span class="va">iiv</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">passed</span>, <span class="op">]</span></span>
 <span><span class="va">diagonal</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">","</span>, <span class="va">iiv</span><span class="op">$</span><span class="va">final_structure</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>In the eta-count stage the input ranks first: removing any eta costs more than it saves. The search keeps a covariance block: [ETA_CL,ETA_KA]+[ETA_V]. The gate rejected <code>run2</code> and <code>run8</code> and <code>run10</code>, which carry no rank. At least one reached a better criterion than the winner and is out only because it did not pass. Note where that verdict lives: <code>converged</code> and <code>passed</code> are columns of the tables that report on fitted candidates – <code>$models</code> here, <code>$candidates</code> and <code>$steps</code> elsewhere – and not of the per-stage ranking summary, which ranks models those rows already judged:</p>
+<p>In the eta-count stage the input ranks first: removing any eta costs more than it saves. The search selects the diagonal structure [ETA_CL]+[ETA_KA]+[ETA_V]: the block stage drops the covariance block, and <code>compare_to_input</code> confirms it. The gate rejected <code>run2</code>, which carries no rank. Its criterion was worse than the winner’s anyway, but a gated model is excluded whatever it scores. Note where that verdict lives: <code>converged</code> and <code>passed</code> are columns of the tables that report on fitted candidates – <code>$models</code> here, <code>$candidates</code> and <code>$steps</code> elsewhere – and not of the per-stage ranking summary, which ranks models those rows already judged:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">iiv</span><span class="op">$</span><span class="va">steps</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "step"        "kind"        "parent"      "id"          "criterion"  </span></span>
@@ -1140,7 +1135,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <p>The input carries no rank in the combined table above because it is the parent each stage starts from. A search result is a ranking of what passed, not proof that the winner is the best model fitted.</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">iiv</span><span class="op">$</span><span class="va">final_structure</span></span>
-<span><span class="co">#&gt; [1] "[ETA_CL,ETA_KA]+[ETA_V]"</span></span>
+<span><span class="co">#&gt; [1] "[ETA_CL]+[ETA_KA]+[ETA_V]"</span></span>
 <span><span class="va">iiv</span><span class="op">$</span><span class="va">final_etas</span></span>
 <span><span class="co">#&gt; [1] "ETA_CL" "ETA_KA" "ETA_V"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -1153,14 +1148,14 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span>                            block_retries <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                            directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"iivsearch-block"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>input <span class="op">=</span> <span class="va">iiv_block</span><span class="op">$</span><span class="va">input_structure</span>, final <span class="op">=</span> <span class="va">iiv_block</span><span class="op">$</span><span class="va">final_structure</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                     input                     final </span></span>
-<span><span class="co">#&gt; "[ETA_CL,ETA_V]+[ETA_KA]" "[ETA_CL,ETA_V]+[ETA_KA]"</span></span>
+<span><span class="co">#&gt;                       input                       final </span></span>
+<span><span class="co">#&gt;   "[ETA_CL,ETA_V]+[ETA_KA]" "[ETA_CL]+[ETA_KA]+[ETA_V]"</span></span>
 <span><span class="va">iiv_block</span><span class="op">$</span><span class="va">models</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"structure"</span>, <span class="st">"criterion"</span>, <span class="st">"rank"</span>, <span class="st">"passed"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;      id                 structure criterion rank passed</span></span>
 <span><span class="co">#&gt; 1 input   [ETA_CL,ETA_V]+[ETA_KA] -271.2711   NA   TRUE</span></span>
-<span><span class="co">#&gt; 2  run1 [ETA_CL]+[ETA_KA]+[ETA_V] -273.4518   NA  FALSE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 2  run1 [ETA_CL]+[ETA_KA]+[ETA_V] -273.4518    1   TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Two structures are compared here: the input’s <code>block_omega (ETA_CL, ETA_V)</code> and the diagonal alternative. The block is kept, a different answer from the full search above, which also decided which etas to keep, from 2 fits instead of 12. When a candidate does fail the gate, the <code>failures</code> column of <code>$models</code> gives the reason, as <code>$steps</code> does for the covariate search above.</p>
+<p>Two structures are compared here: the input’s <code>block_omega (ETA_CL, ETA_V)</code> and the diagonal alternative. The diagonal one is selected, the same answer as the full search above, from 2 fits instead of 12. When a candidate does fail the gate, the <code>failures</code> column of <code>$models</code> gives the reason, as <code>$steps</code> does for the covariate search above.</p>
 </section><section id="inter-occasion-variability-search" class="level2"><h2 class="anchored" data-anchor-id="inter-occasion-variability-search">Inter-occasion variability search</h2>
 <p><code><a href="https://ferx-nlme.org/reference/ferx_iovsearch.html">ferx_iovsearch()</a></code> decides which parameters carry an occasion random effect. It reads the occasion column from the base model’s <code>iov_column</code>, so a model without one has nothing to search. The bundled <code>warfarin_iov</code> configuration offers a kappa on every parameter that has an eta:</p>
 <div class="cell" data-layout-align="center">
@@ -1170,7 +1165,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; ferx inter-occasion variability search (same-as-iiv, ranked on bic_random)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin_iov.csv</span></span>
 <span><span class="co">#&gt;   Occasions: OCC</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpFu7eV9/searches/iovsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpAT1Hma/searches/iovsearch</span></span>
 <span><span class="co">#&gt;   Input: IIV([ETA_CL]+[ETA_KA]+[ETA_V]);IOV([KAPPA_CL])</span></span>
 <span><span class="co">#&gt;   bic_random:   223.5 (input) -&gt; -312.3 (run5)</span></span>
 <span><span class="co">#&gt;   7 models over 2 steps</span></span>
@@ -1224,7 +1219,7 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="va">gs</span></span>
 <span><span class="co">#&gt; ferx global model search (exhaustive, ranked on penalized)</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/two_cpt_oral_cov.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpFu7eV9/searches/globalsearch</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpAT1Hma/searches/globalsearch</span></span>
 <span><span class="co">#&gt;   Grid:  16 points over 4 axes</span></span>
 <span><span class="co">#&gt;     LAGTIME: OFF | ON</span></span>
 <span><span class="co">#&gt;     PERIPHERALS: 0 | 1</span></span>
@@ -1240,18 +1235,20 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;     2  run5   LAGTIME=OFF;PERIPHERALS=1;CL-WT=none;CL-CRCL=none -889.5</span></span>
 <span><span class="co">#&gt;     3  run7  LAGTIME=OFF;PERIPHERALS=1;CL-WT=power;CL-CRCL=none -895.8</span></span>
 <span><span class="co">#&gt;     4  run8 LAGTIME=OFF;PERIPHERALS=1;CL-WT=power;CL-CRCL=power -901.4</span></span>
-<span><span class="co">#&gt;     5 run16  LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=power -901.4</span></span>
-<span><span class="co">#&gt;     6  run1   LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=none -172.2</span></span>
-<span><span class="co">#&gt;     7 input                                                &lt;NA&gt; -172.2</span></span>
-<span><span class="co">#&gt;     8  run2  LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=power -179.4</span></span>
-<span><span class="co">#&gt;     9  run3  LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=none -179.3</span></span>
-<span><span class="co">#&gt;    10  run4 LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=power -185.5</span></span>
+<span><span class="co">#&gt;     5 run14   LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=power -896.1</span></span>
+<span><span class="co">#&gt;     6 run15   LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=none -895.8</span></span>
+<span><span class="co">#&gt;     7  run1   LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=none -172.2</span></span>
+<span><span class="co">#&gt;     8 input                                                &lt;NA&gt; -172.2</span></span>
+<span><span class="co">#&gt;     9  run2  LAGTIME=OFF;PERIPHERALS=0;CL-WT=none;CL-CRCL=power -179.4</span></span>
+<span><span class="co">#&gt;    10  run3  LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=none -179.3</span></span>
+<span><span class="co">#&gt;    11  run4 LAGTIME=OFF;PERIPHERALS=0;CL-WT=power;CL-CRCL=power -185.5</span></span>
 <span><span class="co">#&gt;  criterion fitness converged passed</span></span>
 <span><span class="co">#&gt;    -808.20 -808.20      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -799.50 -799.50      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -795.80 -795.80      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -791.40 -791.40      TRUE   TRUE</span></span>
-<span><span class="co">#&gt;    -771.40 -771.40      TRUE   TRUE</span></span>
+<span><span class="co">#&gt;    -776.10 -776.10      TRUE   TRUE</span></span>
+<span><span class="co">#&gt;    -775.80 -775.80      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -102.20 -102.20      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;    -102.20 -102.20      TRUE   TRUE</span></span>
 <span><span class="co">#&gt;     -99.36  -99.36      TRUE   TRUE</span></span>
@@ -1265,16 +1262,14 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;  run11  LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=none     19.37</span></span>
 <span><span class="co">#&gt;  run12 LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=power    123.50</span></span>
 <span><span class="co">#&gt;  run13   LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=none   -679.50</span></span>
-<span><span class="co">#&gt;  run14  LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=power   -776.10</span></span>
-<span><span class="co">#&gt;  run15  LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=none   -775.80</span></span>
+<span><span class="co">#&gt;  run16 LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=power   -771.40</span></span>
 <span><span class="co">#&gt;  charge_non_influential charge_gate charge_crash fitness</span></span>
 <span><span class="co">#&gt;                       0         100            0   116.4</span></span>
 <span><span class="co">#&gt;                       0         100            0   119.5</span></span>
 <span><span class="co">#&gt;                       0         100            0   119.4</span></span>
 <span><span class="co">#&gt;                       0         100            0   223.5</span></span>
 <span><span class="co">#&gt;                       0         100            0  -579.5</span></span>
-<span><span class="co">#&gt;                       0         100            0  -676.1</span></span>
-<span><span class="co">#&gt;                       0         100            0  -675.8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                       0         100            0  -671.4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Read the top rows with both columns in view. The table is sorted on <code>fitness</code>, the criterion plus the charges described below, and the criterion itself adds to the OFV, so the best OFV need not win:</p>
 <div class="cell" data-layout-align="center">
@@ -1326,17 +1321,15 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; 11 run10  LAGTIME=ON;PERIPHERALS=0;CL-WT=none;CL-CRCL=power   19.45919</span></span>
 <span><span class="co">#&gt; 12 run11  LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=none   19.37078</span></span>
 <span><span class="co">#&gt; 13 run12 LAGTIME=ON;PERIPHERALS=0;CL-WT=power;CL-CRCL=power  123.53375</span></span>
-<span><span class="co">#&gt; 14 run13   LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=none -679.53260</span></span>
-<span><span class="co">#&gt; 15 run14  LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=power -776.14106</span></span>
-<span><span class="co">#&gt; 16 run15  LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=none -775.77652</span></span>
+<span><span class="co">#&gt; 14 run13   LAGTIME=ON;PERIPHERALS=1;CL-WT=none;CL-CRCL=none -679.51882</span></span>
+<span><span class="co">#&gt; 17 run16 LAGTIME=ON;PERIPHERALS=1;CL-WT=power;CL-CRCL=power -771.35621</span></span>
 <span><span class="co">#&gt;    charge_gate   fitness passed</span></span>
 <span><span class="co">#&gt; 10         100  116.3981  FALSE</span></span>
 <span><span class="co">#&gt; 11         100  119.4592  FALSE</span></span>
 <span><span class="co">#&gt; 12         100  119.3708  FALSE</span></span>
 <span><span class="co">#&gt; 13         100  223.5337  FALSE</span></span>
-<span><span class="co">#&gt; 14         100 -579.5326  FALSE</span></span>
-<span><span class="co">#&gt; 15         100 -676.1411  FALSE</span></span>
-<span><span class="co">#&gt; 16         100 -675.7765  FALSE</span></span>
+<span><span class="co">#&gt; 14         100 -579.5188  FALSE</span></span>
+<span><span class="co">#&gt; 17         100 -671.3562  FALSE</span></span>
 <span><span class="va">gs</span><span class="op">$</span><span class="va">penalties</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"non_influential"</span>, <span class="st">"gate"</span>, <span class="st">"crash"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; non_influential            gate           crash </span></span>
 <span><span class="co">#&gt;           1e-05           1e+02           1e+08</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1355,10 +1348,10 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span>                           directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"globalsearch-ga"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">gs_ga</span><span class="op">$</span><span class="va">generations</span></span>
 <span><span class="co">#&gt;   index best best_fitness mean_fitness polished</span></span>
-<span><span class="co">#&gt; 1     0 run5    -799.5500    -335.1293        0</span></span>
-<span><span class="co">#&gt; 2     1 run9    -808.2372    -379.5000        0</span></span>
-<span><span class="co">#&gt; 3     2 run9    -808.2372    -407.1684        0</span></span>
-<span><span class="co">#&gt; 4     3 run9    -808.2372    -522.5666        1</span></span>
+<span><span class="co">#&gt; 1     0 run5    -799.5500    -335.1272        0</span></span>
+<span><span class="co">#&gt; 2     1 run9    -808.2372    -451.5501        0</span></span>
+<span><span class="co">#&gt; 3     2 run9    -808.2372    -490.9970        0</span></span>
+<span><span class="co">#&gt; 4     3 run9    -808.2372    -535.5487        1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span></span>
 <span>  algorithm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"exhaustive"</span>, <span class="st">"ga"</span><span class="op">)</span>,</span>
 <span>  genome <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">genome</span><span class="op">[</span><span class="va">gs</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">selected</span><span class="op">]</span>,</span>
@@ -1412,9 +1405,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt; ferx AMD pipeline (default strategy, retries all_final)</span></span>
 <span><span class="co">#&gt;   Model: /home/runner/work/_temp/Library/ferx/examples/search/../models/warfarin_amd.ferx</span></span>
 <span><span class="co">#&gt;   Data:  /home/runner/work/_temp/Library/ferx/examples/search/../data/warfarin.csv</span></span>
-<span><span class="co">#&gt;   Wrote: /tmp/RtmpFu7eV9/searches/amd</span></span>
+<span><span class="co">#&gt;   Wrote: /tmp/RtmpAT1Hma/searches/amd</span></span>
 <span><span class="co">#&gt;   OFV:   -286.004 (start) -&gt; -286.004 (final, dOFV 0.000)</span></span>
-<span><span class="co">#&gt;   3 of 6 steps ran, 28 models fitted, 0.8 s across the steps</span></span>
+<span><span class="co">#&gt;   3 of 6 steps ran, 28 models fitted, 1.3 s across the steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Pipeline:</span></span>
 <span><span class="co">#&gt;  index       step  status criterion value_before value_after    d_value</span></span>
@@ -1425,9 +1418,9 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span><span class="co">#&gt;      5  allometry skipped      &lt;NA&gt;           NA          NA         NA</span></span>
 <span><span class="co">#&gt;      6 covariates skipped      &lt;NA&gt;           NA          NA         NA</span></span>
 <span><span class="co">#&gt;       d_ofv candidates converged passed seconds</span></span>
-<span><span class="co">#&gt;  -2.331e-12          5      TRUE   TRUE  0.2590</span></span>
-<span><span class="co">#&gt;  -3.695e-12         12      TRUE   TRUE  0.2939</span></span>
-<span><span class="co">#&gt;   4.047e-11          7        NA     NA  0.2207</span></span>
+<span><span class="co">#&gt;  -2.331e-12          5      TRUE   TRUE  0.4069</span></span>
+<span><span class="co">#&gt;  -3.695e-12         12      TRUE   TRUE  0.4816</span></span>
+<span><span class="co">#&gt;   4.047e-11          7        NA     NA  0.3936</span></span>
 <span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
 <span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
 <span><span class="co">#&gt;          NA          0        NA     NA  0.0000</span></span>
@@ -1504,8 +1497,8 @@ Table&nbsp;9.1: Base and covariate model compared on OFV and information criteri
 <span>                    retries <span class="op">=</span> <span class="fl">0</span>, directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">search_dir</span>, <span class="st">"amd-sir"</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">amd_sir</span><span class="op">$</span><span class="va">steps</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"step"</span>, <span class="st">"status"</span>, <span class="st">"criterion"</span>, <span class="st">"candidates"</span>, <span class="st">"seconds"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;         step  status criterion candidates    seconds</span></span>
-<span><span class="co">#&gt; 1 structural     ran bic_mixed          2 0.02651747</span></span>
-<span><span class="co">#&gt; 2  iivsearch     ran   bic_iiv          8 0.06019649</span></span>
+<span><span class="co">#&gt; 1 structural     ran bic_mixed          2 0.06287705</span></span>
+<span><span class="co">#&gt; 2  iivsearch     ran   bic_iiv          8 0.12009760</span></span>
 <span><span class="co">#&gt; 3   residual skipped      &lt;NA&gt;          0 0.00000000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="configuration-sections-with-no-r-tool" class="level2"><h2 class="anchored" data-anchor-id="configuration-sections-with-no-r-tool">Configuration sections with no R tool</h2>
