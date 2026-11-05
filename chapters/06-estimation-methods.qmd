@@ -411,16 +411,25 @@ fit_starved <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 1
 starved_warnings <- ferx_get_warnings(fit_starved, as_df = TRUE)
 rbind(default_budget = fit_warf$theta, inner_maxiter_1 = fit_starved$theta)
 data.frame(converged = fit_starved$converged, ofv = fit_starved$ofv, default_ofv = fit_warf$ofv)
-starved_warnings[starved_warnings$severity == "critical", c("severity", "category")]
+starved_warnings[, c("severity", "category")]
 ```
 
 ```{r}
 #| label: check-starved-inner-loop
 #| include: false
 # The paragraph says the starved fit is reported converged, within 0.1 OFV of the
-# default-budget fit and with no critical warning.
+# default-budget fit and with no critical warning, and credits that to the warm re-solve of a
+# rejected start. The engine reports the re-solve only in its verbose log, which it writes to
+# the process's stderr, out of reach of capture.output(), so a child R process refits verbosely.
+starved_log <- system2(file.path(R.home("bin"), "Rscript"),
+                       c("-e", shQuote(paste0('library(ferx); w <- ferx_example("warfarin"); ',
+                                              'invisible(ferx_fit(w$model, w$data, ',
+                                              'settings = list(inner_maxiter = 1), verbose = TRUE))'))),
+                       stdout = TRUE, stderr = TRUE)
 stopifnot(fit_starved$converged, abs(fit_starved$ofv - fit_warf$ofv) < 0.1,
-          !any(starved_warnings$severity == "critical"))
+          !any(starved_warnings$severity == "critical"),
+          any(grepl("start rejected by the EBE convergence guard", starved_log, fixed = TRUE) &
+                grepl("re-solved warm", starved_log, fixed = TRUE)))
 ```
 
 With one inner iteration per solve, the fit still converges, `r signif(fit_starved$ofv - fit_warf$ofv, 2)` OFV `r if (fit_starved$ofv >= fit_warf$ofv) "above" else "below"` the default-budget fit. That says nothing about a larger model. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it.
