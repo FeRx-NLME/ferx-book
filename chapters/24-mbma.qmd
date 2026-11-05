@@ -594,12 +594,20 @@ stopifnot(isTRUE(fit_resp$converged), isTRUE(fit_resp_profiled$converged),
           signif(fit_resp_profiled$ofv, 7) == signif(fit_resp$ofv, 7), resp_gap > 0, resp_gap < 1e-6,
           identical(names(fit_resp_profiled$theta), names(fit_resp$theta)),
           all(abs(fit_resp_profiled$theta - fit_resp$theta) < 0.01 * fit_resp$se_theta),
-          fit_resp_profiled$wall_time_secs > fit_resp$wall_time_secs)
+          # "levels included": fit$theta holds only the free levels; theta_levels has the derived ones too.
+          identical(fit_resp_profiled$theta_levels$label, fit_resp$theta_levels$label),
+          all(abs(fit_resp_profiled$theta_levels$value - fit_resp$theta_levels$value) < 0.01 * fit_resp$theta_levels$se),
+          # "every estimate" includes the ETA_S variance.
+          length(fit_resp$se_omega) == 1,
+          all(abs(diag(as.matrix(fit_resp_profiled$omega)) - diag(as.matrix(fit_resp$omega))) < 0.01 * fit_resp$se_omega),
+          # The prose prints the rounded time ratio, so it must read 2 or more.
+          fit_resp_profiled$wall_time_secs >= 1.5 * fit_resp$wall_time_secs)
 # "ferx has no probit link yet": link = probit in [binary_model] is refused when the model is read.
 probit_model <- file.path(mbma_dir, "mbma_responder_probit.ferx")
 writeLines(sub("  logit = ", "  link  = probit\n  logit = ", resp_profiled_lines, fixed = TRUE), probit_model)
 probit_error <- tryCatch({ferx_fit(probit_model, resp_data, verbose = FALSE); NULL}, error = function(e) e)
-stopifnot(inherits(probit_error, "error"), grepl("probit", conditionMessage(probit_error)))
+stopifnot(inherits(probit_error, "error"), grepl("probit", conditionMessage(probit_error)),
+          grepl("not yet supported", conditionMessage(probit_error), fixed = TRUE))
 ```
 
 Both fits converge, and the profiled one reaches the same objective to the printed digits: the two are `r sprintf("%.0e", resp_gap)` OFV units apart, and every estimate, levels included, moves by less than 1% of its standard error. `fit$profiled_blocks` names the block, the `profiled` column of `theta_levels` marks all `r nrow(fit_resp_profiled$theta_levels)` levels, and `n_parameters` is the same, so the profiled fit's BIC and likelihood-ratio tests are those of the estimated one. As in the continuous model, profiling does not pay off on a block this small: on `r format(nrow(resp_data), big.mark = ",")` rows it took `r round(fit_resp_profiled$wall_time_secs / fit_resp$wall_time_secs)` times as long on this machine.
