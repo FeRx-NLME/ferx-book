@@ -517,9 +517,10 @@ Per-chapter loop:
   - ~~`ferx_model_validate` rejects compact TTE models~~ fixed by ferx-r #306 (closed 2026-10-04, in the pin from `161d28a`); ch22 says so, with a check and a "Changed after" note
   - pkgdown omits post-0.3.0 exports
 - ferx-core:
-  - `predict_survival` row order within a subject varies between calls on
-    multi-CMT models (#2531, open at bbda824e); ch22 competing risks has an
-    "at this build" callout telling readers to sort or join on ID, CMT, TIME
+  - ~~`predict_survival` row order within a subject varies between calls on
+    multi-CMT models (#2531)~~ **Fixed** (ferx-core #2531, via ferx-r #699), in the pin
+    from `e9df429` / `0dabda75`: rows come in ascending `CMT` order on every call. ch22's
+    "at this build" callout is gone; no chapter compared those rows by position.
   - docs reference non-export R names (`ferx_selection`, `ferx_to_frem`,
     `ferx_mbma_data`, `ferx_search`)
   - examples reference missing data files (`mm_sparse.csv`, `warfarin_cov.csv`)
