@@ -387,7 +387,7 @@ head(distinct(fit_ot$sdtab, ID, KE, T_HALF, CMAX, AUC_72), 3)
 
 ### Which engine runs the right-hand side
 
-ferx compiles the right-hand side of `[odes]` to native code. A construct outside what the compiler translates, such as a block `if (…) { … }` statement or a `sqrt`, keeps the block on a slower bytecode interpreter instead. The results are the same; only the speed differs. `ferx_model_validate()` says so before a fit, and a fit reports it once as an informational `ode_rhs_route` entry in `ferx_get_warnings()`. A copy of `mm_oral` with a `sqrt` in its elimination term shows the note; the bundled model, which has none, gets no entry:
+ferx compiles the right-hand side of `[odes]` to native code. A construct outside what the compiler translates, such as a block `if (…) { … }` statement or a `sqrt`, keeps the block on a slower bytecode interpreter instead. The results are the same; only the speed differs. `ferx_model_validate()` says so before a fit, and a fit reports it once as an informational `ode_rhs_route` entry in `ferx_get_warnings()`. A copy of `mm_oral` that writes `KM` as `sqrt(KM * KM)` in its elimination term shows the note; the bundled model, which has no `sqrt`, gets no entry:
 
 ```{r}
 #| label: ode-rhs-route
@@ -395,19 +395,29 @@ rhs_dir <- file.path(tempdir(), "ferx-book-ode-rhs")
 dir.create(rhs_dir, showWarnings = FALSE)
 mm_sqrt <- file.path(rhs_dir, "mm_oral_sqrt.ferx")
 mm_sqrt_lines <- sub("VMAX * central / (KM + central)",
-                     "VMAX * central / (KM + sqrt(central * central))",
+                     "VMAX * central / (sqrt(KM * KM) + central)",
                      readLines(mm$model), fixed = TRUE)
-stopifnot(any(grepl("sqrt(central * central)", mm_sqrt_lines, fixed = TRUE)))
+stopifnot(any(grepl("sqrt(KM * KM)", mm_sqrt_lines, fixed = TRUE)))
 writeLines(mm_sqrt_lines, mm_sqrt)
 rhs_check <- ferx_model_validate(mm_sqrt)
 rhs_check$diagnostics[, c("severity", "code")]
+fit_sqrt <- ferx_fit(mm_sqrt, mm$data, verbose = FALSE)
+sqrt_warnings <- ferx_get_warnings(fit_sqrt, as_df = TRUE)
+sqrt_warnings[sqrt_warnings$category == "ode_rhs_route", c("severity", "category")]
+c(interpreted = fit_sqrt$ofv, native = fit_mm$ofv)
 "ode_rhs_route" %in% ferx_get_warnings(fit_mm, as_df = TRUE)$category
 ```
 
 ```{r}
 #| label: check-ode-rhs-route
 #| include: false
+# The prose: the note is raised once per fit, the results are the same as the native run's,
+# and the bundled model gets no entry.
 stopifnot(rhs_check$ok, "W_ODE_RHS_INTERPRETED" %in% rhs_check$diagnostics$code,
+          sum(sqrt_warnings$category == "ode_rhs_route") == 1,
+          all(sqrt_warnings$severity[sqrt_warnings$category == "ode_rhs_route"] == "info"),
+          fit_sqrt$converged, abs(fit_sqrt$ofv - fit_mm$ofv) < 1e-6,
+          isTRUE(all.equal(fit_sqrt$theta, fit_mm$theta, tolerance = 1e-6)),
           !"ode_rhs_route" %in% ferx_get_warnings(fit_mm, as_df = TRUE)$category)
 ```
 
