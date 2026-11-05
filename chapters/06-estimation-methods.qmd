@@ -134,11 +134,11 @@ cat(head(strsplit(iters, "\n")[[1]], 10), sep = "\n")
 
 ### The gradient at the reported estimates
 
-The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes one after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported. It is the exact gradient when the model can use the analytic outer gradient (every subject in its scope, and no `gradient = fd`), as in warfarin, and a central finite difference otherwise. ferx-core records which as `final_gradient_source` (see the `report_final_gradient` row below), but the R fit does not carry that field at this build. Beside a gradient-based fit of the same model:
+The run log's convergence checks read `fit$final_gradient`, the gradient of the objective at the reported parameter point, in the packed space the optimizer works in (@sec-variability). Gradient-based optimizers report the gradient they already used. The derivative-free `bobyqa` has none of its own, so ferx computes one after the fit instead, which is what lets you check a `converged = TRUE` where it is least supported. It is the exact gradient when the model can use the analytic outer gradient (every subject in its scope, and no `gradient = fd`), as in warfarin, and a central finite difference otherwise. `fit$final_gradient_source` says which: `"analytic"` or `"finite_difference"` after a derivative-free fit, `"optimizer"` when the optimizer supplied the gradient, and `NULL` exactly when `final_gradient` is (see the `report_final_gradient` row below). Beside a gradient-based fit of the same model:
 
 ::: {.callout-note}
 ## Changed after ferx-r {{< var ferx_r_release >}}
-In ferx-r {{< var ferx_r_release >}} the gradient after a derivative-free fit is always a central finite difference (ferx-r NEWS for {{< var ferx_r_release >}}). The exact one came with ferx-core [93ba19fc](https://github.com/FeRx-NLME/ferx-core/commit/93ba19fc309cbba526b3e6b99d7f9262b2550a12), after that release, so the `bobyqa` gradient below can differ there.
+In ferx-r {{< var ferx_r_release >}} the gradient after a derivative-free fit is always a central finite difference (ferx-r NEWS for {{< var ferx_r_release >}}). The exact one came with ferx-core [93ba19fc](https://github.com/FeRx-NLME/ferx-core/commit/93ba19fc309cbba526b3e6b99d7f9262b2550a12), after that release, so the `bobyqa` gradient below can differ there. `fit$final_gradient_source` is not in that release either.
 :::
 
 ```{r}
@@ -146,6 +146,7 @@ In ferx-r {{< var ferx_r_release >}} the gradient after a derivative-free fit is
 fit_bobyqa <- ferx_fit(warf$model, warf$data, settings = list(optimizer = "bobyqa"), verbose = FALSE)
 fit_lbfgs <- ferx_fit(warf$model, warf$data, settings = list(optimizer = "nlopt_lbfgs"), verbose = FALSE)
 data.frame(optimizer = c(fit_bobyqa$optimizer_label, fit_lbfgs$optimizer_label),
+           gradient_source = c(fit_bobyqa$final_gradient_source, fit_lbfgs$final_gradient_source),
            converged = c(fit_bobyqa$converged, fit_lbfgs$converged),
            ofv = c(fit_bobyqa$ofv, fit_lbfgs$ofv),
            largest_gradient = c(max(abs(fit_bobyqa$final_gradient)), max(abs(fit_lbfgs$final_gradient))))
@@ -167,10 +168,10 @@ cat(bobyqa_log[(start_gradient - 1):(start_gradient + 1)], sep = "\n")
 # The paragraph below says both fits converge to the same optimum (OFVs within 0.001),
 # that bobyqa's largest gradient component is the larger one (7.4x on Linux CI with the
 # finite-difference gradient before ferx-core 93ba19fc, ~1500x on macOS at 3f87757e; 2x leaves headroom), and that every bobyqa component passes the run log's check.
-# The paragraph above says warfarin can use the analytic outer gradient. This is a proxy, since
-# the R fit has no final_gradient_source: the gradient-based fit took the analytic route (which
-# gradient = fd would turn off), and no subject fell back to finite differences, outer or inner.
-stopifnot(is.null(fit_bobyqa$final_gradient_source),
+# The paragraph above says warfarin can use the analytic outer gradient, and names the three
+# values of final_gradient_source.
+stopifnot(identical(fit_bobyqa$final_gradient_source, "analytic"),
+          identical(fit_lbfgs$final_gradient_source, "optimizer"),
           startsWith(fit_lbfgs$gradient_method_outer, "analytic"),
           !any(grepl("could not be given the exact analytic outer gradient", fit_lbfgs$warnings, fixed = TRUE)),
           !any(grepl("use finite-difference inner gradients", fit_lbfgs$warnings, fixed = TRUE)))
@@ -190,7 +191,8 @@ fit_no_grad <- ferx_fit(warf$model, warf$data,
                         settings = list(optimizer = "bobyqa", report_final_gradient = FALSE),
                         verbose = FALSE)
 c(same_ofv = isTRUE(all.equal(fit_no_grad$ofv, fit_bobyqa$ofv)),
-  gradient_is_null = is.null(fit_no_grad$final_gradient))
+  gradient_is_null = is.null(fit_no_grad$final_gradient),
+  source_is_null = is.null(fit_no_grad$final_gradient_source))
 ```
 
 It stays `NULL` for the built-in BFGS and for SAEM, which report no gradient at all.
@@ -317,7 +319,7 @@ The `inner_screen` and `inner_twin_seed` settings are not in ferx-r {{< var ferx
 
 Both loops can end up reporting a number that describes their starting point rather than the model, and each has its own warning.
 
-`stalled_at_init` says the outer loop never left its initial estimates: no free theta, omega or sigma moved. The OFV is then the objective *of the initial values*, and `converged` need not contradict it -- a fit that never moved has a flat trace to plateau on. The honest way to see it is the case where it is expected: refit a model whose `[parameters]` block has been rewritten with the estimates of a converged run.
+`stalled_at_init` says the outer loop never left its initial estimates: no free theta, omega or sigma moved. The OFV is then the objective *of the initial values*, and `converged` need not contradict it -- a fit that never moved has a flat trace to plateau on. A start that already is an optimum does not move either, so before it raises the warning ferx asks whether the start is one. It restarts the optimizer from a small perturbation of the start, and when that restart comes back to the same objective, within 0.01, it reports the restart's verdict, sets `fit$stationary_start` to `TRUE` and raises no `stalled_at_init` (ferx-core [warm start at an optimum](https://ferx-nlme.org/ferx-core/estimation/optimizers.html#warm-start-at-an-optimum)). Refit a model whose `[parameters]` block has been rewritten with the estimates of a converged run:
 
 ```{r}
 #| label: stalled-at-init
@@ -354,7 +356,8 @@ fit_restart <- ferx_fit(restart, warf$data, settings = list(optimizer = "bobyqa"
 fit_restart_slsqp <- ferx_fit(restart, warf$data, settings = list(optimizer = "slsqp"), verbose = FALSE)
 data.frame(optimizer = c("bobyqa", "slsqp"), ofv = c(fit_restart$ofv, fit_restart_slsqp$ofv),
            converged = c(fit_restart$converged, fit_restart_slsqp$converged),
-           stalled_at_init = c(fit_restart$stalled_at_init, fit_restart_slsqp$stalled_at_init))
+           stalled_at_init = c(fit_restart$stalled_at_init, fit_restart_slsqp$stalled_at_init),
+           stationary_start = c(fit_restart$stationary_start, fit_restart_slsqp$stationary_start))
 restart_warnings <- ferx_get_warnings(fit_restart, as_df = TRUE)
 restart_warnings[, c("severity", "category")]
 ```
@@ -362,13 +365,21 @@ restart_warnings[, c("severity", "category")]
 ```{r}
 #| label: check-stalled-at-init
 #| include: false
-# The section is about this warning, so its absence on either fit has to fail the
-# render rather than quietly leave a different table under unchanged prose.
-stopifnot("stalled_at_init" %in% restart_warnings$category,
-          "stalled_at_init" %in% ferx_get_warnings(fit_restart_slsqp, as_df = TRUE)$category)
+# The paragraph below says both warm refits end at the converged fit's objective, are reported
+# converged, carry no stalled_at_init and are verified as a stationary start.
+for (f in list(fit_restart, fit_restart_slsqp)) {
+  stopifnot(f$converged, !f$stalled_at_init, isTRUE(f$stationary_start),
+            abs(f$ofv - fit_warf$ofv) < 0.01,
+            !"stalled_at_init" %in% ferx_get_warnings(f, as_df = TRUE)$category)
+}
 ```
 
-Here the start really was the optimum, so `stalled_at_init` is expected and harmless. What `converged` says beside it can depend on the optimizer: here it is `r fit_restart_slsqp$converged` under `slsqp` and `r fit_restart$converged` under `bobyqa`. A stalled fit reported as converged is the case the warning exists for, since nothing else would flag it. Either way, read `stalled_at_init` first. On a first fit from a model file's own initial values the same warning says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
+Under both optimizers the refit ends where it started, is reported converged, and carries no `stalled_at_init`: `stationary_start` says the start was checked and is an optimum, not a stall. When the restart finds a lower objective instead, the start was a stall, and it is reported as one: the fit is the run that did not move, with `stalled_at_init`, and a further warning names the lower objective the restart reached, so better estimates are within reach from other initial values. When the restart settles nothing either way (it ends higher or unconverged, or no `maxiter` budget was left for it), the fit is judged on its own, and its `stalled_at_init` says the start *may* have been an optimum. On a first fit from a model file's own initial values it says the OFV carries no information about the model, and the remedy is different starting values, a gradient-based `optimizer`, or a look at `final_gradient`. @sec-model-selection gates candidates on the same verdict through `reject_init_stall`.
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}} the outer loop does not check a start that it did not leave, and `fit$stationary_start` does not exist. The warm refits above carry `stalled_at_init`, and `converged` can be `FALSE` ([ferx-core #2506](https://github.com/FeRx-NLME/ferx-core/issues/2506)).
+:::
 
 The same rewrite can seed a refit from the `bobyqa` fit of the final-gradient comparison above, whose OFV is `r format(signif(abs(fit_bobyqa$ofv - fit_warf$ofv), 1), scientific = TRUE)` `r if (fit_bobyqa$ofv >= fit_warf$ofv) "above" else "below"` the converged fit's:
 
@@ -380,18 +391,19 @@ fit_from_bobyqa <- ferx_fit(from_bobyqa, warf$data, settings = list(optimizer = 
                             verbose = FALSE)
 data.frame(seed = c("converged fit", "bobyqa fit"),
            seed_ofv = c(fit_warf$ofv, fit_bobyqa$ofv),
-           stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init))
+           stalled_at_init = c(fit_restart$stalled_at_init, fit_from_bobyqa$stalled_at_init),
+           stationary_start = c(fit_restart$stationary_start, fit_from_bobyqa$stationary_start))
 ```
 
-`r if (fit_from_bobyqa$stalled_at_init) "That refit stalls as well: started so close to the optimum, \x60bobyqa\x60 finds nothing to improve. So \x60stalled_at_init\x60 says the optimizer did not move, not that the start was the optimum. Compare the OFV with a fit that is known to have converged before reading a stall as harmless." else "That refit does not stall: the optimizer still has somewhere to go, so a stall points to a start at the optimum."`
+`r if (isTRUE(fit_from_bobyqa$stationary_start)) "That start is accepted as an optimum as well. The check compares objectives to within 0.01, so \x60stationary_start\x60 says the start is as good as the optimum to that precision, not that it is the optimum itself. Compare the OFV with a fit that is known to have converged when the difference matters." else "That start is not accepted as an optimum: the restart finds a lower objective, and the fit reports where it ended."`
 
 `ebe_start_dependent` is the inner loop's version. It fires when re-solving the empirical Bayes estimates from a cold start at the final parameters scores materially worse than the estimates the optimizer minimised against -- either the individual objective has more than one mode, or the inner loop cannot reach it from a cold start within `inner_maxiter`. The reported OFV is the *better* of the two EBE sets -- the message names both -- so the warning does not by itself put the estimates in doubt. What it limits is everything *derived* from the EBEs: `IPRED`, `IWRES`, `CWRES`, shrinkage and the covariance step (@sec-diagnostics). Raise `inner_maxiter` to rule out the budget, and `inner_restarts` for a suspected second mode, then compare. The cold starts that `inner_restarts` adds begin with a quasi-random screen of `inner_screen` points, which finds a mode that lies off every single axis; `inner_screen = 0` leaves only the per-axis starts. On a closed-form `one_cpt_oral` model with log-normal random effects of their own on `V` and `KA`, `inner_twin_seed` (`r book_setting_default("inner_twin_seed")` by default) first seeds them with one descent from the subject's flip-flop twin, the mode where absorption and elimination swap roles, before the screen; on such a model the seed reaches the twin even with `inner_screen = 0`.
 
 The warning also fires in the other direction, and then it does put the estimates in doubt: when the cold re-solve scores materially *lower* than the objective the optimizer minimised, some subjects' EBEs stayed in a higher mode for the whole fit, so the estimates minimise the wrong objective. ferx then restarts the optimizer from that point on the remaining `maxiter` budget, and a restart it adopts leaves an `optimizer_health` note instead of this warning. Only when the gap survives, because no budget was left or the restarts ran out, is the fit reported with `converged = FALSE` and `ebe_start_dependent`, whose message says how far below the cold solve landed; refit from the reported estimates (ferx-core [warning codes](https://ferx-nlme.org/ferx-core/warnings.html#codes-convergence-fit), [when the cold solve is better](https://ferx-nlme.org/ferx-core/estimation/foce.html#cold-solve-better)). The message says which direction it is.
 
-"Materially" is a small margin relative to the OFV, so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, whose end point depends on rounding in the ODE solver, raises it on some machines and not on others.
+"Materially" is 0.05 OFV units ([ferx-core #2646](https://github.com/FeRx-NLME/ferx-core/issues/2646)), so on a fit that stops at a fragile point the warning can come and go with rounding. The bundled SDE fit of @sec-experimental, whose end point depends on rounding in the ODE solver, raises it on some machines and not on others.
 
-A starved inner loop is a different failure. When too many subjects' inner loops fail to converge -- a larger fraction of them than `max_unconverged_frac`, `r book_setting_default("max_unconverged_frac")` by default -- ferx rejects the outer trial and returns a penalty instead of an objective. Cutting `inner_maxiter` far below its default does that on warfarin, and the fit says so:
+A starved inner loop is a different failure. When too many subjects' inner loops fail to converge -- a larger fraction of them than `max_unconverged_frac`, `r book_setting_default("max_unconverged_frac")` by default -- ferx rejects the outer trial and returns a penalty instead of an objective. A fit whose every trial is rejected this way is reported unconverged, with a critical `convergence` warning. The first evaluation, from the cold start, is the one most likely to fail: when the guard rejects it, ferx solves the inner loop once more at the same parameters, warm from the EBEs the cold solve found, and judges that second solve ([ferx-core #2682](https://github.com/FeRx-NLME/ferx-core/issues/2682)). Cutting `inner_maxiter` far below its default shows how far that carries on warfarin:
 
 ```{r}
 #| label: starved-inner-loop
@@ -399,23 +411,32 @@ fit_starved <- ferx_fit(warf$model, warf$data, settings = list(inner_maxiter = 1
 starved_warnings <- ferx_get_warnings(fit_starved, as_df = TRUE)
 rbind(default_budget = fit_warf$theta, inner_maxiter_1 = fit_starved$theta)
 data.frame(converged = fit_starved$converged, ofv = fit_starved$ofv, default_ofv = fit_warf$ofv)
-starved_warnings[starved_warnings$severity == "critical", c("severity", "category")]
+starved_warnings[, c("severity", "category")]
 ```
 
 ```{r}
 #| label: check-starved-inner-loop
 #| include: false
-# The paragraph says the starved fit is reported unconverged, with a critical
-# convergence warning, far above the default-budget fit.
-stopifnot(!fit_starved$converged, fit_starved$ofv - fit_warf$ofv > 100,
-          any(starved_warnings$category == "convergence" & starved_warnings$severity == "critical"))
+# The paragraph says the starved fit is reported converged, within 0.1 OFV of the
+# default-budget fit and with no critical warning, and credits that to the warm re-solve of a
+# rejected start. The engine reports the re-solve only in its verbose log, which it writes to
+# the process's stderr, out of reach of capture.output(), so a child R process refits verbosely.
+starved_log <- system2(file.path(R.home("bin"), "Rscript"),
+                       c("-e", shQuote(paste0('library(ferx); w <- ferx_example("warfarin"); ',
+                                              'invisible(ferx_fit(w$model, w$data, ',
+                                              'settings = list(inner_maxiter = 1), verbose = TRUE))'))),
+                       stdout = TRUE, stderr = TRUE)
+stopifnot(fit_starved$converged, abs(fit_starved$ofv - fit_warf$ofv) < 0.1,
+          !any(starved_warnings$severity == "critical"),
+          any(grepl("start rejected by the EBE convergence guard", starved_log, fixed = TRUE) &
+                grepl("re-solved warm", starved_log, fixed = TRUE)))
 ```
 
-The fit ends `r round(fit_starved$ofv - fit_warf$ofv)` OFV points above the default-budget fit, is marked unconverged and carries a critical `convergence` warning, so it cannot pass for a result. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it.
+With one inner iteration per solve, the fit still converges, `r signif(fit_starved$ofv - fit_warf$ofv, 2)` OFV `r if (fit_starved$ofv >= fit_warf$ofv) "above" else "below"` the default-budget fit. That says nothing about a larger model. Leave `inner_maxiter` at its default unless you have a reason, and compare a reduced budget against a fit with the default before trusting it.
 
 ::: {.callout-note}
 ## Changed after ferx-r {{< var ferx_r_release >}}
-In ferx-r {{< var ferx_r_release >}}, a fit whose every outer trial is rejected this way converges on the penalty and reports `converged = TRUE` at the midpoint of its declared bounds, with no `convergence` warning ([ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617), fixed after that release). This warfarin fit does that there. With {{< var ferx_r_release >}}, estimates sitting exactly on the midpoints of their bounds are the sign.
+In ferx-r {{< var ferx_r_release >}} a rejected start is not re-solved warm, and this warfarin fit is rejected at every trial. There it converges on the penalty and reports `converged = TRUE` at the midpoint of its declared bounds, with no `convergence` warning ([ferx-core #1617](https://github.com/FeRx-NLME/ferx-core/issues/1617), fixed after that release); estimates sitting exactly on the midpoints of their bounds are the sign. Builds between that fix and #2682 report it unconverged, far above the optimum.
 :::
 
 Choosing the outer `optimizer` on warfarin:
@@ -502,8 +523,15 @@ The bundled `warfarin_saem` model sets its SAEM options in the model file. With 
 book_settings_table(c("n_exploration", "n_convergence", "n_mh_steps", "n_leapfrog",
                       "scale_adaptation", "scale_deadband", "adapt_interval", "omega_burnin",
                       "mstep_damping", "mstep_solver", "mstep_draws", "seed",
-                      "conddist", "conddist_nsamp", "conddist_burnin", "conddist_keep_samples"))
+                      "conddist", "conddist_nsamp", "conddist_burnin", "conddist_keep_samples",
+                      "saem_kernel", "saem_imh_proposals", "saem_imh_refresh", "saem_imh_defensive",
+                      "saem_imh_min_obs_per_eta"))
 ```
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+The `saem_kernel` setting and the `saem_imh_proposals`, `saem_imh_refresh`, `saem_imh_defensive` and `saem_imh_min_obs_per_eta` settings of its `imh` kernel are not in ferx-r {{< var ferx_r_release >}}.
+:::
 
 ```{r}
 #| label: saem-conddist
@@ -616,12 +644,12 @@ book_settings_table("gn_lambda")
 #| tbl-cap: "Importance sampling settings."
 book_settings_table(c("imp_samples", "imp_proposal_df", "imp_seed", "imp_low_ess_threshold",
                       "imp_iterations", "imp_averaging", "imp_auto", "imp_defensive_alpha",
-                      "imp_eval_only", "imp_sobol"))
+                      "imp_eval_only", "imp_sobol", "imp_adapt_passes", "imp_max_time"))
 ```
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-The `imp_sobol` setting is not in ferx-r {{< var ferx_r_release >}}.
+The `imp_sobol`, `imp_adapt_passes` and `imp_max_time` settings are not in ferx-r {{< var ferx_r_release >}}, nor is `impmap_max_time`, the same limit for IMPMAP.
 :::
 
 A common use of `imp` is to evaluate the marginal likelihood at a FOCEI solution: the final stage of a chain, with `imp_eval_only = TRUE`. The result is in `fit$importance_sampling`:
@@ -794,7 +822,7 @@ ferx_stop(job)               # or: stop the job
 See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html) for the full descriptions.
 
 - `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated, or a fit that stopped mid-descent or minimised against EBEs held in a higher mode was restarted from its best point. Try a different optimizer or rescale parameters; a restarted fit that ends converged needs no action.
-- `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. It can arrive alongside `converged = TRUE`, which is why it is a warning of its own rather than a `convergence` warning; whether `converged` agrees depends on the optimizer (above).
+- `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. It can arrive alongside `converged = TRUE`, which is why it is a warning of its own rather than a `convergence` warning. A start that ferx verifies as an optimum is not flagged; `fit$stationary_start` records that instead (above).
 - `ebe_start_dependent` (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise `inner_maxiter`, or `inner_restarts` for a suspected second mode (above).
 - `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
 - `mu_referencing` (warning or info): mu-referencing is missing or partial. Prefer forms like `CL = TVCL * exp(ETA_CL)` for SAEM and Bayes.
@@ -815,26 +843,24 @@ See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html)
   tiny_warnings <- ferx_get_warnings(fit_tiny, as_df = TRUE)
   cat(head(strwrap(tiny_warnings$message[tiny_warnings$category == "init_not_representable"], 90), 3),
       sep = "\n")
+  data.frame(converged = fit_tiny$converged, ofv = fit_tiny$ofv,
+             stalled_at_init = fit_tiny$stalled_at_init)
+  unique(tiny_warnings$category[tiny_warnings$severity == "critical"])
   ```
 
   ```{r}
   #| label: check-init-not-representable
   #| include: false
-  # The item says this start raises the warning, and that the fit still converges to the model
-  # file's optimum (same OFV, thetas, omega and sigma).
-  stopifnot("init_not_representable" %in% tiny_warnings$category, isTRUE(fit_tiny$converged),
-            abs(fit_tiny$ofv - fit_warf$ofv) < 0.01,
-            all(abs(fit_tiny$theta / fit_warf$theta - 1) < 1e-3),
-            all(abs(fit_tiny$omega - fit_warf$omega) <= 1e-3 * max(abs(fit_warf$omega))),
-            all(abs(fit_tiny$sigma / fit_warf$sigma - 1) < 1e-3))
+  # The item says this start raises the warning, that the fit never leaves it, that the
+  # objective there is at the divergence sentinel, and that the fit is reported unconverged
+  # with critical warnings.
+  stopifnot("init_not_representable" %in% tiny_warnings$category, !fit_tiny$converged,
+            "stalled_at_init" %in% tiny_warnings$category,
+            any(grepl("W_NONFINITE_OBJECTIVE", tiny_warnings$message, fixed = TRUE)),
+            fit_tiny$ofv > 1e20, any(tiny_warnings$severity == "critical"))
   ```
 
-  On this well-informed model the fit recovers: it converges at OFV `r round(fit_tiny$ofv, 2)`, the value the model file's start reaches (`r round(fit_warf$ofv, 2)`), with the same estimates. Whether it does depends on the model and the data, and a substituted start can just as well send the optimizer to another basin while still reporting convergence. Declare the start at a value the parameter can take rather than relying on the repair, and do not read `converged` as a sign that the start did no harm.
-
-  ::: {.callout-note}
-  ## Changed after ferx-r {{< var ferx_r_release >}}
-  With ferx-r {{< var ferx_r_release >}}, the fit from this start ends far from the optimum instead, and carries critical warnings besides.
-  :::
+  Here the fit does not recover. With `TVKA` at `r format(fit_tiny$theta[["TVKA"]])` the objective is at the divergence sentinel (`W_NONFINITE_OBJECTIVE`), the optimizer never leaves the start, and the fit is reported unconverged with critical warnings. Whether a fit recovers from a moved start depends on the model and the data, and a substituted start can just as well send the optimizer to another basin while still reporting convergence. Declare the start at a value the parameter can take rather than relying on the repair.
 - `parameter_at_runaway_guard` (warning or critical): a parameter is pinned at a hidden optimizer guard. `collapse` (warning) means remove or simplify it; `runaway` (critical) means reject the fit.
 - `importance_sampling` (warning): the effective sample size dropped to zero, or the proposal collapsed. Increase the samples or improve the proposal.
 - `vi_bad_basin` (critical): the final bound-quality check of a VI fit failed, and the fit is marked unconverged. Try new starting values, or start from another method.

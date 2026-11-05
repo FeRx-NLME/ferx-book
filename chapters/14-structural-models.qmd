@@ -385,6 +385,49 @@ fit_ot <- ferx_fit(ot$model, ot$data, verbose = FALSE)
 head(distinct(fit_ot$sdtab, ID, KE, T_HALF, CMAX, AUC_72), 3)
 ```
 
+### Which engine runs the right-hand side
+
+ferx compiles the right-hand side of `[odes]` to native code. A construct outside what the compiler translates, such as a block `if (…) { … }` statement or a `sqrt`, keeps the block on a slower bytecode interpreter instead. The results are the same; only the speed differs. `ferx_model_validate()` says so before a fit, and a fit reports it once as an informational `ode_rhs_route` entry in `ferx_get_warnings()`. A copy of `mm_oral` that writes `KM` as `sqrt(KM * KM)` in its elimination term shows the note; the bundled model, which has no `sqrt`, gets no entry:
+
+```{r}
+#| label: ode-rhs-route
+rhs_dir <- file.path(tempdir(), "ferx-book-ode-rhs")
+dir.create(rhs_dir, showWarnings = FALSE)
+mm_sqrt <- file.path(rhs_dir, "mm_oral_sqrt.ferx")
+mm_sqrt_lines <- sub("VMAX * central / (KM + central)",
+                     "VMAX * central / (sqrt(KM * KM) + central)",
+                     readLines(mm$model), fixed = TRUE)
+stopifnot(any(grepl("sqrt(KM * KM)", mm_sqrt_lines, fixed = TRUE)))
+writeLines(mm_sqrt_lines, mm_sqrt)
+rhs_check <- ferx_model_validate(mm_sqrt)
+rhs_check$diagnostics[, c("severity", "code")]
+fit_sqrt <- ferx_fit(mm_sqrt, mm$data, verbose = FALSE)
+sqrt_warnings <- ferx_get_warnings(fit_sqrt, as_df = TRUE)
+sqrt_warnings[sqrt_warnings$category == "ode_rhs_route", c("severity", "category")]
+c(interpreted = fit_sqrt$ofv, native = fit_mm$ofv)
+"ode_rhs_route" %in% ferx_get_warnings(fit_mm, as_df = TRUE)$category
+```
+
+```{r}
+#| label: check-ode-rhs-route
+#| include: false
+# The prose: the note is raised once per fit, the results are the same as the native run's,
+# and the bundled model gets no entry.
+stopifnot(rhs_check$ok, "W_ODE_RHS_INTERPRETED" %in% rhs_check$diagnostics$code,
+          sum(sqrt_warnings$category == "ode_rhs_route") == 1,
+          all(sqrt_warnings$severity[sqrt_warnings$category == "ode_rhs_route"] == "info"),
+          fit_sqrt$converged, abs(fit_sqrt$ofv - fit_mm$ofv) < 1e-6,
+          isTRUE(all.equal(fit_sqrt$theta, fit_mm$theta, tolerance = 1e-6)),
+          !"ode_rhs_route" %in% ferx_get_warnings(fit_mm, as_df = TRUE)$category)
+```
+
+The message names the construct and the statement it is in. To keep the block compiled, rewrite that construct: a block `if` as inline `if (cond) a else b`, which compiles, and a `sqrt` of individual parameters in `[individual_parameters]` ([which engine ran it](https://ferx-nlme.org/ferx-core/model-file/ode-models.html#rhs-route-note)).
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+The `ode_rhs_route` note is not in ferx-r {{< var ferx_r_release >}}.
+:::
+
 ### ODE solver settings
 
 ```{r}
@@ -531,6 +574,7 @@ The ferx-core [initial conditions](https://ferx-nlme.org/ferx-core/model-file/in
 ### Warnings you may see here
 
 - `ode_solver` (warning or info): the ODE solver's health at the final estimates, for example steps clamped at the minimum step size, unfinished segments, or an `auto` escalation (as info). The message names the counts. Consider a stiff `ode_method` or looser tolerances. See [solver warnings](https://ferx-nlme.org/ferx-core/warnings.html#codes-solver).
+- `ode_rhs_route` (info): the `[odes]` right-hand side runs on the interpreter rather than native code (above). The results are unaffected.
 
 ## Summary
 

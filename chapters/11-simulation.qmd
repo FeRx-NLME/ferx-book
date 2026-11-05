@@ -139,6 +139,34 @@ sim |>
             p05 = quantile(DV_SIM, 0.05), p95 = quantile(DV_SIM, 0.95))
 ```
 
+The parameters each simulated subject was drawn with travel with the simulation. `ferx_sim_parameters()` reads them: one row per `DRAW`, `SIM` and `ID`, with the drawn etas and the individual parameters, taken at the subject's first observation row. A summary that needs only parameters, such as the area under the curve over a day at steady state (the daily dose over clearance), comes from that table without integrating the concentrations:
+
+```{r}
+#| label: sim-parameters
+sim_params <- ferx_sim_parameters(sim = sim)
+head(sim_params, 4)
+sim_params |>
+  mutate(ID = as.integer(ID)) |>
+  left_join(select(regimens, ID, regimen), by = "ID") |>
+  group_by(regimen) |>
+  summarise(median_cl = median(CL), median_auc_day = median(250 / CL))
+```
+
+```{r}
+#| label: check-sim-parameters
+#| include: false
+# The prose says the table has one row per simulated subject and that no column varies within one.
+stopifnot(nrow(sim_params) == nrow(distinct(sim, DRAW, SIM, ID)),
+          length(attr(sim_params, "varying")) == 0)
+```
+
+`print()` on a `ferx_sim_parameters` table also lists the columns whose value changed between a subject's rows, so that a first-row value is not read as a constant; here there are none. The table has one row per simulated subject, not per observation; join it to the observation rows on `DRAW`, `SIM` and `ID` when a plot needs both.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+`ferx_sim_parameters()` is not in ferx-r {{< var ferx_r_release >}}.
+:::
+
 ## Options that matter
 
 | Function | Argument | Meaning |
