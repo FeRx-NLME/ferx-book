@@ -420,6 +420,18 @@ writeLines(sub("log(DV) ~ additive(SIGMA_LOG)", "log(DV) ~ proportional(SIGMA_LO
 try(ferx_fit(ltbs_proportional, ltbs$data, verbose = FALSE))
 ```
 
+```{r}
+#| label: check-ltbs-proportional
+#| include: false
+# The prose: a proportional error alone under LTBS is refused, and the message lists the allowed
+# forms (additive and combined).
+ltbs_proportional_error <- tryCatch({ferx_fit(ltbs_proportional, ltbs$data, verbose = FALSE); NULL},
+                                    error = function(e) conditionMessage(e))
+stopifnot(is.character(ltbs_proportional_error),
+          grepl("additive(...)", ltbs_proportional_error, fixed = TRUE),
+          grepl("combined(PROP, ADD)", ltbs_proportional_error, fixed = TRUE))
+```
+
 Use `DV ~ log_additive(...)` instead when the `DV` column already holds logarithms.
 
 ### Random effects on the residual error
