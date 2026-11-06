@@ -579,28 +579,44 @@ rbind(estimated = fit_resp$theta[c("TVL", "EMAX")], profiled = fit_resp_profiled
 ```{r}
 #| label: check-responder-profile
 #| include: false
-# The prose: both fits converge with a computed covariance step; the same objective to the printed
-# digits (measured at the pin on macOS: 7e-10, stated inline; the check allows up to 1e-6, and the prose
-# relies on a nonzero gap for its "e" format) and the same parameter count;
-# every estimate, levels included, within 1% of its standard error; every level flagged profiled and
-# none on a bound; the profiled fit slower on this small block.
-resp_gap <- abs(fit_resp_profiled$ofv - fit_resp$ofv)
-stopifnot(isTRUE(fit_resp$converged), isTRUE(fit_resp_profiled$converged),
-          fit_resp$covariance_status == "computed", fit_resp_profiled$covariance_status == "computed",
-          identical(fit_resp_profiled$profiled_blocks, "PLACEBO"),
-          all(fit_resp_profiled$theta_levels$profiled), !any(fit_resp$theta_levels$profiled),
-          length(fit_resp_profiled$profiled_levels_at_bound) == 0,
-          fit_resp_profiled$n_parameters == fit_resp$n_parameters,
-          signif(fit_resp_profiled$ofv, 7) == signif(fit_resp$ofv, 7), resp_gap > 0, resp_gap < 1e-6,
-          identical(names(fit_resp_profiled$theta), names(fit_resp$theta)),
-          all(abs(fit_resp_profiled$theta - fit_resp$theta) < 0.01 * fit_resp$se_theta),
-          # "levels included": fit$theta holds only the free levels; theta_levels has the derived ones too.
-          identical(fit_resp_profiled$theta_levels$label, fit_resp$theta_levels$label),
-          all(abs(fit_resp_profiled$theta_levels$value - fit_resp$theta_levels$value) < 0.01 * fit_resp$theta_levels$se),
-          # "every estimate" includes the ETA_S variance.
-          length(fit_resp$se_omega) == 1,
-          all(abs(diag(as.matrix(fit_resp_profiled$omega)) - diag(as.matrix(fit_resp$omega))) < 0.01 * fit_resp$se_omega),
-          # The prose prints the rounded time ratio, so it must read 2 or more.
+# profiled_pair_gap() backs the prose shared by the logit pair here and the probit pair below: both
+# fits converge with a computed covariance step; the same objective to the printed digits (measured at
+# the pin on macOS: 7e-10 for logit, 4.5e-10 for probit, stated inline; the check allows up to 1e-6,
+# and the prose relies on a nonzero gap for its "e" format) and the same parameter count; every
+# estimate, levels and the ETA_S variance included, within 1% of its standard error; every level
+# flagged profiled and none on a bound. It returns the OFV gap.
+# Every slot is checked for presence first: NULL == "computed", all(NULL) and !any(NULL) all pass.
+profiled_pair_gap <- function(est, prof) {
+  est_flags <- est$theta_levels$profiled
+  prof_flags <- prof$theta_levels$profiled
+  stopifnot(isTRUE(est$converged), isTRUE(prof$converged),
+            identical(est$covariance_status, "computed"), identical(prof$covariance_status, "computed"),
+            identical(prof$profiled_blocks, "PLACEBO"),
+            is.logical(prof_flags), length(prof_flags) > 0, length(prof_flags) == nrow(prof$theta_levels),
+            all(prof_flags),
+            is.logical(est_flags), length(est_flags) == nrow(est$theta_levels), !any(est_flags),
+            is.character(prof$profiled_levels_at_bound), length(prof$profiled_levels_at_bound) == 0,
+            length(est$n_parameters) == 1, length(prof$n_parameters) == 1,
+            prof$n_parameters == est$n_parameters,
+            length(est$ofv) == 1, length(prof$ofv) == 1)
+  gap <- abs(prof$ofv - est$ofv)
+  stopifnot(signif(prof$ofv, 7) == signif(est$ofv, 7), gap > 0, gap < 1e-6,
+            length(est$theta) > 0, length(est$se_theta) == length(est$theta),
+            identical(names(prof$theta), names(est$theta)),
+            all(abs(prof$theta - est$theta) < 0.01 * est$se_theta),
+            # "levels included": fit$theta holds only the free levels; theta_levels has the derived ones too.
+            identical(prof$theta_levels$label, est$theta_levels$label),
+            length(est$theta_levels$se) == nrow(est$theta_levels),
+            all(abs(prof$theta_levels$value - est$theta_levels$value) < 0.01 * est$theta_levels$se),
+            # "every estimate" includes the ETA_S variance.
+            length(est$se_omega) == 1,
+            all(abs(diag(as.matrix(prof$omega)) - diag(as.matrix(est$omega))) < 0.01 * est$se_omega))
+  gap
+}
+resp_gap <- profiled_pair_gap(fit_resp, fit_resp_profiled)
+# The prose prints the rounded time ratio, so it must read 2 or more; the profiled fit is slower on
+# this small block.
+stopifnot(length(fit_resp$wall_time_secs) == 1, length(fit_resp_profiled$wall_time_secs) == 1,
           fit_resp_profiled$wall_time_secs >= 1.5 * fit_resp$wall_time_secs)
 ```
 
@@ -636,37 +652,11 @@ round(typical_arm, 4)
 ```{r}
 #| label: check-responder-probit
 #| include: false
-# The prose: both probit fits converge with a computed covariance step; the profiled one reaches the
-# unprofiled objective (measured at the pin on macOS: 4.5e-10, stated inline; the check allows up to
-# 1e-6, and the prose relies on a nonzero gap for its "e" format) with the same parameter count;
-# every estimate, levels and the ETA_S variance included, within 1% of its standard error; every level
-# flagged profiled and none on a bound; the logit coefficients are 1.4 to 1.9 times the probit ones.
-probit_gap <- abs(fit_probit_profiled$ofv - fit_probit$ofv)
-# Every slot is checked for presence first: NULL == "computed", all(NULL) and !any(NULL) all pass.
-probit_flags <- fit_probit$theta_levels$profiled
-probit_profiled_flags <- fit_probit_profiled$theta_levels$profiled
-stopifnot(isTRUE(fit_probit$converged), isTRUE(fit_probit_profiled$converged),
-          identical(fit_probit$covariance_status, "computed"),
-          identical(fit_probit_profiled$covariance_status, "computed"),
-          identical(fit_probit_profiled$profiled_blocks, "PLACEBO"),
-          is.logical(probit_profiled_flags), length(probit_profiled_flags) == nrow(fit_probit_profiled$theta_levels),
-          length(probit_profiled_flags) > 0, all(probit_profiled_flags),
-          is.logical(probit_flags), length(probit_flags) == nrow(fit_probit$theta_levels), !any(probit_flags),
-          is.character(fit_probit_profiled$profiled_levels_at_bound),
-          length(fit_probit_profiled$profiled_levels_at_bound) == 0,
-          length(fit_probit$n_parameters) == 1, length(fit_probit_profiled$n_parameters) == 1,
-          length(fit_resp$n_parameters) == 1,
-          fit_probit_profiled$n_parameters == fit_probit$n_parameters,
-          fit_probit$n_parameters == fit_resp$n_parameters,
-          probit_gap > 0, probit_gap < 1e-6,
-          identical(names(fit_probit_profiled$theta), names(fit_probit$theta)),
-          all(abs(fit_probit_profiled$theta - fit_probit$theta) < 0.01 * fit_probit$se_theta),
-          identical(fit_probit_profiled$theta_levels$label, fit_probit$theta_levels$label),
-          all(abs(fit_probit_profiled$theta_levels$value - fit_probit$theta_levels$value) <
-                0.01 * fit_probit$theta_levels$se),
-          length(fit_probit$se_omega) == 1,
-          all(abs(diag(as.matrix(fit_probit_profiled$omega)) - diag(as.matrix(fit_probit$omega))) <
-                0.01 * fit_probit$se_omega))
+# The prose: the probit pair passes profiled_pair_gap() (defined in check-responder-profile), with
+# the same parameter count as the logit fit; the logit coefficients are 1.5 to 1.75 times the probit
+# ones; the typical-arm probabilities agree; the OFVs of the two links are close.
+probit_gap <- profiled_pair_gap(fit_probit, fit_probit_profiled)
+stopifnot(length(fit_resp$n_parameters) == 1, fit_probit$n_parameters == fit_resp$n_parameters)
 # "close to the factor of about 1.6 to 1.8": measured 1.62 (TVL) and 1.61 (EMAX); a band that a
 # ratio of 1.85 (pi / sqrt(3)) or 1.0 (a probit key read as logit) fails.
 probit_ratio <- fit_resp$theta[c("TVL", "EMAX")] / fit_probit$theta[c("TVL", "EMAX")]
