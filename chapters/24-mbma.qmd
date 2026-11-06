@@ -627,6 +627,10 @@ data.frame(link = c("logit", "probit", "probit"), levels = c("estimated", "estim
            n_parameters = c(fit_resp$n_parameters, fit_probit$n_parameters, fit_probit_profiled$n_parameters))
 rbind(logit = fit_resp$theta[c("TVL", "EMAX")], probit = fit_probit$theta[c("TVL", "EMAX")],
       probit_profiled = fit_probit_profiled$theta[c("TVL", "EMAX")])
+typical_arm <- rbind(
+  logit = plogis(fit_resp$theta[["TVL"]] + c(placebo = 0, active = fit_resp$theta[["EMAX"]])),
+  probit = pnorm(fit_probit$theta[["TVL"]] + c(placebo = 0, active = fit_probit$theta[["EMAX"]])))
+round(typical_arm, 4)
 ```
 
 ```{r}
@@ -638,11 +642,20 @@ rbind(logit = fit_resp$theta[c("TVL", "EMAX")], probit = fit_probit$theta[c("TVL
 # every estimate, levels and the ETA_S variance included, within 1% of its standard error; every level
 # flagged profiled and none on a bound; the logit coefficients are 1.4 to 1.9 times the probit ones.
 probit_gap <- abs(fit_probit_profiled$ofv - fit_probit$ofv)
+# Every slot is checked for presence first: NULL == "computed", all(NULL) and !any(NULL) all pass.
+probit_flags <- fit_probit$theta_levels$profiled
+probit_profiled_flags <- fit_probit_profiled$theta_levels$profiled
 stopifnot(isTRUE(fit_probit$converged), isTRUE(fit_probit_profiled$converged),
-          fit_probit$covariance_status == "computed", fit_probit_profiled$covariance_status == "computed",
+          identical(fit_probit$covariance_status, "computed"),
+          identical(fit_probit_profiled$covariance_status, "computed"),
           identical(fit_probit_profiled$profiled_blocks, "PLACEBO"),
-          all(fit_probit_profiled$theta_levels$profiled), !any(fit_probit$theta_levels$profiled),
+          is.logical(probit_profiled_flags), length(probit_profiled_flags) == nrow(fit_probit_profiled$theta_levels),
+          length(probit_profiled_flags) > 0, all(probit_profiled_flags),
+          is.logical(probit_flags), length(probit_flags) == nrow(fit_probit$theta_levels), !any(probit_flags),
+          is.character(fit_probit_profiled$profiled_levels_at_bound),
           length(fit_probit_profiled$profiled_levels_at_bound) == 0,
+          length(fit_probit$n_parameters) == 1, length(fit_probit_profiled$n_parameters) == 1,
+          length(fit_resp$n_parameters) == 1,
           fit_probit_profiled$n_parameters == fit_probit$n_parameters,
           fit_probit$n_parameters == fit_resp$n_parameters,
           probit_gap > 0, probit_gap < 1e-6,
@@ -654,11 +667,19 @@ stopifnot(isTRUE(fit_probit$converged), isTRUE(fit_probit_profiled$converged),
           length(fit_probit$se_omega) == 1,
           all(abs(diag(as.matrix(fit_probit_profiled$omega)) - diag(as.matrix(fit_probit$omega))) <
                 0.01 * fit_probit$se_omega))
+# "close to the factor of about 1.6 to 1.8": measured 1.62 (TVL) and 1.61 (EMAX); a band that a
+# ratio of 1.85 (pi / sqrt(3)) or 1.0 (a probit key read as logit) fails.
 probit_ratio <- fit_resp$theta[c("TVL", "EMAX")] / fit_probit$theta[c("TVL", "EMAX")]
-stopifnot(all(probit_ratio > 1.4), all(probit_ratio < 1.9))
+stopifnot(all(probit_ratio > 1.5), all(probit_ratio < 1.75))
+# "the probabilities agree to within 0.01" at the typical arm (measured: 0.0014 and 0.0006).
+stopifnot(all(dim(typical_arm) == c(2, 2)), max(abs(typical_arm["logit", ] - typical_arm["probit", ])) < 0.01)
+# "the two links cannot be told apart here": the OFVs differ by much less than one unit (measured 0.19)
+# at the same parameter count.
+probit_ofv_gap <- fit_resp$ofv - fit_probit$ofv
+stopifnot(abs(probit_ofv_gap) < 1)
 ```
 
-Both probit fits converge, and the profiled one is `r sprintf("%.0e", probit_gap)` OFV units from the estimated one, with every estimate, levels included, within 1% of its standard error and all `r nrow(fit_probit_profiled$theta_levels)` levels flagged `profiled`. The two links put the coefficients on different scales: here the logit `TVL` is `r round(probit_ratio[["TVL"]], 2)` times the probit one and the logit `EMAX` `r round(probit_ratio[["EMAX"]], 2)` times, close to the factor of about 1.6 often used to convert between the two. Compare probabilities, not coefficients, across links.
+Both probit fits converge, and the profiled one is `r sprintf("%.0e", probit_gap)` OFV units from the estimated one, with every estimate, levels included, within 1% of its standard error and all `r nrow(fit_probit_profiled$theta_levels)` levels flagged `profiled`. The two links put the coefficients on different scales: here the logit `TVL` is `r round(probit_ratio[["TVL"]], 2)` times the probit one and the logit `EMAX` `r round(probit_ratio[["EMAX"]], 2)` times, close to the factor of about 1.6 to 1.8 often used to convert between the two. Compare probabilities, not coefficients, across links: at a typical arm (no study effect, placebo at its study mean) the two fits give probabilities within 0.01 of each other, on placebo and on the active arm. The probit OFV is `r round(abs(probit_ofv_gap), 2)` units `r if (probit_ofv_gap > 0) "lower" else "higher"` with the same number of parameters, so on these data, simulated under a logit link, the two links cannot be told apart.
 
 The predictor must read the block as a coefficient times the block plus terms that do not read it, the same rule as inside `inv_logit()` (see [through a link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-link) in ferx-core).
 
@@ -1092,7 +1113,7 @@ A profiled fit can also carry a `gradient_fallback` note (@sec-estimation-method
 # gradient_fallback (W_PROFILE_FD_GRADIENT) is not listed, so this also backs "None of the profiled
 # fits ... needs it" for every profiled fit, fit_unbounded included.
 chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_unbounded, fit_car1,
-                     fit_car1_profiled, fit_resp, fit_resp_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
+                     fit_car1_profiled, fit_resp, fit_resp_profiled, fit_probit, fit_probit_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
 chapter_categories <- unique(unlist(lapply(chapter_fits, function(f) ferx_get_warnings(f, as_df = TRUE)$category)))
 listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
 other_categories <- ferx_get_warnings(fit_other, as_df = TRUE)$category
