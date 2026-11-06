@@ -13,7 +13,7 @@ Some endpoints are yes/no outcomes: a response, an adverse event, a seizure-free
 
 ::: {.callout-note}
 ## Maturity
-Binary endpoints are the first of ferx-core's categorical endpoints. Ordinal, count and other link functions are planned, not available. See the ferx-core [categorical endpoints](https://ferx-nlme.org/ferx-core/model-file/categorical.html) page.
+Binary endpoints are the first of ferx-core's categorical endpoints. Ordinal and count endpoints are planned, not available. See the ferx-core [categorical endpoints](https://ferx-nlme.org/ferx-core/model-file/categorical.html) page.
 :::
 
 ## The data
@@ -123,7 +123,8 @@ stopifnot(nrow(ferx_predict(binary$model, binary$data, fit = fit_binary)) == 0)
 |---|---|
 | `cmt` | The `CMT` value of this endpoint's observation rows |
 | `logit` | Log-odds of `DV = 1`: any expression of thetas, etas, covariates, individual parameters and `TIME` |
-| `link` | Optional; `logit` is the only link available |
+| `probit` | Instead of `logit`: the same predictor under a probit link, P(DV = 1) = Φ(predictor) (newer than ferx-r {{< var ferx_r_release >}}) |
+| `link` | Optional; `logit` (the default) or `probit`, and it must agree with the predictor's key |
 
 - Observation rows carry `DV` 0 or 1 and `EVID = 0`. Any other value stops the fit.
 - Covariates in `logit` are read at each record's own value, so a covariate column that changes within a subject (an arm, a dose group) works, as does `TIME`. The exception is a subject that also has time-to-event records: there a time-varying covariate in `logit` is refused (`E_ENDPOINT_TV_COVARIATE`).
