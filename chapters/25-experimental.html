@@ -677,30 +677,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">fit_sde</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">6</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              estimate    rse_pct</span></span>
-<span><span class="co">#&gt; TVCL         0.134261   4.980262</span></span>
-<span><span class="co">#&gt; TVV          7.702396   3.108361</span></span>
-<span><span class="co">#&gt; TVKA         0.736434  18.068726</span></span>
-<span><span class="co">#&gt; DIFF_CENTRAL 0.000005 176.720530</span></span>
-<span><span class="co">#&gt; ETA_CL       0.026481  43.135956</span></span>
-<span><span class="co">#&gt; ETA_V        0.009872  45.621900</span></span>
-<span><span class="co">#&gt; ETA_KA       0.400811  49.217251</span></span>
-<span><span class="co">#&gt; PROP_ERR     0.010588   9.437324</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL         0.133070   5.039476</span></span>
+<span><span class="co">#&gt; TVV          7.727857   3.039366</span></span>
+<span><span class="co">#&gt; TVKA         0.727295  17.166207</span></span>
+<span><span class="co">#&gt; DIFF_CENTRAL 0.000001 590.837652</span></span>
+<span><span class="co">#&gt; ETA_CL       0.028469  44.648539</span></span>
+<span><span class="co">#&gt; ETA_V        0.009575  44.861669</span></span>
+<span><span class="co">#&gt; ETA_KA       0.348907  46.057132</span></span>
+<span><span class="co">#&gt; PROP_ERR     0.010709   9.004399</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
 <p>The fit carries the experimental notice with its other warnings:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_sde</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"severity"</span>, <span class="st">"category"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   severity            category</span></span>
-<span><span class="co">#&gt; 1  warning        experimental</span></span>
-<span><span class="co">#&gt; 2  warning ebe_start_dependent</span></span>
-<span><span class="co">#&gt; 3  warning    optimizer_health</span></span>
-<span><span class="co">#&gt; 4  warning        inflated_rse</span></span>
-<span><span class="co">#&gt; 5     info          ode_solver</span></span>
-<span><span class="co">#&gt; 6  warning  dw_autocorrelation</span></span>
+<span><span class="co">#&gt;   severity           category</span></span>
+<span><span class="co">#&gt; 1  warning       experimental</span></span>
+<span><span class="co">#&gt; 2  warning       inflated_rse</span></span>
+<span><span class="co">#&gt; 3     info         ode_solver</span></span>
+<span><span class="co">#&gt; 4  warning dw_autocorrelation</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_sde</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">message</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span>, <span class="fl">150</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Stochastic differential equations ([diffusion] / Extended Kalman Filter) are an EXPERIMENTAL feature: validated only on a small set of toy examples, w"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Here the fit converged and the covariance step needed no regularization: the relative standard errors are ordinary (at most 49%) except that of <code>DIFF_CENTRAL</code>, at 177% (<code>inflated_rse</code>). The <code>optimizer_health</code> warning says how it got there: the optimizer had minimised against random effects that some subjects held in a higher mode, and resumed from the best point a cold re-solve found (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). Converging is not the same as reaching the optimum, and even this much is not guaranteed. Where the default tolerances leave this fit depends on rounding in the solver, and on other machines and builds the same file stops at a saddle point: the covariance step finds a direction of negative curvature and floors it (<code>covariance_regularized</code>), every standard error runs to hundreds of percent, and standard errors computed there mean nothing. <code>[diffusion]</code> needs finite-difference gradients, so the model file sets <code>gradient_method = fd</code>, and with it <code>optimizer = auto</code> resolves to <code>bobyqa</code> (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). When the covariance step regularizes, the last sentence of its <code>covariance_regularized</code> message points at the ODE tolerances: the finite differences of the covariance step amplify the integration errors of the solver, and the message suggests <code>ode_reltol = 1e-6</code> and <code>ode_abstol = 1e-8</code>, tighter than the defaults of 1e-4 and 1e-6. A refit at those tolerances does not depend on where the default ones leave the fit:</p>
+<p>Here the fit converged and the covariance step needed no regularization: the relative standard errors are ordinary (at most 46%) except that of <code>DIFF_CENTRAL</code>, at 591% (<code>inflated_rse</code>). Converging is not the same as reaching the optimum, and even this much is not guaranteed. Where the default tolerances leave this fit depends on rounding in the solver, and on other machines and builds the same file stops at a saddle point: the covariance step finds a direction of negative curvature and floors it (<code>covariance_regularized</code>), every standard error runs to hundreds of percent, and standard errors computed there mean nothing. <code>[diffusion]</code> needs finite-difference gradients, so the model file sets <code>gradient_method = fd</code>, and with it <code>optimizer = auto</code> resolves to <code>bobyqa</code> (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). When the covariance step regularizes, the last sentence of its <code>covariance_regularized</code> message points at the ODE tolerances: the finite differences of the covariance step amplify the integration errors of the solver, and the message suggests <code>ode_reltol = 1e-6</code> and <code>ode_abstol = 1e-8</code>, tighter than the defaults of 1e-4 and 1e-6. A refit at those tolerances does not depend on where the default ones leave the fit:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">regularized</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit_sde</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">category</span> <span class="op">==</span> <span class="st">"covariance_regularized"</span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">regularized</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/strwrap.html">strwrap</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">".*(Note that)"</span>, <span class="st">"\\1"</span>, <span class="va">regularized</span><span class="op">$</span><span class="va">message</span><span class="op">)</span>, <span class="fl">80</span><span class="op">)</span></span>
@@ -713,20 +711,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span>             covariance_regularized <span class="op">=</span> <span class="st">"covariance_regularized"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">f</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  fit       ofv DIFF_CENTRAL covariance_regularized</span></span>
-<span><span class="co">#&gt; 1         model file -280.0012 4.815345e-06                  FALSE</span></span>
-<span><span class="co">#&gt; 2 tighter tolerances -280.3566 4.959557e-08                  FALSE</span></span>
+<span><span class="co">#&gt; 1         model file -280.3082 7.451050e-07                  FALSE</span></span>
+<span><span class="co">#&gt; 2 tighter tolerances -280.3525 1.203163e-07                  FALSE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">fit_sde_tight</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">6</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              estimate     rse_pct</span></span>
-<span><span class="co">#&gt; TVCL         0.132982    4.990752</span></span>
-<span><span class="co">#&gt; TVV          7.731528    3.026271</span></span>
-<span><span class="co">#&gt; TVKA         0.725812   17.149513</span></span>
-<span><span class="co">#&gt; DIFF_CENTRAL 0.000000 2616.937942</span></span>
-<span><span class="co">#&gt; ETA_CL       0.028583   44.739688</span></span>
-<span><span class="co">#&gt; ETA_V        0.009560   44.820342</span></span>
-<span><span class="co">#&gt; ETA_KA       0.348110   46.020911</span></span>
-<span><span class="co">#&gt; PROP_ERR     0.010748    8.785412</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; TVCL         0.133005    5.001203</span></span>
+<span><span class="co">#&gt; TVV          7.730437    3.031046</span></span>
+<span><span class="co">#&gt; TVKA         0.725158   17.183694</span></span>
+<span><span class="co">#&gt; DIFF_CENTRAL 0.000000 1654.587578</span></span>
+<span><span class="co">#&gt; ETA_CL       0.028611   44.761844</span></span>
+<span><span class="co">#&gt; ETA_V        0.009582   44.872691</span></span>
+<span><span class="co">#&gt; ETA_KA       0.349573   46.124173</span></span>
+<span><span class="co">#&gt; PROP_ERR     0.010745    8.818357</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>With those tolerances the same model, optimizer and data need no regularization in the covariance step. The standard errors are ordinary, except for the diffusion variance: at 5e-08 it cannot be told apart from zero. The OFV of the refit is 0.36 lower than the bundled fit’s. Scored without moving, the bundled fit’s own estimates give OFVs 0.01 apart at the default and at the tighter tolerances. So the gap is part solver error in evaluating the objective and part the two fits ending at different points. Where the default tolerances leave the fit depends on rounding in the solver, so the bundled fit’s OFV and estimates differ from one machine to the next; the refit is the one to read. Tighter default tolerances for finite-difference fits of ODE models are tracked in <a href="https://github.com/FeRx-NLME/ferx-core/issues/520">ferx-core #520</a>.</p>
+<p>With those tolerances the same model, optimizer and data need no regularization in the covariance step. The standard errors are ordinary, except for the diffusion variance: at 1e-07 it cannot be told apart from zero. The OFV of the refit is 0.04 lower than the bundled fit’s. Scored without moving, the bundled fit’s own estimates give OFVs 0.00 apart at the default and at the tighter tolerances. So the gap is part solver error in evaluating the objective and part the two fits ending at different points. Where the default tolerances leave the fit depends on rounding in the solver, so the bundled fit’s OFV and estimates differ from one machine to the next; the refit is the one to read. Tighter default tolerances for finite-difference fits of ODE models are tracked in <a href="https://github.com/FeRx-NLME/ferx-core/issues/520">ferx-core #520</a>.</p>
 <p>Removing the <code>[diffusion]</code> block gives the ordinary ODE model. That model needs no finite differences: with <code>gradient = "auto"</code> ferx uses the analytic gradient. The table also fits it with the model file’s finite differences at the default tolerances:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">sde_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">sde</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
@@ -745,12 +743,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span>             seconds <span class="op">=</span> <span class="va">f</span><span class="op">$</span><span class="va">wall_time_secs</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                     model       ofv durbin_watson regularized    seconds</span></span>
-<span><span class="co">#&gt; 1         SDE, model file -280.0012      2.596514       FALSE 23.6629393</span></span>
-<span><span class="co">#&gt; 2 SDE, tighter tolerances -280.3566      2.599616       FALSE 22.0246317</span></span>
-<span><span class="co">#&gt; 3 ODE, finite differences -280.3595      2.599641       FALSE  1.1170492</span></span>
-<span><span class="co">#&gt; 4  ODE, gradient = "auto" -280.3595      2.599641       FALSE  0.1630468</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1         SDE, model file -280.3082      2.599330       FALSE 19.4372698</span></span>
+<span><span class="co">#&gt; 2 SDE, tighter tolerances -280.3525      2.599611       FALSE 24.7012568</span></span>
+<span><span class="co">#&gt; 3 ODE, finite differences -280.3595      2.599641       FALSE  1.0972792</span></span>
+<span><span class="co">#&gt; 4  ODE, gradient = "auto" -280.3595      2.599641       FALSE  0.1783393</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The diffusion term does not improve on the ordinary ODE model. The SDE fit with the tighter tolerances has a diffusion variance of essentially zero and an OFV 0 above the ODE model’s analytic fit. At a zero diffusion variance the two models coincide, so the gap is no gain from the diffusion term; the ODE fits run at the default tolerances, whose solver error is of that size, so the gap does not say which fit stopped short. The ODE model’s own finite-difference fit, at the same default tolerances, ends within 2e-07 of its analytic optimum. These data show no system noise. A <code>[diffusion]</code> term is not a remedy for residuals that are correlated in time within a subject (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>). The filter propagates the state <em>variance</em> and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject’s observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: 2.6 with the block and 2.6 without. What <code>[diffusion]</code> does estimate is how much unexplained variance builds up between observations. The ferx-core page explains <a href="https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do">what the filter does not do</a>.</p>
+<p>The diffusion term does not improve on the ordinary ODE model. The SDE fit with the tighter tolerances has a diffusion variance of essentially zero and an OFV 0.007 above the ODE model’s analytic fit. At a zero diffusion variance the two models coincide, so the gap is no gain from the diffusion term; the ODE fits run at the default tolerances, whose solver error is of that size, so the gap does not say which fit stopped short. The ODE model’s own finite-difference fit, at the same default tolerances, ends within 1e-05 of its analytic optimum. These data show no system noise. A <code>[diffusion]</code> term is not a remedy for residuals that are correlated in time within a subject (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>). The filter propagates the state <em>variance</em> and adds it to the residual variance; the predicted state itself stays the ODE solution and is never pulled towards a subject’s observations, so the term cannot follow a drift. Here the Durbin-Watson statistic does not move: 2.6 with the block and 2.6 without. What <code>[diffusion]</code> does estimate is how much unexplained variance builds up between observations. The ferx-core page explains <a href="https://ferx-nlme.org/ferx-core/model-file/diffusion.html#what-the-filter-does-not-do">what the filter does not do</a>.</p>
 </section><section id="options-that-matter" class="level2"><h2 class="anchored" data-anchor-id="options-that-matter">Options that matter</h2>
 <table class="caption-top table">
 <colgroup>
@@ -786,23 +784,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Table&nbsp;25.1: Neural-network regularization settings.
 </figcaption><div aria-describedby="tbl-settings-nn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="udscrqyvqg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#udscrqyvqg table {
+<div id="msqtkddttf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#msqtkddttf table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#udscrqyvqg thead, #udscrqyvqg tbody, #udscrqyvqg tfoot, #udscrqyvqg tr, #udscrqyvqg td, #udscrqyvqg th {
+#msqtkddttf thead, #msqtkddttf tbody, #msqtkddttf tfoot, #msqtkddttf tr, #msqtkddttf td, #msqtkddttf th {
   border-style: none;
 }
 
-#udscrqyvqg p {
+#msqtkddttf p {
   margin: 0;
   padding: 0;
 }
 
-#udscrqyvqg .gt_table {
+#msqtkddttf .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -828,12 +826,12 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-left-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_caption {
+#msqtkddttf .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#udscrqyvqg .gt_title {
+#msqtkddttf .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -845,7 +843,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-bottom-width: 0;
 }
 
-#udscrqyvqg .gt_subtitle {
+#msqtkddttf .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -857,7 +855,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-top-width: 0;
 }
 
-#udscrqyvqg .gt_heading {
+#msqtkddttf .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -869,13 +867,13 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-right-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_bottom_border {
+#msqtkddttf .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_col_headings {
+#msqtkddttf .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -890,7 +888,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-right-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_col_heading {
+#msqtkddttf .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -910,7 +908,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   overflow-x: hidden;
 }
 
-#udscrqyvqg .gt_column_spanner_outer {
+#msqtkddttf .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -922,15 +920,15 @@ Table&nbsp;25.1: Neural-network regularization settings.
   padding-right: 4px;
 }
 
-#udscrqyvqg .gt_column_spanner_outer:first-child {
+#msqtkddttf .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#udscrqyvqg .gt_column_spanner_outer:last-child {
+#msqtkddttf .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#udscrqyvqg .gt_column_spanner {
+#msqtkddttf .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -942,11 +940,11 @@ Table&nbsp;25.1: Neural-network regularization settings.
   width: 100%;
 }
 
-#udscrqyvqg .gt_spanner_row {
+#msqtkddttf .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#udscrqyvqg .gt_group_heading {
+#msqtkddttf .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -972,7 +970,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   text-align: left;
 }
 
-#udscrqyvqg .gt_empty_group_heading {
+#msqtkddttf .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -987,15 +985,15 @@ Table&nbsp;25.1: Neural-network regularization settings.
   vertical-align: middle;
 }
 
-#udscrqyvqg .gt_from_md > :first-child {
+#msqtkddttf .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#udscrqyvqg .gt_from_md > :last-child {
+#msqtkddttf .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#udscrqyvqg .gt_row {
+#msqtkddttf .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1014,7 +1012,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   overflow-x: hidden;
 }
 
-#udscrqyvqg .gt_stub {
+#msqtkddttf .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1027,7 +1025,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   padding-right: 5px;
 }
 
-#udscrqyvqg .gt_stub_row_group {
+#msqtkddttf .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1041,15 +1039,15 @@ Table&nbsp;25.1: Neural-network regularization settings.
   vertical-align: top;
 }
 
-#udscrqyvqg .gt_row_group_first td {
+#msqtkddttf .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#udscrqyvqg .gt_row_group_first th {
+#msqtkddttf .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#udscrqyvqg .gt_summary_row {
+#msqtkddttf .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1059,16 +1057,16 @@ Table&nbsp;25.1: Neural-network regularization settings.
   padding-right: 5px;
 }
 
-#udscrqyvqg .gt_first_summary_row {
+#msqtkddttf .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_first_summary_row.thick {
+#msqtkddttf .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#udscrqyvqg .gt_last_summary_row {
+#msqtkddttf .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1078,7 +1076,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-bottom-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_grand_summary_row {
+#msqtkddttf .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1088,7 +1086,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   padding-right: 5px;
 }
 
-#udscrqyvqg .gt_first_grand_summary_row {
+#msqtkddttf .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1098,7 +1096,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-top-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_last_grand_summary_row_top {
+#msqtkddttf .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1108,11 +1106,11 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-bottom-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_striped {
+#msqtkddttf .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#udscrqyvqg .gt_table_body {
+#msqtkddttf .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1121,7 +1119,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-bottom-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_footnotes {
+#msqtkddttf .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1135,7 +1133,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-right-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_footnote {
+#msqtkddttf .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1144,7 +1142,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   padding-right: 5px;
 }
 
-#udscrqyvqg .gt_sourcenotes {
+#msqtkddttf .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1158,7 +1156,7 @@ Table&nbsp;25.1: Neural-network regularization settings.
   border-right-color: #D3D3D3;
 }
 
-#udscrqyvqg .gt_sourcenote {
+#msqtkddttf .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1166,72 +1164,72 @@ Table&nbsp;25.1: Neural-network regularization settings.
   padding-right: 5px;
 }
 
-#udscrqyvqg .gt_left {
+#msqtkddttf .gt_left {
   text-align: left;
 }
 
-#udscrqyvqg .gt_center {
+#msqtkddttf .gt_center {
   text-align: center;
 }
 
-#udscrqyvqg .gt_right {
+#msqtkddttf .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#udscrqyvqg .gt_font_normal {
+#msqtkddttf .gt_font_normal {
   font-weight: normal;
 }
 
-#udscrqyvqg .gt_font_bold {
+#msqtkddttf .gt_font_bold {
   font-weight: bold;
 }
 
-#udscrqyvqg .gt_font_italic {
+#msqtkddttf .gt_font_italic {
   font-style: italic;
 }
 
-#udscrqyvqg .gt_super {
+#msqtkddttf .gt_super {
   font-size: 65%;
 }
 
-#udscrqyvqg .gt_footnote_marks {
+#msqtkddttf .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#udscrqyvqg .gt_asterisk {
+#msqtkddttf .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#udscrqyvqg .gt_indent_1 {
+#msqtkddttf .gt_indent_1 {
   text-indent: 5px;
 }
 
-#udscrqyvqg .gt_indent_2 {
+#msqtkddttf .gt_indent_2 {
   text-indent: 10px;
 }
 
-#udscrqyvqg .gt_indent_3 {
+#msqtkddttf .gt_indent_3 {
   text-indent: 15px;
 }
 
-#udscrqyvqg .gt_indent_4 {
+#msqtkddttf .gt_indent_4 {
   text-indent: 20px;
 }
 
-#udscrqyvqg .gt_indent_5 {
+#msqtkddttf .gt_indent_5 {
   text-indent: 25px;
 }
 
-#udscrqyvqg .katex-display {
+#msqtkddttf .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#udscrqyvqg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#msqtkddttf div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1278,9 +1276,9 @@ Table&nbsp;25.1: Neural-network regularization settings.
 <span><span class="co">#&gt; Warning: ferx_simulate produced 1 diagnostic:</span></span>
 <span><span class="co">#&gt;   Stochastic differential equations ([diffusion] / Extended Kalman Filter) are an EXPERIMENTAL feature: validated only on a small set of toy examples, with estimator support limited to FOCE/FOCEI. Standard errors and convergence behaviour are not yet proven across diverse datasets — validate results carefully before relying on them. The filter is covariance-only: the state mean is propagated by the ODE and is never corrected by the observed data, so a [diffusion] fit scores the deterministic ODE prediction with an inflated observation variance rather than a filtered state. There is no filtered state trajectory, and sdtab IWRES from such a fit is scaled by the residual error alone, so it reads over-dispersed. See the Feature Maturity and SDE pages in the documentation.</span></span>
 <span><span class="co">#&gt;   DRAW SIM ID TIME CMT    IPRED   DV_SIM OBSERVED</span></span>
-<span><span class="co">#&gt; 1    1   1  1  0.5   1 3.419879 3.397339       NA</span></span>
-<span><span class="co">#&gt; 2    1   1  1  1.0   1 5.826092 5.769099       NA</span></span>
-<span><span class="co">#&gt; 3    1   1  1  2.0   1 8.675125 8.854007       NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 1    1   1  1  0.5   1 3.417031 3.394518       NA</span></span>
+<span><span class="co">#&gt; 2    1   1  1  1.0   1 5.822097 5.765162       NA</span></span>
+<span><span class="co">#&gt; 3    1   1  1  2.0   1 8.671250 8.849994       NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section><section id="a-neural-network-covariate-model" class="level3"><h3 class="anchored" data-anchor-id="a-neural-network-covariate-model">A neural-network covariate model</h3>
 <p><code>warfarin_dcm</code> replaces the covariate expressions of <code>two_cpt_oral_cov</code> with a network. The network reads <code>WT</code> and <code>CRCL</code> and outputs a multiplier for each PK parameter. The multipliers start at 1, so the thetas carry the typical values:</p>
@@ -1533,12 +1531,12 @@ Table&nbsp;25.2: Neural-network covariate model compared with the base and the e
 <span><span class="va">fit_updated</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">updating_model</span>, <span class="va">later_data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_updated</span><span class="op">$</span><span class="va">prior_summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"name"</span>, <span class="st">"prior_value"</span>, <span class="st">"estimate"</span>, <span class="st">"shift_in_prior_sds"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;       name prior_value    estimate shift_in_prior_sds</span></span>
-<span><span class="co">#&gt; 1     TVCL 0.127278784 0.129484611          0.4085290</span></span>
-<span><span class="co">#&gt; 2      TVV 7.314328209 7.776244658          1.2263470</span></span>
-<span><span class="co">#&gt; 3     TVKA 0.778445365 0.759109262         -0.1323822</span></span>
+<span><span class="co">#&gt; 1     TVCL 0.127278784 0.129484612          0.4085290</span></span>
+<span><span class="co">#&gt; 2      TVV 7.314328189 7.776244570          1.2263468</span></span>
+<span><span class="co">#&gt; 3     TVKA 0.778445365 0.759109256         -0.1323822</span></span>
 <span><span class="co">#&gt; 4   ETA_CL 0.009113214 0.023192435          1.6050252</span></span>
-<span><span class="co">#&gt; 5    ETA_V 0.013029792 0.007975715         -0.8417474</span></span>
-<span><span class="co">#&gt; 6   ETA_KA 0.217405580 0.318514543          0.6576070</span></span>
+<span><span class="co">#&gt; 5    ETA_V 0.013029792 0.007975718         -0.8417466</span></span>
+<span><span class="co">#&gt; 6   ETA_KA 0.217405580 0.318514511          0.6576069</span></span>
 <span><span class="co">#&gt; 7 PROP_ERR 0.009251835 0.010391049          0.9748157</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>All 7 parameters got a prior. The estimates on the new subjects alone, the updated ones, and those of a fit to all ten subjects:</p>
@@ -1553,7 +1551,7 @@ Table&nbsp;25.2: Neural-network covariate model compared with the base and the e
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span>later_only <span class="op">=</span> <span class="va">fit_later</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV"</span>, <span class="st">"TVKA"</span><span class="op">)</span>, <span class="st">"rse_pct"</span><span class="op">]</span>,</span>
 <span>      later_with_prior <span class="op">=</span> <span class="va">fit_updated</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"TVCL"</span>, <span class="st">"TVV"</span>, <span class="st">"TVKA"</span><span class="op">)</span>, <span class="st">"rse_pct"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                      [,1]     [,2]     [,3]</span></span>
-<span><span class="co">#&gt; later_only       8.329596 1.721060 29.51608</span></span>
+<span><span class="co">#&gt; later_only       8.329597 1.721060 29.51608</span></span>
 <span><span class="co">#&gt; later_with_prior 3.521592 3.347401 14.59176</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Each updated estimate sits between those of the two studies. The relative standard error is smaller than with the new data alone for <code>TVCL</code> and <code>TVKA</code>, but not for <code>TVV</code>. As with an inline prior, <code>fit_updated$ofv</code> is penalized (<code>ofv_prior</code> = 6.36), and <code>ofv_data</code> is the number to compare with unpenalized fits.</p>
@@ -1570,7 +1568,7 @@ Table&nbsp;25.2: Neural-network covariate model compared with the base and the e
 <li>
 <strong>Standard errors of network weights are not reliable,</strong> and the covariance step with many weights is slow. Skip it with <code>covariance = FALSE</code> while exploring.</li>
 <li>
-<strong>SDE fits are slow.</strong> The extended Kalman filter uses finite differences; the warfarin SDE fit above took 21 times as long as the same model without <code>[diffusion]</code>, both with finite differences.</li>
+<strong>SDE fits are slow.</strong> The extended Kalman filter uses finite differences; the warfarin SDE fit above took 18 times as long as the same model without <code>[diffusion]</code>, both with finite differences.</li>
 <li>
 <strong>Check that an SDE fit reached a minimum.</strong> With finite differences the default optimizer can stop at a saddle point, and whether the bundled fit does depends on rounding in the solver. A <code>covariance_regularized</code> warning that reports negative curvature is the sign; refit with the ODE tolerances its message names, and compare OFVs.</li>
 </ul>

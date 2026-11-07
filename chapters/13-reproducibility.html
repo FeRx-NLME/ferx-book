@@ -594,7 +594,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li>
 <a href="#reading-the-result-loading-a-fit" id="toc-reading-the-result-loading-a-fit" class="nav-link" data-scroll-target="#reading-the-result-loading-a-fit">Reading the result: loading a fit</a>
   <ul class="collapse">
-<li><a href="#what-a-.fitrx-file-does-not-keep" id="toc-what-a-.fitrx-file-does-not-keep" class="nav-link" data-scroll-target="#what-a-.fitrx-file-does-not-keep">What a <code>.fitrx</code> file does not keep</a></li>
+<li><a href="#what-a-loaded-fit-lacks" id="toc-what-a-loaded-fit-lacks" class="nav-link" data-scroll-target="#what-a-loaded-fit-lacks">What a loaded fit lacks</a></li>
   </ul>
 </li>
   <li><a href="#recording-provenance" id="toc-recording-provenance" class="nav-link" data-scroll-target="#recording-provenance">Recording provenance</a></li>
@@ -671,15 +671,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A <code>.fitrx</code> file is a zip archive of JSON and CSV files, readable from any language with zip, JSON and CSV support:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html">unzip</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"run1_with_data.fitrx"</span><span class="op">)</span>, list <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Name"</span>, <span class="st">"Length"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;              Name Length</span></span>
-<span><span class="co">#&gt; 1   manifest.json    298</span></span>
-<span><span class="co">#&gt; 2        fit.json  22499</span></span>
-<span><span class="co">#&gt; 3        ebes.csv   3839</span></span>
-<span><span class="co">#&gt; 4 predictions.csv  35053</span></span>
-<span><span class="co">#&gt; 5      covtab.csv   5646</span></span>
-<span><span class="co">#&gt; 6      model.ferx   1107</span></span>
-<span><span class="co">#&gt; 7    warnings.txt    124</span></span>
-<span><span class="co">#&gt; 8        data.csv  10680</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                    Name Length</span></span>
+<span><span class="co">#&gt; 1              fit.json  25512</span></span>
+<span><span class="co">#&gt; 2              ebes.csv   3842</span></span>
+<span><span class="co">#&gt; 3       predictions.csv  35094</span></span>
+<span><span class="co">#&gt; 4            covtab.csv   6400</span></span>
+<span><span class="co">#&gt; 5            model.ferx   1107</span></span>
+<span><span class="co">#&gt; 6          warnings.txt    124</span></span>
+<span><span class="co">#&gt; 7              data.csv  10680</span></span>
+<span><span class="co">#&gt; 8 interface_extras.json    435</span></span>
+<span><span class="co">#&gt; 9         manifest.json    318</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>It contains the model source (<code>model.ferx</code>), the estimates and run information (<code>fit.json</code>), per-subject random effects, per-observation predictions, the covariate table, the warnings, and with <code>include_data = TRUE</code> the dataset. The ferx-core <a href="https://ferx-nlme.org/ferx-core/file-formats/fitrx.html">.fitrx format</a> page documents the schema.</p>
 </section><section id="reading-the-result-loading-a-fit" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result-loading-a-fit">Reading the result: loading a fit</h2>
@@ -707,32 +708,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html">file.exists</a></span><span class="op">(</span><span class="va">loaded_data</span><span class="op">$</span><span class="va">data_path</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="what-a-.fitrx-file-does-not-keep" class="level3"><h3 class="anchored" data-anchor-id="what-a-.fitrx-file-does-not-keep">What a <code>.fitrx</code> file does not keep</h3>
-<p>The file stores the fields of the cross-language schema, not every element of the R fit object:</p>
+<section id="what-a-loaded-fit-lacks" class="level3"><h3 class="anchored" data-anchor-id="what-a-loaded-fit-lacks">What a loaded fit lacks</h3>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_load_fit.html">ferx_load_fit()</a></code> builds the loaded fit with the same converter as <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code>, so it has every field of the fresh one:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://generics.r-lib.org/reference/setops.html">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">loaded</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] "warnings_severity"      "warnings_category"      "warnings_message"      </span></span>
-<span><span class="co">#&gt;  [4] "warnings_source_method" "sir_resamples"          "sir_resamples_n"       </span></span>
-<span><span class="co">#&gt;  [7] "sir_resamples_dim"      "importance_sampling"    "impmap_trace"          </span></span>
-<span><span class="co">#&gt; [10] "bayes"                  "cond_dist"              "individual_estimates"  </span></span>
-<span><span class="co">#&gt; [13] "saem_n_subjects_hmc"    "neural_networks"        "obs_time_range"        </span></span>
-<span><span class="co">#&gt; [16] "optimizer_label"        "n_starts"               "multi_start_seed"      </span></span>
-<span><span class="co">#&gt; [19] "saem_seed"              "sir_seed_used"          "imp_seed"              </span></span>
-<span><span class="co">#&gt; [22] "outer_maxiter"          "outer_gtol"             "inits_from_nca"        </span></span>
-<span><span class="co">#&gt; [25] "exclusions"             "eta_normality"          "warnings_structured"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; character(0)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The structured warning table <code>warnings_structured</code> is one of them, but the warnings survive as text, and <code><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings()</a></code> classifies a loaded fit’s messages again with the engine’s own rules. The loaded fit therefore reports the same severities and categories as the fresh one:</p>
+<p>The exception is <code>individual_estimates</code>, which needs the data: it is <code>NULL</code> for a bundle saved without the data, and restored from one saved with <code>include_data = TRUE</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">loaded</span><span class="op">$</span><span class="va">individual_estimates</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">individual_estimates</span>, <span class="va">loaded_data</span><span class="op">$</span><span class="va">individual_estimates</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The structured warning table <code>warnings_structured</code> is kept as well, so <code><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings()</a></code> reports the same severities and categories for the loaded fit as for the fresh one:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span></span>
 <span><span class="co">#&gt; [1] "dw_autocorrelation"</span></span>
 <span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">loaded</span>, as_df <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">category</span></span>
 <span><span class="co">#&gt; [1] "dw_autocorrelation"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Keep what you need from the missing fields (for example <code>individual_estimates</code>) in your own tables. Or save the R object as well, with <code><a href="https://rdrr.io/r/base/readRDS.html">saveRDS()</a></code>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Changed after ferx-r 0.4.0
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In ferx-r 0.4.0, <code><a href="https://ferx-nlme.org/reference/ferx_load_fit.html">ferx_load_fit()</a></code> reads the file with its own R reader, and the loaded fit lacks several fields of the fresh one, among them <code>individual_estimates</code> and <code>warnings_structured</code>; <code><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings()</a></code> classifies the loaded fit’s warning text again instead. Keep what you need from those fields in your own tables, or save the R object as well, with <code><a href="https://rdrr.io/r/base/readRDS.html">saveRDS()</a></code>.</p>
+</div>
+</div>
 </section></section><section id="recording-provenance" class="level2"><h2 class="anchored" data-anchor-id="recording-provenance">Recording provenance</h2>
 <p>A fit records where it came from:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span></span>
 <span>  item <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"model file"</span>, <span class="st">"data file"</span>, <span class="st">"model SHA-256"</span>, <span class="st">"data SHA-256"</span>, <span class="st">"engine version"</span>, <span class="st">"ferx-r version"</span><span class="op">)</span>,</span>
 <span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/basename.html">basename</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">model_path</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html">basename</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">data_path</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">model_hash</span>, <span class="fl">1</span>, <span class="fl">16</span><span class="op">)</span>,</span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">data_hash</span>, <span class="fl">1</span>, <span class="fl">16</span><span class="op">)</span>, <span class="va">fit</span><span class="op">$</span><span class="va">ferx_version</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span><span class="op">(</span><span class="st">"ferx"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -746,9 +758,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; 6 ferx-r version            0.4.0.9000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>fit$model_text</code> holds the model source. The hashes are what <code><a href="https://ferx-nlme.org/reference/ferx_sir.html">ferx_sir()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> check before reusing a fit: if the model or data file has changed, they stop.</p>
-<p>Package versions alone do not identify a development build. This book records the ferx-r commit it was built with (<code>e9df429</code>, see <a href="01-installation.html" class="quarto-xref"><span>Installing ferx</span></a>). Do the same in your reports, together with the R session information:</p>
+<p>Package versions alone do not identify a development build. This book records the ferx-r commit it was built with (<code>df7ffa7</code>, see <a href="01-installation.html" class="quarto-xref"><span>Installing ferx</span></a>). Do the same in your reports, together with the R session information:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">running</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">running</span></span>
 <span><span class="co">#&gt; [1] "Ubuntu 26.04.1 LTS"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>R <span class="op">=</span> <span class="va">R.version.string</span>, ferx <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span><span class="op">(</span><span class="st">"ferx"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                              R                           ferx </span></span>
@@ -756,7 +768,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>A run log (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>) is a readable record to keep next to the <code>.fitrx</code> file:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_runlog.html">ferx_runlog</a></span><span class="op">(</span><span class="va">fit</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"run1_runlog.txt"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_runlog.html">ferx_runlog</a></span><span class="op">(</span><span class="va">fit</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">run_dir</span>, <span class="st">"run1_runlog.txt"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span><span class="op">(</span><span class="va">run_dir</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "run1_runlog.txt"      "run1_with_data.fitrx" "run1.fitrx"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
