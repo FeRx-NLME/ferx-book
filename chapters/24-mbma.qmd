@@ -359,7 +359,7 @@ The study random effect and the fixed study levels are two ways to carry between
 
 ### Profiling a large level block
 
-A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. So can one read inside a single logit link that is the whole prediction, such as an observed proportion `y = inv_logit(TVL + PLACEBO + ...)` ([through a logit link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-logit-link) in ferx-core). So can one read by the `logit` predictor of a `[binary_model]`, whose link is implicit (see [A responder endpoint](#sec-mbma-responder) below). FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:
+A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. So can one read inside a single logit link that is the whole prediction, such as an observed proportion `y = inv_logit(TVL + PLACEBO + ...)` ([through a logit link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-link) in ferx-core). So can one read by the `logit` predictor of a `[binary_model]`, whose link is implicit (see [A responder endpoint](#sec-mbma-responder) below). FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:
 
 ```{r}
 #| label: profile
@@ -602,17 +602,11 @@ stopifnot(isTRUE(fit_resp$converged), isTRUE(fit_resp_profiled$converged),
           all(abs(diag(as.matrix(fit_resp_profiled$omega)) - diag(as.matrix(fit_resp$omega))) < 0.01 * fit_resp$se_omega),
           # The prose prints the rounded time ratio, so it must read 2 or more.
           fit_resp_profiled$wall_time_secs >= 1.5 * fit_resp$wall_time_secs)
-# "ferx has no probit link yet": link = probit in [binary_model] is refused when the model is read.
-probit_model <- file.path(mbma_dir, "mbma_responder_probit.ferx")
-writeLines(sub("  logit = ", "  link  = probit\n  logit = ", resp_profiled_lines, fixed = TRUE), probit_model)
-probit_error <- tryCatch({ferx_fit(probit_model, resp_data, verbose = FALSE); NULL}, error = function(e) e)
-stopifnot(inherits(probit_error, "error"), grepl("probit", conditionMessage(probit_error)),
-          grepl("not yet supported", conditionMessage(probit_error), fixed = TRUE))
 ```
 
 Both fits converge, and the profiled one reaches the same objective to the printed digits: the two are `r sprintf("%.0e", resp_gap)` OFV units apart, and every estimate, levels included, moves by less than 1% of its standard error. `fit$profiled_blocks` names the block, the `profiled` column of `theta_levels` marks all `r nrow(fit_resp_profiled$theta_levels)` levels, and `n_parameters` is the same, so the profiled fit's BIC and likelihood-ratio tests are those of the estimated one. As in the continuous model, profiling does not pay off on a block this small: on `r format(nrow(resp_data), big.mark = ",")` rows it took `r round(fit_resp_profiled$wall_time_secs / fit_resp$wall_time_secs)` times as long on this machine.
 
-The predictor must read the block as a coefficient times the block plus terms that do not read it, the same rule as inside `inv_logit()` (see [through a logit link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-logit-link) in ferx-core). `[binary_model]` takes a logit link only: ferx has no probit link yet, and `link = probit` is refused when the model is read.
+The predictor must read the block as a coefficient times the block plus terms that do not read it, the same rule as inside `inv_logit()` (see [through a logit link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-link) in ferx-core).
 
 ## Correlated residuals within an arm
 

@@ -97,23 +97,36 @@ loaded_data <- ferx_load_fit(file.path(run_dir, "run1_with_data.fitrx"))
 file.exists(loaded_data$data_path)
 ```
 
-### What a `.fitrx` file does not keep
+### What a loaded fit lacks
 
-The file stores the fields of the cross-language schema, not every element of the R fit object:
+`ferx_load_fit()` builds the loaded fit with the same converter as `ferx_fit()`, so it has every field of the fresh one:
 
 ```{r}
 #| label: not-kept
 setdiff(names(fit), names(loaded))
 ```
 
+The exception is `individual_estimates`, which needs the data: it is `NULL` for a bundle saved without the data, and restored from one saved with `include_data = TRUE`:
+
 ```{r}
-#| label: check-missing-fields
-#| include: false
-# The prose names individual_estimates as one of the fields a .fitrx file drops.
-stopifnot("individual_estimates" %in% setdiff(names(fit), names(loaded)))
+#| label: individual-estimates-loaded
+is.null(loaded$individual_estimates)
+all.equal(fit$individual_estimates, loaded_data$individual_estimates)
 ```
 
-The structured warning table `warnings_structured` is one of them, but the warnings survive as text, and `ferx_get_warnings()` classifies a loaded fit's messages again with the engine's own rules. The loaded fit therefore reports the same severities and categories as the fresh one:
+```{r}
+#| label: check-individual-estimates-loaded
+#| include: false
+# The prose: no field is missing by name; individual_estimates is NULL without the data and
+# restored with it.
+stopifnot(length(setdiff(names(fit), names(loaded))) == 0,
+          !is.null(fit$individual_estimates), is.null(loaded$individual_estimates),
+          isTRUE(all.equal(fit$individual_estimates, loaded_data$individual_estimates)),
+          # "warnings_structured is kept as well": the table itself, not a reclassification of its text.
+          identical(fit$warnings_structured, loaded$warnings_structured))
+```
+
+The structured warning table `warnings_structured` is kept as well, so `ferx_get_warnings()` reports the same severities and categories for the loaded fit as for the fresh one:
 
 ```{r}
 #| label: warnings-loaded
@@ -129,7 +142,10 @@ stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)[, c("severity", "catego
                     ferx_get_warnings(loaded, as_df = TRUE)[, c("severity", "category")]))
 ```
 
-Keep what you need from the missing fields (for example `individual_estimates`) in your own tables. Or save the R object as well, with `saveRDS()`.
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}}, `ferx_load_fit()` reads the file with its own R reader, and the loaded fit lacks several fields of the fresh one, among them `individual_estimates` and `warnings_structured`; `ferx_get_warnings()` classifies the loaded fit's warning text again instead. Keep what you need from those fields in your own tables, or save the R object as well, with `saveRDS()`.
+:::
 
 ## Recording provenance
 

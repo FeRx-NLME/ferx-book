@@ -792,11 +792,13 @@ Per-chapter loop:
     reroute is correct anyway.
   - `one_cpt_ig` with TVMAT 15 FIX took 158 s on that path.
 - ferx-r (found in 3.10–3.13), to check:
-  - `ferx_load_fit()` returns a fit without ~30 R-side fields
+  - ~~`ferx_load_fit()` returns a fit without ~30 R-side fields
     (`individual_estimates`, `condition_number`, `eigenvalues`, `exclusions`,
-    `warnings_structured`, …).
-  - Warning categories come back as `general` after a `.fitrx` round-trip
-    (e.g. `dw_autocorrelation` → `general`).
+    `warnings_structured`, …).~~ Fixed at `df7ffa7` (ferx-r#716/#717): a loaded fit has
+    every field; `individual_estimates` needs `include_data = TRUE` (ch13).
+  - ~~Warning categories come back as `general` after a `.fitrx` round-trip
+    (e.g. `dw_autocorrelation` → `general`).~~ Fixed at `df7ffa7`: `warnings_structured`
+    is kept (ch13).
   - ferx-r's `ferx_simulate()` ignores the `[simulation]` block. Without `data` it
     errors "No data supplied" (the block is CLI simulation-estimation only). The
     book says so.

@@ -410,7 +410,7 @@ head(select(fit_ltbs$sdtab, ID, TIME, DV, PRED, IPRED, IWRES), 3)
 head(mutate(select(fit_ltbs$sdtab, ID, TIME, DV, IPRED), IPRED_natural = exp(IPRED)), 3)
 ```
 
-Under LTBS only additive error is allowed:
+Under LTBS a proportional error alone is refused, and the message lists the forms that are allowed:
 
 ```{r}
 #| label: ltbs-proportional
@@ -418,6 +418,18 @@ ltbs_proportional <- file.path(variability_dir, "warfarin_ltbs_proportional.ferx
 writeLines(sub("log(DV) ~ additive(SIGMA_LOG)", "log(DV) ~ proportional(SIGMA_LOG)",
                readLines(ltbs$model), fixed = TRUE), ltbs_proportional)
 try(ferx_fit(ltbs_proportional, ltbs$data, verbose = FALSE))
+```
+
+```{r}
+#| label: check-ltbs-proportional
+#| include: false
+# The prose: a proportional error alone under LTBS is refused, and the message lists the allowed
+# forms (additive and combined).
+ltbs_proportional_error <- tryCatch({ferx_fit(ltbs_proportional, ltbs$data, verbose = FALSE); NULL},
+                                    error = function(e) conditionMessage(e))
+stopifnot(is.character(ltbs_proportional_error),
+          grepl("additive(...)", ltbs_proportional_error, fixed = TRUE),
+          grepl("combined(PROP, ADD)", ltbs_proportional_error, fixed = TRUE))
 ```
 
 Use `DV ~ log_additive(...)` instead when the `DV` column already holds logarithms.
