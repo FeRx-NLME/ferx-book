@@ -15,7 +15,7 @@ This chapter fits the bundled `mbma_placebo` example. It covers the arm-level da
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, a profiled level block (`profile`, `fit$profiled_blocks`, bounds on it and `fit$profiled_levels_at_bound`), a level block read by a `[binary_model]` predictor (and profiled there), nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`, the `nested_levels` example) and a within-arm residual `correlation` line are newer than {{< var ferx_r_release >}} as well.
+This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, a profiled level block (`profile`, `fit$profiled_blocks`, bounds on it and `fit$profiled_levels_at_bound`), a level block read by a `[binary_model]` predictor (and profiled there), the probit link of `[binary_model]`, nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`, the `nested_levels` example) and a within-arm residual `correlation` line are newer than {{< var ferx_r_release >}} as well.
 :::
 
 ::: {.callout-note}
@@ -359,7 +359,7 @@ The study random effect and the fixed study levels are two ways to carry between
 
 ### Profiling a large level block
 
-A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. So can one read inside a single logit link that is the whole prediction, such as an observed proportion `y = inv_logit(TVL + PLACEBO + ...)` ([through a logit link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-link) in ferx-core). So can one read by the `logit` predictor of a `[binary_model]`, whose link is implicit (see [A responder endpoint](#sec-mbma-responder) below). FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:
+A level block that the prediction reads linearly, as `BASE` reads `PLACEBO` here, can be declared `profile`. So can one read inside a single logit or probit link that is the whole prediction, such as an observed proportion `y = inv_logit(TVL + PLACEBO + ...)` or `y = pnorm(...)` ([through a link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-link) in ferx-core). So can one read by the `logit` or `probit` predictor of a `[binary_model]`, whose link is implicit (see [A responder endpoint](#sec-mbma-responder) below). FOCE and FOCEI then solve its levels exactly at every outer step, so the optimizer searches only the other parameters. It is meant for placebo models with hundreds of cells, too many for the optimizer to search. The declaration keeps its bounds and only adds the word:
 
 ```{r}
 #| label: profile
@@ -579,34 +579,99 @@ rbind(estimated = fit_resp$theta[c("TVL", "EMAX")], profiled = fit_resp_profiled
 ```{r}
 #| label: check-responder-profile
 #| include: false
-# The prose: both fits converge with a computed covariance step; the same objective to the printed
-# digits (measured at the pin on macOS: 7e-10, stated inline; the check allows up to 1e-6, and the prose
-# relies on a nonzero gap for its "e" format) and the same parameter count;
-# every estimate, levels included, within 1% of its standard error; every level flagged profiled and
-# none on a bound; the profiled fit slower on this small block.
-resp_gap <- abs(fit_resp_profiled$ofv - fit_resp$ofv)
-stopifnot(isTRUE(fit_resp$converged), isTRUE(fit_resp_profiled$converged),
-          fit_resp$covariance_status == "computed", fit_resp_profiled$covariance_status == "computed",
-          identical(fit_resp_profiled$profiled_blocks, "PLACEBO"),
-          all(fit_resp_profiled$theta_levels$profiled), !any(fit_resp$theta_levels$profiled),
-          length(fit_resp_profiled$profiled_levels_at_bound) == 0,
-          fit_resp_profiled$n_parameters == fit_resp$n_parameters,
-          signif(fit_resp_profiled$ofv, 7) == signif(fit_resp$ofv, 7), resp_gap > 0, resp_gap < 1e-6,
-          identical(names(fit_resp_profiled$theta), names(fit_resp$theta)),
-          all(abs(fit_resp_profiled$theta - fit_resp$theta) < 0.01 * fit_resp$se_theta),
-          # "levels included": fit$theta holds only the free levels; theta_levels has the derived ones too.
-          identical(fit_resp_profiled$theta_levels$label, fit_resp$theta_levels$label),
-          all(abs(fit_resp_profiled$theta_levels$value - fit_resp$theta_levels$value) < 0.01 * fit_resp$theta_levels$se),
-          # "every estimate" includes the ETA_S variance.
-          length(fit_resp$se_omega) == 1,
-          all(abs(diag(as.matrix(fit_resp_profiled$omega)) - diag(as.matrix(fit_resp$omega))) < 0.01 * fit_resp$se_omega),
-          # The prose prints the rounded time ratio, so it must read 2 or more.
+# profiled_pair_gap() backs the prose shared by the logit pair here and the probit pair below: both
+# fits converge with a computed covariance step; the same objective to the printed digits (measured at
+# the pin on macOS: 7e-10 for logit, 4.5e-10 for probit, stated inline; the check allows up to 1e-6,
+# and the prose relies on a nonzero gap for its "e" format) and the same parameter count; every
+# estimate, levels and the ETA_S variance included, within 1% of its standard error; every level
+# flagged profiled and none on a bound. It returns the OFV gap.
+# Every slot is checked for presence first: NULL == "computed", all(NULL) and !any(NULL) all pass.
+profiled_pair_gap <- function(est, prof) {
+  est_flags <- est$theta_levels$profiled
+  prof_flags <- prof$theta_levels$profiled
+  stopifnot(isTRUE(est$converged), isTRUE(prof$converged),
+            identical(est$covariance_status, "computed"), identical(prof$covariance_status, "computed"),
+            identical(prof$profiled_blocks, "PLACEBO"),
+            is.logical(prof_flags), length(prof_flags) > 0, length(prof_flags) == nrow(prof$theta_levels),
+            all(prof_flags),
+            is.logical(est_flags), length(est_flags) == nrow(est$theta_levels), !any(est_flags),
+            is.character(prof$profiled_levels_at_bound), length(prof$profiled_levels_at_bound) == 0,
+            length(est$n_parameters) == 1, length(prof$n_parameters) == 1,
+            prof$n_parameters == est$n_parameters,
+            length(est$ofv) == 1, length(prof$ofv) == 1)
+  gap <- abs(prof$ofv - est$ofv)
+  stopifnot(signif(prof$ofv, 7) == signif(est$ofv, 7), gap > 0, gap < 1e-6,
+            length(est$theta) > 0, length(est$se_theta) == length(est$theta),
+            identical(names(prof$theta), names(est$theta)),
+            all(abs(prof$theta - est$theta) < 0.01 * est$se_theta),
+            # "levels included": fit$theta holds only the free levels; theta_levels has the derived ones too.
+            identical(prof$theta_levels$label, est$theta_levels$label),
+            length(est$theta_levels$se) == nrow(est$theta_levels),
+            all(abs(prof$theta_levels$value - est$theta_levels$value) < 0.01 * est$theta_levels$se),
+            # "every estimate" includes the ETA_S variance.
+            length(est$se_omega) == 1,
+            all(abs(diag(as.matrix(prof$omega)) - diag(as.matrix(est$omega))) < 0.01 * est$se_omega))
+  gap
+}
+resp_gap <- profiled_pair_gap(fit_resp, fit_resp_profiled)
+# The prose prints the rounded time ratio, so it must read 2 or more; the profiled fit is slower on
+# this small block.
+stopifnot(length(fit_resp$wall_time_secs) == 1, length(fit_resp_profiled$wall_time_secs) == 1,
           fit_resp_profiled$wall_time_secs >= 1.5 * fit_resp$wall_time_secs)
 ```
 
 Both fits converge, and the profiled one reaches the same objective to the printed digits: the two are `r sprintf("%.0e", resp_gap)` OFV units apart, and every estimate, levels included, moves by less than 1% of its standard error. `fit$profiled_blocks` names the block, the `profiled` column of `theta_levels` marks all `r nrow(fit_resp_profiled$theta_levels)` levels, and `n_parameters` is the same, so the profiled fit's BIC and likelihood-ratio tests are those of the estimated one. As in the continuous model, profiling does not pay off on a block this small: on `r format(nrow(resp_data), big.mark = ",")` rows it took `r round(fit_resp_profiled$wall_time_secs / fit_resp$wall_time_secs)` times as long on this machine.
 
-The predictor must read the block as a coefficient times the block plus terms that do not read it, the same rule as inside `inv_logit()` (see [through a logit link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-link) in ferx-core).
+`[binary_model]` takes a logit or a probit link. Written as `probit =` instead of `logit =`, the predictor gives the probability through the standard-normal CDF, P(DV = 1) = Φ(predictor); `link = probit` may be added, but the key implies it (see [the probit link](https://ferx-nlme.org/ferx-core/model-file/categorical.html#the-probit-link) in ferx-core). A profiled block is read the same way under either link. The same responder data under a probit link, with the block estimated and profiled:
+
+```{r}
+#| label: responder-probit
+probit_lines <- sub("  logit = ", "  probit = ", resp_lines, fixed = TRUE)
+probit_profiled_lines <- sub("  logit = ", "  probit = ", resp_profiled_lines, fixed = TRUE)
+stopifnot(sum(startsWith(probit_lines, "  probit = ")) == 1,
+          sum(startsWith(probit_profiled_lines, "  probit = ")) == 1)
+probit_model <- file.path(mbma_dir, "mbma_responder_probit.ferx")
+probit_profiled_model <- file.path(mbma_dir, "mbma_responder_probit_profiled.ferx")
+writeLines(probit_lines, probit_model)
+writeLines(probit_profiled_lines, probit_profiled_model)
+fit_probit <- ferx_fit(probit_model, resp_data, verbose = FALSE)
+fit_probit_profiled <- ferx_fit(probit_profiled_model, resp_data, verbose = FALSE)
+fit_probit_profiled$profiled_blocks
+data.frame(link = c("logit", "probit", "probit"), levels = c("estimated", "estimated", "profiled"),
+           converged = c(fit_resp$converged, fit_probit$converged, fit_probit_profiled$converged),
+           ofv = c(fit_resp$ofv, fit_probit$ofv, fit_probit_profiled$ofv),
+           n_parameters = c(fit_resp$n_parameters, fit_probit$n_parameters, fit_probit_profiled$n_parameters))
+rbind(logit = fit_resp$theta[c("TVL", "EMAX")], probit = fit_probit$theta[c("TVL", "EMAX")],
+      probit_profiled = fit_probit_profiled$theta[c("TVL", "EMAX")])
+typical_arm <- rbind(
+  logit = plogis(fit_resp$theta[["TVL"]] + c(placebo = 0, active = fit_resp$theta[["EMAX"]])),
+  probit = pnorm(fit_probit$theta[["TVL"]] + c(placebo = 0, active = fit_probit$theta[["EMAX"]])))
+round(typical_arm, 4)
+```
+
+```{r}
+#| label: check-responder-probit
+#| include: false
+# The prose: the probit pair passes profiled_pair_gap() (defined in check-responder-profile), with
+# the same parameter count as the logit fit; the logit coefficients are 1.5 to 1.75 times the probit
+# ones; the typical-arm probabilities agree; the OFVs of the two links are close.
+probit_gap <- profiled_pair_gap(fit_probit, fit_probit_profiled)
+stopifnot(length(fit_resp$n_parameters) == 1, fit_probit$n_parameters == fit_resp$n_parameters)
+# "close to the factor of about 1.6 to 1.8": measured 1.62 (TVL) and 1.61 (EMAX); a band that a
+# ratio of 1.85 (pi / sqrt(3)) or 1.0 (a probit key read as logit) fails.
+probit_ratio <- fit_resp$theta[c("TVL", "EMAX")] / fit_probit$theta[c("TVL", "EMAX")]
+stopifnot(all(probit_ratio > 1.5), all(probit_ratio < 1.75))
+# "the probabilities agree to within 0.01" at the typical arm (measured: 0.0014 and 0.0006).
+stopifnot(all(dim(typical_arm) == c(2, 2)), max(abs(typical_arm["logit", ] - typical_arm["probit", ])) < 0.01)
+# "the two links cannot be told apart here": the OFVs differ by much less than one unit (measured 0.19)
+# at the same parameter count.
+probit_ofv_gap <- fit_resp$ofv - fit_probit$ofv
+stopifnot(abs(probit_ofv_gap) < 1)
+```
+
+Both probit fits converge, and the profiled one is `r sprintf("%.0e", probit_gap)` OFV units from the estimated one, with every estimate, levels included, within 1% of its standard error and all `r nrow(fit_probit_profiled$theta_levels)` levels flagged `profiled`. The two links put the coefficients on different scales: here the logit `TVL` is `r round(probit_ratio[["TVL"]], 2)` times the probit one and the logit `EMAX` `r round(probit_ratio[["EMAX"]], 2)` times, close to the factor of about 1.6 to 1.8 often used to convert between the two. Compare probabilities, not coefficients, across links: at a typical arm (no study effect, placebo at its study mean) the two fits give probabilities within 0.01 of each other, on placebo and on the active arm. The probit OFV is `r round(abs(probit_ofv_gap), 2)` units `r if (probit_ofv_gap > 0) "lower" else "higher"` with the same number of parameters, so on these data, simulated under a logit link, the two links cannot be told apart.
+
+The predictor must read the block as a coefficient times the block plus terms that do not read it, the same rule as inside `inv_logit()` (see [through a link](https://ferx-nlme.org/ferx-core/model-file/parameters.html#through-a-link) in ferx-core).
 
 ## Correlated residuals within an arm
 
@@ -1038,7 +1103,7 @@ A profiled fit can also carry a `gradient_fallback` note (@sec-estimation-method
 # gradient_fallback (W_PROFILE_FD_GRADIENT) is not listed, so this also backs "None of the profiled
 # fits ... needs it" for every profiled fit, fit_unbounded included.
 chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_unbounded, fit_car1,
-                     fit_car1_profiled, fit_resp, fit_resp_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
+                     fit_car1_profiled, fit_resp, fit_resp_profiled, fit_probit, fit_probit_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
 chapter_categories <- unique(unlist(lapply(chapter_fits, function(f) ferx_get_warnings(f, as_df = TRUE)$category)))
 listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
 other_categories <- ferx_get_warnings(fit_other, as_df = TRUE)$category
@@ -1052,7 +1117,7 @@ stopifnot(all(chapter_categories %in% listed), all(setdiff(listed, "threads") %i
 - `DV ~ additive(ADD_ERR) weight = SE` with `ADD_ERR` fixed at 1 is inverse-variance weighting on the natural scale.
 - `kappa ... weight = NARM` is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, `sqrt(gamma2 / fit$kappa_weight_typical)`.
 - With `contrast = sum_to_zero_within`, `TVE0` is each study's mean placebo level over its visits, not its week-0 level.
-- A level block read linearly, inside one logit link that is the whole prediction, or by a `[binary_model]` logit predictor, as for a responder endpoint, can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in `fit$profiled_levels_at_bound`.
+- A level block read linearly, inside one logit or probit link that is the whole prediction, or by a `[binary_model]` logit or probit predictor, as for a responder endpoint, can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in `fit$profiled_levels_at_bound`.
 - `correlation car1(RHO) by OCC` correlates an arm's visits beside the arm kappa (`cs` there is refused). With few studies, calibrate its likelihood-ratio test by simulation.
 - `fit$theta_levels` holds every placebo level's value and standard error, derived ones included, and its SIR interval after `ferx_sir(sir_keep_samples = TRUE)`. Large blocks print as one THETA BLOCKS line.
 - `level NAME by COLUMN in PARENT` declares nested groupings below the subject, such as sponsor, study and arm, and `kappa ... at LEVEL` draws a kappa once per group of a level.
