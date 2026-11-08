@@ -426,14 +426,16 @@ mat <- system2("git", c("-C", core_dir, "show", paste0(pin$ferx_core_sha, ":docs
 rows <- grep("^\\| .* \\| \\*\\*(stable|beta|experimental|alpha)\\*\\* \\|", mat, value = TRUE)
 mat_rows <- do.call(rbind, lapply(rows, function(r) {
   cells <- split_row(r)
-  page <- sub(".*\\]\\(([^)]+)\\.qmd[^)]*\\).*", "\\1", cells[3])
-  label <- sub(".*\\[([^]]+)\\].*", "\\1", cells[3])
+  # Every link in the cell, anchor kept (a row may name two pages, e.g. residual and kappa `weight =`).
+  link_re <- "\\[([^]]+)\\]\\(([^)#]+)\\.qmd(#[^)]*)?\\)"
+  links <- regmatches(cells[3], gregexpr(link_re, cells[3]))[[1]]
+  links <- sub(link_re, "[\\1](https://ferx-nlme.org/ferx-core/\\2.html\\3)", links)
   data.frame(Feature = cells[1], Maturity = gsub("\\*", "", cells[2]),
-             `ferx-core page` = if (grepl("\\.qmd", cells[3])) sprintf("[%s](https://ferx-nlme.org/ferx-core/%s.html)", label, page) else "",
+             `ferx-core page` = paste(links, collapse = ", "),
              check.names = FALSE)
 }))
 mat_rows <- mat_rows[!grepl(banned, mat_rows$Feature, ignore.case = TRUE), ]
-out <- c(out, "## Feature maturity", "",
+out <- c(out, "## Feature maturity {#sec-reference-maturity}", "",
   "The maturity label of each ferx-core feature at the pinned engine (ferx-core {{< var ferx_core_sha_short >}}). **stable** features are well tested across datasets and estimation options; **beta** features are stable in limited testing; **experimental** features have been tested on a few examples and may change. See the ferx-core [feature maturity](https://ferx-nlme.org/ferx-core/maturity.html) page.", "",
   md_table(mat_rows))
 

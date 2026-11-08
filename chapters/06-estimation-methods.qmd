@@ -204,7 +204,7 @@ It stays `NULL` for the built-in BFGS and for SAEM, which report no gradient at 
 | Argument | Default | Meaning |
 |---|---|---|
 | `method` | `NULL` | Estimation method or chain (above) |
-| `threads` | `NULL` | Worker threads for the per-subject loops; `NULL` uses available cores minus one, at most 8 |
+| `threads` | `NULL` | Worker threads for the per-subject loops; `NULL` uses the model file's `threads`, else available cores minus one, at least 1 and at most 8 ([`threads`](https://ferx-nlme.org/ferx-core/model-file/fit-options.html#run-control)); the `RAYON_NUM_THREADS` environment variable has no effect |
 | `gradient` | `NULL` | Inner-loop gradient: `"auto"` (analytic where available) or `"fd"` (finite differences); `NULL` uses the model file |
 | `optimizer_trace` | `FALSE` | Record the optimizer trace |
 | `settings` | `NULL` | Named list of engine settings (tables below); a key that duplicates a dedicated argument is an error |
@@ -222,6 +222,19 @@ data.frame(
   threads = c(fit$n_threads_used, fit_auto$n_threads_used, fit_1thread$n_threads_used),
   ofv = c(fit$ofv, fit_auto$ofv, fit_1thread$ofv)
 )
+```
+
+```{r}
+#| label: check-gradient-threads
+#| include: false
+# The threads row says RAYON_NUM_THREADS has no effect on the engine default.
+threads_default <- function() suppressWarnings(ferx_fit(base$model, base$data, threads = 0,
+  settings = list(maxiter = 0), verbose = FALSE))$n_threads_used
+threads_unset <- threads_default()
+Sys.setenv(RAYON_NUM_THREADS = "1")
+threads_env <- threads_default()
+Sys.unsetenv("RAYON_NUM_THREADS")
+stopifnot(threads_unset == 1 || threads_env == threads_unset)
 ```
 
 Switching the gradient moved a second factor as well. With `optimizer` left at `auto`, ferx chooses the outer optimizer to suit the gradient, so the two fits did not use the same one, and the model-file fit says so in a `general` warning:
