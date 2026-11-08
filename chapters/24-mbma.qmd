@@ -677,7 +677,7 @@ The predictor must read the block as a coefficient times the block plus terms th
 
 A publication may report only the proportion of responders per arm and visit, with its standard error, and not the counts. That is a bounded continuous endpoint: one row per arm and visit, as in the score data, with a prediction that must stay between 0 and 1. The probit link is then written into the model: `pnorm()` is the standard-normal CDF Φ, the same function as R's `pnorm()`, and `y = pnorm(LP)` keeps the prediction in (0, 1) whatever the linear predictor `LP`. It is the probit counterpart of `y = inv_logit(LP)`, and a level block inside it can be profiled.
 
-The proportions here are simulated on the bundled design under a probit link: a study effect and a placebo time course on the probit scale, with an active arm adding 0.5 after week 0. Each arm's observed proportion is a binomial count divided by `NARM`, and its standard error is the one a publication would print, √(p(1 − p) / `NARM`) at the observed p:
+The proportions here are simulated on the bundled design under a probit link: a study effect and a placebo time course on the probit scale, with an active arm adding a constant, `prop_emax`, after week 0. Each arm's observed proportion is a binomial count divided by `NARM`, and its standard error is the one a publication would print, √(p(1 − p) / `NARM`) at the observed p:
 
 ```{r}
 #| label: proportion-data
@@ -765,6 +765,7 @@ range(fit_prop$sdtab$IPRED)
 prop_gap <- profiled_pair_gap(fit_prop, fit_prop_profiled)
 stopifnot(nrow(fit_prop$sdtab) == nrow(prop_data), length(prop_lp) == nrow(prop_data),
           isTRUE(all.equal(fit_prop$sdtab$PRED, unname(pnorm(prop_lp)))),
+          length(fit_prop$sdtab$IPRED) == nrow(prop_data),
           all(fit_prop$sdtab$IPRED > 0 & fit_prop$sdtab$IPRED < 1),
           abs(fit_prop$theta[["EMAX"]] - prop_emax) < 1.96 * fit_prop$se_theta[["EMAX"]],
           abs(fit_prop_profiled$theta[["EMAX"]] - prop_emax) < 1.96 * fit_prop$se_theta[["EMAX"]])
