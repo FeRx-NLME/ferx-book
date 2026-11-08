@@ -433,7 +433,7 @@ mat_rows <- do.call(rbind, lapply(rows, function(r) {
              check.names = FALSE)
 }))
 mat_rows <- mat_rows[!grepl(banned, mat_rows$Feature, ignore.case = TRUE), ]
-out <- c(out, "## Feature maturity", "",
+out <- c(out, "## Feature maturity {#sec-reference-maturity}", "",
   "The maturity label of each ferx-core feature at the pinned engine (ferx-core {{< var ferx_core_sha_short >}}). **stable** features are well tested across datasets and estimation options; **beta** features are stable in limited testing; **experimental** features have been tested on a few examples and may change. See the ferx-core [feature maturity](https://ferx-nlme.org/ferx-core/maturity.html) page.", "",
   md_table(mat_rows))
 
