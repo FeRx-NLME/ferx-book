@@ -448,10 +448,21 @@ invisible(ferx_model_get_section(ruv_model, "error_model"))
 sub("\\)\\..*", ")", tryCatch(ferx_fit(ruv_model, w$data, verbose = FALSE), error = conditionMessage))  # first sentence
 fit_ruv <- ferx_fit(ruv_model, w$data, method = "focei", verbose = FALSE)
 fit_ruv$estimates[c("ETA_RUV", "PROP_ERR"), c("estimate", "rse_pct")]
+fit_ruv$held_at_bound
 ferx_get_warnings(fit_ruv, as_df = TRUE)[, c("severity", "category")]
 ```
 
-With 10 subjects the variance collapses to the lower guard: these data do not show subjects with different residual error. The ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#iiv-on-residual-error-iiv_on_ruv) page suggests Monte-Carlo methods (`imp`, `impmap`, `saem`) when the estimate collapses.
+```{r}
+#| label: check-iiv-on-ruv
+#| include: false
+# The paragraph below: ETA_RUV collapsed onto the guard, is held, and has no standard error.
+ruv_held <- fit_ruv$held_at_bound
+stopifnot(identical(ruv_held$parameter, "ETA_RUV"), identical(ruv_held$reason, "collapsed_at_guard"),
+          identical(ruv_held$kind, "omega"), is.na(fit_ruv$estimates["ETA_RUV", "rse_pct"]),
+          "parameter_at_runaway_guard" %in% ferx_get_warnings(fit_ruv, as_df = TRUE)$category)
+```
+
+With 10 subjects the variance collapses to the lower guard: these data do not show subjects with different residual error. `fit$held_at_bound` lists it with reason `"collapsed_at_guard"`, so it has no standard error, and the covariance step holds it as a `FIX` parameter (@sec-diagnostics; newer than ferx-r {{< var ferx_r_release >}}, which gives it one). The ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#iiv-on-residual-error-iiv_on_ruv) page suggests Monte-Carlo methods (`imp`, `impmap`, `saem`) when the estimate collapses.
 
 The error model can do more than shown here. The ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html) page documents:
 
