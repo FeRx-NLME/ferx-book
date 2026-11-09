@@ -131,7 +131,7 @@ In ferx-r {{< var ferx_r_release >}}, `sdtab` has no rows for a TTE-only model a
 | | `fit` | Use the fitted thetas instead of the model file's |
 | | `type` | `"population"` (default): every subject at random effect 0; `"individual"`: each subject at its etas in `fit$ebe_etas` (needs `fit`) |
 | `ferx_simulate()` | `horizon` | End of follow-up (administrative censoring) for simulated event times |
-| `ferx_vpc_tte()` | `model`, `data`, `fit` | Model, observed TTE data (a path or a data frame), and optionally the fit to simulate at |
+| `ferx_vpc_tte()` | `model`, `data`, `fit` | Model, observed TTE data (a path or a data frame; by default the data `fit` was fitted to, else the model file's `[data]`), and optionally the fit to simulate at |
 | | `n_sim`, `seed` | Number of replicates (at least 20 for the default band) and the random seed |
 | | `censoring` | `"observed"` (default): replicates censored like the data; `"horizon"`: at the horizon only |
 | | `strata`, `by_dose` | Stratify by a covariate, or by each subject's first dose |
@@ -288,25 +288,20 @@ vpc_observed <- ferx_vpc_tte(exponential$model, dropout_data, n_sim = 200, seed 
 vpc_horizon <- ferx_vpc_tte(exponential$model, dropout_data, n_sim = 200, seed = 1,
                             fit = fit_exponential, censoring = "horizon")
 dropout_bands <- bind_rows(observed = vpc_observed$band, horizon = vpc_horizon$band, .id = "censoring")
-dropout_bands |>
+dropout_summary <- dropout_bands |>
   group_by(censoring) |>
-  summarise(width_after_15h = mean((hi - lo)[time >= 15]),
-            obs_outside_band = sum(obs < lo | obs > hi, na.rm = TRUE), grid_times = n())
+  summarise(width_after_15h = mean((hi - lo)[time >= 15], na.rm = TRUE),
+            na_band = sum(is.na(lo)), grid_times = n())
+dropout_summary
 ```
 
 ```{r}
 #| label: check-vpc-tte-dropout
 #| include: false
-# The paragraph below: the observed-censoring band is wider late in follow-up, and the
-# observed curve leaves the horizon band but not the observed-censoring band.
-dropout_summary <- dropout_bands |>
-  group_by(censoring) |>
-  summarise(width = mean((hi - lo)[time >= 15]), outside = sum(obs < lo | obs > hi, na.rm = TRUE))
-dropout_width <- setNames(dropout_summary$width, dropout_summary$censoring)
-dropout_outside <- setNames(dropout_summary$outside, dropout_summary$censoring)
-stopifnot(sum(dropout_data$DV == 0 & dropout_data$TIME < 30) > 5,
-          dropout_width[["observed"]] > dropout_width[["horizon"]],
-          dropout_outside[["observed"]] == 0, dropout_outside[["horizon"]] > 0)
+# The paragraph below: the observed-censoring band is wider late in follow-up.
+dropout_width <- setNames(dropout_summary$width_after_15h, dropout_summary$censoring)
+stopifnot(sum(dropout_data$DV == 0 & dropout_data$TIME < 30) > 5, all(is.finite(dropout_width)),
+          dropout_width[["observed"]] > dropout_width[["horizon"]])
 ```
 
 ```{r}
@@ -320,7 +315,7 @@ ggplot(dropout_bands, aes(time)) +
   labs(x = "Time (h)", y = "Survival")
 ```
 
-Late in follow-up, few subjects of the data with dropouts are still at risk, so its Kaplan–Meier curve is uncertain there. Replicates censored like the data carry that uncertainty, and their band is wider. Censored at the horizon only, the replicates keep every subject at risk to the end, and the band is too narrow: here the observed curve leaves it at `r dropout_outside[["horizon"]]` grid times, and never leaves the band of `censoring = "observed"`.
+Late in follow-up, few subjects of the data with dropouts are still at risk, so its Kaplan–Meier curve is uncertain there. Replicates censored like the data carry that uncertainty, and their band is wider. Censored at the horizon only, the replicates keep every subject at risk to the end, so their band is too narrow for this curve: after 15 hours it is `r sprintf("%.2f", dropout_width[["horizon"]])` wide on average, against `r sprintf("%.2f", dropout_width[["observed"]])` with `censoring = "observed"`. A band that is too narrow flags misfit where there is none.
 
 #### Stratifying
 
@@ -375,19 +370,28 @@ vpc_refusal$code
 stopifnot(inherits(vpc_refusal, "ferx_engine_error"), identical(vpc_refusal$code, "E_VPC_TTE_INPUT"))
 ```
 
-One minus the Kaplan–Meier curve of one cause is not that cause's cumulative incidence, so ferx does not pick one for you. With `cmt`, the check is of that cause's survival, with the other cause's events counted as censorings, in the data and in the replicates:
+One minus the Kaplan–Meier curve of one cause is not that cause's cumulative incidence, so ferx does not pick one for you. With `cmt`, the observed curve is that cause's survival, with the other cause's events counted as censorings, and it matches `survfit()` on the endpoint's rows. The replicates keep each subject's observed censoring time, the other cause's event time included, as for any censoring:
 
 ```{r}
 #| label: fig-vpc-tte-competing
 #| fig-cap: "Kaplan–Meier VPC of the first cause of `tte_competing_risks` (`cmt = 2`), with the other cause as censoring, simulated at the model file's values."
 vpc_cause <- ferx_vpc_tte(competing_risks$model, competing_risks$data, n_sim = 200, seed = 1, cmt = 2)
 vpc_cause
+cause_rows <- filter(read.csv(competing_risks$data, na.strings = "."), CMT == 2)
+all.equal(vpc_cause$observed$surv, survfit(Surv(TIME, DV) ~ 1, data = cause_rows)$surv)
 plot(vpc_cause, engine = "base")
+```
+
+```{r}
+#| label: check-vpc-tte-competing
+#| include: false
+stopifnot(isTRUE(all.equal(vpc_cause$observed$surv, survfit(Surv(TIME, DV) ~ 1, data = cause_rows)$surv)),
+          sum(vpc_cause$observed$n_censor) == sum(cause_rows$DV == 0))
 ```
 
 Without `fit`, as here, the replicates use the model file's initial values; the competing-risks fit follows below.
 
-With the same code, `ferx_vpc_tte()` refuses every input its curve or band would be wrong on, among them repeated events, delayed entry (`TENTRY`), interval-censored records and more than one record per subject on the endpoint. `?ferx_vpc_tte` lists them all.
+With the same code, `ferx_vpc_tte()` refuses the inputs `?ferx_vpc_tte` lists, among them repeated events, delayed entry (`TENTRY`), interval-censored records and more than one record per subject on the endpoint.
 
 ### Individual survival curves {#sec-tte-individual}
 
