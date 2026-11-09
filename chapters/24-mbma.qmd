@@ -382,14 +382,15 @@ grep("profiled", capture.output(print(fit_profiled)), value = TRUE)
 #| label: check-profile
 #| include: false
 # The prose: the same objective (to the optimizer's tolerance) and parameter count, the
-# structural estimates within a small fraction of their standard errors, at least twice as
-# slow on this small block (so the rounded ratio reads 2 or more), every level flagged profiled.
+# structural estimates within a small fraction of their standard errors, slower on this small
+# block (only the direction is checked: the ratio itself moves with machine load), every level
+# flagged profiled.
 structural <- names(fit_fixed$theta)[1:4]
 stopifnot(isTRUE(fit_profiled$converged), identical(fit_profiled$profiled_blocks, "PLACEBO"),
           abs(fit_profiled$ofv - fit_fixed$ofv) < 1e-3,
           fit_profiled$n_parameters == fit_fixed$n_parameters,
           all(abs(fit_profiled$theta[structural] - fit_fixed$theta[structural]) < 0.1 * fit_fixed$se_theta[structural]),
-          fit_profiled$wall_time_secs >= 2 * fit_fixed$wall_time_secs,
+          fit_profiled$wall_time_secs > fit_fixed$wall_time_secs,
           all(fit_profiled$theta_levels$profiled), !any(fit_fixed$theta_levels$profiled),
           sum(grepl("^PLACEBO\\[", names(fit_profiled$theta))) == 23,
           length(fit_profiled$profiled_levels_at_bound) == 0)
@@ -404,7 +405,7 @@ stopifnot(identical(profile_scope_code("saem"), "E_PROFILE_SCOPE"),
           identical(profile_scope_code("laplace", list(n_agq = 3)), "fitted"))
 ```
 
-The profiled fit reaches the same objective, to the optimizer's tolerance (less than `r format(10^ceiling(log10(abs(fit_profiled$ofv - fit_fixed$ofv) + 1e-15)), scientific = TRUE)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r round(fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid.
+The profiled fit reaches the same objective, to the optimizer's tolerance (less than `r format(10^ceiling(log10(abs(fit_profiled$ofv - fit_fixed$ofv) + 1e-15)), scientific = TRUE)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r sprintf("%.1f", fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long when this page was rendered (the ratio varies with the machine and its load). Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid.
 
 All three covariance methods are accepted on a profiled fit. `ferx_covariance()` without `covariance_method` repeats the fit's own, which `fit$covariance_method` records:
 
@@ -611,13 +612,13 @@ profiled_pair_gap <- function(est, prof) {
   gap
 }
 resp_gap <- profiled_pair_gap(fit_resp, fit_resp_profiled)
-# The prose prints the rounded time ratio, so it must read 2 or more; the profiled fit is slower on
-# this small block.
+# The prose: the profiled fit is slower on this small block (only the direction is checked: the
+# ratio itself moves with machine load).
 stopifnot(length(fit_resp$wall_time_secs) == 1, length(fit_resp_profiled$wall_time_secs) == 1,
-          fit_resp_profiled$wall_time_secs >= 1.5 * fit_resp$wall_time_secs)
+          fit_resp_profiled$wall_time_secs > fit_resp$wall_time_secs)
 ```
 
-Both fits converge, and the profiled one reaches the same objective to the printed digits: the two are `r sprintf("%.0e", resp_gap)` OFV units apart, and every estimate, levels included, moves by less than 1% of its standard error. `fit$profiled_blocks` names the block, the `profiled` column of `theta_levels` marks all `r nrow(fit_resp_profiled$theta_levels)` levels, and `n_parameters` is the same, so the profiled fit's BIC and likelihood-ratio tests are those of the estimated one. As in the continuous model, profiling does not pay off on a block this small: on `r format(nrow(resp_data), big.mark = ",")` rows it took `r round(fit_resp_profiled$wall_time_secs / fit_resp$wall_time_secs)` times as long on this machine.
+Both fits converge, and the profiled one reaches the same objective to the printed digits: the two are `r sprintf("%.0e", resp_gap)` OFV units apart, and every estimate, levels included, moves by less than 1% of its standard error. `fit$profiled_blocks` names the block, the `profiled` column of `theta_levels` marks all `r nrow(fit_resp_profiled$theta_levels)` levels, and `n_parameters` is the same, so the profiled fit's BIC and likelihood-ratio tests are those of the estimated one. As in the continuous model, profiling does not pay off on a block this small: on `r format(nrow(resp_data), big.mark = ",")` rows it took `r sprintf("%.1f", fit_resp_profiled$wall_time_secs / fit_resp$wall_time_secs)` times as long when this page was rendered.
 
 `[binary_model]` takes a logit or a probit link. Written as `probit =` instead of `logit =`, the predictor gives the probability through the standard-normal CDF, P(DV = 1) = Φ(predictor); `link = probit` may be added, but the key implies it (see [the probit link](https://ferx-nlme.org/ferx-core/model-file/categorical.html#the-probit-link) in ferx-core). A profiled block is read the same way under either link. The same responder data under a probit link, with the block estimated and profiled:
 
