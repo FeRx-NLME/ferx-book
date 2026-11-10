@@ -247,7 +247,31 @@ threads_env_1 <- threads_probe("cat(n())", env = "RAYON_NUM_THREADS=1")
 threads_env_3 <- threads_probe("cat(n())", env = "RAYON_NUM_THREADS=3")
 threads_first_fit <- threads_probe(paste('Sys.setenv(RAYON_NUM_THREADS = "2"); a <- n();',
                                          'Sys.setenv(RAYON_NUM_THREADS = "5"); cat(a, n())'))
-stopifnot(threads_env_1 == 1, threads_env_3 == 3, identical(threads_first_fit, c(2, 2)))
+stopifnot(length(threads_env_1) == 1, length(threads_env_3) == 1,
+          threads_env_1 == 1, threads_env_3 == 3, identical(threads_first_fit, c(2, 2)))
+# The `threads` item of the warning list: a RAYON_NUM_THREADS that is not a positive integer is
+# ignored with a `threads` warning; 0 means the default, with no warning; more workers than CPUs
+# warns, from the variable or from a `threads` count.
+env_warning <- paste0('f <- suppressWarnings(ferx_fit(b$model, b$data, settings = list(maxiter = 0), verbose = FALSE)); ',
+                      'w <- ferx_get_warnings(f, as_df = TRUE); ',
+                      'cat(f$n_threads_used, as.integer(any(w$category == "threads" & grepl("RAYON_NUM_THREADS", w$message))), ',
+                      'as.integer(any(w$category == "threads" & grepl("time-share", w$message))))')
+threads_env_bad <- threads_probe(env_warning, env = "RAYON_NUM_THREADS=x")
+threads_env_zero <- threads_probe(env_warning, env = "RAYON_NUM_THREADS=0")
+threads_env_empty <- threads_probe(env_warning, env = "RAYON_NUM_THREADS=")
+threads_env_negative <- threads_probe(env_warning, env = "RAYON_NUM_THREADS=-1")
+threads_env_over <- threads_probe(env_warning, env = sprintf("RAYON_NUM_THREADS=%d", parallel::detectCores() + 1))
+stopifnot(all(lengths(list(threads_env_bad, threads_env_zero, threads_env_empty, threads_env_over,
+                          threads_env_negative)) == 3),
+          threads_env_bad[2] == 1, threads_env_zero[2] == 0, threads_env_empty[2] == 0,
+          threads_env_bad[1] == threads_env_empty[1], threads_env_zero[1] == threads_env_empty[1],
+          threads_env_over[1] == parallel::detectCores() + 1, threads_env_over[3] == 1,
+          threads_env_negative[2] == 1, threads_env_negative[1] == threads_env_empty[1])
+fit_over <- suppressWarnings(ferx_fit(base$model, base$data, threads = parallel::detectCores() + 1,
+                                      settings = list(maxiter = 0), verbose = FALSE))
+over_warnings <- ferx_get_warnings(fit_over, as_df = TRUE)
+stopifnot(any(over_warnings$category == "threads" & over_warnings$severity == "warning" &
+                grepl("time-share", over_warnings$message)))
 ```
 
 Switching the gradient moved a second factor as well. With `optimizer` left at `auto`, ferx chooses the outer optimizer to suit the gradient, so the two fits did not use the same one, and the model-file fit says so in a `general` warning:
@@ -855,7 +879,7 @@ See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html)
 - `optimizer_config` (warning or info): a note on, or failure of, the `global_search` configuration.
 - `multi_start` (info): which start of a multi-start fit won, when it was not the first.
 - `cancelled` (info): the run was cancelled by the user.
-- `threads` (info): a note on thread-count efficiency.
+- `threads` (info or warning): a note on thread-count efficiency, or a warning when a `threads` count or `RAYON_NUM_THREADS` asks for more workers than there are CPUs, so the workers time-share the cores, or when `RAYON_NUM_THREADS` is not a positive integer and was ignored (`0` means the default and raises nothing).
 - `flat_parameter` (warning): a theta has no effect on the objective at its initial value and was frozen there. Map it into the model or remove it.
 - `init_outside_bounds` (warning): an initial estimate lay outside an internal limit and was clamped before the first evaluation.
 - `init_not_representable` (warning): an initial estimate that the optimizer cannot represent at all, such as a positive theta started at or below the floor of the log scale it is estimated on (the message gives the value). The value is moved before the first evaluation, so the fit does not start where the file says. Here a `TVKA` started at `1e-12`, inside its own bounds:

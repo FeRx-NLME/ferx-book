@@ -47,6 +47,59 @@ head(fit$sdtab)
 
 ## Reading the result
 
+### The fit's verdict
+
+Before any plot, ask whether the fit can be used as it stands. `fit$converged` says that the optimizer stopped normally and, for FOCE, FOCEI, Laplace / AGQ and Gauss-Newton fits, at a stationary point: when the covariance step has an unfloored `R` matrix, ferx computes the Newton decrement at the estimate, the drop in objective a Newton step would still make, and reports `converged = FALSE` with a `W_NON_STATIONARY_OPTIMUM` warning when it is above one OFV unit ([ferx-core #2785](https://github.com/FeRx-NLME/ferx-core/issues/2785)). `fit$status` adds what else qualifies the result: the evaluation budget, the critical warnings, the covariance step and any parameter held at a bound ([ferx-core #2799](https://github.com/FeRx-NLME/ferx-core/issues/2799)). It is `"converged"`, `"converged_with_issues"` or `"not_converged"`, `fit$status_label` spells it as the `STATUS` line of `print()` does, and `fit$status_reasons` lists why, in a fixed order:
+
+```{r}
+#| label: status
+fit[c("converged", "status", "status_label", "status_reasons")]
+fit$held_at_bound
+```
+
+```{r}
+#| label: check-status
+#| include: false
+# The sentence below: the base fit is converged with no reasons and holds no parameter.
+stopifnot(isTRUE(fit$converged), identical(fit$status, "converged"), identical(fit$status_label, "CONVERGED"),
+          length(fit$status_reasons) == 0, is.data.frame(fit$held_at_bound), nrow(fit$held_at_bound) == 0,
+          identical(names(fit$held_at_bound), c("parameter", "kind", "index", "reason", "class")))
+```
+
+The base fit is `r fit$status_label`, with no reasons and no parameter held. A fit whose evaluation budget runs out is not. The warfarin example with `method = "focei"` and `maxiter = 2` stops early (@sec-first-fit):
+
+```{r}
+#| label: status-budget
+warf <- ferx_example("warfarin")
+# suppress the R warnings that report overriding the model file's method and maxiter
+fit_budget <- suppressWarnings(ferx_fit(warf$model, warf$data, method = "focei",
+                                        settings = list(maxiter = 2), verbose = FALSE))
+fit_budget[c("converged", "status_label", "status_reasons")]
+```
+
+```{r}
+#| label: check-status-budget
+#| include: false
+# The sentence below: the capped fit is not converged, its reasons are budget_spent and then the
+# critical convergence warning.
+stopifnot(!fit_budget$converged, identical(fit_budget$status, "not_converged"),
+          identical(fit_budget$status_reasons, c("budget_spent", "convergence")))
+# The sentence after it: a maxiter = 0 run is not_converged and carries evaluation_only.
+fit_eval <- suppressWarnings(ferx_fit(base$model, base$data, settings = list(maxiter = 0), verbose = FALSE))
+stopifnot(!fit_eval$converged, identical(fit_eval$status, "not_converged"),
+          "evaluation_only" %in% fit_eval$status_reasons)
+```
+
+The reasons are listed for a fit that did not converge too, so they say what to fix: `budget_spent`, a larger `maxiter`, and then the critical `convergence` warning that reports it. A fit that converged but carries a reason is `"converged_with_issues"`. A run with `maxiter = 0`, which only scores the given values, is `"not_converged"` with the reason `evaluation_only`. In all, the reasons are `evaluation_only`, `budget_spent`, the category of each critical warning (including the `condition_number` warning that ferx-r raises above 1000), `covariance_failed`, and `collapsed_at_guard: <parameter>` for a variance the covariance step could not hold. `ferx_covariance()` and `ferx_load_fit()` recompute the verdict.
+
+`fit$held_at_bound` lists every parameter the covariance step gives no standard error for, one row each: its `parameter` name, its `kind` (`"theta"`, `"omega"`, `"sigma"` or `"kappa"`), its `index` within that kind, and the `reason` ([ferx-core #2797](https://github.com/FeRx-NLME/ferx-core/issues/2797)). The reason is `"profiled_bound"` for a profiled level held on its declared bound (@sec-mbma), or `"collapsed_at_guard"` for a variance or sigma that collapsed onto the floor ferx keeps it above, or a theta without a lower bound that sank to the internal `1e-10` floor. Such a parameter shows SE `N/A` in `print()` and `NA` in `fit$estimates`. When the covariance step is otherwise clean it holds the parameter as it holds a `FIX` one, and the other standard errors are conditional on it. The fifth column, `class`, is the class of a `[mixture]` per-class override (`omega(k)` or `sigma(k)`), whose row is labelled `<base> (class <k>)`, and `NA` for every other parameter ([ferx-core #2809](https://github.com/FeRx-NLME/ferx-core/issues/2809)). The base fit has no such row; @sec-variability shows variances that collapse.
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+
+`fit$status`, `fit$status_label`, `fit$status_reasons` and `fit$held_at_bound` do not exist in ferx-r {{< var ferx_r_release >}}. Its `STATUS` line shows `converged` and the categories of the critical warnings, and a parameter collapsed onto the guard gets a standard error. Its `converged` does not require a stationary point, so a fit reported converged there can be `FALSE` here, with `W_NON_STATIONARY_OPTIMUM`.
+:::
+
 ### Observations against predictions
 
 ```{r}
@@ -96,7 +149,7 @@ ggplot(fit$sdtab, aes(sample = CWRES)) +
   labs(x = "Theoretical quantile", y = "CWRES")
 ```
 
-The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries. The statistic reads in two directions, and they mean opposite things:
+The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Both pair only consecutive observations of one subject in the same occasion (an IOV column, or the innermost level of a nested model) and, under a `correlation ... by` line, in the same residual block. The Durbin-Watson denominator counts those pairs, so independent residuals give 2 however short each subject's series is ([ferx-core #2798](https://github.com/FeRx-NLME/ferx-core/issues/2798)). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries. The statistic reads in two directions, and they mean opposite things:
 
 | `dw_statistic` | Reading | Usually points at |
 |---|---|---|
@@ -119,7 +172,8 @@ ferx_get_warnings(fit)
 #| label: check-dw-warning
 #| include: false
 # The paragraph below reads these two warnings in this order, so any other set has to fail the render.
-stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", "dw_autocorrelation")))
+stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", "dw_autocorrelation")),
+          fit$dw_statistic > 2.5, fit$iwres_lag1_r < 0)
 ```
 
 The first entry is the note about the model file's `gradient = fd` that @sec-first-fit explains. The second is the residual warning: ferx suggests over-parameterisation or a misspecified residual error model as possible causes. @sec-model-selection tests alternative residual error models systematically with `ferx_ruvsearch()`.
@@ -324,6 +378,6 @@ Next: @sec-vpc evaluates the model by simulation.
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_calc_npde`, `?ferx_xpose`, `?ferx_fit` (the `sdtab`, `eta_cov`, `eta_normality`, `cor_matrix` elements)
+- R help: `?ferx_calc_npde`, `?ferx_xpose`, `?ferx_fit` (the `status`, `status_reasons`, `held_at_bound`, `sdtab`, `eta_cov`, `eta_normality`, `cor_matrix` elements)
 - ferx-core: [output files and sdtab](https://ferx-nlme.org/ferx-core/output.html), [warnings](https://ferx-nlme.org/ferx-core/warnings.html)
 :::
