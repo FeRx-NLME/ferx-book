@@ -204,10 +204,15 @@ It stays `NULL` for the built-in BFGS and for SAEM, which report no gradient at 
 | Argument | Default | Meaning |
 |---|---|---|
 | `method` | `NULL` | Estimation method or chain (above) |
-| `threads` | `NULL` | Worker threads for the per-subject loops; `NULL` uses the model file's `threads`, else available cores minus one, at least 1 and at most 8 ([`threads`](https://ferx-nlme.org/ferx-core/model-file/fit-options.html#run-control)); the `RAYON_NUM_THREADS` environment variable has no effect |
+| `threads` | `NULL` | Worker threads for the per-subject loops; `NULL` uses the model file's `threads`, else the `RAYON_NUM_THREADS` environment variable as given, else available cores minus one, at least 1 and at most 8 ([`threads`](https://ferx-nlme.org/ferx-core/model-file/fit-options.html#run-control)). ferx reads `RAYON_NUM_THREADS` once, at the R session's first fit, so set it before that fit |
 | `gradient` | `NULL` | Inner-loop gradient: `"auto"` (analytic where available) or `"fd"` (finite differences); `NULL` uses the model file |
 | `optimizer_trace` | `FALSE` | Record the optimizer trace |
 | `settings` | `NULL` | Named list of engine settings (tables below); a key that duplicates a dedicated argument is an error |
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+In ferx-r {{< var ferx_r_release >}}, `RAYON_NUM_THREADS` has no effect on the worker count. An environment that sets it, as many CI runners do (often to 1), now fits on that many workers when neither `threads` nor the model file sets one.
+:::
 
 The base model's file requests finite differences (`gradient = fd`). With `"auto"` the analytic gradient is used and the fit takes fewer objective evaluations. Pinning `threads` changes speed, not results:
 
@@ -227,14 +232,22 @@ data.frame(
 ```{r}
 #| label: check-gradient-threads
 #| include: false
-# The threads row says RAYON_NUM_THREADS has no effect on the engine default.
-threads_default <- function() suppressWarnings(ferx_fit(base$model, base$data, threads = 0,
-  settings = list(maxiter = 0), verbose = FALSE))$n_threads_used
-threads_unset <- threads_default()
-Sys.setenv(RAYON_NUM_THREADS = "1")
-threads_env <- threads_default()
-Sys.unsetenv("RAYON_NUM_THREADS")
-stopifnot(threads_unset == 1 || threads_env == threads_unset)
+# The threads row: with threads NULL and none in the model file, RAYON_NUM_THREADS sets the worker
+# count as given, and is read once, at the session's first fit. This session has fitted already, so
+# each claim runs in a fresh R process.
+threads_probe <- function(code, env = character(0)) {
+  probe <- paste0('suppressMessages(library(ferx)); b <- ferx_example("two_cpt_oral_base"); ',
+                  'n <- function() suppressWarnings(ferx_fit(b$model, b$data, settings = list(maxiter = 0), ',
+                  'verbose = FALSE))$n_threads_used; ', code)
+  out <- system2(file.path(R.home("bin"), "Rscript"), c("-e", shQuote(probe)), env = env, stdout = TRUE)
+  scan(text = tail(out, 1), quiet = TRUE)
+}
+stopifnot(!any(grepl("^\\s*threads\\s*=", readLines(base$model))))
+threads_env_1 <- threads_probe("cat(n())", env = "RAYON_NUM_THREADS=1")
+threads_env_3 <- threads_probe("cat(n())", env = "RAYON_NUM_THREADS=3")
+threads_first_fit <- threads_probe(paste('Sys.setenv(RAYON_NUM_THREADS = "2"); a <- n();',
+                                         'Sys.setenv(RAYON_NUM_THREADS = "5"); cat(a, n())'))
+stopifnot(threads_env_1 == 1, threads_env_3 == 3, identical(threads_first_fit, c(2, 2)))
 ```
 
 Switching the gradient moved a second factor as well. With `optimizer` left at `auto`, ferx chooses the outer optimizer to suit the gradient, so the two fits did not use the same one, and the model-file fit says so in a `general` warning:

@@ -9,7 +9,7 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 
 ## Where you are
 
-Time-to-event (TTE) endpoints record when an event happens, such as dropout, a clinical event or death, or that it had not happened by the end of follow-up. ferx models them with an `[event_model]` block: a parametric hazard, with random effects and covariates in its parameters, fitted with a survival likelihood. This chapter fits the bundled examples: exponential, Weibull and Gompertz hazards, competing risks, and a hazard driven by the drug concentration. It then predicts survival curves and checks the models by simulation.
+Time-to-event (TTE) endpoints record when an event happens, such as dropout, a clinical event or death, or that it had not happened by the end of follow-up. ferx models them with an `[event_model]` block: a parametric hazard, with random effects and covariates in its parameters, fitted with a survival likelihood. This chapter fits the bundled examples: exponential, Weibull and Gompertz hazards, competing risks, and a hazard driven by the drug concentration. It then predicts survival curves and checks the models by simulation, with a Kaplan–Meier VPC.
 
 ::: {.callout-warning}
 ## Maturity: beta
@@ -131,6 +131,14 @@ In ferx-r {{< var ferx_r_release >}}, `sdtab` has no rows for a TTE-only model a
 | | `fit` | Use the fitted thetas instead of the model file's |
 | | `type` | `"population"` (default): every subject at random effect 0; `"individual"`: each subject at its etas in `fit$ebe_etas` (needs `fit`) |
 | `ferx_simulate()` | `horizon` | End of follow-up (administrative censoring) for simulated event times |
+| `ferx_vpc_tte()` | `model`, `data`, `fit` | Model, observed TTE data (a path or a data frame; by default the data `fit` was fitted to, else the model file's `[data]`), and optionally the fit to simulate at |
+| | `n_sim`, `seed` | Number of replicates (at least 20 for the default band) and the random seed |
+| | `censoring` | `"observed"` (default): replicates censored like the data; `"horizon"`: at the horizon only |
+| | `strata`, `by_dose` | Stratify by a covariate, or by each subject's first dose |
+| | `cmt` | The endpoint to check, required when the model has several |
+| | `horizon` | The time the replicates are simulated to; by default the latest time recorded on the endpoint |
+| | `probs` | The band's lower bound, middle line and upper bound |
+| | `grid` | The times the band is evaluated at: `"auto"`, `"all_steps"` or a numeric vector |
 
 Named blocks, `[event_model NAME]`, declare several endpoints. The ferx-core [event model](https://ferx-nlme.org/ferx-core/model-file/event-model.html) and [TTE estimation](https://ferx-nlme.org/ferx-core/estimation/tte.html) pages document the families, interval censoring and repeated events.
 
@@ -198,6 +206,192 @@ range(fit_exp_sim$TIME)
 range(ferx_simulate(exponential$model, exponential$data, n_sim = 1, seed = 1, fit = fit_exponential,
                     horizon = 30)$TIME)
 ```
+
+The check above censors every replicate at the horizon only. That is right for `tte_weibull`, but not for data with dropouts before the end of follow-up, which the next section handles.
+
+### The Kaplan–Meier VPC: `ferx_vpc_tte()` {#sec-tte-vpc}
+
+::: {.callout-important}
+## Needs ferx-r newer than {{< var ferx_r_release >}}
+`ferx_vpc_tte()` and its `print()` and `plot()` methods are not in ferx-r {{< var ferx_r_release >}}.
+:::
+
+`ferx_vpc_tte()` builds the same check in the engine, for one single-event TTE endpoint. It simulates the observed design `n_sim` times (at the fitted parameters when `fit` is given, otherwise at the model file's initial values), censors the replicates like the data, and returns the observed Kaplan–Meier curve beside the pointwise band of the replicate curves. It never refits. On the exponential fit:
+
+```{r}
+#| label: vpc-tte
+vpc_exponential <- ferx_vpc_tte(exponential$model, exponential$data, n_sim = 200, seed = 1,
+                                fit = fit_exponential)
+vpc_exponential
+head(vpc_exponential$observed, 3)
+head(vpc_exponential$band, 3)
+```
+
+The warning is the unused-`LAMBDA` diagnostic of the simulator, shown above for `ferx_simulate()`; it is also kept in `vpc_exponential$warnings`. `observed` has one row per distinct time, with the numbers at risk, events and censorings, the Kaplan–Meier survival `surv` and the Nelson–Aalen cumulative hazard `cumhaz`. It follows the survival package's conventions, so it matches `survfit()` row for row:
+
+```{r}
+#| label: vpc-tte-survfit
+exponential_data <- read.csv(exponential$data, na.strings = ".")
+km_exponential <- survfit(Surv(TIME, DV) ~ 1, data = exponential_data)
+all.equal(vpc_exponential$observed$surv, km_exponential$surv)
+```
+
+```{r}
+#| label: check-vpc-tte-survfit
+#| include: false
+# The sentence above: the observed curve matches survfit row for row.
+stopifnot(isTRUE(all.equal(vpc_exponential$observed$time, km_exponential$time)),
+          isTRUE(all.equal(vpc_exponential$observed$surv, km_exponential$surv)),
+          isTRUE(all.equal(vpc_exponential$observed$n_risk, km_exponential$n.risk)))
+```
+
+`band` has one row per grid time: `obs`, the observed curve read there, and `lo`, `med` and `hi`, the replicate curves' quantiles at `probs` (5%, 50% and 95% by default). `n_used` counts the replicates still under follow-up at that time; where too few are left, the band is `NA`. `plot()` draws the band and the observed curve, with the vpc package's `plot_vpc()` when it is installed and base graphics otherwise; `engine = "base"` asks for base graphics regardless:
+
+```{r}
+#| label: fig-vpc-tte
+#| fig-cap: "Kaplan–Meier VPC of the exponential fit: the observed curve against the 90% band and the median of 200 replicate curves."
+plot(vpc_exponential, engine = "base")
+```
+
+#### Censoring the replicates
+
+The observed curve is censored where subjects left the study, and the band is only comparable with it if the replicates are censored the same way. With the default `censoring = "observed"`, a subject observed censored keeps its own censoring time in every replicate, and a subject observed with an event draws a censoring time after that event from the censorings seen in the data. `censoring = "horizon"` censors the replicates at the horizon only.
+
+In `tte_exponential` every censoring is at the end of follow-up, `r max(exponential_data$TIME)` hours, so the two give the same band:
+
+```{r}
+#| label: vpc-tte-horizon-same
+vpc_exponential_horizon <- ferx_vpc_tte(exponential$model, exponential$data, n_sim = 200, seed = 1,
+                                        fit = fit_exponential, censoring = "horizon")
+all.equal(vpc_exponential$band, vpc_exponential_horizon$band)
+```
+
+```{r}
+#| label: check-vpc-tte-horizon-same
+#| include: false
+stopifnot(all(exponential_data$TIME[exponential_data$DV == 0] == max(exponential_data$TIME)),
+          isTRUE(all.equal(vpc_exponential$band, vpc_exponential_horizon$band)))
+```
+
+A copy of the data with dropouts shows the difference. Each subject gets a dropout time drawn uniformly between 0 and 40 hours, independently of its event time; a subject that drops out before its event or the end of follow-up is censored then. The replicates still use the parameters of `fit_exponential`, and `ferx_vpc_tte()` takes the data frame directly:
+
+```{r}
+#| label: vpc-tte-dropout
+set.seed(2)
+dropout_time <- runif(nrow(exponential_data), 0, 40)
+dropout_data <- mutate(exponential_data,
+                       DV = if_else(dropout_time < TIME, 0L, DV),
+                       TIME = pmin(TIME, round(dropout_time, 2)))
+count(dropout_data, DV, before_end = TIME < 30)
+vpc_observed <- ferx_vpc_tte(exponential$model, dropout_data, n_sim = 200, seed = 1,
+                             fit = fit_exponential)
+vpc_horizon <- ferx_vpc_tte(exponential$model, dropout_data, n_sim = 200, seed = 1,
+                            fit = fit_exponential, censoring = "horizon")
+dropout_bands <- bind_rows(observed = vpc_observed$band, horizon = vpc_horizon$band, .id = "censoring")
+dropout_summary <- dropout_bands |>
+  group_by(censoring) |>
+  summarise(width_after_15h = mean((hi - lo)[time >= 15], na.rm = TRUE),
+            na_band = sum(is.na(lo)), grid_times = n())
+dropout_summary
+```
+
+```{r}
+#| label: check-vpc-tte-dropout
+#| include: false
+# The paragraph below: the observed-censoring band is wider late in follow-up.
+dropout_width <- setNames(dropout_summary$width_after_15h, dropout_summary$censoring)
+stopifnot(sum(dropout_data$DV == 0 & dropout_data$TIME < 30) > 5, all(is.finite(dropout_width)),
+          dropout_width[["observed"]] > dropout_width[["horizon"]])
+```
+
+```{r}
+#| label: fig-vpc-tte-censoring
+#| fig-cap: "Kaplan–Meier VPC of the data with dropouts, with the replicates censored like the data (observed) and at the horizon only (horizon). Band 90%, dashed line the replicates' median, step the observed curve."
+ggplot(dropout_bands, aes(time)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.3) +
+  geom_line(aes(y = med), linetype = "dashed") +
+  geom_step(aes(y = obs)) +
+  facet_wrap(~censoring) +
+  labs(x = "Time (h)", y = "Survival")
+```
+
+Late in follow-up, few subjects of the data with dropouts are still at risk, so its Kaplan–Meier curve is uncertain there. Replicates censored like the data carry that uncertainty, and their band is wider. Censored at the horizon only, the replicates keep every subject at risk to the end, so their band is too narrow for this curve: after 15 hours it is `r sprintf("%.2f", dropout_width[["horizon"]])` wide on average, against `r sprintf("%.2f", dropout_width[["observed"]])` with `censoring = "observed"`. A band that is too narrow flags misfit where there is none.
+
+#### Stratifying
+
+`strata` names a covariate: subjects are grouped by its value at their first record, and each group gets its own curve and band. `tte_exponential` has no covariates, so a copy of the data gives the subjects an `ARM` column. The hazard does not depend on it, so both arms are simulated alike:
+
+```{r}
+#| label: fig-vpc-tte-strata
+#| fig-cap: "Kaplan–Meier VPC stratified by the `ARM` column."
+arm_data <- mutate(exponential_data, ARM = if_else(ID %% 2 == 0, 1, 2))
+vpc_arm <- ferx_vpc_tte(exponential$model, arm_data, n_sim = 200, seed = 1, fit = fit_exponential,
+                        strata = "ARM")
+vpc_arm$strata
+plot(vpc_arm, engine = "base")
+```
+
+A covariate with more than 10 values is refused; bin it into a categorical column first. `by_dose = TRUE` stratifies by the amount of each subject's first dose instead (0 for a subject without a dose), and cannot be combined with `strata`. Here a copy gives each subject a dose of 100 or 200 at time 0, in compartment 1 of the placeholder PK model:
+
+```{r}
+#| label: vpc-tte-dose
+dose_rows <- data.frame(ID = exponential_data$ID, TIME = 0, EVID = 1, CMT = 1, RATE = 0, MDV = 1,
+                        AMT = if_else(exponential_data$ID %% 2 == 0, 100, 200))
+dosed_data <- bind_rows(dose_rows, exponential_data) |>
+  arrange(ID, TIME, desc(EVID))
+vpc_dose <- ferx_vpc_tte(exponential$model, dosed_data, n_sim = 200, seed = 1, fit = fit_exponential,
+                         by_dose = TRUE)
+vpc_dose$strata
+```
+
+```{r}
+#| label: check-vpc-tte-strata
+#| include: false
+stopifnot(identical(as.character(vpc_arm$strata$STRATUM), c("ARM=1", "ARM=2")),
+          identical(as.character(vpc_dose$strata$STRATUM), c("dose=100", "dose=200")),
+          all(vpc_dose$strata$n_subjects == 15))
+```
+
+#### Competing risks: choose the endpoint
+
+`tte_competing_risks` has two TTE endpoints, and without `cmt` it is refused with a `ferx_engine_error` whose code is `E_VPC_TTE_INPUT`:
+
+```{r}
+#| label: vpc-tte-competing-refused
+competing_risks <- ferx_example("tte_competing_risks")
+vpc_refusal <- tryCatch(ferx_vpc_tte(competing_risks$model, competing_risks$data, n_sim = 50),
+                        ferx_engine_error = function(e) e)
+vpc_refusal$code
+```
+
+```{r}
+#| label: check-vpc-tte-competing-refused
+#| include: false
+stopifnot(inherits(vpc_refusal, "ferx_engine_error"), identical(vpc_refusal$code, "E_VPC_TTE_INPUT"))
+```
+
+One minus the Kaplan–Meier curve of one cause is not that cause's cumulative incidence, so ferx does not pick one for you. With `cmt`, the observed curve is that cause's survival, with the other cause's events counted as censorings, and it matches `survfit()` on the endpoint's rows. The replicates keep each subject's observed censoring time, the other cause's event time included, as for any censoring:
+
+```{r}
+#| label: fig-vpc-tte-competing
+#| fig-cap: "Kaplan–Meier VPC of the first cause of `tte_competing_risks` (`cmt = 2`), with the other cause as censoring, simulated at the model file's values."
+vpc_cause <- ferx_vpc_tte(competing_risks$model, competing_risks$data, n_sim = 200, seed = 1, cmt = 2)
+vpc_cause
+cause_rows <- filter(read.csv(competing_risks$data, na.strings = "."), CMT == 2)
+all.equal(vpc_cause$observed$surv, survfit(Surv(TIME, DV) ~ 1, data = cause_rows)$surv)
+plot(vpc_cause, engine = "base")
+```
+
+```{r}
+#| label: check-vpc-tte-competing
+#| include: false
+stopifnot(isTRUE(all.equal(vpc_cause$observed$surv, survfit(Surv(TIME, DV) ~ 1, data = cause_rows)$surv)),
+          sum(vpc_cause$observed$n_censor) == sum(cause_rows$DV == 0))
+```
+
+Without `fit`, as here, the replicates use the model file's initial values; the competing-risks fit follows below.
+
+With the same code, `ferx_vpc_tte()` refuses the inputs `?ferx_vpc_tte` lists, among them repeated events, delayed entry (`TENTRY`), interval-censored records and more than one record per subject on the endpoint.
 
 ### Individual survival curves {#sec-tte-individual}
 
@@ -444,7 +638,8 @@ The shape estimate changes, because the time from 0 to 4 hours no longer counts 
   In ferx-r {{< var ferx_r_release >}}, `ferx_model_validate()` reports such compact TTE models as invalid, although they fit ([ferx-r #306](https://github.com/FeRx-NLME/ferx-r/issues/306)). Only models that keep the placeholder blocks, such as `tte_exponential`, validate there.
   :::
 - **Set `horizon` when simulating.** Without it, analytical hazards are not censored at the end of follow-up, and a drug-driven hazard cannot be simulated.
-- **A typical-subject curve is not the population curve.** Compare observed Kaplan–Meier curves with simulations, not with `ferx_predict_survival()` at random effect 0.
+- **A typical-subject curve is not the population curve.** Compare observed Kaplan–Meier curves with simulations (`ferx_vpc_tte()`), not with `ferx_predict_survival()` at random effect 0.
+- **Censor the replicates like the data.** When subjects drop out before the end of follow-up, a band censored at the horizon only is too narrow; keep `ferx_vpc_tte()`'s default `censoring = "observed"`.
 - **Covariates in a hazard must be constant within a subject.** A time-varying covariate in the hazard stops the fit.
 - **Frailty variances are weakly identified with one event per subject.** Check their standard errors, and consider SAEM or IMP.
 
@@ -470,13 +665,13 @@ The shape estimate changes, because the time from 0 to 4 hours no longer counts 
 - Event rows carry `TIME` and `DV` (1 event, 0 censored) on the `[event_model]`'s `cmt`.
 - Choose a hazard `family` (exponential, Weibull, Gompertz), or write a drug-driven `hazard` in an ODE model.
 - `ferx_predict_survival()` gives S(t), H(t), h(t) and, for competing risks, cumulative incidences; `type = "individual"` gives each fitted subject's curves at its fitted etas.
-- Check TTE models with Kaplan–Meier curves of simulations, using `horizon` for follow-up.
+- Check TTE models with a Kaplan–Meier VPC, `ferx_vpc_tte()`: replicates censored like the data, stratified with `strata` or `by_dose`, one endpoint at a time (`cmt`) under competing risks.
 - `TENTRY` handles delayed entry, `DV = 2` interval censoring, and `type = rtte` repeated events.
 
 Next: @sec-adaptive-dosing simulates dosing that responds to measurements.
 
 ::: {.callout-tip}
 ## Reference
-- R help: `?ferx_predict_survival`, `?ferx_simulate` (`horizon`), `?ferx_fit`
+- R help: `?ferx_predict_survival`, `?ferx_vpc_tte`, `?plot.ferx_vpc_tte`, `?ferx_simulate` (`horizon`), `?ferx_fit`
 - ferx-core: [event model](https://ferx-nlme.org/ferx-core/model-file/event-model.html), [TTE estimation](https://ferx-nlme.org/ferx-core/estimation/tte.html)
 :::

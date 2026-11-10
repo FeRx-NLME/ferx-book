@@ -15,7 +15,7 @@ This chapter fits the bundled `mbma_placebo` example. It covers the arm-level da
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, a profiled level block (`profile`, `fit$profiled_blocks`, bounds on it and `fit$profiled_levels_at_bound`), a level block read by a `[binary_model]` predictor (and profiled there), the probit link of `[binary_model]`, `pnorm()` in a model expression, nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`, the `nested_levels` example) and a within-arm residual `correlation` line are newer than {{< var ferx_r_release >}} as well.
+This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, a profiled level block (`profile`, `fit$profiled_blocks`, bounds on it, `fit$held_at_bound` and the deprecated `fit$profiled_levels_at_bound`), a level block read by a `[binary_model]` predictor (and profiled there), the probit link of `[binary_model]`, `pnorm()` in a model expression, nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`, the `nested_levels` example) and a within-arm residual `correlation` line are newer than {{< var ferx_r_release >}} as well.
 :::
 
 ::: {.callout-warning}
@@ -382,14 +382,15 @@ grep("profiled", capture.output(print(fit_profiled)), value = TRUE)
 #| label: check-profile
 #| include: false
 # The prose: the same objective (to the optimizer's tolerance) and parameter count, the
-# structural estimates within a small fraction of their standard errors, at least twice as
-# slow on this small block (so the rounded ratio reads 2 or more), every level flagged profiled.
+# structural estimates within a small fraction of their standard errors, slower on this small
+# block (only the direction is checked: the ratio itself moves with machine load), every level
+# flagged profiled.
 structural <- names(fit_fixed$theta)[1:4]
 stopifnot(isTRUE(fit_profiled$converged), identical(fit_profiled$profiled_blocks, "PLACEBO"),
           abs(fit_profiled$ofv - fit_fixed$ofv) < 1e-3,
           fit_profiled$n_parameters == fit_fixed$n_parameters,
           all(abs(fit_profiled$theta[structural] - fit_fixed$theta[structural]) < 0.1 * fit_fixed$se_theta[structural]),
-          fit_profiled$wall_time_secs >= 2 * fit_fixed$wall_time_secs,
+          fit_profiled$wall_time_secs > fit_fixed$wall_time_secs,
           all(fit_profiled$theta_levels$profiled), !any(fit_fixed$theta_levels$profiled),
           sum(grepl("^PLACEBO\\[", names(fit_profiled$theta))) == 23,
           length(fit_profiled$profiled_levels_at_bound) == 0)
@@ -404,7 +405,7 @@ stopifnot(identical(profile_scope_code("saem"), "E_PROFILE_SCOPE"),
           identical(profile_scope_code("laplace", list(n_agq = 3)), "fitted"))
 ```
 
-The profiled fit reaches the same objective, to the optimizer's tolerance (less than `r format(10^ceiling(log10(abs(fit_profiled$ofv - fit_fixed$ofv) + 1e-15)), scientific = TRUE)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r round(fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long on this machine. Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid.
+The profiled fit reaches the same objective, to the optimizer's tolerance (less than `r format(10^ceiling(log10(abs(fit_profiled$ofv - fit_fixed$ofv) + 1e-15)), scientific = TRUE)` OFV units apart), and structural estimates that differ by a small fraction of their standard errors. It is not faster here: with 23 levels it took `r sprintf("%.1f", fit_profiled$wall_time_secs / fit_fixed$wall_time_secs)` times as long when this page was rendered (the ratio varies with the machine and its load). Profile a block when it is too large to search, not to speed up a small one. Nothing about the model changes. The levels stay in `fit_profiled$theta` and in `theta_levels`, whose `profiled` column marks them, and they count in `n_parameters` and BIC, so a likelihood-ratio test against an unprofiled model is valid.
 
 All three covariance methods are accepted on a profiled fit. `ferx_covariance()` without `covariance_method` repeats the fit's own, which `fit$covariance_method` records:
 
@@ -447,8 +448,8 @@ stopifnot(any(grepl("contrast = sum_to_zero](0.0, -50.0, 5.0) profile", tight_li
 tight_model <- file.path(mbma_dir, "mbma_fixed_study_profiled_tight.ferx")
 writeLines(tight_lines, tight_model)
 fit_tight <- ferx_fit(tight_model, mbma$data, verbose = FALSE)
-held <- fit_tight$profiled_levels_at_bound
-held
+fit_tight$held_at_bound
+held <- fit_tight$held_at_bound$parameter
 c(unbounded = fit_profiled$theta[[held]], bounded = fit_tight$theta[[held]])
 c(unbounded = fit_profiled$ofv, bounded = fit_tight$ofv)
 subset(fit_tight$theta_levels, theta_name %in% held, c(label, value, se))
@@ -466,16 +467,18 @@ stopifnot(length(held) == 1, fit_tight$theta[[held]] == 5, fit_profiled$theta[[h
           fit_tight$ofv > fit_profiled$ofv, isTRUE(fit_tight$converged),
           is.na(fit_tight$theta_levels$se[held_row]), is.na(fit_tight$estimates[held, "se"]), all(is.finite(fit_tight$theta_levels$se[!held_row])),
           "boundary_estimate" %in% ferx_get_warnings(fit_tight, as_df = TRUE)$category)
-# The callout below: ferx-r reports the held level as a non-positive variance. Fails once fixed;
-# then drop the callout.
+# The prose: fit$held_at_bound names the held level as a profiled bound, ferx-r does not report it
+# as a non-positive variance, and its correlations are NA.
 held_variance_warning <- character(0)
 withCallingHandlers(ferx_fit(tight_model, mbma$data, verbose = FALSE),
                     warning = function(w) {
                       held_variance_warning <<- c(held_variance_warning, conditionMessage(w))
                       invokeRestart("muffleWarning")
                     })
-stopifnot(any(grepl("Non-positive variance for estimated parameter(s)", held_variance_warning, fixed = TRUE) &
-                grepl(held, held_variance_warning, fixed = TRUE)))
+stopifnot(!any(grepl("Non-positive variance", held_variance_warning, fixed = TRUE)),
+          identical(fit_tight$profiled_levels_at_bound, held),
+          identical(fit_tight$held_at_bound$reason, "profiled_bound"),
+          all(is.na(fit_tight$cor_matrix[held, colnames(fit_tight$cor_matrix) != held])))
 # The sentence on a box no level reaches: the same fit to the optimizer's tolerance, not bit for bit.
 unbounded_model <- file.path(mbma_dir, "mbma_fixed_study_profiled_unbounded.ferx")
 writeLines(sub("contrast = sum_to_zero](0.0, -50.0, 50.0) profile", "contrast = sum_to_zero](0.0) profile",
@@ -486,14 +489,9 @@ stopifnot(!identical(fit_unbounded$theta, fit_profiled$theta), box_gap < 1e-4,
           abs(fit_unbounded$ofv - fit_profiled$ofv) < 1e-8)
 ```
 
-Unbounded, `r held` is `r sprintf("%.2f", fit_profiled$theta[[held]])`. With the box, the solve stops it on the bound and re-solves the other levels with it held there, so the objective rises by `r sprintf("%.2f", fit_tight$ofv - fit_profiled$ofv)`. `fit$profiled_levels_at_bound` names the held level, and a `boundary_estimate` warning reports it. The covariance step holds it as it holds a `FIX` theta: its standard error is `NA` in `theta_levels` and `fit$estimates` (and `N/A` in the THETA table of a block small enough to print in full), and every other standard error is computed with it held. The bounds apply to the free coefficients, so under a sum-to-zero contrast the derived level, which has no theta, is never held.
+Unbounded, `r held` is `r sprintf("%.2f", fit_profiled$theta[[held]])`. With the box, the solve stops it on the bound and re-solves the other levels with it held there, so the objective rises by `r sprintf("%.2f", fit_tight$ofv - fit_profiled$ofv)`. `fit$held_at_bound`, printed first above, lists it with the reason `profiled_bound`; it lists every parameter the covariance step gives no standard error, a profiled level on its bound among them. A `boundary_estimate` warning reports it as well. `fit$profiled_levels_at_bound` still names the held level, but it is deprecated in favour of `held_at_bound`. The covariance step holds it as it holds a `FIX` theta: its standard error is `NA` in `theta_levels` and `fit$estimates` (and `N/A` in the THETA table of a block small enough to print in full), and every other standard error is computed with it held. The bounds apply to the free coefficients, so under a sum-to-zero contrast the derived level, which has no theta, is never held.
 
 A level on its bound says that the bound, not the data, decides its value: relax the bound unless it encodes something you know. A box that no level reaches changes nothing that matters. Dropping the `−50` to `50` bounds altogether moves the estimates by at most `r signif(box_gap, 1)`, well within the optimizer's tolerance (ferx-core's [bounds on a profiled block](https://ferx-nlme.org/ferx-core/model-file/parameters.html#bounds-on-a-profiled-block) describe the two fits as identical to the bit, which at this build they are not quite).
-
-::: {.callout-warning}
-## At this build: a held level is reported as a non-positive variance
-`ferx_fit()` on the bounded model warns "Non-positive variance for estimated parameter(s)" and names the held level, as if the covariance step had gone wrong. It has not: the step gives a held level a zero row and column on purpose, as it does for a `FIX` theta, but ferx-r treats only `FIX` thetas as held when it builds `fit$cor_matrix`. The warning can be ignored, and the held level's correlations are `NA`, which is correct.
-:::
 
 `profile` needs FOCE, FOCEI or Laplace (with or without adaptive quadrature, `n_agq`) and, on a continuous endpoint, an additive residual error, and it rules out priors and `global_search`, among others. ferx refuses each such fit with `E_PROFILE_SCOPE`. A residual `correlation` line, shown in the next section, is allowed. See [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks) in ferx-core for the full list.
 
@@ -614,13 +612,13 @@ profiled_pair_gap <- function(est, prof) {
   gap
 }
 resp_gap <- profiled_pair_gap(fit_resp, fit_resp_profiled)
-# The prose prints the rounded time ratio, so it must read 2 or more; the profiled fit is slower on
-# this small block.
+# The prose: the profiled fit is slower on this small block (only the direction is checked: the
+# ratio itself moves with machine load).
 stopifnot(length(fit_resp$wall_time_secs) == 1, length(fit_resp_profiled$wall_time_secs) == 1,
-          fit_resp_profiled$wall_time_secs >= 1.5 * fit_resp$wall_time_secs)
+          fit_resp_profiled$wall_time_secs > fit_resp$wall_time_secs)
 ```
 
-Both fits converge, and the profiled one reaches the same objective to the printed digits: the two are `r sprintf("%.0e", resp_gap)` OFV units apart, and every estimate, levels included, moves by less than 1% of its standard error. `fit$profiled_blocks` names the block, the `profiled` column of `theta_levels` marks all `r nrow(fit_resp_profiled$theta_levels)` levels, and `n_parameters` is the same, so the profiled fit's BIC and likelihood-ratio tests are those of the estimated one. As in the continuous model, profiling does not pay off on a block this small: on `r format(nrow(resp_data), big.mark = ",")` rows it took `r round(fit_resp_profiled$wall_time_secs / fit_resp$wall_time_secs)` times as long on this machine.
+Both fits converge, and the profiled one reaches the same objective to the printed digits: the two are `r sprintf("%.0e", resp_gap)` OFV units apart, and every estimate, levels included, moves by less than 1% of its standard error. `fit$profiled_blocks` names the block, the `profiled` column of `theta_levels` marks all `r nrow(fit_resp_profiled$theta_levels)` levels, and `n_parameters` is the same, so the profiled fit's BIC and likelihood-ratio tests are those of the estimated one. As in the continuous model, profiling does not pay off on a block this small: on `r format(nrow(resp_data), big.mark = ",")` rows it took `r sprintf("%.1f", fit_resp_profiled$wall_time_secs / fit_resp$wall_time_secs)` times as long when this page was rendered.
 
 `[binary_model]` takes a logit or a probit link. Written as `probit =` instead of `logit =`, the predictor gives the probability through the standard-normal CDF, P(DV = 1) = Φ(predictor); `link = probit` may be added, but the key implies it (see [the probit link](https://ferx-nlme.org/ferx-core/model-file/categorical.html#the-probit-link) in ferx-core). A profiled block is read the same way under either link. The same responder data under a probit link, with the block estimated and profiled:
 
@@ -1191,6 +1189,7 @@ No warning category has this chapter as its home. The fits above raise these, wh
 - `inflated_rse` (@sec-diagnostics), because some placebo levels are small relative to their standard errors, which is expected for an unstructured placebo time course;
 - the `threads` note (@sec-estimation-methods), on a machine with more cores than the subjects (six studies, three sponsors in the nested fits);
 - `boundary_estimate` (@sec-diagnostics), on the profiled level held on its bound;
+- `dw_autocorrelation` (@sec-diagnostics), on the first fit (Durbin-Watson `r round(fit$dw_statistic, 2)`: its residuals read as negatively autocorrelated) and on the fits that share its model and data: the fit of the arm table, the `car1` fits, the study- and sponsor-level fits, and the SIR and covariance re-runs. The fixed-study fits, the responder and proportion fits and the `nested_levels` fits (Durbin-Watson `r round(fit_nested$dw_statistic, 2)`) do not raise it;
 - `parameter_at_runaway_guard` (@sec-estimation-methods), on a variance that collapses to zero: the study kappa beside the sponsor effect, and the sponsor effect itself under the second pairing, which also raises `eta_shrinkage` (@sec-diagnostics);
 - `covariance_failed` and `covariance_step` (@sec-uncertainty), from the `"s"` and `"rsr"` covariance steps.
 
@@ -1205,10 +1204,24 @@ A profiled fit can also carry a `gradient_fallback` note (@sec-estimation-method
 chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_unbounded, fit_car1,
                      fit_car1_profiled, fit_resp, fit_resp_profiled, fit_probit, fit_probit_profiled, fit_prop, fit_prop_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
 chapter_categories <- unique(unlist(lapply(chapter_fits, function(f) ferx_get_warnings(f, as_df = TRUE)$category)))
-listed <- c("inflated_rse", "threads", "boundary_estimate", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
+listed <- c("inflated_rse", "threads", "boundary_estimate", "dw_autocorrelation", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
 other_categories <- ferx_get_warnings(fit_other, as_df = TRUE)$category
 stopifnot(all(chapter_categories %in% listed), all(setdiff(listed, "threads") %in% chapter_categories),
           all(c("parameter_at_runaway_guard", "eta_shrinkage") %in% other_categories))
+# The dw_autocorrelation item: exactly the fits it names raise it, negative (DW above 2) on the
+# first fit, and fit_nested's DW is inside the thresholds.
+named_fits <- list(fit = fit, fit_table = fit_table, fit_fixed = fit_fixed, fit_profiled = fit_profiled,
+                   profiled_s = profiled_s, profiled_rsr = profiled_rsr, fit_tight = fit_tight,
+                   fit_unbounded = fit_unbounded, fit_car1 = fit_car1, fit_car1_profiled = fit_car1_profiled,
+                   fit_resp = fit_resp, fit_resp_profiled = fit_resp_profiled, fit_probit = fit_probit,
+                   fit_probit_profiled = fit_probit_profiled, fit_prop = fit_prop, fit_prop_profiled = fit_prop_profiled,
+                   fit_levels = fit_levels, fit_sponsor = fit_sponsor, fit_other = fit_other, fit_nested = fit_nested,
+                   fit_nested_car1 = fit_nested_car1, fit_sir = fit_sir, fit_rsr = fit_rsr, fit_s = fit_s)
+stopifnot(length(named_fits) == length(chapter_fits))
+has_dw <- vapply(named_fits, function(f) "dw_autocorrelation" %in% ferx_get_warnings(f, as_df = TRUE)$category, logical(1))
+stopifnot(setequal(names(has_dw)[has_dw], c("fit", "fit_table", "fit_car1", "fit_car1_profiled", "fit_levels",
+                                            "fit_sponsor", "fit_other", "fit_sir", "fit_rsr", "fit_s")),
+          fit$dw_statistic > 2.5, fit_nested$dw_statistic < 2.5, fit_nested$dw_statistic > 1.5)
 ```
 
 ## Summary
@@ -1218,7 +1231,7 @@ stopifnot(all(chapter_categories %in% listed), all(setdiff(listed, "threads") %i
 - `kappa ... weight = NARM` is between-arm variability that shrinks with arm size. Report the unweighted γ² and the effective SD at the typical arm, `sqrt(gamma2 / fit$kappa_weight_typical)`.
 - With `contrast = sum_to_zero_within`, `TVE0` is each study's mean placebo level over its visits, not its week-0 level.
 - An observed proportion with its standard error is a bounded continuous endpoint: `y = pnorm(LP)` (probit) or `y = inv_logit(LP)` (logit) keeps the prediction in (0, 1).
-- A level block read linearly, inside one logit or probit link that is the whole prediction, or by a `[binary_model]` logit or probit predictor, as for a responder endpoint, can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in `fit$profiled_levels_at_bound`.
+- A level block read linearly, inside one logit or probit link that is the whole prediction, or by a `[binary_model]` logit or probit predictor, as for a responder endpoint, can be declared `profile`: the levels are solved at every step instead of searched, with the same objective, and estimates within a small fraction of their standard errors. Its bounds still apply, and a level held on one is listed in `fit$held_at_bound` (the older `fit$profiled_levels_at_bound` is deprecated).
 - `correlation car1(RHO) by OCC` correlates an arm's visits beside the arm kappa (`cs` there is refused). With few studies, calibrate its likelihood-ratio test by simulation.
 - `fit$theta_levels` holds every placebo level's value and standard error, derived ones included, and its SIR interval after `ferx_sir(sir_keep_samples = TRUE)`. Large blocks print as one THETA BLOCKS line.
 - `level NAME by COLUMN in PARENT` declares nested groupings below the subject, such as sponsor, study and arm, and `kappa ... at LEVEL` draws a kappa once per group of a level.
