@@ -598,6 +598,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
 <li><a href="#exponential-and-gompertz-hazards" id="toc-exponential-and-gompertz-hazards" class="nav-link" data-scroll-target="#exponential-and-gompertz-hazards">Exponential and Gompertz hazards</a></li>
   <li><a href="#a-simulation-based-check" id="toc-a-simulation-based-check" class="nav-link" data-scroll-target="#a-simulation-based-check">A simulation-based check</a></li>
+  <li><a href="#sec-tte-vpc" id="toc-sec-tte-vpc" class="nav-link" data-scroll-target="#sec-tte-vpc">The Kaplan–Meier VPC: <code>ferx_vpc_tte()</code></a></li>
   <li><a href="#sec-tte-individual" id="toc-sec-tte-individual" class="nav-link" data-scroll-target="#sec-tte-individual">Individual survival curves</a></li>
   <li><a href="#competing-risks" id="toc-competing-risks" class="nav-link" data-scroll-target="#competing-risks">Competing risks</a></li>
   <li><a href="#a-drug-driven-hazard-joint-pk-and-tte" id="toc-a-drug-driven-hazard-joint-pk-and-tte" class="nav-link" data-scroll-target="#a-drug-driven-hazard-joint-pk-and-tte">A drug-driven hazard: joint PK and TTE</a></li>
@@ -631,7 +632,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 </header><section id="where-you-are" class="level2"><h2 class="anchored" data-anchor-id="where-you-are">Where you are</h2>
-<p>Time-to-event (TTE) endpoints record when an event happens, such as dropout, a clinical event or death, or that it had not happened by the end of follow-up. ferx models them with an <code>[event_model]</code> block: a parametric hazard, with random effects and covariates in its parameters, fitted with a survival likelihood. This chapter fits the bundled examples: exponential, Weibull and Gompertz hazards, competing risks, and a hazard driven by the drug concentration. It then predicts survival curves and checks the models by simulation.</p>
+<p>Time-to-event (TTE) endpoints record when an event happens, such as dropout, a clinical event or death, or that it had not happened by the end of follow-up. ferx models them with an <code>[event_model]</code> block: a parametric hazard, with random effects and covariates in its parameters, fitted with a survival likelihood. This chapter fits the bundled examples: exponential, Weibull and Gompertz hazards, competing risks, and a hazard driven by the drug concentration. It then predicts survival curves and checks the models by simulation, with a Kaplan–Meier VPC.</p>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -871,6 +872,53 @@ Figure&nbsp;22.1: Kaplan–Meier estimate of the observed data (step) and the mo
 <td><code>horizon</code></td>
 <td>End of follow-up (administrative censoring) for simulated event times</td>
 </tr>
+<tr class="even">
+<td><code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code></td>
+<td>
+<code>model</code>, <code>data</code>, <code>fit</code>
+</td>
+<td>Model, observed TTE data (a path or a data frame; by default the data <code>fit</code> was fitted to, else the model file’s <code>[data]</code>), and optionally the fit to simulate at</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>
+<code>n_sim</code>, <code>seed</code>
+</td>
+<td>Number of replicates (at least 20 for the default band) and the random seed</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>censoring</code></td>
+<td>
+<code>"observed"</code> (default): replicates censored like the data; <code>"horizon"</code>: at the horizon only</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>
+<code>strata</code>, <code>by_dose</code>
+</td>
+<td>Stratify by a covariate, or by each subject’s first dose</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>cmt</code></td>
+<td>The endpoint to check, required when the model has several</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>horizon</code></td>
+<td>The time the replicates are simulated to; by default the latest time recorded on the endpoint</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>probs</code></td>
+<td>The band’s lower bound, middle line and upper bound</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>grid</code></td>
+<td>The times the band is evaluated at: <code>"auto"</code>, <code>"all_steps"</code> or a numeric vector</td>
+</tr>
 </tbody>
 </table>
 <p>Named blocks, <code>[event_model NAME]</code>, declare several endpoints. The ferx-core <a href="https://ferx-nlme.org/ferx-core/model-file/event-model.html">event model</a> and <a href="https://ferx-nlme.org/ferx-core/estimation/tte.html">TTE estimation</a> pages document the families, interval censoring and repeated events.</p>
@@ -954,7 +1002,202 @@ Figure&nbsp;22.2: Observed Kaplan–Meier curve (step) with the median and 90% i
 <span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
 <span><span class="co">#&gt; [1]  1.154544 30.000000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</section><section id="sec-tte-individual" class="level3"><h3 class="anchored" data-anchor-id="sec-tte-individual">Individual survival curves</h3>
+<p>The check above censors every replicate at the horizon only. That is right for <code>tte_weibull</code>, but not for data with dropouts before the end of follow-up, which the next section handles.</p>
+</section><section id="sec-tte-vpc" class="level3"><h3 class="anchored" data-anchor-id="sec-tte-vpc">The Kaplan–Meier VPC: <code>ferx_vpc_tte()</code>
+</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Needs ferx-r newer than 0.4.0
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code> and its <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> and <code><a href="https://rdrr.io/r/graphics/plot.default.html">plot()</a></code> methods are not in ferx-r 0.4.0.</p>
+</div>
+</div>
+<p><code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code> builds the same check in the engine, for one single-event TTE endpoint. It simulates the observed design <code>n_sim</code> times (at the fitted parameters when <code>fit</code> is given, otherwise at the model file’s initial values), censors the replicates like the data, and returns the observed Kaplan–Meier curve beside the pointwise band of the replicate curves. It never refits. On the exponential fit:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">vpc_exponential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">model</span>, <span class="va">exponential</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                                fit <span class="op">=</span> <span class="va">fit_exponential</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: ferx_vpc_tte produced 1 diagnostic:</span></span>
+<span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
+<span><span class="va">vpc_exponential</span></span>
+<span><span class="co">#&gt; Kaplan-Meier VPC (ferx_vpc_tte)</span></span>
+<span><span class="co">#&gt;   endpoint cmt 2, horizon 30, 200 replicates, observed censoring</span></span>
+<span><span class="co">#&gt;   band 5%-95% with the 50% line</span></span>
+<span><span class="co">#&gt;   all: 30 subjects, 19 events</span></span>
+<span><span class="co">#&gt;   1 warning (see `$warnings`)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">vpc_exponential</span><span class="op">$</span><span class="va">observed</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   STRATUM time n_risk n_event n_censor      surv     cumhaz</span></span>
+<span><span class="co">#&gt; 1     all 1.83     30       1        0 0.9666667 0.03333333</span></span>
+<span><span class="co">#&gt; 2     all 2.67     29       1        0 0.9333333 0.06781609</span></span>
+<span><span class="co">#&gt; 3     all 3.61     28       1        0 0.9000000 0.10353038</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">vpc_exponential</span><span class="op">$</span><span class="va">band</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   STRATUM time obs        lo       med hi n_used</span></span>
+<span><span class="co">#&gt; 1     all  0.0   1 1.0000000 1.0000000  1    200</span></span>
+<span><span class="co">#&gt; 2     all  0.3   1 0.9333333 1.0000000  1    200</span></span>
+<span><span class="co">#&gt; 3     all  0.6   1 0.9316667 0.9666667  1    200</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The warning is the unused-<code>LAMBDA</code> diagnostic of the simulator, shown above for <code><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate()</a></code>; it is also kept in <code>vpc_exponential$warnings</code>. <code>observed</code> has one row per distinct time, with the numbers at risk, events and censorings, the Kaplan–Meier survival <code>surv</code> and the Nelson–Aalen cumulative hazard <code>cumhaz</code>. It follows the survival package’s conventions, so it matches <code><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit()</a></code> row for row:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">exponential_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<span><span class="va">km_exponential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">exponential_data</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">vpc_exponential</span><span class="op">$</span><span class="va">observed</span><span class="op">$</span><span class="va">surv</span>, <span class="va">km_exponential</span><span class="op">$</span><span class="va">surv</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>band</code> has one row per grid time: <code>obs</code>, the observed curve read there, and <code>lo</code>, <code>med</code> and <code>hi</code>, the replicate curves’ quantiles at <code>probs</code> (5%, 50% and 95% by default). <code>n_used</code> counts the replicates still under follow-up at that time; where too few are left, the band is <code>NA</code>. <code><a href="https://rdrr.io/r/graphics/plot.default.html">plot()</a></code> draws the band and the observed curve, with the vpc package’s <code>plot_vpc()</code> when it is installed and base graphics otherwise; <code>engine = "base"</code> asks for base graphics regardless:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vpc_exponential</span>, engine <span class="op">=</span> <span class="st">"base"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-vpc-tte" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-vpc-tte-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="22-time-to-event_files/figure-html/fig-vpc-tte-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-vpc-tte-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.3: Kaplan–Meier VPC of the exponential fit: the observed curve against the 90% band and the median of 200 replicate curves.
+</figcaption></figure>
+</div>
+</div>
+</div>
+<section id="censoring-the-replicates" class="level4"><h4 class="anchored" data-anchor-id="censoring-the-replicates">Censoring the replicates</h4>
+<p>The observed curve is censored where subjects left the study, and the band is only comparable with it if the replicates are censored the same way. With the default <code>censoring = "observed"</code>, a subject observed censored keeps its own censoring time in every replicate, and a subject observed with an event draws a censoring time after that event from the censorings seen in the data. <code>censoring = "horizon"</code> censors the replicates at the horizon only.</p>
+<p>In <code>tte_exponential</code> every censoring is at the end of follow-up, 30 hours, so the two give the same band:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">vpc_exponential_horizon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">model</span>, <span class="va">exponential</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                                        fit <span class="op">=</span> <span class="va">fit_exponential</span>, censoring <span class="op">=</span> <span class="st">"horizon"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: ferx_vpc_tte produced 1 diagnostic:</span></span>
+<span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">vpc_exponential</span><span class="op">$</span><span class="va">band</span>, <span class="va">vpc_exponential_horizon</span><span class="op">$</span><span class="va">band</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A copy of the data with dropouts shows the difference. Each subject gets a dropout time drawn uniformly between 0 and 40 hours, independently of its event time; a subject that drops out before its event or the end of follow-up is censored then. The replicates still use the parameters of <code>fit_exponential</code>, and <code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code> takes the data frame directly:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">dropout_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">exponential_data</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">40</span><span class="op">)</span></span>
+<span><span class="va">dropout_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="va">exponential_data</span>,</span>
+<span>                       DV <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/if_else.html">if_else</a></span><span class="op">(</span><span class="va">dropout_time</span> <span class="op">&lt;</span> <span class="va">TIME</span>, <span class="fl">0L</span>, <span class="va">DV</span><span class="op">)</span>,</span>
+<span>                       TIME <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">pmin</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">dropout_time</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html">count</a></span><span class="op">(</span><span class="va">dropout_data</span>, <span class="va">DV</span>, before_end <span class="op">=</span> <span class="va">TIME</span> <span class="op">&lt;</span> <span class="fl">30</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   DV before_end  n</span></span>
+<span><span class="co">#&gt; 1  0      FALSE  5</span></span>
+<span><span class="co">#&gt; 2  0       TRUE 13</span></span>
+<span><span class="co">#&gt; 3  1       TRUE 12</span></span>
+<span><span class="va">vpc_observed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">model</span>, <span class="va">dropout_data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                             fit <span class="op">=</span> <span class="va">fit_exponential</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: ferx_vpc_tte produced 1 diagnostic:</span></span>
+<span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
+<span><span class="va">vpc_horizon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">model</span>, <span class="va">dropout_data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                            fit <span class="op">=</span> <span class="va">fit_exponential</span>, censoring <span class="op">=</span> <span class="st">"horizon"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: ferx_vpc_tte produced 1 diagnostic:</span></span>
+<span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
+<span><span class="va">dropout_bands</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html">bind_rows</a></span><span class="op">(</span>observed <span class="op">=</span> <span class="va">vpc_observed</span><span class="op">$</span><span class="va">band</span>, horizon <span class="op">=</span> <span class="va">vpc_horizon</span><span class="op">$</span><span class="va">band</span>, .id <span class="op">=</span> <span class="st">"censoring"</span><span class="op">)</span></span>
+<span><span class="va">dropout_summary</span> <span class="op">&lt;-</span> <span class="va">dropout_bands</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">censoring</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>width_after_15h <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">hi</span> <span class="op">-</span> <span class="va">lo</span><span class="op">)</span><span class="op">[</span><span class="va">time</span> <span class="op">&gt;=</span> <span class="fl">15</span><span class="op">]</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>            na_band <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">lo</span><span class="op">)</span><span class="op">)</span>, grid_times <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html">n</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dropout_summary</span></span>
+<span><span class="co">#&gt; # A tibble: 2 × 4</span></span>
+<span><span class="co">#&gt;   censoring width_after_15h na_band grid_times</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;               &lt;dbl&gt;   &lt;int&gt;      &lt;int&gt;</span></span>
+<span><span class="co">#&gt; 1 horizon             0.300       0        124</span></span>
+<span><span class="co">#&gt; 2 observed            0.368       0        124</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">dropout_bands</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">time</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html">geom_ribbon</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lo</span>, ymax <span class="op">=</span> <span class="va">hi</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">med</span><span class="op">)</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_step</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">obs</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">censoring</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Survival"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-vpc-tte-censoring" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-vpc-tte-censoring-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="22-time-to-event_files/figure-html/fig-vpc-tte-censoring-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-vpc-tte-censoring-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.4: Kaplan–Meier VPC of the data with dropouts, with the replicates censored like the data (observed) and at the horizon only (horizon). Band 90%, dashed line the replicates’ median, step the observed curve.
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>Late in follow-up, few subjects of the data with dropouts are still at risk, so its Kaplan–Meier curve is uncertain there. Replicates censored like the data carry that uncertainty, and their band is wider. Censored at the horizon only, the replicates keep every subject at risk to the end, so their band is too narrow for this curve: after 15 hours it is 0.30 wide on average, against 0.37 with <code>censoring = "observed"</code>. A band that is too narrow flags misfit where there is none.</p>
+</section><section id="stratifying" class="level4"><h4 class="anchored" data-anchor-id="stratifying">Stratifying</h4>
+<p><code>strata</code> names a covariate: subjects are grouped by its value at their first record, and each group gets its own curve and band. <code>tte_exponential</code> has no covariates, so a copy of the data gives the subjects an <code>ARM</code> column. The hazard does not depend on it, so both arms are simulated alike:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">arm_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="va">exponential_data</span>, ARM <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/if_else.html">if_else</a></span><span class="op">(</span><span class="va">ID</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html">%%</a></span> <span class="fl">2</span> <span class="op">==</span> <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">vpc_arm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">model</span>, <span class="va">arm_data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_exponential</span>,</span>
+<span>                        strata <span class="op">=</span> <span class="st">"ARM"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: ferx_vpc_tte produced 1 diagnostic:</span></span>
+<span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
+<span><span class="va">vpc_arm</span><span class="op">$</span><span class="va">strata</span></span>
+<span><span class="co">#&gt;   STRATUM value n_subjects</span></span>
+<span><span class="co">#&gt; 1   ARM=1     1         15</span></span>
+<span><span class="co">#&gt; 2   ARM=2     2         15</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vpc_arm</span>, engine <span class="op">=</span> <span class="st">"base"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-vpc-tte-strata" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-vpc-tte-strata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="22-time-to-event_files/figure-html/fig-vpc-tte-strata-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-vpc-tte-strata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.5: Kaplan–Meier VPC stratified by the <code>ARM</code> column.
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>A covariate with more than 10 values is refused; bin it into a categorical column first. <code>by_dose = TRUE</code> stratifies by the amount of each subject’s first dose instead (0 for a subject without a dose), and cannot be combined with <code>strata</code>. Here a copy gives each subject a dose of 100 or 200 at time 0, in compartment 1 of the placeholder PK model:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">dose_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>ID <span class="op">=</span> <span class="va">exponential_data</span><span class="op">$</span><span class="va">ID</span>, TIME <span class="op">=</span> <span class="fl">0</span>, EVID <span class="op">=</span> <span class="fl">1</span>, CMT <span class="op">=</span> <span class="fl">1</span>, RATE <span class="op">=</span> <span class="fl">0</span>, MDV <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                        AMT <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/if_else.html">if_else</a></span><span class="op">(</span><span class="va">exponential_data</span><span class="op">$</span><span class="va">ID</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html">%%</a></span> <span class="fl">2</span> <span class="op">==</span> <span class="fl">0</span>, <span class="fl">100</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dosed_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html">bind_rows</a></span><span class="op">(</span><span class="va">dose_rows</span>, <span class="va">exponential_data</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span><span class="op">(</span><span class="va">ID</span>, <span class="va">TIME</span>, <span class="fu"><a href="https://dplyr.tidyverse.org/reference/desc.html">desc</a></span><span class="op">(</span><span class="va">EVID</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">vpc_dose</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">model</span>, <span class="va">dosed_data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_exponential</span>,</span>
+<span>                         by_dose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: ferx_vpc_tte produced 1 diagnostic:</span></span>
+<span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
+<span><span class="va">vpc_dose</span><span class="op">$</span><span class="va">strata</span></span>
+<span><span class="co">#&gt;    STRATUM value n_subjects</span></span>
+<span><span class="co">#&gt; 1 dose=100   100         15</span></span>
+<span><span class="co">#&gt; 2 dose=200   200         15</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section><section id="competing-risks-choose-the-endpoint" class="level4"><h4 class="anchored" data-anchor-id="competing-risks-choose-the-endpoint">Competing risks: choose the endpoint</h4>
+<p><code>tte_competing_risks</code> has two TTE endpoints, and without <code>cmt</code> it is refused with a <code>ferx_engine_error</code> whose code is <code>E_VPC_TTE_INPUT</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">competing_risks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"tte_competing_risks"</span><span class="op">)</span></span>
+<span><span class="va">vpc_refusal</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">competing_risks</span><span class="op">$</span><span class="va">model</span>, <span class="va">competing_risks</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">50</span><span class="op">)</span>,</span>
+<span>                        ferx_engine_error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="va">e</span><span class="op">)</span></span>
+<span><span class="va">vpc_refusal</span><span class="op">$</span><span class="va">code</span></span>
+<span><span class="co">#&gt; [1] "E_VPC_TTE_INPUT"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>One minus the Kaplan–Meier curve of one cause is not that cause’s cumulative incidence, so ferx does not pick one for you. With <code>cmt</code>, the observed curve is that cause’s survival, with the other cause’s events counted as censorings, and it matches <code><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit()</a></code> on the endpoint’s rows. The replicates keep each subject’s observed censoring time, the other cause’s event time included, as for any censoring:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">vpc_cause</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte</a></span><span class="op">(</span><span class="va">competing_risks</span><span class="op">$</span><span class="va">model</span>, <span class="va">competing_risks</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span>, cmt <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">vpc_cause</span></span>
+<span><span class="co">#&gt; Kaplan-Meier VPC (ferx_vpc_tte)</span></span>
+<span><span class="co">#&gt;   endpoint cmt 2, horizon 14, 200 replicates, observed censoring</span></span>
+<span><span class="co">#&gt;   band 5%-95% with the 50% line</span></span>
+<span><span class="co">#&gt;   all: 40 subjects, 23 events</span></span>
+<span><span class="va">cause_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">competing_risks</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span>, <span class="va">CMT</span> <span class="op">==</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html">all.equal</a></span><span class="op">(</span><span class="va">vpc_cause</span><span class="op">$</span><span class="va">observed</span><span class="op">$</span><span class="va">surv</span>, <span class="fu"><a href="https://rdrr.io/pkg/survival/man/survfit.html">survfit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html">Surv</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">DV</span><span class="op">)</span> <span class="op">~</span> <span class="fl">1</span>, data <span class="op">=</span> <span class="va">cause_rows</span><span class="op">)</span><span class="op">$</span><span class="va">surv</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vpc_cause</span>, engine <span class="op">=</span> <span class="st">"base"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-vpc-tte-competing" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-vpc-tte-competing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="22-time-to-event_files/figure-html/fig-vpc-tte-competing-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-vpc-tte-competing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.6: Kaplan–Meier VPC of the first cause of <code>tte_competing_risks</code> (<code>cmt = 2</code>), with the other cause as censoring, simulated at the model file’s values.
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>Without <code>fit</code>, as here, the replicates use the model file’s initial values; the competing-risks fit follows below.</p>
+<p>With the same code, <code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code> refuses the inputs <code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">?ferx_vpc_tte</a></code> lists, among them repeated events, delayed entry (<code>TENTRY</code>), interval-censored records and more than one record per subject on the endpoint.</p>
+</section></section><section id="sec-tte-individual" class="level3"><h3 class="anchored" data-anchor-id="sec-tte-individual">Individual survival curves</h3>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -970,7 +1213,7 @@ Figure&nbsp;22.2: Observed Kaplan–Meier curve (step) with the median and 90% i
 </div>
 <p>The curves so far are for a subject with random effects 0. With <code>type = "individual"</code>, <code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival()</a></code> evaluates each subject at its own etas from <code>fit$ebe_etas</code>, so each subject gets its own S(t), H(t), h(t), median and mean survival. It needs <code>fit</code>, and every subject in <code>data</code> needs a row in <code>fit$ebe_etas</code>. When <code>data</code> is omitted, the fitted data is used if it can still be found. The exponential fit gives both kinds of curve, each with the unused-<code>LAMBDA</code> diagnostic shown above:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">times</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span>, by <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">times</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span>, by <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">typical_curve</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">model</span>, times <span class="op">=</span> <span class="va">times</span>, fit <span class="op">=</span> <span class="va">fit_exponential</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: ferx_predict_survival produced 1 diagnostic:</span></span>
 <span><span class="co">#&gt;   [individual_parameters] `LAMBDA` is computed but never used — not mapped into the `pk(...)` model and not referenced in any other block, so it has no effect. Map it in [structural_model] (e.g. `f=F`) or remove it.</span></span>
@@ -992,7 +1235,7 @@ Figure&nbsp;22.2: Observed Kaplan–Meier curve (step) with the median and 90% i
 <span><span class="co">#&gt; 3  3 0.6535397  0.4253520        16.29585</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">individual_curve</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">survival</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">individual_curve</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span><span class="va">TIME</span>, <span class="va">survival</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>group <span class="op">=</span> <span class="va">ID</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"grey60"</span>, linewidth <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">typical_curve</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/nth.html">first</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"steelblue"</span>, linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (h)"</span>, y <span class="op">=</span> <span class="st">"Survival"</span><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1002,14 +1245,14 @@ Figure&nbsp;22.2: Observed Kaplan–Meier curve (step) with the median and 90% i
 <img src="22-time-to-event_files/figure-html/fig-individual-survival-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-individual-survival-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;22.3: Survival curve of each subject at its fitted random effect (grey) and of a subject with random effect 0 (blue), from the exponential fit.
+Figure&nbsp;22.7: Survival curve of each subject at its fitted random effect (grey) and of a subject with random effect 0 (blue), from the exponential fit.
 </figcaption></figure>
 </div>
 </div>
 </div>
 <p>The hazard is <code>TVLAMBDA * exp(ETA_LAMBDA)</code>, so a subject’s cumulative hazard is the typical one multiplied by exp(η̂), and its median survival is the typical one multiplied by exp(−η̂). Matched on <code>ID</code> with <code>fit$ebe_etas</code>, the two outputs agree with that to rounding:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">eta_hat</span> <span class="op">&lt;-</span> <span class="va">fit_exponential</span><span class="op">$</span><span class="va">ebe_etas</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">eta_hat</span> <span class="op">&lt;-</span> <span class="va">fit_exponential</span><span class="op">$</span><span class="va">ebe_etas</span></span>
 <span><span class="va">ratios</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">inner_join</a></span><span class="op">(</span><span class="va">individual_curve</span>, <span class="va">typical_curve</span>, by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ID"</span>, <span class="st">"CMT"</span>, <span class="st">"TIME"</span><span class="op">)</span>,</span>
 <span>                     suffix <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"_ind"</span>, <span class="st">"_typ"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">TIME</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -1024,7 +1267,7 @@ Figure&nbsp;22.3: Survival curve of each subject at its fitted random effect (gr
 </div>
 <p>The etas are point estimates (EBEs, or posterior means for a VI fit), and with one record per subject they shrink towards 0: their standard deviation is 0.2, against 0.54 for the fitted between-subject standard deviation. A subject with little information gets a curve close to the typical one. The subjects censored at the end of follow-up have the same data, no event by then, so they get the same eta, the lowest one:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">exponential_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">exponential_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span></span>
 <span><span class="va">censored_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span><span class="op">(</span><span class="va">exponential_data</span><span class="op">$</span><span class="va">ID</span><span class="op">[</span><span class="va">exponential_data</span><span class="op">$</span><span class="va">DV</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">censored_eta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">eta_hat</span>, <span class="va">ID</span> <span class="op"><a href="https://rdrr.io/r/base/match.html">%in%</a></span> <span class="va">censored_ids</span><span class="op">)</span><span class="op">$</span><span class="va">ETA_LAMBDA</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>n_censored <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">censored_ids</span><span class="op">)</span>, censored_at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">exponential_data</span><span class="op">$</span><span class="va">TIME</span><span class="op">)</span><span class="op">)</span></span>
@@ -1038,7 +1281,7 @@ Figure&nbsp;22.3: Survival curve of each subject at its fitted random effect (gr
 <p>These 11 subjects share one curve, the highest in the figure. Individual curves describe the fitted subjects; they are not a prediction for new ones.</p>
 <p>A subject the fit never saw has no eta, and is refused with a <code>ferx_engine_error</code> whose code is <code>E_SUPPLIED_ETAS</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">new_subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span>, ID <span class="op">=</span> <span class="va">ID</span> <span class="op">+</span> <span class="fl">1000</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">new_subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">exponential</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span>, ID <span class="op">=</span> <span class="va">ID</span> <span class="op">+</span> <span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="va">new_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">tte_dir</span>, <span class="st">"tte_exponential_new_ids.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">new_subjects</span>, <span class="va">new_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">refusal</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span></span>
@@ -1050,7 +1293,7 @@ Figure&nbsp;22.3: Survival curve of each subject at its fitted random effect (gr
 </div>
 <p><code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">?ferx_predict_survival</a></code> adds that a <code>[mixture]</code> model is refused the same way, and that IOV kappas are taken as 0, which is exact because no hazard can read a kappa. A fit without random effects has no etas, so its individual curves are the population ones:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">no_eta_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">tte_dir</span>, <span class="st">"tte_weibull_no_eta.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">no_eta_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">tte_dir</span>, <span class="st">"tte_weibull_no_eta.ferx"</span><span class="op">)</span></span>
 <span><span class="va">no_eta_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"scale  = TVSCALE * exp(ETA_SCALE)"</span>, <span class="st">"scale  = TVSCALE"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">weibull</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">no_eta_lines</span> <span class="op">&lt;-</span> <span class="va">no_eta_lines</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"omega ETA_SCALE"</span>, <span class="va">no_eta_lines</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html">stopifnot</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/any.html">any</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"ETA_SCALE"</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"#.*"</span>, <span class="st">""</span>, <span class="va">no_eta_lines</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -1063,7 +1306,7 @@ Figure&nbsp;22.3: Survival curve of each subject at its fitted random effect (gr
 </section><section id="competing-risks" class="level3"><h3 class="anchored" data-anchor-id="competing-risks">Competing risks</h3>
 <p><code>tte_competing_risks</code> has two causes, each with its own named event block and compartment, and a shared frailty <code>ETA_F</code>. Each subject has one row per cause at the same time: <code>DV = 1</code> for the cause that happened, <code>DV = 0</code> for the other:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">competing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"tte_competing_risks"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">competing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"tte_competing_risks"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span><span class="op">(</span><span class="va">competing</span><span class="op">$</span><span class="va">data</span>, na.strings <span class="op">=</span> <span class="st">"."</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   ID    TIME DV EVID AMT CMT RATE MDV</span></span>
 <span><span class="co">#&gt; 1  1 12.2538  1    0   0   2    0   0</span></span>
@@ -1078,14 +1321,14 @@ Figure&nbsp;22.3: Survival curve of each subject at its fitted random effect (gr
 <span><span class="co">#&gt;   omega ETA_F ~ 0.25</span></span>
 <span><span class="va">fit_competing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">competing</span><span class="op">$</span><span class="va">model</span>, <span class="va">competing</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_competing</span><span class="op">$</span><span class="va">estimates</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"rse_pct"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                estimate     rse_pct</span></span>
-<span><span class="co">#&gt; TVLAMBDA_A 1.140563e-01    20.85155</span></span>
-<span><span class="co">#&gt; TVLAMBDA_B 7.438451e-02    25.81998</span></span>
-<span><span class="co">#&gt; ETA_F      6.144212e-06 28480.01474</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt;                estimate  rse_pct</span></span>
+<span><span class="co">#&gt; TVLAMBDA_A 1.140563e-01 20.85150</span></span>
+<span><span class="co">#&gt; TVLAMBDA_B 7.438451e-02 25.81994</span></span>
+<span><span class="co">#&gt; ETA_F      6.144212e-06       NA</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The two rates recover the simulation values of the model file (0.10 and 0.06), while the frailty variance collapses. The model file notes that it is weakly identified with FOCEI. For several causes, <code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival()</a></code> adds the cumulative incidence of each cause (<code>cif</code>) and the all-cause survival (<code>survival_all</code>); the incidences and the all-cause survival add up to 1:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">competing_curve</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival</a></span><span class="op">(</span><span class="va">competing</span><span class="op">$</span><span class="va">model</span>, <span class="va">competing</span><span class="op">$</span><span class="va">data</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">14</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, fit <span class="op">=</span> <span class="va">fit_competing</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">competing_curve</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival</a></span><span class="op">(</span><span class="va">competing</span><span class="op">$</span><span class="va">model</span>, <span class="va">competing</span><span class="op">$</span><span class="va">data</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">14</span>, by <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>, fit <span class="op">=</span> <span class="va">fit_competing</span><span class="op">)</span></span>
 <span><span class="va">subject</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">competing_curve</span>, <span class="va">ID</span> <span class="op">==</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/nth.html">first</a></span><span class="op">(</span><span class="va">ID</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">subject</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">TIME</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -1106,7 +1349,7 @@ Figure&nbsp;22.3: Survival curve of each subject at its fitted random effect (gr
 <img src="22-time-to-event_files/figure-html/fig-competing-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="840">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-competing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival for a typical subject.
+Figure&nbsp;22.8: Cumulative incidence of the two causes and all-cause survival for a typical subject.
 </figcaption></figure>
 </div>
 </div>
@@ -1114,7 +1357,7 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 </section><section id="a-drug-driven-hazard-joint-pk-and-tte" class="level3"><h3 class="anchored" data-anchor-id="a-drug-driven-hazard-joint-pk-and-tte">A drug-driven hazard: joint PK and TTE</h3>
 <p>In <code>pktte_joint</code> the hazard depends on the drug concentration. <code>hazard =</code> is written with ODE states and individual parameters; ferx adds the cumulative hazard as an ODE state and fits it together with the concentrations:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">joint</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"pktte_joint"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">joint</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"pktte_joint"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_get_section.html">ferx_model_get_section</a></span><span class="op">(</span><span class="va">joint</span><span class="op">$</span><span class="va">model</span>, <span class="st">"individual_parameters"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # [individual_parameters]</span></span>
 <span><span class="co">#&gt;   CL   = TVCL * exp(ETA_CL)</span></span>
@@ -1145,7 +1388,7 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 </div>
 <p>With 6 subjects, clearance, volume and the concentration effect <code>TVBETA</code> are not determined: their relative standard errors are 83000% and more, and their estimates are correlated with |r| of at least 1. The example shows the syntax; a real analysis needs more data. <code>sdtab</code> holds the concentration rows, followed by one row per event record with the residuals shown for <code>tte_weibull</code>; <code>COXSNELL</code> and the other three are <code>NaN</code> on the concentration rows. Simulating a drug-driven hazard needs <code>horizon</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate</a></span><span class="op">(</span><span class="va">joint</span><span class="op">$</span><span class="va">model</span>, <span class="va">joint</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_joint</span><span class="op">)</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html">try</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate</a></span><span class="op">(</span><span class="va">joint</span><span class="op">$</span><span class="va">model</span>, <span class="va">joint</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_joint</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in ferx_rust_simulate_from_fit(model_path = normalizePath(model),  : </span></span>
 <span><span class="co">#&gt;   Error simulating: ODE-accumulated TTE (joint PK-TTE) simulation requires a finite, positive administrative horizon: set `[simulation] horizon` (or `SimulateOptions.horizon`). A drug-driven hazard can vanish, so there is no implicit observation window. [E_SIMULATE_HORIZON]</span></span>
 <span><span class="va">joint_sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate</a></span><span class="op">(</span><span class="va">joint</span><span class="op">$</span><span class="va">model</span>, <span class="va">joint</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, fit <span class="op">=</span> <span class="va">fit_joint</span>, horizon <span class="op">=</span> <span class="fl">24</span><span class="op">)</span></span>
@@ -1159,7 +1402,7 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 </section><section id="delayed-entry" class="level3"><h3 class="anchored" data-anchor-id="delayed-entry">Delayed entry</h3>
 <p>When subjects are known to be event-free until they enter the study, the likelihood should condition on that. A <code>TENTRY</code> column gives the entry time. In a copy of the Weibull data every subject enters at 4 hours (before the first event, at 4.59 hours):</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">entry_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="va">weibull_data</span>, TENTRY <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">entry_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="va">weibull_data</span>, TENTRY <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">entry_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">tte_dir</span>, <span class="st">"tte_weibull_entry.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span><span class="op">(</span><span class="va">entry_data</span>, <span class="va">entry_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_entry</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">weibull</span><span class="op">$</span><span class="va">model</span>, <span class="va">entry_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -1176,7 +1419,7 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 <li>
 <p><strong>Validate a compact TTE model like any other.</strong> <code><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate()</a></code> accepts a model without <code>[structural_model]</code>, <code>[error_model]</code> and <code>[individual_parameters]</code>, such as <code>tte_weibull</code>:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">weibull_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">weibull</span><span class="op">$</span><span class="va">model</span>, <span class="va">weibull</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">weibull_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_model_validate.html">ferx_model_validate</a></span><span class="op">(</span><span class="va">weibull</span><span class="op">$</span><span class="va">model</span>, <span class="va">weibull</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating: tte_weibull.ferx </span></span>
 <span><span class="co">#&gt;        data: tte_weibull.csv </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1204,7 +1447,8 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 </div>
 </li>
 <li><p><strong>Set <code>horizon</code> when simulating.</strong> Without it, analytical hazards are not censored at the end of follow-up, and a drug-driven hazard cannot be simulated.</p></li>
-<li><p><strong>A typical-subject curve is not the population curve.</strong> Compare observed Kaplan–Meier curves with simulations, not with <code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival()</a></code> at random effect 0.</p></li>
+<li><p><strong>A typical-subject curve is not the population curve.</strong> Compare observed Kaplan–Meier curves with simulations (<code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code>), not with <code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival()</a></code> at random effect 0.</p></li>
+<li><p><strong>Censor the replicates like the data.</strong> When subjects drop out before the end of follow-up, a band censored at the horizon only is too narrow; keep <code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code>’s default <code>censoring = "observed"</code>.</p></li>
 <li><p><strong>Covariates in a hazard must be constant within a subject.</strong> A time-varying covariate in the hazard stops the fit.</p></li>
 <li><p><strong>Frailty variances are weakly identified with one event per subject.</strong> Check their standard errors, and consider SAEM or IMP.</p></li>
 </ul>
@@ -1213,7 +1457,7 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 <li>
 <p><code>simulation</code> (warning): a problem in individual simulated subjects, such as a non-positive hazard, which ferx turns into censoring at the horizon. The messages are attached to the result as <code>attr(sim, "simulation_warnings")</code>. Here a copy of the Weibull model subtracts 25 from the scale, which makes it negative for most subjects:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">degenerate_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">tte_dir</span>, <span class="st">"tte_weibull_negative_scale.ferx"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">degenerate_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">tte_dir</span>, <span class="st">"tte_weibull_negative_scale.ferx"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">sub</a></span><span class="op">(</span><span class="st">"scale  = TVSCALE * exp(ETA_SCALE)"</span>, <span class="st">"scale  = TVSCALE * exp(ETA_SCALE) - 25"</span>,</span>
 <span>               <span class="fu"><a href="https://rdrr.io/r/base/readLines.html">readLines</a></span><span class="op">(</span><span class="va">weibull</span><span class="op">$</span><span class="va">model</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="va">degenerate_model</span><span class="op">)</span></span>
 <span><span class="va">degenerate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_simulate.html">ferx_simulate</a></span><span class="op">(</span><span class="va">degenerate_model</span>, <span class="va">weibull</span><span class="op">$</span><span class="va">data</span>, n_sim <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">1</span>, horizon <span class="op">=</span> <span class="fl">60</span><span class="op">)</span><span class="op">)</span></span>
@@ -1234,7 +1478,7 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 <li>Choose a hazard <code>family</code> (exponential, Weibull, Gompertz), or write a drug-driven <code>hazard</code> in an ODE model.</li>
 <li>
 <code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">ferx_predict_survival()</a></code> gives S(t), H(t), h(t) and, for competing risks, cumulative incidences; <code>type = "individual"</code> gives each fitted subject’s curves at its fitted etas.</li>
-<li>Check TTE models with Kaplan–Meier curves of simulations, using <code>horizon</code> for follow-up.</li>
+<li>Check TTE models with a Kaplan–Meier VPC, <code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">ferx_vpc_tte()</a></code>: replicates censored like the data, stratified with <code>strata</code> or <code>by_dose</code>, one endpoint at a time (<code>cmt</code>) under competing risks.</li>
 <li>
 <code>TENTRY</code> handles delayed entry, <code>DV = 2</code> interval censoring, and <code>type = rtte</code> repeated events.</li>
 </ul>
@@ -1250,7 +1494,7 @@ Figure&nbsp;22.4: Cumulative incidence of the two causes and all-cause survival 
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">?ferx_predict_survival</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_simulate.html">?ferx_simulate</a></code> (<code>horizon</code>), <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code>
+<li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_predict_survival.html">?ferx_predict_survival</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_vpc_tte.html">?ferx_vpc_tte</a></code>, <code><a href="https://ferx-nlme.org/reference/plot.ferx_vpc_tte.html">?plot.ferx_vpc_tte</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_simulate.html">?ferx_simulate</a></code> (<code>horizon</code>), <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code>
 </li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/model-file/event-model.html">event model</a>, <a href="https://ferx-nlme.org/ferx-core/estimation/tte.html">TTE estimation</a>
 </li>

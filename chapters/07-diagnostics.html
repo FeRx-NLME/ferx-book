@@ -734,7 +734,7 @@ Figure&nbsp;7.3: Normal quantile plot of CWRES.
 </div>
 </div>
 </div>
-<p>The fit also tests the residuals for serial correlation within subjects. <code>fit$dw_statistic</code> is the Durbin-Watson statistic of the individual residuals (2.91 here) and <code>fit$iwres_lag1_r</code> their lag-1 correlation (-0.53). Values far from 2 and 0 respectively trigger the <code>dw_autocorrelation</code> warning this fit carries. The statistic reads in two directions, and they mean opposite things:</p>
+<p>The fit also tests the residuals for serial correlation within subjects. <code>fit$dw_statistic</code> is the Durbin-Watson statistic of the individual residuals (3.06 here) and <code>fit$iwres_lag1_r</code> their lag-1 correlation (-0.53). Values far from 2 and 0 respectively trigger the <code>dw_autocorrelation</code> warning this fit carries. The statistic reads in two directions, and they mean opposite things:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -764,6 +764,19 @@ Figure&nbsp;7.3: Normal quantile plot of CWRES.
 </tr>
 </tbody>
 </table>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Changed after ferx-r 0.4.0
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>fit$dw_statistic</code> and <code>fit$iwres_lag1_r</code> pair only consecutive residuals of one subject that share an occasion (and, under a residual <code>correlation</code> line, a residual block), and the Durbin-Watson denominator is normalised by the number of pairs, so independent residuals give 2 however short the series. ferx-r 0.4.0 computes the classic form, so its values differ, and so can which fits get the <code>dw_autocorrelation</code> warning. The 1.5 and 2.5 thresholds are the same.</p>
+</div>
+</div>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/ferx_get_warnings.html">ferx_get_warnings</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ferx fit warnings  (two_cpt_oral_base)</span></span>
@@ -778,7 +791,7 @@ Figure&nbsp;7.3: Normal quantile plot of CWRES.
 <span><span class="co">#&gt;             both so the difference you measure is the gradient.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [WARNING]  dw_autocorrelation</span></span>
-<span><span class="co">#&gt;             Negative IWRES autocorrelation detected (Durbin-Watson = 2.91).</span></span>
+<span><span class="co">#&gt;             Negative IWRES autocorrelation detected (Durbin-Watson = 3.06).</span></span>
 <span><span class="co">#&gt;             Possible over-parameterization or misspecified error model.</span></span>
 <span><span class="co">#&gt;             Negative IWRES autocorrelation suggests over-parameterisation or a</span></span>
 <span><span class="co">#&gt;             misspecified error model. Consider removing a parameter or</span></span>
@@ -836,12 +849,12 @@ Figure&nbsp;7.5: Distribution of the estimated random effects.
 <p>Shrinkage measures how strongly the individual estimates are pulled towards zero. High eta shrinkage means the data carry little information about that random effect for individual subjects, which makes eta-based plots (including the covariate plots below) unreliable for that parameter:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>eta <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">eta_names</span>, shrinkage_pct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eta</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      eta shrinkage_pct</span></span>
-<span><span class="co">#&gt; 1 ETA_CL           0.2</span></span>
-<span><span class="co">#&gt; 2 ETA_V1           2.7</span></span>
-<span><span class="co">#&gt; 3  ETA_Q           2.3</span></span>
-<span><span class="co">#&gt; 4 ETA_V2           2.2</span></span>
-<span><span class="co">#&gt; 5 ETA_KA           3.5</span></span>
+<span><span class="co">#&gt;           eta shrinkage_pct</span></span>
+<span><span class="co">#&gt; ETA_CL ETA_CL           0.2</span></span>
+<span><span class="co">#&gt; ETA_V1 ETA_V1           2.7</span></span>
+<span><span class="co">#&gt; ETA_Q   ETA_Q           2.3</span></span>
+<span><span class="co">#&gt; ETA_V2 ETA_V2           2.2</span></span>
+<span><span class="co">#&gt; ETA_KA ETA_KA           3.5</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>eps_shrinkage_pct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="va">fit</span><span class="op">$</span><span class="va">shrinkage_eps</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; eps_shrinkage_pct </span></span>
 <span><span class="co">#&gt;              27.8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -963,23 +976,23 @@ Figure&nbsp;7.8: NPDE against time and their normal quantile plot.
 Table&nbsp;7.1: NPDE settings.
 </figcaption><div aria-describedby="tbl-settings-npde-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="atcjtvqdue" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#atcjtvqdue table {
+<div id="kayweinylx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#kayweinylx table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#atcjtvqdue thead, #atcjtvqdue tbody, #atcjtvqdue tfoot, #atcjtvqdue tr, #atcjtvqdue td, #atcjtvqdue th {
+#kayweinylx thead, #kayweinylx tbody, #kayweinylx tfoot, #kayweinylx tr, #kayweinylx td, #kayweinylx th {
   border-style: none;
 }
 
-#atcjtvqdue p {
+#kayweinylx p {
   margin: 0;
   padding: 0;
 }
 
-#atcjtvqdue .gt_table {
+#kayweinylx .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1005,12 +1018,12 @@ Table&nbsp;7.1: NPDE settings.
   border-left-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_caption {
+#kayweinylx .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#atcjtvqdue .gt_title {
+#kayweinylx .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1022,7 +1035,7 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-width: 0;
 }
 
-#atcjtvqdue .gt_subtitle {
+#kayweinylx .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1034,7 +1047,7 @@ Table&nbsp;7.1: NPDE settings.
   border-top-width: 0;
 }
 
-#atcjtvqdue .gt_heading {
+#kayweinylx .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1046,13 +1059,13 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_bottom_border {
+#kayweinylx .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_col_headings {
+#kayweinylx .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1067,7 +1080,7 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_col_heading {
+#kayweinylx .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1087,7 +1100,7 @@ Table&nbsp;7.1: NPDE settings.
   overflow-x: hidden;
 }
 
-#atcjtvqdue .gt_column_spanner_outer {
+#kayweinylx .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1099,15 +1112,15 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 4px;
 }
 
-#atcjtvqdue .gt_column_spanner_outer:first-child {
+#kayweinylx .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#atcjtvqdue .gt_column_spanner_outer:last-child {
+#kayweinylx .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#atcjtvqdue .gt_column_spanner {
+#kayweinylx .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1119,11 +1132,11 @@ Table&nbsp;7.1: NPDE settings.
   width: 100%;
 }
 
-#atcjtvqdue .gt_spanner_row {
+#kayweinylx .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#atcjtvqdue .gt_group_heading {
+#kayweinylx .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1149,7 +1162,7 @@ Table&nbsp;7.1: NPDE settings.
   text-align: left;
 }
 
-#atcjtvqdue .gt_empty_group_heading {
+#kayweinylx .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1164,15 +1177,15 @@ Table&nbsp;7.1: NPDE settings.
   vertical-align: middle;
 }
 
-#atcjtvqdue .gt_from_md > :first-child {
+#kayweinylx .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#atcjtvqdue .gt_from_md > :last-child {
+#kayweinylx .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#atcjtvqdue .gt_row {
+#kayweinylx .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1191,7 +1204,7 @@ Table&nbsp;7.1: NPDE settings.
   overflow-x: hidden;
 }
 
-#atcjtvqdue .gt_stub {
+#kayweinylx .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1204,7 +1217,7 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#atcjtvqdue .gt_stub_row_group {
+#kayweinylx .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1218,15 +1231,15 @@ Table&nbsp;7.1: NPDE settings.
   vertical-align: top;
 }
 
-#atcjtvqdue .gt_row_group_first td {
+#kayweinylx .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#atcjtvqdue .gt_row_group_first th {
+#kayweinylx .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#atcjtvqdue .gt_summary_row {
+#kayweinylx .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1236,16 +1249,16 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#atcjtvqdue .gt_first_summary_row {
+#kayweinylx .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_first_summary_row.thick {
+#kayweinylx .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#atcjtvqdue .gt_last_summary_row {
+#kayweinylx .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1255,7 +1268,7 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_grand_summary_row {
+#kayweinylx .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1265,7 +1278,7 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#atcjtvqdue .gt_first_grand_summary_row {
+#kayweinylx .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1275,7 +1288,7 @@ Table&nbsp;7.1: NPDE settings.
   border-top-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_last_grand_summary_row_top {
+#kayweinylx .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1285,11 +1298,11 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_striped {
+#kayweinylx .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#atcjtvqdue .gt_table_body {
+#kayweinylx .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1298,7 +1311,7 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_footnotes {
+#kayweinylx .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1312,7 +1325,7 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_footnote {
+#kayweinylx .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1321,7 +1334,7 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#atcjtvqdue .gt_sourcenotes {
+#kayweinylx .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1335,7 +1348,7 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#atcjtvqdue .gt_sourcenote {
+#kayweinylx .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1343,72 +1356,72 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#atcjtvqdue .gt_left {
+#kayweinylx .gt_left {
   text-align: left;
 }
 
-#atcjtvqdue .gt_center {
+#kayweinylx .gt_center {
   text-align: center;
 }
 
-#atcjtvqdue .gt_right {
+#kayweinylx .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#atcjtvqdue .gt_font_normal {
+#kayweinylx .gt_font_normal {
   font-weight: normal;
 }
 
-#atcjtvqdue .gt_font_bold {
+#kayweinylx .gt_font_bold {
   font-weight: bold;
 }
 
-#atcjtvqdue .gt_font_italic {
+#kayweinylx .gt_font_italic {
   font-style: italic;
 }
 
-#atcjtvqdue .gt_super {
+#kayweinylx .gt_super {
   font-size: 65%;
 }
 
-#atcjtvqdue .gt_footnote_marks {
+#kayweinylx .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#atcjtvqdue .gt_asterisk {
+#kayweinylx .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#atcjtvqdue .gt_indent_1 {
+#kayweinylx .gt_indent_1 {
   text-indent: 5px;
 }
 
-#atcjtvqdue .gt_indent_2 {
+#kayweinylx .gt_indent_2 {
   text-indent: 10px;
 }
 
-#atcjtvqdue .gt_indent_3 {
+#kayweinylx .gt_indent_3 {
   text-indent: 15px;
 }
 
-#atcjtvqdue .gt_indent_4 {
+#kayweinylx .gt_indent_4 {
   text-indent: 20px;
 }
 
-#atcjtvqdue .gt_indent_5 {
+#kayweinylx .gt_indent_5 {
   text-indent: 25px;
 }
 
-#atcjtvqdue .katex-display {
+#kayweinylx .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#atcjtvqdue div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#kayweinylx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
