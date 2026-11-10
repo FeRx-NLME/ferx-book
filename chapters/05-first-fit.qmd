@@ -301,7 +301,7 @@ stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", 
 
 The first one has the category `general`, the fallback for a message without a category of its own, so read its text: the model file sets `gradient = fd`, and with the optimizer left at `auto` that also changes the optimizer (@sec-estimation-methods). The second is the residual autocorrelation warning that @sec-diagnostics takes up.
 
-`fit$warnings` holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. For example, reject any fit with a critical warning. `check_diagnostics()` returns the residual autocorrelation and shrinkage behind two common warnings as data frames:
+`fit$warnings` holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. To decide whether a fit can be used as it stands, though, read `fit$status` rather than the warnings alone: it is `"converged"` only when the fit converged with no critical warning, no failed covariance step and no variance collapsed onto the guard that the step could not hold, and `fit$status_reasons` names what stands in the way (@sec-diagnostics). Reject any fit whose status is not `"converged"`. `check_diagnostics()` returns the residual autocorrelation and shrinkage behind two common warnings as data frames:
 
 ```{r}
 #| label: check-diagnostics

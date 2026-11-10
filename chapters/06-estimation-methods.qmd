@@ -247,7 +247,8 @@ threads_env_1 <- threads_probe("cat(n())", env = "RAYON_NUM_THREADS=1")
 threads_env_3 <- threads_probe("cat(n())", env = "RAYON_NUM_THREADS=3")
 threads_first_fit <- threads_probe(paste('Sys.setenv(RAYON_NUM_THREADS = "2"); a <- n();',
                                          'Sys.setenv(RAYON_NUM_THREADS = "5"); cat(a, n())'))
-stopifnot(threads_env_1 == 1, threads_env_3 == 3, identical(threads_first_fit, c(2, 2)))
+stopifnot(length(threads_env_1) == 1, length(threads_env_3) == 1,
+          threads_env_1 == 1, threads_env_3 == 3, identical(threads_first_fit, c(2, 2)))
 # The `threads` item of the warning list: a RAYON_NUM_THREADS that is not a positive integer is
 # ignored with a `threads` warning; 0 means the default, with no warning; more workers than CPUs
 # warns, from the variable or from a `threads` count.
@@ -260,7 +261,9 @@ threads_env_zero <- threads_probe(env_warning, env = "RAYON_NUM_THREADS=0")
 threads_env_empty <- threads_probe(env_warning, env = "RAYON_NUM_THREADS=")
 threads_env_negative <- threads_probe(env_warning, env = "RAYON_NUM_THREADS=-1")
 threads_env_over <- threads_probe(env_warning, env = sprintf("RAYON_NUM_THREADS=%d", parallel::detectCores() + 1))
-stopifnot(threads_env_bad[2] == 1, threads_env_zero[2] == 0, threads_env_empty[2] == 0,
+stopifnot(all(lengths(list(threads_env_bad, threads_env_zero, threads_env_empty, threads_env_over,
+                          threads_env_negative)) == 3),
+          threads_env_bad[2] == 1, threads_env_zero[2] == 0, threads_env_empty[2] == 0,
           threads_env_bad[1] == threads_env_empty[1], threads_env_zero[1] == threads_env_empty[1],
           threads_env_over[1] == parallel::detectCores() + 1, threads_env_over[3] == 1,
           threads_env_negative[2] == 1, threads_env_negative[1] == threads_env_empty[1])
