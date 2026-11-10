@@ -455,10 +455,12 @@ ferx_get_warnings(fit_ruv, as_df = TRUE)[, c("severity", "category")]
 ```{r}
 #| label: check-iiv-on-ruv
 #| include: false
-# The paragraph below: ETA_RUV collapsed onto the guard, is held, and has no standard error.
+# The paragraph below: ETA_RUV collapsed onto the guard, the covariance step holds it as FIX
+# (cov_fixed, no collapsed_at_guard reason), and it has no standard error.
 ruv_held <- fit_ruv$held_at_bound
 stopifnot(identical(ruv_held$parameter, "ETA_RUV"), identical(ruv_held$reason, "collapsed_at_guard"),
           identical(ruv_held$kind, "omega"), is.na(fit_ruv$estimates["ETA_RUV", "rse_pct"]),
+          isTRUE(fit_ruv$cov_fixed[["ETA_RUV"]]), length(fit_ruv$status_reasons) == 0,
           "parameter_at_runaway_guard" %in% ferx_get_warnings(fit_ruv, as_df = TRUE)$category)
 ```
 
