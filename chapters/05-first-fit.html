@@ -746,7 +746,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt;  Model: two_cpt_oral_base        Dataset: two_cpt_oral_cov</span></span>
 <span><span class="co">#&gt;  Method: FOCEI | Gradient: FD | Subjects: 30 | Obs: 300</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   386 iterations   0.9s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   386 iterations   1.5s</span></span>
 <span><span class="co">#&gt;  OFV: -1185.4620    AIC: -1163.4620    BIC: -1122.7204</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -805,7 +805,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <p><code><a href="https://rdrr.io/r/base/print.html">print()</a></code> on the fit gives one screen with everything you need to judge it:</p>
 <ul>
 <li>
-<strong>Header</strong>: method, gradient, number of subjects and observations, convergence status and OFV/AIC/BIC.</li>
+<strong>Header</strong>: method, gradient, number of subjects and observations, the <code>STATUS</code> verdict (<code>CONVERGED</code>, <code>CONVERGED WITH ISSUES</code> or <code>NOT CONVERGED</code>, with its reasons; <a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>) and OFV/AIC/BIC.</li>
 <li>
 <strong>Model structure</strong>, as ferx derived it from the file.</li>
 <li>
@@ -847,7 +847,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; EPS shrinkage: 27.8%</span></span>
 <span><span class="co">#&gt; DW: 3.06 [negative autocorrelation]</span></span>
 <span><span class="co">#&gt; lag-1 r: -0.531</span></span>
-<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 0.9s</span></span>
+<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 1.5s</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Warnings:</span></span>
 <span><span class="co">#&gt;   * gradient = fd also changed the outer optimizer: with optimizer = auto left in place it resolved to bobyqa rather than the nlopt_lbfgs this model would have used under gradient = auto, because auto picks the derivative-free optimizer when there is no exact analytic gradient to feed a gradient-based one. Two factors moved, not one — if you are comparing an fd arm against an auto arm, pin optimizer = bobyqa in both so the difference you measure is the gradient. </span></span>
@@ -1171,7 +1171,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; 2  warning dw_autocorrelation</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The first one has the category <code>general</code>, the fallback for a message without a category of its own, so read its text: the model file sets <code>gradient = fd</code>, and with the optimizer left at <code>auto</code> that also changes the optimizer (<a href="06-estimation-methods.html" class="quarto-xref"><span>Estimation methods and controlling the fit</span></a>). The second is the residual autocorrelation warning that <a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a> takes up.</p>
-<p><code>fit$warnings</code> holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. For example, reject any fit with a critical warning. <code><a href="https://ferx-nlme.org/reference/check_diagnostics.html">check_diagnostics()</a></code> returns the residual autocorrelation and shrinkage behind two common warnings as data frames:</p>
+<p><code>fit$warnings</code> holds the same messages as plain text. Because the category tokens are stable, scripts can branch on them. To decide whether a fit can be used as it stands, though, read <code>fit$status</code> rather than the warnings alone: it is <code>"converged"</code> only when the fit converged with no critical warning, no failed covariance step and no variance collapsed onto the guard that the step could not hold, and <code>fit$status_reasons</code> names what stands in the way (<a href="07-diagnostics.html" class="quarto-xref"><span>Diagnosing the model</span></a>). Reject any fit whose status is not <code>"converged"</code>. <code><a href="https://ferx-nlme.org/reference/check_diagnostics.html">check_diagnostics()</a></code> returns the residual autocorrelation and shrinkage behind two common warnings as data frames:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://ferx-nlme.org/reference/check_diagnostics.html">check_diagnostics</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $autocorrelation</span></span>
