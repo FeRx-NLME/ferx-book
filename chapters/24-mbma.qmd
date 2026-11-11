@@ -11,7 +11,7 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 
 A model-based meta-analysis (MBMA) fits a dose-response and time-course model to published summary data: one mean per study arm and visit, with its standard error and the number of patients behind it. There are no individual patients. Each row counts according to its precision, and arms differ from one another more than their sampling error alone explains.
 
-This chapter fits the bundled `mbma_placebo` example. It covers the arm-level data shape and `ferx_mbma_data()`, inverse-variance weighting with `weight =` on the error model, between-arm variability as a weighted kappa, an unstructured placebo time course as a theta level block, and how to read, save and resample such a fit. If your meta-analysis already exists as a compartment-free nlmixr2 model, `ferxtranslate::nlmixr2_to_ferx()` from the [ferxtranslate](https://github.com/FeRx-NLME/translator) package writes it as a ferx model file to start from.
+This chapter fits the bundled `mbma_placebo` example. It covers the arm-level data shape and `ferx_mbma_data()`, inverse-variance weighting with `weight =` on the error model, between-arm variability as a weighted kappa, an unstructured placebo time course as a theta level block, and how to read, save and resample such a fit. If your meta-analysis already exists as a compartment-free nlmixr2 model, `ferxtranslate::nlmixr2_to_ferx()` from the [ferxtranslate](https://github.com/FeRx-NLME/translator) package translates it to a ferx model to start from (`output =` writes the file).
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
@@ -151,7 +151,7 @@ stopifnot(isTRUE(fit$converged), fit$covariance_status == "computed",
           sum(!is.na(fit$theta_levels$theta_name)) == 18)
 ```
 
-The fit converges and the covariance step runs. `fit$converged` is about the optimizer: it stopped normally, at a stationary point. Whether the fit can be used as it stands is `fit$status`, which also takes in the covariance step, the critical warnings and the evaluation budget; `fit$status_label` spells it as the `STATUS` line of the print does, and `fit$status_reasons` lists what stands in the way (@sec-fit-verdict):
+The fit converges and the covariance step runs. `fit$converged` is about the optimizer: it stopped normally and, for a fit like this one, at a stationary point (@sec-fit-verdict says when that is tested). Whether the fit can be used as it stands is `fit$status`, which also takes in the covariance step, the critical warnings and the evaluation budget; `fit$status_label` spells it as the `STATUS` line of the print does, and `fit$status_reasons` lists what stands in the way:
 
 ```{r}
 #| label: status
@@ -167,7 +167,7 @@ stopifnot(identical(fit$status, "converged"), identical(fit$status_label, "CONVE
           length(fit$status_reasons) == 0, is.data.frame(fit$held_at_bound), nrow(fit$held_at_bound) == 0)
 ```
 
-This fit is `r fit$status_label`, with no reasons. `fit$held_at_bound` lists the parameters the optimizer left on a bound or on its lower guard for a variance; none is here. Read all three before trusting an MBMA fit. With few studies a variance can collapse, and a covariance step can fail, while `converged` stays `TRUE`: both happen later in this chapter (*Nested levels* and *Uncertainty*).
+This fit is `r fit$status_label`, with no reasons. `fit$held_at_bound` lists every parameter the covariance step gives no standard error for, such as a variance collapsed onto its lower guard or a profiled level on its bound; none is here. Read the status, its reasons and `held_at_bound` before trusting an MBMA fit. With few studies a variance can collapse, and a covariance step can fail, while `converged` stays `TRUE`: both happen later in this chapter (*Nested levels* and *Uncertainty*).
 
 The `ferx_mbma_data()` table fits the same way, with no file in between:
 
@@ -1007,7 +1007,7 @@ With no sponsor effect, the levelled model is the bundled model under another la
 
 Adding `ETA_SP` lowers the OFV by `r round(fit$ofv - fit_sponsor$ofv, 1)` for one more parameter, and the sponsor variance (`r signif(fit_sponsor$omega[1, 1], 3)`) takes all of the between-study variance. The study kappa collapses to `r signif(fit_sponsor$omega_iov[1, 1], 1)`, with a shrinkage of `r sprintf("%.1f", 100 * fit_sponsor$shrinkage_kappa[["K_ST"]])`%, on the optimizer's lower guard, and ferx says so with a `parameter_at_runaway_guard` warning. That is not evidence for a sponsor effect. The generator has none, and three sponsors are too few to estimate a variance: the drop is what this particular pairing of six study effects happens to give. Pairing studies 1-4, 2-5 and 3-6 instead gives no drop at all (an OFV difference of `r sprintf("%.3f", abs(fit$ofv - fit_other$ofv))`), with a sponsor variance of `r signif(fit_other$omega[1, 1], 1)`. With real sponsors, judge such a split on more groups than this.
 
-A variance on the guard has no curvature to give a standard error. ferx holds it out of the covariance step and lists it in `fit$held_at_bound`:
+A variance on the guard has almost no curvature, so a standard error for it would mean nothing. ferx reports none. When the covariance step is otherwise clean, it holds the variance as it holds a `FIX` parameter, and it lists it in `fit$held_at_bound`:
 
 ```{r}
 #| label: nested-held
@@ -1020,15 +1020,17 @@ fit_sponsor[c("converged", "status_label", "status_reasons", "covariance_status"
 #| label: check-nested-held
 #| include: false
 # The prose: K_ST is the one held parameter, a kappa collapsed at the guard; its SE is NA in
-# estimates and N/A in print, while fit$se_kappa gives 0; the other variances keep their SEs; the
-# covariance step ran; the status is CONVERGED with no reasons. Under the second pairing the held
+# estimates and N/A in print, while fit$se_kappa holds 0, as the SE of the FIX sigma is NA; every
+# other estimated parameter keeps its SE; the covariance step ran; the status is CONVERGED with
+# no reasons (a held collapse is not a reason). Under the second pairing the held
 # parameter is ETA_SP. The levelled fit without a sponsor effect holds nothing.
 held_sponsor <- fit_sponsor$held_at_bound
 sponsor_print <- capture.output(print(fit_sponsor))
 stopifnot(nrow(held_sponsor) == 1, identical(held_sponsor$parameter, "K_ST"), identical(held_sponsor$kind, "kappa"),
           identical(held_sponsor$reason, "collapsed_at_guard"),
           is.na(fit_sponsor$estimates["K_ST", "se"]), is.na(fit_sponsor$estimates["K_ST", "rse_pct"]),
-          !anyNA(fit_sponsor$estimates[c("ETA_SP", "KAPPA_ARM"), "se"]),
+          with(fit_sponsor$estimates, !anyNA(se[!fixed & param != "K_ST"])),
+          isTRUE(fit_sponsor$estimates["ADD_ERR", "fixed"]), is.na(fit_sponsor$estimates["ADD_ERR", "se"]),
           any(grepl("K_ST at STUDY.*SE = N/A", sponsor_print)),
           identical(unname(fit_sponsor$se_kappa["K_ST"]), 0),
           fit_sponsor$covariance_status == "computed",
@@ -1043,11 +1045,11 @@ inner_width <- nested_data |> group_by(ID) |>
 stopifnot(sum(inner_width) == fit_sponsor$n_subjects + sum(sapply(fit_sponsor$ebe_kappas_by_level, nrow)))
 ```
 
-`K_ST` is listed with the reason `collapsed_at_guard`. Its standard error is `NA` in `fit$estimates`, and the print shows `SE = N/A` on its line (below); the other parameters keep theirs, from a covariance step computed without it. Take the standard error from `fit$estimates`: at this build `fit$se_kappa` gives `r unname(fit_sponsor$se_kappa["K_ST"])` for the held kappa, not `NA`. Under the second pairing the held parameter is the sponsor variance `ETA_SP` instead.
+`K_ST` is listed with the reason `collapsed_at_guard`. Its standard error is `NA` in `fit$estimates`, and the print shows `SE = N/A` on its line (below); every other estimated parameter keeps its own, from a covariance step conditional on the held variance. `fit$se_kappa` holds the engine's `r unname(fit_sponsor$se_kappa["K_ST"])` for it, as it would for a `FIX` parameter, so take the standard error from `fit$estimates`. Under the second pairing the held parameter is the sponsor variance `ETA_SP` instead.
 
-The verdict of this fit is still `r fit_sponsor$status_label`, with no reasons: at this build a variance that was held this way does not lower the status. So neither `converged` nor `status` tells you that the model has one variance fewer than it declares. `fit$held_at_bound` does, with the warning.
+The verdict of this fit is still `r fit_sponsor$status_label`, with no reasons. A collapse the covariance step holds does not lower the status; one it could not hold would appear in `fit$status_reasons` as `collapsed_at_guard: K_ST`. So neither `converged` nor `status` tells you that this model has one variance fewer than it declares. `fit$held_at_bound` does, with the warning.
 
-Nested levels also cost more per fit. A subject's random effects are solved together, its eta and one kappa per group of every level inside it, so with the sponsor as `ID` the largest inner problem here has `r max(inner_width)` of them. Make `ID` the coarsest grouping that needs its own random effect, and declare a level only where its kappa is needed; ferx-core [measures how the cost grows](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels-cost).
+A coarse `ID` also costs more per fit. A subject's random effects are solved together, its eta and one kappa per group of every level inside it, so with the sponsor as `ID` the largest inner problem here has `r max(inner_width)` of them. Make `ID` the coarsest grouping that needs its own random effect, and declare a level only where its kappa is needed; ferx-core [measures how the cost grows](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels-cost).
 
 The print labels each kappa with its level, and each level's estimates are returned once per group:
 
@@ -1225,7 +1227,7 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
 
   To pool visits into windows, number the cells yourself with `ferx_mbma_data(index = ...)` or `levels =` and use the counted form `theta PLACEBO[N]`.
 - **A standard deviation is not a standard error.** Pass a between-patient SD as `sd =` so `ferx_mbma_data()` divides it by `sqrt(n)`. `print()` shows the SD the standard errors imply; it should look like a patient-level SD.
-- **The OFV includes the weights.** ferx scores on the natural scale, so the OFV differs from that of a model fitted to `DV / SE` by a term that depends only on the data. It cancels from every OFV difference between models on the same rows and weights. See the ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...) page; its [OFV conventions across tools](https://ferx-nlme.org/ferx-core/model-file/error-model.html#ofv-conventions) table gives the constant that separates a ferx OFV from the figure NONMEM or nlmixr2 reports for the same model.
+- **The OFV includes the weights.** ferx scores on the natural scale, so the OFV differs from that of a model fitted to `DV / SE` by a term that depends only on the data. It cancels from every OFV difference between models on the same rows and weights. See the ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...) page; its [OFV conventions across tools](https://ferx-nlme.org/ferx-core/model-file/error-model.html#ofv-conventions) table gives the constants that separate a ferx OFV from the figure NONMEM or nlmixr2 reports, for the natural-scale and the hand-built forms of the weighting.
 - **`weight =` needs an additive term.** On a purely proportional error model the weight would cancel out, so ferx refuses it. A weighted kappa is likewise refused anywhere but `[individual_parameters]`, where its scaling is applied:
 
   ```{r}
@@ -1243,23 +1245,23 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
   writeLines(kappa_lines, kappa_model)
   try(ferx_fit(kappa_model, mbma$data, verbose = FALSE))
   ```
-- **One start may not be the best optimum.** A model with many levels and few arms can have more than one optimum, and a fit of arm-level data is quick, so repeating it from several perturbed starts with `n_starts` (@sec-estimation-methods) is a cheap check:
+- **One start may not be the best optimum.** A small arm-level model can have more than one optimum, and a fit of arm-level data is quick, so repeating it from several perturbed starts with `n_starts` (@sec-estimation-methods) is a cheap check:
 
   ```{r}
   #| label: multistart
   fit_multi <- ferx_fit(mbma$model, mbma$data, settings = list(n_starts = 8), verbose = FALSE)
   c(single = fit$ofv, multi = fit_multi$ofv)
-  c(single = fit$wall_time_secs, multi = fit_multi$wall_time_secs)
   fit_multi$status_label
   ```
 
   ```{r}
   #| label: check-multistart
   #| include: false
-  # The prose: eight starts ran, found no lower OFV than the single start, and the same estimates.
+  # The prose: eight starts ran, and gave the same OFV to the digits printed and the same estimates.
   stopifnot(fit_multi$n_starts == 8, identical(fit_multi$status, "converged"),
-            abs(fit_multi$ofv - fit$ofv) < 1e-3,
+            abs(fit_multi$ofv - fit$ofv) < 5e-6,
             isTRUE(all.equal(fit_multi$theta, fit$theta, tolerance = 1e-3)),
+            abs(fit_multi$omega[1, 1] / fit$omega[1, 1] - 1) < 1e-3,
             abs(fit_multi$omega_iov[1, 1] / fit$omega_iov[1, 1] - 1) < 1e-3)
   multi_note <- "multi_start" %in% ferx_get_warnings(fit_multi, as_df = TRUE)$category
   ```
