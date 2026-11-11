@@ -746,7 +746,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt;  Model: two_cpt_oral_base        Dataset: two_cpt_oral_cov</span></span>
 <span><span class="co">#&gt;  Method: FOCEI | Gradient: FD | Subjects: 30 | Obs: 300</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  STATUS: CONVERGED   386 iterations   1.6s</span></span>
+<span><span class="co">#&gt;  STATUS: CONVERGED   386 iterations   0.9s</span></span>
 <span><span class="co">#&gt;  OFV: -1185.4620    AIC: -1163.4620    BIC: -1122.7204</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; MODEL STRUCTURE (auto-derived)</span></span>
@@ -847,7 +847,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <span><span class="co">#&gt; EPS shrinkage: 27.8%</span></span>
 <span><span class="co">#&gt; DW: 3.06 [negative autocorrelation]</span></span>
 <span><span class="co">#&gt; lag-1 r: -0.531</span></span>
-<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 1.6s</span></span>
+<span><span class="co">#&gt; Covariance: computed  Cond: 1.2  |  Wall time: 0.9s</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Warnings:</span></span>
 <span><span class="co">#&gt;   * gradient = fd also changed the outer optimizer: with optimizer = auto left in place it resolved to bobyqa rather than the nlopt_lbfgs this model would have used under gradient = auto, because auto picks the derivative-free optimizer when there is no exact analytic gradient to feed a gradient-based one. Two factors moved, not one — if you are comparing an fd arm against an auto arm, pin optimizer = bobyqa in both so the difference you measure is the gradient. </span></span>
@@ -1057,7 +1057,7 @@ Figure&nbsp;5.1: OFV at each objective evaluation of the pilot run.
 <p><code>fit$eta_log_transformed</code> is a narrower flag and not a substitute: it is <code>TRUE</code> only for the <code>TVCL * exp(ETA_CL)</code> form, so an eta written <code>exp(TVCL + ETA_CL)</code> is log-normal and still reads <code>FALSE</code>.</p>
 <p>Nothing here converts for you. An omega row is a variance, so a between-subject CV% is yours to compute (<a href="12-tables-figures.html" class="quarto-xref"><span>Tables and figures</span></a>), and a log-transform-both-sides model reports an <code>additive</code> sigma on the log scale rather than in the units of <code>DV</code> (<a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a>).</p>
 </section><section id="the-fit-object" class="level3"><h3 class="anchored" data-anchor-id="the-fit-object">The fit object</h3>
-<p>A fit is a named list with 142 elements. These are the ones you will use most:</p>
+<p>A fit is a named list with 144 elements. These are the ones you will use most:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -1364,11 +1364,13 @@ Table&nbsp;5.1: The same model from different starting values.
 <span><span class="co">#&gt;   severity           category</span></span>
 <span><span class="co">#&gt; 1  warning            general</span></span>
 <span><span class="co">#&gt; 2 critical        convergence</span></span>
-<span><span class="co">#&gt; 3  warning dw_autocorrelation</span></span>
-<span><span class="co">#&gt;                                                                                                                       message</span></span>
-<span><span class="co">#&gt; 1           Outer optimization hit the evaluation budget (maxiter = 2) before converging; increase maxiter for a tighter fit.</span></span>
-<span><span class="co">#&gt; 2                                                                                         Outer optimization did not converge</span></span>
-<span><span class="co">#&gt; 3 Negative IWRES autocorrelation detected (Durbin-Watson = 2.73). Possible over-parameterization or misspecified error model.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span><span class="co">#&gt; 3 critical        convergence</span></span>
+<span><span class="co">#&gt; 4  warning dw_autocorrelation</span></span>
+<span><span class="co">#&gt;                                                                                                                                                                                                                                                                                                                                                                                                                                                                     message</span></span>
+<span><span class="co">#&gt; 1                                                                                                                                                                                                                                                                                                                                                         Outer optimization hit the evaluation budget (maxiter = 2) before converging; increase maxiter for a tighter fit.</span></span>
+<span><span class="co">#&gt; 2                                                                                                                                                                                                                                                                                                                                                                                                                                       Outer optimization did not converge</span></span>
+<span><span class="co">#&gt; 3 The outer optimizer stopped without converging (#2713). At the reported estimates every subject's outer gradient is exact (analytic, or reconverged), so the fixed-EBE fallback does not bias the final gradient, though it can still have biased the gradient at a line-search trial point. Unless the stop was the evaluation budget, look first at the objective: EBEs that change mode between nearby estimates, or a kink in the model such as `if`, `abs` or `max`.</span></span>
+<span><span class="co">#&gt; 4                                                                                                                                                                                                                                                                                                                                               Negative IWRES autocorrelation detected (Durbin-Watson = 2.73). Possible over-parameterization or misspecified error model.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>For the same reason <code>fit_short$n_iterations</code> is 16 here, not 2.</p>
 <p><strong>Other points</strong>:</p>
