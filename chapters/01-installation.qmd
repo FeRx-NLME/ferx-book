@@ -57,6 +57,132 @@ The pinned build is newer than the last ferx-r release, {{< var ferx_r_release >
 
 To get the book's output, install the pinned commit above. To stay on the release, install its tag, `pak::pak("FeRx-NLME/ferx-r@v{{< var ferx_r_release >}}")`, and read the callouts.
 
+## Using Docker (no Rust needed) {#sec-docker}
+
+If you would rather not install Rust, or you need ferx somewhere other than your own machine, run it in a container. ferx-r has two images:
+
+| | Slim image | RStudio image |
+|---|---|---|
+| What it holds | R, ferx and the `ferx` command-line tool | R, the tidyverse, ferx, the `ferx` tool, Rust and RStudio Server |
+| Where it comes from | published: `ghcr.io/ferx-nlme/ferx-r` | not published: you build it from the ferx-r repository |
+| Platforms | `linux/amd64`, `linux/arm64` | whatever you build it on |
+| You use it from | the command line, scripts, CI | a web browser |
+| Good for | scripts, servers, clusters, CI, reproducible and validated work | interactive work, workshops, people without a local R or Rust setup |
+
+The commands below run in a shell, not in R. The book itself is rendered without Docker, so their output is not shown.
+
+### The slim image
+
+The slim image is public on the GitHub Container Registry, so no login is needed to pull it:
+
+```bash
+docker pull ghcr.io/ferx-nlme/ferx-r:latest
+```
+
+Mount your project at `/work`, the image's working directory, and run an R script, the `ferx` command-line tool, or an interactive R console there:
+
+```bash
+docker run --rm -v "$PWD:/work" ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R
+```
+
+```bash
+docker run --rm -v "$PWD:/work" ghcr.io/ferx-nlme/ferx-r:latest ferx model.ferx --data data.csv
+```
+
+```bash
+docker run --rm -it -v "$PWD:/work" ghcr.io/ferx-nlme/ferx-r:latest
+```
+
+On a cluster without Docker, Apptainer (formerly Singularity) runs the same image straight from the registry, for example `apptainer exec docker://ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R`.
+
+#### Tags
+
+| Tag | What it is | Moves? |
+|---|---|---|
+| `latest` | the newest build of ferx-r `main` (development) | yes, with every merge that changes the image |
+| `release` | the newest final release | yes, when a newer version is released |
+| `0.5.0` / `v0.5.0` | exactly that release | never: release tags are published once and never replaced or cleaned up |
+| `<sha>` | one `main` build, by ferx-r commit (full or 7-character short) | never, but only the 30 most recent published commits are kept |
+
+```{r}
+#| label: docker-pre-release
+#| include: false
+# The images start after ferx-r 0.4.0, so while 0.4.0 is the last release there is
+# no `release` or version tag yet. The sentence below drops out by itself once
+# `ferx_r_release` in _variables.yml moves past 0.4.0.
+docker_no_release_tag <- identical(as.character(book_pin$ferx_r_release), "0.4.0")
+docker_no_release_note <- if (docker_no_release_tag) {
+  "`release` and the version tags start with the first release after 0.4.0: 0.4.0 predates the images. Until that release exists, use `latest` or a commit tag, as the examples here do. "
+} else ""
+```
+
+`r docker_no_release_note`Not every `main` commit has an image either: merges that only touch documentation, tests or CI publish nothing.
+
+The image of the commit this book is pinned to is `ghcr.io/ferx-nlme/ferx-r:{{< var ferx_r_sha_short >}}`, so it gives you the book's output without a local install. Like every commit tag, it is removed once 30 newer commits have been published.
+
+::: {.callout-tip}
+## Validated work
+For work that has to be reproduced later, pin a release tag and record the image digest, which names the exact bytes you ran:
+
+```bash
+docker buildx imagetools inspect ghcr.io/ferx-nlme/ferx-r:0.5.0   # prints "Digest: sha256:..."
+```
+
+```bash
+docker pull ghcr.io/ferx-nlme/ferx-r@sha256:<digest>
+```
+
+A tag is a name that could in principle be pointed elsewhere; a digest cannot.
+:::
+
+#### Threads
+
+By default the engine uses the available cores minus one, but at least 2 when there are two or more cores, and at most 8. Inside a container, "available" honours a CPU quota (`docker run --cpus 4`, a Kubernetes CPU *limit*) and CPU pinning (`--cpuset-cpus`). It does not honour a Kubernetes CPU *request* without a limit, or a Slurm allocation that is not enforced through cgroups: there the engine sees every core of the node. When several jobs share a node, set the count yourself, with `threads =` in `ferx_fit()` or `--threads N` for the command-line tool, to match what each job was given.
+
+#### User and file ownership
+
+The container runs as an unprivileged user `ferx` with uid 1000, so on most single-user Linux machines the files it writes to `/work` belong to you. If your uid differs and the outputs must be yours, run it as your own user:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R
+```
+
+#### Adding packages
+
+The image carries ferx's hard dependencies only (no suggested packages such as xpose), and the default user cannot write to the site library. Add the packages your pipeline needs in a derived image. The ferx-r README uses pak, which also installs the system libraries a binary package needs:
+
+```dockerfile
+FROM ghcr.io/ferx-nlme/ferx-r:<sha>
+USER root
+RUN R -q -e 'install.packages("pak"); pak::pkg_install(c("targets", "crew"))' \
+    && rm -rf /var/lib/apt/lists/*
+USER ferx
+```
+
+Most chapters of this book also load dplyr and ggplot2, so add those to run them in the image.
+
+### The RStudio image
+
+The RStudio image is not published: you build it from the `Dockerfile` at the root of the ferx-r repository. The build compiles ferx from source inside the image, so the first build takes a while; later builds reuse Docker's layer cache.
+
+```bash
+git clone https://github.com/FeRx-NLME/ferx-r.git
+cd ferx-r
+docker build -t ferx:latest .
+```
+
+Then start RStudio Server with a password you choose:
+
+```bash
+docker run --rm -p 127.0.0.1:8787:8787 -e PASSWORD='<your password>' ferx:latest
+```
+
+Open <http://localhost:8787> and sign in as user `rstudio` with that password. The image contains no password: RStudio Server sets it from `PASSWORD` when the container starts.
+
+Keep the `127.0.0.1:` prefix unless you mean to serve RStudio to your network. Without it, Docker publishes the port on every network interface, so anyone who can reach your machine can try to log in, and Docker's published ports can bypass a host firewall.
+
+The image builds from whatever ferx-r commit you cloned. To match this book, check out the pin first: `git checkout {{< var ferx_r_sha >}}`.
+
 ## Checking the installation
 
 Load the package and confirm the version:
@@ -87,7 +213,8 @@ If this prints `TRUE`, ferx is installed and working. @sec-complete-analysis wal
 
 ::: {.callout-tip}
 ## Reference
-- ferx-r: [README: installation](https://github.com/FeRx-NLME/ferx-r#installation), including Windows and Docker
+- ferx-r: [README: installation](https://github.com/FeRx-NLME/ferx-r#installation), including Windows and [Docker](https://github.com/FeRx-NLME/ferx-r#docker)
+- Docker images: [`ghcr.io/ferx-nlme/ferx-r`](https://github.com/FeRx-NLME/ferx-r/pkgs/container/ferx-r) (slim), [`Dockerfile`](https://github.com/FeRx-NLME/ferx-r/blob/main/Dockerfile) (RStudio)
 - ferx-core: [installation](https://ferx-nlme.org/ferx-core/installation.html)
 - R help: `?ferx_example`, `?ferx_fit`
 :::
