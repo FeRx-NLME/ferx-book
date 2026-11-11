@@ -149,7 +149,7 @@ ggplot(fit$sdtab, aes(sample = CWRES)) +
   labs(x = "Theoretical quantile", y = "CWRES")
 ```
 
-The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Both pair only consecutive observations of one subject in the same occasion (an IOV column, or the innermost level of a nested model) and, under a `correlation ... by` line, in the same residual block. The Durbin-Watson denominator counts those pairs, so independent residuals give 2 however short each subject's series is ([ferx-core #2798](https://github.com/FeRx-NLME/ferx-core/issues/2798)). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries. The statistic reads in two directions, and they mean opposite things:
+The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Both pair consecutive observations of one subject. A subject's series is cut where its occasions run in parallel and the clock restarts, such as the study arms or the innermost level cells of a nested model, and, under a `correlation ... by` line, at each residual block. Occasions that follow one another in time, such as dosing intervals or study periods, stay one series ([ferx-core #2829](https://github.com/FeRx-NLME/ferx-core/issues/2829)). The Durbin-Watson denominator counts those pairs, so independent residuals give 2 however short each subject's series is ([ferx-core #2798](https://github.com/FeRx-NLME/ferx-core/issues/2798)). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries. The statistic reads in two directions, and they mean opposite things:
 
 | `dw_statistic` | Reading | Usually points at |
 |---|---|---|
@@ -159,7 +159,7 @@ The fit also tests the residuals for serial correlation within subjects. `fit$dw
 
 ::: {.callout-note}
 ## Changed after ferx-r {{< var ferx_r_release >}}
-`fit$dw_statistic` and `fit$iwres_lag1_r` pair only consecutive residuals of one subject that share an occasion (and, under a residual `correlation` line, a residual block), and the Durbin-Watson denominator is normalised by the number of pairs, so independent residuals give 2 however short the series. ferx-r {{< var ferx_r_release >}} computes the classic form, so its values differ, and so can which fits get the `dw_autocorrelation` warning. The 1.5 and 2.5 thresholds are the same.
+`fit$dw_statistic` and `fit$iwres_lag1_r` cut a subject's residual series at parallel occasions (and, under a residual `correlation` line, at each residual block), and the Durbin-Watson denominator is normalised by the number of pairs, so independent residuals give 2 however short the series. ferx-r {{< var ferx_r_release >}} computes the classic form, so its values differ, and so can which fits get the `dw_autocorrelation` warning. The 1.5 and 2.5 thresholds are the same.
 :::
 
 

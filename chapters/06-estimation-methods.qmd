@@ -686,6 +686,57 @@ c(laplace = fit_lap$ofv, agq_3_nodes = fit_agq$ofv)
 book_settings_table("gn_lambda")
 ```
 
+`gn_lambda` is deprecated. Gauss-Newton takes its steps inside a trust region, so there is no damping factor to set. The key is still accepted, with any method, but it changes nothing, and the fit carries a `general` warning that says so:
+
+```{r}
+#| label: gn-lambda
+# suppress the R warnings that report overriding the model file's method
+fit_gn <- suppressWarnings(ferx_fit(base$model, base$data, method = "gn", optimizer_trace = TRUE,
+                                    verbose = FALSE))
+fit_gn_lambda <- suppressWarnings(ferx_fit(base$model, base$data, method = "gn",
+                                           settings = list(gn_lambda = 0.5), verbose = FALSE))
+c(default = fit_gn$ofv, gn_lambda_0.5 = fit_gn_lambda$ofv)
+gn_warnings <- ferx_get_warnings(fit_gn_lambda, as_df = TRUE)
+gn_warnings[grepl("gn_lambda", gn_warnings$message), c("category", "severity", "message")]
+```
+
+```{r}
+#| label: check-gn-lambda
+#| include: false
+# "changes nothing": same objective and thetas with and without the key. "with any method": a
+# FOCEI fit given the key carries the same warning. One warning per fit, category general.
+fit_focei_lambda <- ferx_fit(base$model, base$data, settings = list(gn_lambda = 0.5), verbose = FALSE)
+focei_lambda_warnings <- ferx_get_warnings(fit_focei_lambda, as_df = TRUE)
+stopifnot(isTRUE(all.equal(fit_gn$ofv, fit_gn_lambda$ofv, tolerance = 1e-10)),
+          isTRUE(all.equal(fit_gn$theta, fit_gn_lambda$theta, tolerance = 1e-10)),
+          sum(grepl("gn_lambda", gn_warnings$message)) == 1,
+          identical(gn_warnings$category[grepl("gn_lambda", gn_warnings$message)], "general"),
+          sum(grepl("gn_lambda", focei_lambda_warnings$message)) == 1,
+          !any(grepl("gn_lambda", ferx_get_warnings(fit_gn, as_df = TRUE)$message)))
+```
+
+The trust radius is what the `lm_lambda` column of a Gauss-Newton trace holds: the radius a rejected step was tried with, or the radius after the update on an accepted one. The column keeps its name from an earlier algorithm; it is not a damping factor. It is `NA` on the trace of another method, such as the FOCEI trace above, and the run log's iteration table heads it `TR_RADIUS`:
+
+```{r}
+#| label: gn-trace
+head(ferx_trace(fit_gn)[, c("iter", "method", "ofv", "step_accepted", "lm_lambda")])
+```
+
+```{r}
+#| label: check-gn-trace
+#| include: false
+# lm_lambda is filled on a Gauss-Newton trace and NA on the FOCEI trace of `fit` above; the run
+# log of the Gauss-Newton fit heads the column TR_RADIUS.
+stopifnot(!anyNA(ferx_trace(fit_gn)$lm_lambda), all(ferx_trace(fit_gn)$lm_lambda > 0),
+          all(is.na(ferx_trace(fit)$lm_lambda)),
+          grepl("TR_RADIUS", ferx_runlog(fit_gn, verbose = FALSE), fixed = TRUE))
+```
+
+::: {.callout-note}
+## Changed after ferx-r {{< var ferx_r_release >}}
+ferx-r {{< var ferx_r_release >}} accepts `gn_lambda` without a warning. It has no effect there either. The next minor release rejects the key, so remove it from existing settings.
+:::
+
 ### Importance sampling
 
 ```{r}

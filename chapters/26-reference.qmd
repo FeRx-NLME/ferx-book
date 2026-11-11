@@ -11,7 +11,7 @@ This chapter lists every ferx-r function, setting, model file block, data column
 
 ## Newer than ferx-r 0.4.0 {#sec-reference-newer}
 
-ferx-r 0.4.0 is the last release. The pinned build is newer, and these 117 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
+ferx-r 0.4.0 is the last release. The pinned build is newer, and these 119 entries are not in 0.4.0 (for a fit slot: not on the result of 0.4.0's `ferx_fit()`). Each chapter that uses one says so in a callout. Behaviour that changed after 0.4.0 without a new name is marked where the book relies on it.
 
 | Kind | Name | Chapter |
 |---|---|---|
@@ -91,6 +91,7 @@ ferx-r 0.4.0 is the last release. The pinned build is newer, and these 117 entri
 | fit slot | `fit$interaction` | @sec-reference |
 | fit slot | `fit$iov_occasion` | @sec-reference |
 | fit slot | `fit$kappa_fixed` | @sec-reference |
+| fit slot | `fit$mixture_override_params` | @sec-reference |
 | fit slot | `fit$mixture_overrides` | @sec-reference |
 | fit slot | `fit$ode_linear_exact` | @sec-structural-models |
 | fit slot | `fit$omega_fixed` | @sec-reference |
@@ -100,6 +101,7 @@ ferx-r 0.4.0 is the last release. The pinned build is newer, and these 117 entri
 | fit slot | `fit$profiled_levels_at_bound` | @sec-mbma |
 | fit slot | `fit$reader_settings` | @sec-reference |
 | fit slot | `fit$scoring_settings` | @sec-reference |
+| fit slot | `fit$se_mixture_overrides` | @sec-reference |
 | fit slot | `fit$sigma_fixed` | @sec-reference |
 | fit slot | `fit$sir_settings` | @sec-reference |
 | fit slot | `fit$stationary_start` | @sec-reference |
@@ -273,7 +275,7 @@ Keys for `ferx_fit(settings = list(...))` and the `[fit_options]` block. The cha
 | `frem_sigma` |  |  |  | @sec-covariates |
 | `global_maxeval` | integer | `0` (auto: `30 * (n_params + 1)`) | Maximum evaluations of the FOCE objective during the global pre-search. | @sec-estimation-methods |
 | `global_search` | `true`, `false` | `false` | Run NLopt CRS2-LM (Controlled Random Search with Local Mutation) as a gradient-free global pre-search before the local optimizer. | @sec-estimation-methods |
-| `gn_lambda` |  |  | Levenberg-Marquardt damping factor (default 0.01). Larger values make steps more conservative. | @sec-estimation-methods |
+| `gn_lambda` |  |  | Deprecated: has no effect. Gauss-Newton has used a trust region, not Levenberg-Marquardt damping, since ferx 0.1.0, so there is no damping factor to set. | @sec-estimation-methods |
 | `ignore` |  |  | Character vector of filter expressions that exclude a record when the expression evaluates to true. | @sec-data |
 | `ignore_subjects` |  |  |  | @sec-data |
 | `imp_adapt_passes` |  | `5` | Pilot passes that adapt each subject's proposal before a marginal `−2 log L` is reported, under `imp_eval_only` and after an estimating `imp` or `impmap` stage. | @sec-estimation-methods |
@@ -831,12 +833,12 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `data_hash` |  |
 | `data_name` | Dataset name, derived as the basename of the data path with its extension stripped. |
 | `data_path` |  |
-| `dw_statistic` | Pooled Durbin-Watson statistic for IWRES over pairs of consecutive rows of one subject that share an occasion (an IOV column, or a nested model's innermost level cell) and, under a correlation ... by line, a residual block. |
+| `dw_statistic` | Pooled Durbin-Watson statistic for IWRES over pairs of consecutive rows of one subject that share, under a correlation ... by line, a residual block. |
 | `ebe_convergence_warnings` | Number of outer iterations in which too many EBEs were unconverged (step was rejected by the guard). |
 | `ebe_etas` | Data frame with one row per subject containing the BSV empirical Bayes estimates: ID plus one column per eta named after the model's eta declarations (e.g. ETA_CL, ETA_V). |
 | `eigenvalues` | Numeric vector of eigenvalues of the correlation matrix of estimated (non-fixed) parameters, sorted descending. |
 | `estimate_near_boundary` | TRUE when a theta is pinned to a declared bound - the predicate ferx_bootstrap applies as skip_estimate_near_boundary. |
-| `estimates` | Tidy data frame of all estimated parameters (theta, omega diagonal, sigma, and - for IOV models - kappa diagonal), with columns param, transform, estimate, fixed, se, rse_pct, lower_95, upper_95, estimate_natural, lower_95_natural, upper_95_natural, init_as_sd, weight, scale, level. fixed is TRUE for a parameter the fit held (from theta_fixed / omega_fixed / sigma_fixed / kappa_fixed); its se, rse_pct and intervals are NA, since a held parameter has no standard error, and print() labels it NAME [FIX] with its SE as ---, as ferx-core's console does. |
+| `estimates` | Tidy data frame of all estimated parameters (theta, omega diagonal, sigma, - for IOV models - kappa diagonal, and - for a [mixture] model with omega(k) / sigma(k) overrides - one row per override), with columns param, transform, estimate, fixed, se, rse_pct, lower_95, upper_95, estimate_natural, lower_95_natural, upper_95_natural, init_as_sd, weight, scale, level, class. |
 | `eta_linked_theta` | Character vector parallel to eta_names: the typical-value theta each ETA is attached to, or "" when there is none or its statements disagree. |
 | `eta_log_transformed` | Logical vector of length n_eta; TRUE when the eta is lognormally parameterised (THETA * exp(ETA)), FALSE for additive or unknown parameterisations. |
 | `eta_names` | Character vector of ETA parameter names as declared in the model file (e.g. "ETA_CL", "ETA_V"). |
@@ -870,7 +872,8 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `max_unconverged_subjects` | Worst-case number of unconverged subjects in a single outer iteration. |
 | `method` | Estimation method used |
 | `method_chain` |  |
-| `mixture_overrides` | Numeric vector: a [mixture] fit's fitted per-class overrides, one class variance per omega(k) override and then one class sigma per sigma(k) override, in declaration order (every estimator, SAEM included); NULL for a model without overrides. ferx_sir and ferx_covariance rebuild the per-class matrices from it. ferx_save_fit keeps it bit for bit; NULL on a fit loaded from a bundle saved before it was recorded. |
+| `mixture_override_params` | Data frame naming each entry of mixture_overrides, one row each and in its order (ferx-core #2833): parameter (\<base\> (class \<k\>), the label cov_matrix and held_at_bound use), kind ("omega" or "sigma"), index (1-based, of the base parameter it overrides within its family), class (1-based) and fixed (TRUE for a FIX override, or a sigma override SAEM held at its initial value). |
+| `mixture_overrides` | Numeric vector: a [mixture] fit's fitted per-class overrides, one class variance per omega(k) override and then one class sigma per sigma(k) override, in declaration order (every estimator, SAEM included); NULL for a model without overrides. |
 | `model_file_settings` | Named list of raw key = value pairs from the model file's [fit_options] block, as character strings (before Rust type coercion). |
 | `model_hash` |  |
 | `model_name` | Model name declared in the .ferx file by a top-level model \<name\> line (outside any [block], e.g. model warfarin_pk); the name is a single word. |
@@ -912,6 +915,7 @@ Elements of the list `ferx_fit()` returns, for a fit of the warfarin example. So
 | `saem_seed` | Numeric scalar (or NULL) giving the SAEM stochastic seed. NULL for non-SAEM methods. |
 | `scoring_settings` | Named list of the inner-loop and ODE settings the stage that produced the estimates scored the objective under: inner_maxiter, inner_tol (as the stage ran it, after the tightening ferx applies for LTBS and quadrature), inner_restarts, inner_screen, inner_twin_seed, mu_referencing, n_agq, inner_optimizer, ebe_warm_start, ode_reltol, ode_abstol, ode_max_steps, ode_method, ode_stiff_abort_after (NA when off), ode_auto_switch, gradient_method (the gradient route the fit took, "auto" or "fd"), and nn_l2_lambda / nn_smooth_lambda (the [covariate_nn] penalty strengths the objective carried, ferx-core#1352; a recorded one is kept by ferx_covariance() whatever its arguments, NA when unrecorded), with the values [fit_options] spells. ferx_covariance scores under them, and ferx_save_fit keeps them. |
 | `sdtab` | Data frame with ID, TIME, DV, PRED, IPRED, CWRES, IWRES, EBE_OFV, N_OBS; OCC if any subject carries an occasion column; CENS if any rows are LOQ-censored; CMT if the dataset has more than one endpoint (any observation with CMT != 1). |
+| `se_mixture_overrides` | Numeric vector: the standard errors of mixture_overrides, parallel to it, named like it and on its scales (a class variance, a class sigma; ferx-core #2833). |
 | `se_omega` | Standard errors for omega elements. For diagonal omega, a vector of length n_eta (one per variance). |
 | `se_sigma` | Standard errors for sigma (on the SD scale, like sigma itself). Named like sigma. |
 | `se_theta` | Standard errors for theta (NULL if covariance step failed) |
