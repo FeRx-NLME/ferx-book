@@ -591,6 +591,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><a href="#requirements" id="toc-requirements" class="nav-link active" data-scroll-target="#requirements">Requirements</a></li>
   <li><a href="#installing-the-pinned-build" id="toc-installing-the-pinned-build" class="nav-link" data-scroll-target="#installing-the-pinned-build">Installing the pinned build</a></li>
   <li><a href="#sec-versions" id="toc-sec-versions" class="nav-link" data-scroll-target="#sec-versions">Which version do you have?</a></li>
+  <li>
+<a href="#sec-docker" id="toc-sec-docker" class="nav-link" data-scroll-target="#sec-docker">Using Docker (no Rust needed)</a>
+  <ul class="collapse">
+<li><a href="#the-slim-image" id="toc-the-slim-image" class="nav-link" data-scroll-target="#the-slim-image">The slim image</a></li>
+  <li><a href="#the-rstudio-image" id="toc-the-rstudio-image" class="nav-link" data-scroll-target="#the-rstudio-image">The RStudio image</a></li>
+  </ul>
+</li>
   <li><a href="#checking-the-installation" id="toc-checking-the-installation" class="nav-link" data-scroll-target="#checking-the-installation">Checking the installation</a></li>
   <li><a href="#reference" id="toc-reference" class="nav-link" data-scroll-target="#reference">Reference</a></li>
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/FeRx-NLME/ferx-book/edit/main/chapters/01-installation.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FeRx-NLME/ferx-book/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -637,16 +644,147 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <strong>Numbers.</strong> The engine changed too, so your results can differ from the printed ones. FOCE fits move most: the FOCE objective changed after 0.4.0, which shifts their OFVs and, slightly, their estimates.</li>
 </ul>
 <p>To get the book’s output, install the pinned commit above. To stay on the release, install its tag, <code>pak::pak("FeRx-NLME/ferx-r@v0.4.0")</code>, and read the callouts.</p>
-</section><section id="checking-the-installation" class="level2"><h2 class="anchored" data-anchor-id="checking-the-installation">Checking the installation</h2>
+</section><section id="sec-docker" class="level2"><h2 class="anchored" data-anchor-id="sec-docker">Using Docker (no Rust needed)</h2>
+<p>If you would rather not install Rust, or you need ferx somewhere other than your own machine, run it in a container. ferx-r has two images:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead><tr class="header">
+<th></th>
+<th>Slim image</th>
+<th>RStudio image</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>What it holds</td>
+<td>R, ferx and the <code>ferx</code> command-line tool</td>
+<td>R, the tidyverse, ferx, the <code>ferx</code> tool, Rust and RStudio Server</td>
+</tr>
+<tr class="even">
+<td>Where it comes from</td>
+<td>published: <code>ghcr.io/ferx-nlme/ferx-r</code>
+</td>
+<td>not published: you build it from the ferx-r repository</td>
+</tr>
+<tr class="odd">
+<td>Platforms</td>
+<td>
+<code>linux/amd64</code>, <code>linux/arm64</code>
+</td>
+<td>whatever you build it on</td>
+</tr>
+<tr class="even">
+<td>You use it from</td>
+<td>the command line, scripts, CI</td>
+<td>a web browser</td>
+</tr>
+<tr class="odd">
+<td>Good for</td>
+<td>scripts, servers, clusters, CI, reproducible and validated work</td>
+<td>interactive work, workshops, people without a local R or Rust setup</td>
+</tr>
+</tbody>
+</table>
+<p>The commands below run in a shell, not in R. The book itself is rendered without Docker, so their output is not shown.</p>
+<section id="the-slim-image" class="level3"><h3 class="anchored" data-anchor-id="the-slim-image">The slim image</h3>
+<p>The slim image is public on the GitHub Container Registry, so no login is needed to pull it:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/ferx-nlme/ferx-r:latest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Mount your project at <code>/work</code>, the image’s working directory, and run an R script, the <code>ferx</code> command-line tool, or an interactive R console there:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-v</span> <span class="st">"</span><span class="va">$PWD</span><span class="st">:/work"</span> ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-v</span> <span class="st">"</span><span class="va">$PWD</span><span class="st">:/work"</span> ghcr.io/ferx-nlme/ferx-r:latest ferx model.ferx <span class="at">--data</span> data.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-it</span> <span class="at">-v</span> <span class="st">"</span><span class="va">$PWD</span><span class="st">:/work"</span> ghcr.io/ferx-nlme/ferx-r:latest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>On a cluster without Docker, Apptainer (formerly Singularity) runs the same image straight from the registry, for example <code>apptainer exec docker://ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R</code>.</p>
+<section id="tags" class="level4"><h4 class="anchored" data-anchor-id="tags">Tags</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead><tr class="header">
+<th>Tag</th>
+<th>What it is</th>
+<th>Moves?</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>latest</code></td>
+<td>the newest build of ferx-r <code>main</code> (development)</td>
+<td>yes, with every merge that changes the image</td>
+</tr>
+<tr class="even">
+<td><code>release</code></td>
+<td>the newest final release</td>
+<td>yes, when a newer version is released</td>
+</tr>
+<tr class="odd">
+<td>
+<code>0.5.0</code> / <code>v0.5.0</code>
+</td>
+<td>exactly that release</td>
+<td>never: release tags are published once and never replaced or cleaned up</td>
+</tr>
+<tr class="even">
+<td><code>&lt;sha&gt;</code></td>
+<td>one <code>main</code> build, by ferx-r commit (full or 7-character short)</td>
+<td>never, but only the 30 most recent published commits are kept</td>
+</tr>
+</tbody>
+</table>
+<p><code>release</code> and the version tags start with the first release after 0.4.0: 0.4.0 predates the images. Until that release exists, use <code>latest</code> or a commit tag, as the examples here do. Not every <code>main</code> commit has an image either: merges that only touch documentation, tests or CI publish nothing.</p>
+<p>The image of the commit this book is pinned to is <code>ghcr.io/ferx-nlme/ferx-r:0f6f47f</code>, so it gives you the book’s output without a local install. Like every commit tag, it is removed once 30 newer commits have been published.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Validated work
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For work that has to be reproduced later, pin a release tag and record the image digest, which names the exact bytes you ran:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> buildx imagetools inspect ghcr.io/ferx-nlme/ferx-r:0.5.0   <span class="co"># prints "Digest: sha256:..."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/ferx-nlme/ferx-r@sha256:<span class="op">&lt;</span>digest<span class="op">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A tag is a name that could in principle be pointed elsewhere; a digest cannot.</p>
+</div>
+</div>
+</section><section id="threads" class="level4"><h4 class="anchored" data-anchor-id="threads">Threads</h4>
+<p>By default the engine uses the available cores minus one, but at least 2 when there are two or more cores, and at most 8. Inside a container, “available” honours a CPU quota (<code>docker run --cpus 4</code>, a Kubernetes CPU <em>limit</em>) and CPU pinning (<code>--cpuset-cpus</code>). It does not honour a Kubernetes CPU <em>request</em> without a limit, or a Slurm allocation that is not enforced through cgroups: there the engine sees every core of the node. When several jobs share a node, set the count yourself, with <code>threads =</code> in <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit()</a></code> or <code>--threads N</code> for the command-line tool, to match what each job was given.</p>
+</section><section id="user-and-file-ownership" class="level4"><h4 class="anchored" data-anchor-id="user-and-file-ownership">User and file ownership</h4>
+<p>The container runs as an unprivileged user <code>ferx</code> with uid 1000, so on most single-user Linux machines the files it writes to <code>/work</code> belong to you. If your uid differs and the outputs must be yours, run it as your own user:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">--user</span> <span class="st">"</span><span class="va">$(</span><span class="fu">id</span> <span class="at">-u</span><span class="va">)</span><span class="st">:</span><span class="va">$(</span><span class="fu">id</span> <span class="at">-g</span><span class="va">)</span><span class="st">"</span> <span class="at">-v</span> <span class="st">"</span><span class="va">$PWD</span><span class="st">:/work"</span> ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section><section id="adding-packages" class="level4"><h4 class="anchored" data-anchor-id="adding-packages">Adding packages</h4>
+<p>The image carries ferx’s hard dependencies only (no suggested packages such as xpose), and the default user cannot write to the site library. Add the packages your pipeline needs in a derived image. The ferx-r README uses pak, which also installs the system libraries a binary package needs:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode dockerfile code-with-copy"><code class="sourceCode dockerfile"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ghcr.io/ferx-nlme/ferx-r:&lt;sha&gt;</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> root</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">R</span> <span class="at">-q</span> <span class="at">-e</span> <span class="st">'install.packages("pak"); pak::pkg_install(c("targets", "crew"))'</span> <span class="dt">\</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&amp;&amp;</span> <span class="fu">rm</span> <span class="at">-rf</span> /var/lib/apt/lists/<span class="pp">*</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> ferx</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Most chapters of this book also load dplyr and ggplot2, so add those to run them in the image.</p>
+</section></section><section id="the-rstudio-image" class="level3"><h3 class="anchored" data-anchor-id="the-rstudio-image">The RStudio image</h3>
+<p>The RStudio image is not published: you build it from the <code>Dockerfile</code> at the root of the ferx-r repository. The build compiles ferx from source inside the image, so the first build takes a while; later builds reuse Docker’s layer cache.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/FeRx-NLME/ferx-r.git</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ferx-r</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> ferx:latest .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then start RStudio Server with a password you choose:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-p</span> 127.0.0.1:8787:8787 <span class="at">-e</span> PASSWORD=<span class="st">'&lt;your password&gt;'</span> ferx:latest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Open <a href="http://localhost:8787" class="uri">http://localhost:8787</a> and sign in as user <code>rstudio</code> with that password. The image contains no password: RStudio Server sets it from <code>PASSWORD</code> when the container starts.</p>
+<p>Keep the <code>127.0.0.1:</code> prefix unless you mean to serve RStudio to your network. Without it, Docker publishes the port on every network interface, so anyone who can reach your machine can try to log in, and Docker’s published ports can bypass a host firewall.</p>
+<p>The image builds from whatever ferx-r commit you cloned. To match this book, check out the pin first: <code>git checkout 0f6f47ff96e8d8474e308d2b7328152592a5d7e3</code>.</p>
+</section></section><section id="checking-the-installation" class="level2"><h2 class="anchored" data-anchor-id="checking-the-installation">Checking the installation</h2>
 <p>Load the package and confirm the version:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.org/reference/">ferx</a></span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ferx-nlme.org/reference/">ferx</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span><span class="op">(</span><span class="st">"ferx"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] '0.4.0.9000'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The package ships example models and datasets, so a real fit is the quickest end-to-end check. It exercises the model parser, the data reader and the estimation engine:</p>
 <div class="cell" data-layout-align="center">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_example.html">ferx_example</a></span><span class="op">(</span><span class="st">"warfarin"</span><span class="op">)</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ferx-nlme.org/reference/ferx_fit.html">ferx_fit</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">model</span>, <span class="va">ex</span><span class="op">$</span><span class="va">data</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">converged</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -677,7 +815,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>ferx-r: <a href="https://github.com/FeRx-NLME/ferx-r#installation">README: installation</a>, including Windows and Docker</li>
+<li>ferx-r: <a href="https://github.com/FeRx-NLME/ferx-r#installation">README: installation</a>, including Windows and <a href="https://github.com/FeRx-NLME/ferx-r#docker">Docker</a>
+</li>
+<li>Docker images: <a href="https://github.com/FeRx-NLME/ferx-r/pkgs/container/ferx-r"><code>ghcr.io/ferx-nlme/ferx-r</code></a> (slim), <a href="https://github.com/FeRx-NLME/ferx-r/blob/main/Dockerfile"><code>Dockerfile</code></a> (RStudio)</li>
 <li>ferx-core: <a href="https://ferx-nlme.org/ferx-core/installation.html">installation</a>
 </li>
 <li>R help: <code><a href="https://ferx-nlme.org/reference/ferx_example.html">?ferx_example</a></code>, <code><a href="https://ferx-nlme.org/reference/ferx_fit.html">?ferx_fit</a></code>
