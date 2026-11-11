@@ -149,7 +149,7 @@ ggplot(fit$sdtab, aes(sample = CWRES)) +
   labs(x = "Theoretical quantile", y = "CWRES")
 ```
 
-The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Both pair only consecutive observations of one subject in the same occasion (an IOV column, or the innermost level of a nested model) and, under a `correlation ... by` line, in the same residual block. The Durbin-Watson denominator counts those pairs, so independent residuals give 2 however short each subject's series is ([ferx-core #2798](https://github.com/FeRx-NLME/ferx-core/issues/2798)). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries. The statistic reads in two directions, and they mean opposite things:
+The fit also tests the residuals for serial correlation within subjects. `fit$dw_statistic` is the Durbin-Watson statistic of the individual residuals (`r round(fit$dw_statistic, 2)` here) and `fit$iwres_lag1_r` their lag-1 correlation (`r round(fit$iwres_lag1_r, 2)`). Both pair consecutive observations of one subject. An occasion is a value of an IOV column, an occasion an `iov_occasion` rule derives, or the innermost level cell of a nested model. A subject's series is cut where its occasions run in parallel and the clock restarts, such as study arms or level cells, and, under a `correlation ... by` line, at each residual block. Occasions that follow one another in time, such as dosing intervals or study periods, stay one series ([ferx-core #2829](https://github.com/FeRx-NLME/ferx-core/issues/2829)). The Durbin-Watson denominator counts those pairs, so independent residuals give 2 however short each subject's series is ([ferx-core #2798](https://github.com/FeRx-NLME/ferx-core/issues/2798)). Values far from 2 and 0 respectively trigger the `dw_autocorrelation` warning this fit carries. The statistic reads in two directions, and they mean opposite things:
 
 | `dw_statistic` | Reading | Usually points at |
 |---|---|---|
@@ -159,7 +159,7 @@ The fit also tests the residuals for serial correlation within subjects. `fit$dw
 
 ::: {.callout-note}
 ## Changed after ferx-r {{< var ferx_r_release >}}
-`fit$dw_statistic` and `fit$iwres_lag1_r` pair only consecutive residuals of one subject that share an occasion (and, under a residual `correlation` line, a residual block), and the Durbin-Watson denominator is normalised by the number of pairs, so independent residuals give 2 however short the series. ferx-r {{< var ferx_r_release >}} computes the classic form, so its values differ, and so can which fits get the `dw_autocorrelation` warning. The 1.5 and 2.5 thresholds are the same.
+`fit$dw_statistic` and `fit$iwres_lag1_r` cut a subject's residual series at parallel occasions (and, under a residual `correlation` line, at each residual block), and the Durbin-Watson denominator is normalised by the number of pairs, so independent residuals give 2 however short the series. ferx-r {{< var ferx_r_release >}} computes the classic form, so its values differ, and so can which fits get the `dw_autocorrelation` warning. The 1.5 and 2.5 thresholds are the same.
 :::
 
 
@@ -174,6 +174,32 @@ ferx_get_warnings(fit)
 # The paragraph below reads these two warnings in this order, so any other set has to fail the render.
 stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", "dw_autocorrelation")),
           fit$dw_statistic > 2.5, fit$iwres_lag1_r < 0)
+```
+
+```{r}
+#| label: check-dw-series
+#| include: false
+# "Occasions that follow one another in time stay one series": warfarin_iov has two occasions per
+# subject, one after the other. Its statistic equals the pair-normalised Durbin-Watson of IWRES
+# taken as one series per subject, and is not the value obtained by cutting each subject at OCC.
+iov_dw <- ferx_example("warfarin_iov")
+fit_iov_dw <- suppressWarnings(ferx_fit(iov_dw$model, iov_dw$data, verbose = FALSE))
+dw_pairs <- function(iwres, series) {
+  terms <- vapply(split(iwres, series), function(e) {
+    e <- e[is.finite(e)]
+    if (length(e) < 2) return(c(0, 0))
+    now <- e[-1]
+    before <- e[-length(e)]
+    c(sum((now - before)^2), sum((now^2 + before^2) / 2))
+  }, numeric(2))
+  sum(terms[1, ]) / sum(terms[2, ])
+}
+sdtab_iov_dw <- fit_iov_dw$sdtab
+dw_one_series <- dw_pairs(sdtab_iov_dw$IWRES, sdtab_iov_dw$ID)
+dw_cut_at_occ <- dw_pairs(sdtab_iov_dw$IWRES, interaction(sdtab_iov_dw$ID, sdtab_iov_dw$OCC, drop = TRUE))
+stopifnot(length(unique(sdtab_iov_dw$OCC)) == 2,
+          isTRUE(all.equal(fit_iov_dw$dw_statistic, dw_one_series, tolerance = 1e-8)),
+          abs(fit_iov_dw$dw_statistic - dw_cut_at_occ) > 0.1)
 ```
 
 The first entry is the note about the model file's `gradient = fd` that @sec-first-fit explains. The second is the residual warning: ferx suggests over-parameterisation or a misspecified residual error model as possible causes. @sec-model-selection tests alternative residual error models systematically with `ferx_ruvsearch()`.
