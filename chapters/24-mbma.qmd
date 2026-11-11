@@ -1007,7 +1007,7 @@ With no sponsor effect, the levelled model is the bundled model under another la
 
 Adding `ETA_SP` lowers the OFV by `r round(fit$ofv - fit_sponsor$ofv, 1)` for one more parameter, and the sponsor variance (`r signif(fit_sponsor$omega[1, 1], 3)`) takes all of the between-study variance. The study kappa collapses to `r signif(fit_sponsor$omega_iov[1, 1], 1)`, with a shrinkage of `r sprintf("%.1f", 100 * fit_sponsor$shrinkage_kappa[["K_ST"]])`%, on the optimizer's lower guard, and ferx says so with a `parameter_at_runaway_guard` warning. That is not evidence for a sponsor effect. The generator has none, and three sponsors are too few to estimate a variance: the drop is what this particular pairing of six study effects happens to give. Pairing studies 1-4, 2-5 and 3-6 instead gives no drop at all (an OFV difference of `r sprintf("%.3f", abs(fit$ofv - fit_other$ofv))`), with a sponsor variance of `r signif(fit_other$omega[1, 1], 1)`. With real sponsors, judge such a split on more groups than this.
 
-A variance on the guard has almost no curvature, so a standard error for it would mean nothing. ferx reports none. When the covariance step is otherwise clean, it holds the variance as it holds a `FIX` parameter, and it lists it in `fit$held_at_bound`:
+A variance on the guard has almost no curvature, so a standard error for it would mean nothing. ferx reports none and lists the variance in `fit$held_at_bound`. When the covariance step's matrix is clean, as here, it also holds the variance as it holds a `FIX` parameter:
 
 ```{r}
 #| label: nested-held
@@ -1020,7 +1020,7 @@ fit_sponsor[c("converged", "status_label", "status_reasons", "covariance_status"
 #| label: check-nested-held
 #| include: false
 # The prose: K_ST is the one held parameter, a kappa collapsed at the guard; its SE is NA in
-# estimates and N/A in print, while fit$se_kappa holds 0, as the SE of the FIX sigma is NA; every
+# estimates and N/A in print, while fit$se_kappa holds 0, as fit$se_sigma does for the FIX sigma; every
 # other estimated parameter keeps its SE; the covariance step ran; the status is CONVERGED with
 # no reasons (a held collapse is not a reason). Under the second pairing the held
 # parameter is ETA_SP. The levelled fit without a sponsor effect holds nothing.
@@ -1031,6 +1031,7 @@ stopifnot(nrow(held_sponsor) == 1, identical(held_sponsor$parameter, "K_ST"), id
           is.na(fit_sponsor$estimates["K_ST", "se"]), is.na(fit_sponsor$estimates["K_ST", "rse_pct"]),
           with(fit_sponsor$estimates, !anyNA(se[!fixed & param != "K_ST"])),
           isTRUE(fit_sponsor$estimates["ADD_ERR", "fixed"]), is.na(fit_sponsor$estimates["ADD_ERR", "se"]),
+          all(fit_sponsor$se_sigma == 0),
           any(grepl("K_ST at STUDY.*SE = N/A", sponsor_print)),
           identical(unname(fit_sponsor$se_kappa["K_ST"]), 0),
           fit_sponsor$covariance_status == "computed",
@@ -1049,7 +1050,7 @@ stopifnot(sum(inner_width) == fit_sponsor$n_subjects + sum(sapply(fit_sponsor$eb
 
 The verdict of this fit is still `r fit_sponsor$status_label`, with no reasons. A collapse the covariance step holds does not lower the status; one it could not hold would appear in `fit$status_reasons` as `collapsed_at_guard: K_ST`. So neither `converged` nor `status` tells you that this model has one variance fewer than it declares. `fit$held_at_bound` does, with the warning.
 
-A coarse `ID` also costs more per fit. A subject's random effects are solved together, its eta and one kappa per group of every level inside it, so with the sponsor as `ID` the largest inner problem here has `r max(inner_width)` of them. Make `ID` the coarsest grouping that needs its own random effect, and declare a level only where its kappa is needed; ferx-core [measures how the cost grows](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels-cost).
+A coarse `ID` costs more per fit. A subject's random effects are solved together, its eta and one kappa per group of every level inside it, so with the sponsor as `ID` the largest inner problem here has `r max(inner_width)` of them. Make `ID` the coarsest grouping that needs its own random effect, and declare a level only where its kappa is needed; ferx-core [measures how the cost grows](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels-cost).
 
 The print labels each kappa with its level, and each level's estimates are returned once per group:
 
