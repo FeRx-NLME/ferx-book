@@ -706,7 +706,10 @@ gn_warnings[grepl("gn_lambda", gn_warnings$message), c("category", "severity", "
 #| include: false
 # "changes nothing": same objective, thetas, omega and sigma with and without the key. "with any method": a
 # FOCEI fit given the key carries the same warning. One warning per fit, category general.
-fit_focei_lambda <- ferx_fit(base$model, base$data, settings = list(gn_lambda = 0.5), verbose = FALSE)
+# The engine raises it before the fit starts, so an evaluation-only run is enough.
+fit_focei_lambda <- suppressWarnings(ferx_fit(base$model, base$data,
+                                              settings = list(gn_lambda = 0.5, maxiter = 0),
+                                              covariance = FALSE, verbose = FALSE))
 focei_lambda_warnings <- ferx_get_warnings(fit_focei_lambda, as_df = TRUE)
 stopifnot(isTRUE(all.equal(fit_gn$ofv, fit_gn_lambda$ofv, tolerance = 1e-10)),
           isTRUE(all.equal(fit_gn$theta, fit_gn_lambda$theta, tolerance = 1e-10)),
@@ -737,7 +740,7 @@ stopifnot(!anyNA(ferx_trace(fit_gn)$lm_lambda), all(ferx_trace(fit_gn)$lm_lambda
 
 ::: {.callout-note}
 ## Changed after ferx-r {{< var ferx_r_release >}}
-ferx-r {{< var ferx_r_release >}} has no deprecation warning for `gn_lambda`. A Gauss-Newton fit (`gn`, `gn_hybrid`) accepts the key silently, and a fit with another method reports it as an option that method does not use. It has no effect there either. The next minor release rejects the key, so remove it from existing settings.
+ferx-r {{< var ferx_r_release >}} has no deprecation warning for `gn_lambda`. A Gauss-Newton fit (`gn`, `gn_hybrid`) accepts the key silently, and a fit with another method reports it as an option that method does not use. It has no effect there either. The key is rejected from the minor release after the one that adds the warning, so remove it from existing settings.
 :::
 
 ### Importance sampling
