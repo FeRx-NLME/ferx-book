@@ -167,7 +167,7 @@ stopifnot(identical(fit$status, "converged"), identical(fit$status_label, "CONVE
           length(fit$status_reasons) == 0, is.data.frame(fit$held_at_bound), nrow(fit$held_at_bound) == 0)
 ```
 
-This fit is `r fit$status_label`, with no reasons. `fit$held_at_bound` lists every parameter the covariance step gives no standard error for, such as a variance collapsed onto its lower guard or a profiled level on its bound; none is here. Read the status, its reasons and `held_at_bound` before trusting an MBMA fit. With few studies a variance can collapse, and a covariance step can fail, while `converged` stays `TRUE`: both happen later in this chapter (*Nested levels* and *Uncertainty*).
+This fit is `r fit$status_label`, with no reasons. `fit$held_at_bound` lists every estimated parameter the covariance step gives no standard error for, such as a variance collapsed onto its lower guard or a profiled level on its bound; none is here. Read the status, its reasons and `held_at_bound` before trusting an MBMA fit. With few studies a variance can collapse, and a covariance step can fail, while `converged` stays `TRUE`. Both happen later in this chapter: a covariance step fails in *Profiling a large level block* and in *Uncertainty*, and a variance collapses in *Nested levels*.
 
 The `ferx_mbma_data()` table fits the same way, with no file in between:
 
@@ -446,6 +446,9 @@ cat(strwrap(rsr_note, 90)[1:2], sep = "\n")
 # every level is read by one subject, and gives every level a smaller SE than r.
 rsr_warnings <- ferx_get_warnings(profiled_rsr, as_df = TRUE)
 stopifnot(identical(fit_profiled$covariance_method, "r"), profiled_s$covariance_status == "failed",
+          # "a covariance step fails in Profiling a large level block ... while converged stays TRUE" (first fit's status paragraph)
+          isTRUE(profiled_s$converged), identical(profiled_s$status, "converged_with_issues"),
+          identical(profiled_s$status_reasons, "covariance_failed"),
           any(grepl("rank-deficient", ferx_get_warnings(profiled_s, as_df = TRUE)$message)),
           profiled_rsr$covariance_status == "computed",
           any(rsr_warnings$category == "covariance_step" & grepl("W_COV_RSR_ONE_SUBJECT_LEVELS", rsr_warnings$message, fixed = TRUE)),
@@ -1040,10 +1043,16 @@ stopifnot(nrow(held_sponsor) == 1, identical(held_sponsor$parameter, "K_ST"), id
           identical(fit_other$held_at_bound$parameter, "ETA_SP"), identical(fit_other$held_at_bound$kind, "omega"),
           identical(fit_other$held_at_bound$reason, "collapsed_at_guard"),
           nrow(fit_levels$held_at_bound) == 0)
+# "one it could not hold would appear in fit$status_reasons as collapsed_at_guard: K_ST": the "s"
+# covariance step fails on this fit, so nothing holds the collapse and it becomes a reason.
+sponsor_s <- ferx_covariance(fit_sponsor, covariance_method = "s")
+stopifnot(sponsor_s$covariance_status == "failed", identical(sponsor_s$status, "converged_with_issues"),
+          "collapsed_at_guard: K_ST" %in% sponsor_s$status_reasons)
 # The cost sentence: the widest inner problem, one eta plus a kappa per study and per arm of a sponsor.
 inner_width <- nested_data |> group_by(ID) |>
-  summarise(width = 1 + n_distinct(STUDY) + n_distinct(paste(STUDY, ARM))) |> pull(width)
-stopifnot(sum(inner_width) == fit_sponsor$n_subjects + sum(sapply(fit_sponsor$ebe_kappas_by_level, nrow)))
+  summarise(width = ncol(fit_sponsor$omega) + n_distinct(STUDY) + n_distinct(paste(STUDY, ARM))) |> pull(width)
+stopifnot(sum(inner_width) == fit_sponsor$n_subjects * ncol(fit_sponsor$omega) + sum(sapply(fit_sponsor$ebe_kappas_by_level, nrow)),
+          max(inner_width) > min(inner_width))
 ```
 
 `K_ST` is listed with the reason `collapsed_at_guard`. Its standard error is `NA` in `fit$estimates`, and the print shows `SE = N/A` on its line (below); every other estimated parameter keeps its own, from a covariance step conditional on the held variance. `fit$se_kappa` holds the engine's `r unname(fit_sponsor$se_kappa["K_ST"])` for it, as it would for a `FIX` parameter, so take the standard error from `fit$estimates`. Under the second pairing the held parameter is the sponsor variance `ETA_SP` instead.
@@ -1258,7 +1267,7 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
   ```{r}
   #| label: check-multistart
   #| include: false
-  # The prose: eight starts ran, and gave the same OFV to the digits printed and the same estimates.
+  # The prose: the fit was set to eight starts (no slot records each start), and gave the same OFV to the digits printed and the same estimates.
   stopifnot(fit_multi$n_starts == 8, identical(fit_multi$status, "converged"),
             abs(fit_multi$ofv - fit$ofv) < 5e-6,
             isTRUE(all.equal(fit_multi$theta, fit$theta, tolerance = 1e-3)),
