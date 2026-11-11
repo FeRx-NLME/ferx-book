@@ -93,6 +93,12 @@ docker run --rm -v "$PWD:/work" ghcr.io/ferx-nlme/ferx-r:latest ferx model.ferx 
 docker run --rm -it -v "$PWD:/work" ghcr.io/ferx-nlme/ferx-r:latest
 ```
 
+These commands are written for a POSIX shell: Linux, macOS, or WSL on Windows. In Windows PowerShell, write the mount as `-v "${PWD}:/work"`, because PowerShell reads `$PWD:` as the start of a drive-qualified variable name and stops with an error:
+
+```powershell
+docker run --rm -v "${PWD}:/work" ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R
+```
+
 On a cluster without Docker, Apptainer (formerly Singularity) runs the same image straight from the registry, for example `apptainer exec docker://ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R`.
 
 #### Tags
@@ -146,6 +152,8 @@ The container runs as an unprivileged user `ferx` with uid 1000, so on most sing
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/ferx-nlme/ferx-r:latest Rscript fit.R
 ```
+
+This is a Linux matter. With Docker Desktop on macOS, the files the container writes to `/work` belong to your own user whichever user the container runs as, so the `--user` step is not needed there.
 
 #### Adding packages
 
