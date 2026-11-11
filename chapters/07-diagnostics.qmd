@@ -176,6 +176,32 @@ stopifnot(identical(ferx_get_warnings(fit, as_df = TRUE)$category, c("general", 
           fit$dw_statistic > 2.5, fit$iwres_lag1_r < 0)
 ```
 
+```{r}
+#| label: check-dw-series
+#| include: false
+# "Occasions that follow one another in time stay one series": warfarin_iov has two occasions per
+# subject, one after the other. Its statistic equals the pair-normalised Durbin-Watson of IWRES
+# taken as one series per subject, and is not the value obtained by cutting each subject at OCC.
+iov_dw <- ferx_example("warfarin_iov")
+fit_iov_dw <- suppressWarnings(ferx_fit(iov_dw$model, iov_dw$data, verbose = FALSE))
+dw_pairs <- function(iwres, series) {
+  terms <- vapply(split(iwres, series), function(e) {
+    e <- e[is.finite(e)]
+    if (length(e) < 2) return(c(0, 0))
+    now <- e[-1]
+    before <- e[-length(e)]
+    c(sum((now - before)^2), sum((now^2 + before^2) / 2))
+  }, numeric(2))
+  sum(terms[1, ]) / sum(terms[2, ])
+}
+sdtab_iov_dw <- fit_iov_dw$sdtab
+dw_one_series <- dw_pairs(sdtab_iov_dw$IWRES, sdtab_iov_dw$ID)
+dw_cut_at_occ <- dw_pairs(sdtab_iov_dw$IWRES, interaction(sdtab_iov_dw$ID, sdtab_iov_dw$OCC, drop = TRUE))
+stopifnot(length(unique(sdtab_iov_dw$OCC)) == 2,
+          isTRUE(all.equal(fit_iov_dw$dw_statistic, dw_one_series, tolerance = 1e-8)),
+          abs(fit_iov_dw$dw_statistic - dw_cut_at_occ) > 0.1)
+```
+
 The first entry is the note about the model file's `gradient = fd` that @sec-first-fit explains. The second is the residual warning: ferx suggests over-parameterisation or a misspecified residual error model as possible causes. @sec-model-selection tests alternative residual error models systematically with `ferx_ruvsearch()`.
 
 ### Individual fits
