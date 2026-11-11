@@ -694,7 +694,8 @@ book_settings_table("gn_lambda")
 fit_gn <- suppressWarnings(ferx_fit(base$model, base$data, method = "gn", optimizer_trace = TRUE,
                                     verbose = FALSE))
 fit_gn_lambda <- suppressWarnings(ferx_fit(base$model, base$data, method = "gn",
-                                           settings = list(gn_lambda = 0.5), verbose = FALSE))
+                                           settings = list(gn_lambda = 0.5),
+                                           optimizer_trace = TRUE, verbose = FALSE))
 c(default = fit_gn$ofv, gn_lambda_0.5 = fit_gn_lambda$ofv)
 gn_warnings <- ferx_get_warnings(fit_gn_lambda, as_df = TRUE)
 gn_warnings[grepl("gn_lambda", gn_warnings$message), c("category", "severity", "message")]
@@ -703,12 +704,14 @@ gn_warnings[grepl("gn_lambda", gn_warnings$message), c("category", "severity", "
 ```{r}
 #| label: check-gn-lambda
 #| include: false
-# "changes nothing": same objective and thetas with and without the key. "with any method": a
+# "changes nothing": same objective, thetas, omega and sigma with and without the key. "with any method": a
 # FOCEI fit given the key carries the same warning. One warning per fit, category general.
 fit_focei_lambda <- ferx_fit(base$model, base$data, settings = list(gn_lambda = 0.5), verbose = FALSE)
 focei_lambda_warnings <- ferx_get_warnings(fit_focei_lambda, as_df = TRUE)
 stopifnot(isTRUE(all.equal(fit_gn$ofv, fit_gn_lambda$ofv, tolerance = 1e-10)),
           isTRUE(all.equal(fit_gn$theta, fit_gn_lambda$theta, tolerance = 1e-10)),
+          isTRUE(all.equal(fit_gn$omega, fit_gn_lambda$omega, tolerance = 1e-10)),
+          isTRUE(all.equal(fit_gn$sigma, fit_gn_lambda$sigma, tolerance = 1e-10)),
           sum(grepl("gn_lambda", gn_warnings$message)) == 1,
           identical(gn_warnings$category[grepl("gn_lambda", gn_warnings$message)], "general"),
           sum(grepl("gn_lambda", focei_lambda_warnings$message)) == 1,
@@ -734,7 +737,7 @@ stopifnot(!anyNA(ferx_trace(fit_gn)$lm_lambda), all(ferx_trace(fit_gn)$lm_lambda
 
 ::: {.callout-note}
 ## Changed after ferx-r {{< var ferx_r_release >}}
-ferx-r {{< var ferx_r_release >}} accepts `gn_lambda` without a warning. It has no effect there either. The next minor release rejects the key, so remove it from existing settings.
+ferx-r {{< var ferx_r_release >}} has no deprecation warning for `gn_lambda`. A Gauss-Newton fit (`gn`, `gn_hybrid`) accepts the key silently, and a fit with another method reports it as an option that method does not use. It has no effect there either. The next minor release rejects the key, so remove it from existing settings.
 :::
 
 ### Importance sampling
@@ -922,7 +925,7 @@ ferx_stop(job)               # or: stop the job
 
 See the ferx-core [warnings page](https://ferx-nlme.org/ferx-core/warnings.html) for the full descriptions.
 
-- `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated, or a fit that stopped mid-descent or minimised against EBEs held in a higher mode was restarted from its best point. Try a different optimizer or rescale parameters; a restarted fit that ends converged needs no action.
+- `optimizer_health` (warning): the trust region collapsed or the optimizer degenerated, or a fit that stopped mid-descent or minimised against EBEs held in a higher mode was restarted from its best point, or a fit that stopped with a variance just above its internal lower guard, where the objective was still falling, was resumed from the guard ([ferx-core #2832](https://github.com/FeRx-NLME/ferx-core/issues/2832)). Try a different optimizer or rescale parameters; a restarted or resumed fit that ends converged needs no action.
 - `stalled_at_init` (warning): no free parameter left its initial estimate, so the OFV describes the starting values rather than the model. It can arrive alongside `converged = TRUE`, which is why it is a warning of its own rather than a `convergence` warning. A start that ferx verifies as an optimum is not flagged; `fit$stationary_start` records that instead (above).
 - `ebe_start_dependent` (warning): the empirical Bayes estimates, and every diagnostic built on them, depend on where the inner loop starts. Raise `inner_maxiter`, or `inner_restarts` for a suspected second mode (above).
 - `gradient_fallback` (info): a slower fallback gradient or sampler path was taken.
