@@ -104,7 +104,19 @@ On a cluster without Docker, Apptainer (formerly Singularity) runs the same imag
 | `0.5.0` / `v0.5.0` | exactly that release | never: release tags are published once and never replaced or cleaned up |
 | `<sha>` | one `main` build, by ferx-r commit (full or 7-character short) | never, but only the 30 most recent published commits are kept |
 
-`release` and the version tags start with the first release after 0.4.0: 0.4.0 predates the images. Until that release exists, use `latest` or a commit tag, as the examples here do. Not every `main` commit has an image either: merges that only touch documentation, tests or CI publish nothing.
+```{r}
+#| label: docker-pre-release
+#| include: false
+# The images start after ferx-r 0.4.0, so while 0.4.0 is the last release there is
+# no `release` or version tag yet. The sentence below drops out by itself once
+# `ferx_r_release` in _variables.yml moves past 0.4.0.
+docker_no_release_tag <- identical(as.character(book_pin$ferx_r_release), "0.4.0")
+docker_no_release_note <- if (docker_no_release_tag) {
+  "`release` and the version tags start with the first release after 0.4.0: 0.4.0 predates the images. Until that release exists, use `latest` or a commit tag, as the examples here do. "
+} else ""
+```
+
+`r docker_no_release_note`Not every `main` commit has an image either: merges that only touch documentation, tests or CI publish nothing.
 
 The image of the commit this book is pinned to is `ghcr.io/ferx-nlme/ferx-r:{{< var ferx_r_sha_short >}}`, so it gives you the book's output without a local install. Like every commit tag, it is removed once 30 newer commits have been published.
 
@@ -125,7 +137,7 @@ A tag is a name that could in principle be pointed elsewhere; a digest cannot.
 
 #### Threads
 
-By default the engine uses the available cores minus one, capped at 8. Inside a container, "available" honours a CPU quota (`docker run --cpus 4`, a Kubernetes CPU *limit*) and CPU pinning (`--cpuset-cpus`). It does not honour a Kubernetes CPU *request* without a limit, or a Slurm allocation that is not enforced through cgroups: there the engine sees every core of the node. When several jobs share a node, set the count yourself, with `threads =` in `ferx_fit()` or `--threads N` for the command-line tool, to match what each job was given.
+By default the engine uses the available cores minus one, but at least 2 when there are two or more cores, and at most 8. Inside a container, "available" honours a CPU quota (`docker run --cpus 4`, a Kubernetes CPU *limit*) and CPU pinning (`--cpuset-cpus`). It does not honour a Kubernetes CPU *request* without a limit, or a Slurm allocation that is not enforced through cgroups: there the engine sees every core of the node. When several jobs share a node, set the count yourself, with `threads =` in `ferx_fit()` or `--threads N` for the command-line tool, to match what each job was given.
 
 #### User and file ownership
 
