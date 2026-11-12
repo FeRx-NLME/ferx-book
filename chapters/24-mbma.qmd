@@ -11,11 +11,11 @@ source(if (file.exists("_common.R")) "_common.R" else "chapters/_common.R")
 
 A model-based meta-analysis (MBMA) fits a dose-response and time-course model to published summary data: one mean per study arm and visit, with its standard error and the number of patients behind it. There are no individual patients. Each row counts according to its precision, and arms differ from one another more than their sampling error alone explains.
 
-This chapter fits the bundled `mbma_placebo` example. It covers the arm-level data shape and `ferx_mbma_data()`, inverse-variance weighting with `weight =` on the error model, between-arm variability as a weighted kappa, an unstructured placebo time course as a theta level block, and how to read, save and resample such a fit.
+This chapter fits the bundled `mbma_placebo` example. It covers the arm-level data shape and `ferx_mbma_data()`, inverse-variance weighting with `weight =` on the error model, between-arm variability as a weighted kappa, an unstructured placebo time course as a theta level block, and how to read, save and resample such a fit. If your meta-analysis already exists as a compartment-free nlmixr2 model, `ferxtranslate::nlmixr2_to_ferx()` from the [ferxtranslate](https://github.com/FeRx-NLME/translator) package translates it to a ferx model to start from (`output =` writes the file).
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
-This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, a profiled level block (`profile`, `fit$profiled_blocks`, bounds on it, `fit$held_at_bound` and the deprecated `fit$profiled_levels_at_bound`), a level block read by a `[binary_model]` predictor (and profiled there), the probit link of `[binary_model]`, `pnorm()` in a model expression, nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`, the `nested_levels` example) and a within-arm residual `correlation` line are newer than {{< var ferx_r_release >}} as well.
+This chapter needs the build the book is pinned to (@sec-installation). ferx-r {{< var ferx_r_release >}} has no `ferx_mbma_data()` (nor `print()` for its result), no `mbma_placebo` example, no `fit$theta_levels` and no `ferx_contrast_vpc()` (nor `print()` or `plot()` for its result). Fitting a data.frame, the `.fitrx` round trip of a level block, the standard error and SIR interval of each level, `ferx_sir()` / `ferx_covariance()` following the fit's own settings, the fit's verdict (`fit$status`, `fit$status_label`, `fit$status_reasons`) and `fit$held_at_bound`, a profiled level block (`profile`, `fit$profiled_blocks`, bounds on it and the deprecated `fit$profiled_levels_at_bound`), a level block read by a `[binary_model]` predictor (and profiled there), the probit link of `[binary_model]`, `pnorm()` in a model expression, nested variability levels (`level`, `fit$kappa_levels`, `fit$ebe_kappas_by_level`, the `nested_levels` example) and a within-arm residual `correlation` line are newer than {{< var ferx_r_release >}} as well.
 :::
 
 ::: {.callout-warning}
@@ -151,7 +151,25 @@ stopifnot(isTRUE(fit$converged), fit$covariance_status == "computed",
           sum(!is.na(fit$theta_levels$theta_name)) == 18)
 ```
 
-The fit converges and the covariance step runs. The `ferx_mbma_data()` table fits the same way, with no file in between:
+The fit converges and the covariance step runs. `fit$converged` is about the optimizer: it stopped normally and, for a fit like this one, at a stationary point (@sec-fit-verdict says when that is tested). Whether the fit can be used as it stands is `fit$status`, which also takes in the covariance step, the critical warnings and the evaluation budget; `fit$status_label` spells it as the `STATUS` line of the print does, and `fit$status_reasons` lists what stands in the way:
+
+```{r}
+#| label: status
+fit[c("converged", "status", "status_label", "status_reasons")]
+fit$held_at_bound
+```
+
+```{r}
+#| label: check-status
+#| include: false
+# The prose: the first fit is CONVERGED with no reasons and no parameter held.
+stopifnot(identical(fit$status, "converged"), identical(fit$status_label, "CONVERGED"),
+          length(fit$status_reasons) == 0, is.data.frame(fit$held_at_bound), nrow(fit$held_at_bound) == 0)
+```
+
+This fit is `r fit$status_label`, with no reasons. `fit$held_at_bound` lists every estimated parameter the covariance step gives no standard error for, such as a variance collapsed onto its lower guard or a profiled level on its bound; none is here. Read the status, its reasons and `held_at_bound` before trusting an MBMA fit. With few studies a variance can collapse, and a covariance step can fail, while `converged` stays `TRUE`. Both happen later in this chapter: a covariance step fails in *Profiling a large level block* and in *Uncertainty*, and a variance collapses in *Nested levels*.
+
+The `ferx_mbma_data()` table fits the same way, with no file in between:
 
 ```{r}
 #| label: fit-table
@@ -428,6 +446,9 @@ cat(strwrap(rsr_note, 90)[1:2], sep = "\n")
 # every level is read by one subject, and gives every level a smaller SE than r.
 rsr_warnings <- ferx_get_warnings(profiled_rsr, as_df = TRUE)
 stopifnot(identical(fit_profiled$covariance_method, "r"), profiled_s$covariance_status == "failed",
+          # "a covariance step fails in Profiling a large level block ... while converged stays TRUE" (first fit's status paragraph)
+          isTRUE(profiled_s$converged), identical(profiled_s$status, "converged_with_issues"),
+          identical(profiled_s$status_reasons, "covariance_failed"),
           any(grepl("rank-deficient", ferx_get_warnings(profiled_s, as_df = TRUE)$message)),
           profiled_rsr$covariance_status == "computed",
           any(rsr_warnings$category == "covariance_step" & grepl("W_COV_RSR_ONE_SUBJECT_LEVELS", rsr_warnings$message, fixed = TRUE)),
@@ -989,6 +1010,57 @@ With no sponsor effect, the levelled model is the bundled model under another la
 
 Adding `ETA_SP` lowers the OFV by `r round(fit$ofv - fit_sponsor$ofv, 1)` for one more parameter, and the sponsor variance (`r signif(fit_sponsor$omega[1, 1], 3)`) takes all of the between-study variance. The study kappa collapses to `r signif(fit_sponsor$omega_iov[1, 1], 1)`, with a shrinkage of `r sprintf("%.1f", 100 * fit_sponsor$shrinkage_kappa[["K_ST"]])`%, on the optimizer's lower guard, and ferx says so with a `parameter_at_runaway_guard` warning. That is not evidence for a sponsor effect. The generator has none, and three sponsors are too few to estimate a variance: the drop is what this particular pairing of six study effects happens to give. Pairing studies 1-4, 2-5 and 3-6 instead gives no drop at all (an OFV difference of `r sprintf("%.3f", abs(fit$ofv - fit_other$ofv))`), with a sponsor variance of `r signif(fit_other$omega[1, 1], 1)`. With real sponsors, judge such a split on more groups than this.
 
+A variance on the guard has almost no curvature, so a standard error for it would mean nothing. ferx reports none and lists the variance in `fit$held_at_bound`. When the covariance step's matrix is clean, as here, it also holds the variance as it holds a `FIX` parameter:
+
+```{r}
+#| label: nested-held
+fit_sponsor$held_at_bound
+fit_sponsor$estimates[c("ETA_SP", "K_ST", "KAPPA_ARM"), c("estimate", "se", "rse_pct")]
+fit_sponsor[c("converged", "status_label", "status_reasons", "covariance_status")]
+```
+
+```{r}
+#| label: check-nested-held
+#| include: false
+# The prose: K_ST is the one held parameter, a kappa collapsed at the guard; its SE is NA in
+# estimates and N/A in print, while fit$se_kappa holds 0, as fit$se_sigma does for the FIX sigma; every
+# other estimated parameter keeps its SE; the covariance step ran; the status is CONVERGED with
+# no reasons (a held collapse is not a reason). Under the second pairing the held
+# parameter is ETA_SP. The levelled fit without a sponsor effect holds nothing.
+held_sponsor <- fit_sponsor$held_at_bound
+sponsor_print <- capture.output(print(fit_sponsor))
+stopifnot(nrow(held_sponsor) == 1, identical(held_sponsor$parameter, "K_ST"), identical(held_sponsor$kind, "kappa"),
+          identical(held_sponsor$reason, "collapsed_at_guard"),
+          is.na(fit_sponsor$estimates["K_ST", "se"]), is.na(fit_sponsor$estimates["K_ST", "rse_pct"]),
+          with(fit_sponsor$estimates, !anyNA(se[!fixed & param != "K_ST"])),
+          isTRUE(fit_sponsor$estimates["ADD_ERR", "fixed"]), is.na(fit_sponsor$estimates["ADD_ERR", "se"]),
+          all(fit_sponsor$se_sigma == 0),
+          any(grepl("K_ST at STUDY.*SE = N/A", sponsor_print)),
+          identical(unname(fit_sponsor$se_kappa["K_ST"]), 0),
+          fit_sponsor$covariance_status == "computed",
+          isTRUE(fit_sponsor$converged), identical(fit_sponsor$status, "converged"),
+          identical(fit_sponsor$status_label, "CONVERGED"), length(fit_sponsor$status_reasons) == 0,
+          identical(fit_other$held_at_bound$parameter, "ETA_SP"), identical(fit_other$held_at_bound$kind, "omega"),
+          identical(fit_other$held_at_bound$reason, "collapsed_at_guard"),
+          nrow(fit_levels$held_at_bound) == 0)
+# "one it could not hold would appear in fit$status_reasons as collapsed_at_guard: K_ST": the "s"
+# covariance step fails on this fit, so nothing holds the collapse and it becomes a reason.
+sponsor_s <- ferx_covariance(fit_sponsor, covariance_method = "s")
+stopifnot(sponsor_s$covariance_status == "failed", identical(sponsor_s$status, "converged_with_issues"),
+          "collapsed_at_guard: K_ST" %in% sponsor_s$status_reasons)
+# The cost sentence: the widest inner problem, one eta plus a kappa per study and per arm of a sponsor.
+inner_width <- nested_data |> group_by(ID) |>
+  summarise(width = ncol(fit_sponsor$omega) + n_distinct(STUDY) + n_distinct(paste(STUDY, ARM))) |> pull(width)
+stopifnot(sum(inner_width) == fit_sponsor$n_subjects * ncol(fit_sponsor$omega) + sum(sapply(fit_sponsor$ebe_kappas_by_level, nrow)),
+          max(inner_width) > min(inner_width))
+```
+
+`K_ST` is listed with the reason `collapsed_at_guard`. Its standard error is `NA` in `fit$estimates`, and the print shows `SE = N/A` on its line (below); every other estimated parameter keeps its own, from a covariance step conditional on the held variance. `fit$se_kappa` holds the engine's `r unname(fit_sponsor$se_kappa["K_ST"])` for it, as it would for a `FIX` parameter, so take the standard error from `fit$estimates`. Under the second pairing the held parameter is the sponsor variance `ETA_SP` instead.
+
+The verdict of this fit is still `r fit_sponsor$status_label`, with no reasons. A collapse the covariance step holds does not lower the status; one it could not hold would appear in `fit$status_reasons` as `collapsed_at_guard: K_ST`. So neither `converged` nor `status` tells you that this model has one variance fewer than it declares. `fit$held_at_bound` does, with the warning.
+
+A coarse `ID` costs more per fit. A subject's random effects are solved together, its eta and one kappa per group of every level inside it, so with the sponsor as `ID` the largest inner problem here has `r max(inner_width)` of them. Make `ID` the coarsest grouping that needs its own random effect, and declare a level only where its kappa is needed; ferx-core [measures how the cost grows](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels-cost).
+
 The print labels each kappa with its level, and each level's estimates are returned once per group:
 
 ```{r}
@@ -1140,12 +1212,14 @@ fit_s <- ferx_covariance(fit, covariance_method = "s")
 fit_s$covariance_status
 ```
 
-The `"s"` estimator alone fails here. It is built from the cross-product of the per-subject scores, and a meta-analysis has few subjects: `r fit$n_subjects` studies cannot determine `r fit$n_parameters` parameters. Use `"r"` or `"rsr"` for an MBMA with fewer studies than parameters.
+The `"s"` estimator alone fails here. It is built from the cross-product of the per-subject scores, and a meta-analysis has few subjects: `r fit$n_subjects` studies cannot determine `r fit$n_parameters` parameters. Use `"r"` or `"rsr"` for an MBMA with fewer studies than parameters. This is the other case that `converged` does not show: `fit_s$converged` is still `r fit_s$converged`, while its status is `r fit_s$status_label`, with the reason `covariance_failed`.
 
 ```{r}
 #| label: check-covariance
 #| include: false
 stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "failed",
+          isTRUE(fit_s$converged), identical(fit_s$status, "converged_with_issues"),
+          identical(fit_s$status_reasons, "covariance_failed"), identical(fit_rsr$status, "converged"),
           fit$n_subjects < fit$n_parameters,
           any(grepl("rank-deficient", ferx_get_warnings(fit_s, as_df = TRUE)$message)))
 ```
@@ -1163,7 +1237,7 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
 
   To pool visits into windows, number the cells yourself with `ferx_mbma_data(index = ...)` or `levels =` and use the counted form `theta PLACEBO[N]`.
 - **A standard deviation is not a standard error.** Pass a between-patient SD as `sd =` so `ferx_mbma_data()` divides it by `sqrt(n)`. `print()` shows the SD the standard errors imply; it should look like a patient-level SD.
-- **The OFV includes the weights.** ferx scores on the natural scale, so the OFV differs from that of a model fitted to `DV / SE` by a term that depends only on the data. It cancels from every OFV difference between models on the same rows and weights. See the ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...) page.
+- **The OFV includes the weights.** ferx scores on the natural scale, so the OFV differs from that of a model fitted to `DV / SE` by a term that depends only on the data. It cancels from every OFV difference between models on the same rows and weights. See the ferx-core [error model](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...) page; its [OFV conventions across tools](https://ferx-nlme.org/ferx-core/model-file/error-model.html#ofv-conventions) table gives the constants that separate a ferx OFV from the figure NONMEM or nlmixr2 reports, for the natural-scale and the hand-built forms of the weighting.
 - **`weight =` needs an additive term.** On a purely proportional error model the weight would cancel out, so ferx refuses it. A weighted kappa is likewise refused anywhere but `[individual_parameters]`, where its scaling is applied:
 
   ```{r}
@@ -1181,6 +1255,28 @@ stopifnot(fit_rsr$covariance_status == "computed", fit_s$covariance_status == "f
   writeLines(kappa_lines, kappa_model)
   try(ferx_fit(kappa_model, mbma$data, verbose = FALSE))
   ```
+- **One start may not be the best optimum.** A small arm-level model can have more than one optimum, and a fit of arm-level data is quick, so repeating it from several perturbed starts with `n_starts` (@sec-estimation-methods) is a cheap check:
+
+  ```{r}
+  #| label: multistart
+  fit_multi <- ferx_fit(mbma$model, mbma$data, settings = list(n_starts = 8), verbose = FALSE)
+  c(single = fit$ofv, multi = fit_multi$ofv)
+  fit_multi$status_label
+  ```
+
+  ```{r}
+  #| label: check-multistart
+  #| include: false
+  # The prose: the fit was set to eight starts (no slot records each start), and gave the same OFV to the digits printed and the same estimates.
+  stopifnot(fit_multi$n_starts == 8, identical(fit_multi$status, "converged"),
+            abs(fit_multi$ofv - fit$ofv) < 5e-6,
+            isTRUE(all.equal(fit_multi$theta, fit$theta, tolerance = 1e-3)),
+            abs(fit_multi$omega[1, 1] / fit$omega[1, 1] - 1) < 1e-3,
+            abs(fit_multi$omega_iov[1, 1] / fit$omega_iov[1, 1] - 1) < 1e-3)
+  multi_note <- "multi_start" %in% ferx_get_warnings(fit_multi, as_df = TRUE)$category
+  ```
+
+  On `mbma_placebo` the eight starts find nothing better: the same OFV and the same estimates as the single start. A fit whose best start is not the first carries an info note in the `multi_start` category. `r if (multi_note) "This one does, and the equal OFVs show that the note alone does not mean a better optimum: which start comes out lowest by a margin below the printed precision can differ from one machine to the next." else "This one has none: the first start won."` Compare the OFV with the single-start fit, not the note. This result is for this model and these data; ferx-core's [multi-start on small datasets](https://ferx-nlme.org/ferx-core/examples/multistart.html#small-datasets) cites a report of arm-level models on which other starts did reach a better optimum.
 
 ### Warnings you may see here
 
@@ -1189,9 +1285,10 @@ No warning category has this chapter as its home. The fits above raise these, wh
 - `inflated_rse` (@sec-diagnostics), because some placebo levels are small relative to their standard errors, which is expected for an unstructured placebo time course;
 - the `threads` note (@sec-estimation-methods), on a machine with more cores than the subjects (six studies, three sponsors in the nested fits);
 - `boundary_estimate` (@sec-diagnostics), on the profiled level held on its bound;
-- `dw_autocorrelation` (@sec-diagnostics), on the first fit (Durbin-Watson `r round(fit$dw_statistic, 2)`: its residuals read as negatively autocorrelated) and on the fits that share its model and data: the fit of the arm table, the `car1` fits, the study- and sponsor-level fits, and the SIR and covariance re-runs. The fixed-study fits, the responder and proportion fits and the `nested_levels` fits (Durbin-Watson `r round(fit_nested$dw_statistic, 2)`) do not raise it;
+- `dw_autocorrelation` (@sec-diagnostics), on the first fit (Durbin-Watson `r round(fit$dw_statistic, 2)`: its residuals read as negatively autocorrelated) and on the fits that share its model and data: the fit of the arm table, the multi-start fit, the `car1` fits, the study- and sponsor-level fits, and the SIR and covariance re-runs. The fixed-study fits, the responder and proportion fits and the `nested_levels` fits (Durbin-Watson `r round(fit_nested$dw_statistic, 2)`) do not raise it;
 - `parameter_at_runaway_guard` (@sec-estimation-methods), on a variance that collapses to zero: the study kappa beside the sponsor effect, and the sponsor effect itself under the second pairing, which also raises `eta_shrinkage` (@sec-diagnostics);
-- `covariance_failed` and `covariance_step` (@sec-uncertainty), from the `"s"` and `"rsr"` covariance steps.
+- `covariance_failed` and `covariance_step` (@sec-uncertainty), from the `"s"` and `"rsr"` covariance steps;
+- `multi_start` (@sec-estimation-methods), an info note on the multi-start fit when a start other than the first wins.
 
 A profiled fit can also carry a `gradient_fallback` note (@sec-estimation-methods), `W_PROFILE_FD_GRADIENT`: a subject's profiled levels got a finite-difference gradient instead of the exact one, which is correct but slower. None of the profiled fits in this chapter needs it.
 
@@ -1199,14 +1296,15 @@ A profiled fit can also carry a `gradient_fallback` note (@sec-estimation-method
 #| label: check-warning-list
 #| include: false
 # The list above: every category the chapter's fits raise is named there, and each named one occurs.
+# threads and multi_start depend on the machine (core count; which start wins a tie), so they may be absent.
 # gradient_fallback (W_PROFILE_FD_GRADIENT) is not listed, so this also backs "None of the profiled
 # fits ... needs it" for every profiled fit, fit_unbounded included.
 chapter_fits <- list(fit, fit_table, fit_fixed, fit_profiled, profiled_s, profiled_rsr, fit_tight, fit_unbounded, fit_car1,
-                     fit_car1_profiled, fit_resp, fit_resp_profiled, fit_probit, fit_probit_profiled, fit_prop, fit_prop_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s)
+                     fit_car1_profiled, fit_resp, fit_resp_profiled, fit_probit, fit_probit_profiled, fit_prop, fit_prop_profiled, fit_levels, fit_sponsor, fit_other, fit_nested, fit_nested_car1, fit_sir, fit_rsr, fit_s, fit_multi)
 chapter_categories <- unique(unlist(lapply(chapter_fits, function(f) ferx_get_warnings(f, as_df = TRUE)$category)))
-listed <- c("inflated_rse", "threads", "boundary_estimate", "dw_autocorrelation", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step")
+listed <- c("inflated_rse", "threads", "boundary_estimate", "dw_autocorrelation", "parameter_at_runaway_guard", "eta_shrinkage", "covariance_failed", "covariance_step", "multi_start")
 other_categories <- ferx_get_warnings(fit_other, as_df = TRUE)$category
-stopifnot(all(chapter_categories %in% listed), all(setdiff(listed, "threads") %in% chapter_categories),
+stopifnot(all(chapter_categories %in% listed), all(setdiff(listed, c("threads", "multi_start")) %in% chapter_categories),
           all(c("parameter_at_runaway_guard", "eta_shrinkage") %in% other_categories))
 # The dw_autocorrelation item: exactly the fits it names raise it, negative (DW above 2) on the
 # first fit, and fit_nested's DW is inside the thresholds.
@@ -1216,11 +1314,12 @@ named_fits <- list(fit = fit, fit_table = fit_table, fit_fixed = fit_fixed, fit_
                    fit_resp = fit_resp, fit_resp_profiled = fit_resp_profiled, fit_probit = fit_probit,
                    fit_probit_profiled = fit_probit_profiled, fit_prop = fit_prop, fit_prop_profiled = fit_prop_profiled,
                    fit_levels = fit_levels, fit_sponsor = fit_sponsor, fit_other = fit_other, fit_nested = fit_nested,
-                   fit_nested_car1 = fit_nested_car1, fit_sir = fit_sir, fit_rsr = fit_rsr, fit_s = fit_s)
+                   fit_nested_car1 = fit_nested_car1, fit_sir = fit_sir, fit_rsr = fit_rsr, fit_s = fit_s,
+                   fit_multi = fit_multi)
 stopifnot(length(named_fits) == length(chapter_fits))
 has_dw <- vapply(named_fits, function(f) "dw_autocorrelation" %in% ferx_get_warnings(f, as_df = TRUE)$category, logical(1))
 stopifnot(setequal(names(has_dw)[has_dw], c("fit", "fit_table", "fit_car1", "fit_car1_profiled", "fit_levels",
-                                            "fit_sponsor", "fit_other", "fit_sir", "fit_rsr", "fit_s")),
+                                            "fit_sponsor", "fit_other", "fit_sir", "fit_rsr", "fit_s", "fit_multi")),
           fit$dw_statistic > 2.5, fit_nested$dw_statistic < 2.5, fit_nested$dw_statistic > 1.5)
 ```
 
@@ -1237,11 +1336,12 @@ stopifnot(setequal(names(has_dw)[has_dw], c("fit", "fit_table", "fit_car1", "fit
 - `level NAME by COLUMN in PARENT` declares nested groupings below the subject, such as sponsor, study and arm, and `kappa ... at LEVEL` draws a kappa once per group of a level.
 - `ferx_contrast_vpc()` checks the model on the treatment contrast within a study, where the between-study variability cancels.
 - `.fitrx` files keep the level layout, and `ferx_sir()` and `ferx_covariance()` follow the fit's settings.
+- Read `fit$status` and `fit$held_at_bound`, not `fit$converged` alone: a failed covariance step lowers the status, and a variance collapsed onto the guard is listed as held, with no standard error. On arm-level data, `n_starts = 8` is a cheap check on the optimum.
 
 Next: @sec-experimental covers experimental model features.
 
 ::: {.callout-tip}
 ## Reference
 - R help: `?ferx_mbma_data`, `?ferx_fit`, `?ferx_contrast_vpc`, `?ferx_sir`, `?ferx_covariance`, `?ferx_save_fit`
-- ferx-core: [theta level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks), [residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...), [nested levels](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels), [residual correlation](https://ferx-nlme.org/ferx-core/model-file/residual-correlation.html), [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks)
+- ferx-core: [theta level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#theta-level-blocks), [residual weighting](https://ferx-nlme.org/ferx-core/model-file/error-model.html#residual-weighting-weight-...), [sample-size-weighted IOV](https://ferx-nlme.org/ferx-core/model-file/iov.html#sample-size-weighted-iov-weight-...), [nested levels](https://ferx-nlme.org/ferx-core/model-file/iov.html#nested-levels), [residual correlation](https://ferx-nlme.org/ferx-core/model-file/residual-correlation.html), [profiled level blocks](https://ferx-nlme.org/ferx-core/model-file/parameters.html#profiled-level-blocks), [OFV conventions across tools](https://ferx-nlme.org/ferx-core/model-file/error-model.html#ofv-conventions), [multi-start on small datasets](https://ferx-nlme.org/ferx-core/examples/multistart.html#small-datasets)
 :::

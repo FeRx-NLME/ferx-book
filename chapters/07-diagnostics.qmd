@@ -47,9 +47,9 @@ head(fit$sdtab)
 
 ## Reading the result
 
-### The fit's verdict
+### The fit's verdict {#sec-fit-verdict}
 
-Before any plot, ask whether the fit can be used as it stands. `fit$converged` says that the optimizer stopped normally and, for FOCE, FOCEI, Laplace / AGQ and Gauss-Newton fits, at a stationary point: when the covariance step has an unfloored `R` matrix, ferx computes the Newton decrement at the estimate, the drop in objective a Newton step would still make, and reports `converged = FALSE` with a `W_NON_STATIONARY_OPTIMUM` warning when it is above one OFV unit ([ferx-core #2785](https://github.com/FeRx-NLME/ferx-core/issues/2785)). `fit$status` adds what else qualifies the result: the evaluation budget, the critical warnings, the covariance step and any parameter held at a bound ([ferx-core #2799](https://github.com/FeRx-NLME/ferx-core/issues/2799)). It is `"converged"`, `"converged_with_issues"` or `"not_converged"`, `fit$status_label` spells it as the `STATUS` line of `print()` does, and `fit$status_reasons` lists why, in a fixed order:
+Before any plot, ask whether the fit can be used as it stands. `fit$converged` says that the optimizer stopped normally and, for FOCE, FOCEI, Laplace / AGQ and Gauss-Newton fits, at a stationary point: when the covariance step has an unfloored `R` matrix, ferx computes the Newton decrement at the estimate, the drop in objective a Newton step would still make, and reports `converged = FALSE` with a `W_NON_STATIONARY_OPTIMUM` warning when it is above one OFV unit ([ferx-core #2785](https://github.com/FeRx-NLME/ferx-core/issues/2785)). `fit$status` adds what else qualifies the result: the evaluation budget, the critical warnings, the covariance step and a variance collapsed onto its guard that the step could not hold ([ferx-core #2799](https://github.com/FeRx-NLME/ferx-core/issues/2799)). It is `"converged"`, `"converged_with_issues"` or `"not_converged"`, `fit$status_label` spells it as the `STATUS` line of `print()` does, and `fit$status_reasons` lists why, in a fixed order:
 
 ```{r}
 #| label: status
@@ -92,7 +92,38 @@ stopifnot(!fit_eval$converged, identical(fit_eval$status, "not_converged"),
 
 The reasons are listed for a fit that did not converge too, so they say what to fix: `budget_spent`, a larger `maxiter`, and then the critical `convergence` warning that reports it. A fit that converged but carries a reason is `"converged_with_issues"`. A run with `maxiter = 0`, which only scores the given values, is `"not_converged"` with the reason `evaluation_only`. In all, the reasons are `evaluation_only`, `budget_spent`, the category of each critical warning (including the `condition_number` warning that ferx-r raises above 1000), `covariance_failed`, and `collapsed_at_guard: <parameter>` for a variance the covariance step could not hold. `ferx_covariance()` and `ferx_load_fit()` recompute the verdict.
 
-`fit$held_at_bound` lists every parameter the covariance step gives no standard error for, one row each: its `parameter` name, its `kind` (`"theta"`, `"omega"`, `"sigma"` or `"kappa"`), its `index` within that kind, and the `reason` ([ferx-core #2797](https://github.com/FeRx-NLME/ferx-core/issues/2797)). The reason is `"profiled_bound"` for a profiled level held on its declared bound (@sec-mbma), or `"collapsed_at_guard"` for a variance or sigma that collapsed onto the floor ferx keeps it above, or a theta without a lower bound that sank to the internal `1e-10` floor. Such a parameter shows SE `N/A` in `print()` and `NA` in `fit$estimates`. When the covariance step is otherwise clean it holds the parameter as it holds a `FIX` one, and the other standard errors are conditional on it. The fifth column, `class`, is the class of a `[mixture]` per-class override (`omega(k)` or `sigma(k)`), whose row is labelled `<base> (class <k>)`, and `NA` for every other parameter ([ferx-core #2809](https://github.com/FeRx-NLME/ferx-core/issues/2809)). The base fit has no such row; @sec-variability shows variances that collapse.
+`fit$held_at_bound` lists every parameter the covariance step gives no standard error for, one row each: its `parameter` name, its `kind` (`"theta"`, `"omega"`, `"sigma"` or `"kappa"`), its `index` within that kind, and the `reason` ([ferx-core #2797](https://github.com/FeRx-NLME/ferx-core/issues/2797)). The reason is `"profiled_bound"` for a profiled level held on its declared bound (@sec-mbma), or `"collapsed_at_guard"` for a variance or sigma that collapsed onto the floor ferx keeps it above, or a theta without a lower bound that sank to the internal `1e-10` floor. Such a parameter shows SE `N/A` in `print()` and `NA` in `fit$estimates`. When the covariance step is otherwise clean it holds the parameter as it holds a `FIX` one, and the other standard errors are conditional on it. The fifth column, `class`, is the class of a `[mixture]` per-class override (`omega(k)` or `sigma(k)`), whose row is labelled `<base> (class <k>)`, and `NA` for every other parameter ([ferx-core #2809](https://github.com/FeRx-NLME/ferx-core/issues/2809)). The base fit has no such row; @sec-variability shows variances that collapse. A held parameter is not a reason by itself: a fit whose covariance step holds a collapsed variance stays `"converged"`, with the parameter listed here, so read `fit$held_at_bound` beside the status (@sec-mbma shows such a fit).
+
+```{r}
+#| label: check-status-held
+#| include: false
+# The sentence above and the reason list: a collapse the covariance step holds leaves the status at
+# "converged" with no reasons; one it could not hold (here the failed "s" step) is the reason
+# "collapsed_at_guard: <parameter>". The fit is the sponsor model of the MBMA chapter, built here.
+held_dir <- file.path(tempdir(), "diagnostics-held")
+dir.create(held_dir, showWarnings = FALSE)
+mbma_ex <- ferx_example("mbma_placebo")
+held_data <- read.csv(mbma_ex$data)
+held_data$ID <- c(1, 1, 2, 2, 3, 3)[held_data$STUDY]
+held_data$ARM <- held_data$OCC
+held_data <- held_data[order(held_data$ID, held_data$STUDY), ]
+held_lines <- readLines(mbma_ex$model)
+held_lines <- held_lines[!grepl("^\\s*iov_column", held_lines)]
+held_lines <- sub("omega ETA_E0 ~ 4.0 (sd)",
+                  "omega ETA_SP ~ 4.0 (sd)\n  level STUDY by STUDY in ID\n  level ARM by ARM in STUDY\n  kappa K_ST ~ 4.0 (sd) at STUDY",
+                  held_lines, fixed = TRUE)
+held_lines <- sub("weight = NARM", "at ARM weight = NARM", held_lines, fixed = TRUE)
+held_lines <- sub("BASE = TVE0 + PLACEBO + ETA_E0 + KAPPA_ARM", "BASE = TVE0 + PLACEBO + ETA_SP + K_ST + KAPPA_ARM",
+                  held_lines, fixed = TRUE)
+stopifnot(any(grepl("ETA_SP + K_ST + KAPPA_ARM", held_lines, fixed = TRUE)), any(grepl("at ARM weight = NARM", held_lines, fixed = TRUE)))
+writeLines(held_lines, file.path(held_dir, "sponsor.ferx"))
+fit_held <- ferx_fit(file.path(held_dir, "sponsor.ferx"), held_data, verbose = FALSE)
+fit_held_s <- ferx_covariance(fit_held, covariance_method = "s")
+stopifnot(identical(fit_held$held_at_bound$parameter, "K_ST"), identical(fit_held$held_at_bound$reason, "collapsed_at_guard"),
+          identical(fit_held$status, "converged"), length(fit_held$status_reasons) == 0,
+          fit_held_s$covariance_status == "failed", identical(fit_held_s$status, "converged_with_issues"),
+          "collapsed_at_guard: K_ST" %in% fit_held_s$status_reasons)
+```
 
 ::: {.callout-important}
 ## Needs ferx-r newer than {{< var ferx_r_release >}}
