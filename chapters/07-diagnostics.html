@@ -594,7 +594,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li>
 <a href="#reading-the-result" id="toc-reading-the-result" class="nav-link" data-scroll-target="#reading-the-result">Reading the result</a>
   <ul class="collapse">
-<li><a href="#the-fits-verdict" id="toc-the-fits-verdict" class="nav-link" data-scroll-target="#the-fits-verdict">The fit’s verdict</a></li>
+<li><a href="#sec-fit-verdict" id="toc-sec-fit-verdict" class="nav-link" data-scroll-target="#sec-fit-verdict">The fit’s verdict</a></li>
   <li><a href="#observations-against-predictions" id="toc-observations-against-predictions" class="nav-link" data-scroll-target="#observations-against-predictions">Observations against predictions</a></li>
   <li><a href="#residuals" id="toc-residuals" class="nav-link" data-scroll-target="#residuals">Residuals</a></li>
   <li><a href="#individual-fits" id="toc-individual-fits" class="nav-link" data-scroll-target="#individual-fits">Individual fits</a></li>
@@ -673,8 +673,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>PRED</code> is the population prediction (all etas zero). <code>IPRED</code> is the individual prediction at the subject’s estimated random effects. <code>CWRES</code> and <code>IWRES</code> are the conditional weighted and individual weighted residuals. <code>TAFD</code> and <code>TAD</code> are time after first dose and time after dose.</p>
 </section><section id="reading-the-result" class="level2"><h2 class="anchored" data-anchor-id="reading-the-result">Reading the result</h2>
-<section id="the-fits-verdict" class="level3"><h3 class="anchored" data-anchor-id="the-fits-verdict">The fit’s verdict</h3>
-<p>Before any plot, ask whether the fit can be used as it stands. <code>fit$converged</code> says that the optimizer stopped normally and, for FOCE, FOCEI, Laplace / AGQ and Gauss-Newton fits, at a stationary point: when the covariance step has an unfloored <code>R</code> matrix, ferx computes the Newton decrement at the estimate, the drop in objective a Newton step would still make, and reports <code>converged = FALSE</code> with a <code>W_NON_STATIONARY_OPTIMUM</code> warning when it is above one OFV unit (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2785">ferx-core #2785</a>). <code>fit$status</code> adds what else qualifies the result: the evaluation budget, the critical warnings, the covariance step and any parameter held at a bound (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2799">ferx-core #2799</a>). It is <code>"converged"</code>, <code>"converged_with_issues"</code> or <code>"not_converged"</code>, <code>fit$status_label</code> spells it as the <code>STATUS</code> line of <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> does, and <code>fit$status_reasons</code> lists why, in a fixed order:</p>
+<section id="sec-fit-verdict" class="level3"><h3 class="anchored" data-anchor-id="sec-fit-verdict">The fit’s verdict</h3>
+<p>Before any plot, ask whether the fit can be used as it stands. <code>fit$converged</code> says that the optimizer stopped normally and, for FOCE, FOCEI, Laplace / AGQ and Gauss-Newton fits, at a stationary point: when the covariance step has an unfloored <code>R</code> matrix, ferx computes the Newton decrement at the estimate, the drop in objective a Newton step would still make, and reports <code>converged = FALSE</code> with a <code>W_NON_STATIONARY_OPTIMUM</code> warning when it is above one OFV unit (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2785">ferx-core #2785</a>). <code>fit$status</code> adds what else qualifies the result: the evaluation budget, the critical warnings, the covariance step and a variance collapsed onto its guard that the step could not hold (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2799">ferx-core #2799</a>). It is <code>"converged"</code>, <code>"converged_with_issues"</code> or <code>"not_converged"</code>, <code>fit$status_label</code> spells it as the <code>STATUS</code> line of <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> does, and <code>fit$status_reasons</code> lists why, in a fixed order:</p>
 <div class="cell" data-layout-align="center">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">fit</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"converged"</span>, <span class="st">"status"</span>, <span class="st">"status_label"</span>, <span class="st">"status_reasons"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; $converged</span></span>
@@ -709,7 +709,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="co">#&gt; [1] "budget_spent" "convergence"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The reasons are listed for a fit that did not converge too, so they say what to fix: <code>budget_spent</code>, a larger <code>maxiter</code>, and then the critical <code>convergence</code> warning that reports it. A fit that converged but carries a reason is <code>"converged_with_issues"</code>. A run with <code>maxiter = 0</code>, which only scores the given values, is <code>"not_converged"</code> with the reason <code>evaluation_only</code>. In all, the reasons are <code>evaluation_only</code>, <code>budget_spent</code>, the category of each critical warning (including the <code>condition_number</code> warning that ferx-r raises above 1000), <code>covariance_failed</code>, and <code>collapsed_at_guard: &lt;parameter&gt;</code> for a variance the covariance step could not hold. <code><a href="https://ferx-nlme.org/reference/ferx_covariance.html">ferx_covariance()</a></code> and <code><a href="https://ferx-nlme.org/reference/ferx_load_fit.html">ferx_load_fit()</a></code> recompute the verdict.</p>
-<p><code>fit$held_at_bound</code> lists every parameter the covariance step gives no standard error for, one row each: its <code>parameter</code> name, its <code>kind</code> (<code>"theta"</code>, <code>"omega"</code>, <code>"sigma"</code> or <code>"kappa"</code>), its <code>index</code> within that kind, and the <code>reason</code> (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2797">ferx-core #2797</a>). The reason is <code>"profiled_bound"</code> for a profiled level held on its declared bound (<a href="24-mbma.html" class="quarto-xref"><span>Model-based meta-analysis</span></a>), or <code>"collapsed_at_guard"</code> for a variance or sigma that collapsed onto the floor ferx keeps it above, or a theta without a lower bound that sank to the internal <code>1e-10</code> floor. Such a parameter shows SE <code>N/A</code> in <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> and <code>NA</code> in <code>fit$estimates</code>. When the covariance step is otherwise clean it holds the parameter as it holds a <code>FIX</code> one, and the other standard errors are conditional on it. The fifth column, <code>class</code>, is the class of a <code>[mixture]</code> per-class override (<code>omega(k)</code> or <code>sigma(k)</code>), whose row is labelled <code>&lt;base&gt; (class &lt;k&gt;)</code>, and <code>NA</code> for every other parameter (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2809">ferx-core #2809</a>). The base fit has no such row; <a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a> shows variances that collapse.</p>
+<p><code>fit$held_at_bound</code> lists every parameter the covariance step gives no standard error for, one row each: its <code>parameter</code> name, its <code>kind</code> (<code>"theta"</code>, <code>"omega"</code>, <code>"sigma"</code> or <code>"kappa"</code>), its <code>index</code> within that kind, and the <code>reason</code> (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2797">ferx-core #2797</a>). The reason is <code>"profiled_bound"</code> for a profiled level held on its declared bound (<a href="24-mbma.html" class="quarto-xref"><span>Model-based meta-analysis</span></a>), or <code>"collapsed_at_guard"</code> for a variance or sigma that collapsed onto the floor ferx keeps it above, or a theta without a lower bound that sank to the internal <code>1e-10</code> floor. Such a parameter shows SE <code>N/A</code> in <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> and <code>NA</code> in <code>fit$estimates</code>. When the covariance step is otherwise clean it holds the parameter as it holds a <code>FIX</code> one, and the other standard errors are conditional on it. The fifth column, <code>class</code>, is the class of a <code>[mixture]</code> per-class override (<code>omega(k)</code> or <code>sigma(k)</code>), whose row is labelled <code>&lt;base&gt; (class &lt;k&gt;)</code>, and <code>NA</code> for every other parameter (<a href="https://github.com/FeRx-NLME/ferx-core/issues/2809">ferx-core #2809</a>). The base fit has no such row; <a href="16-variability.html" class="quarto-xref"><span>Variability: random effects, residual error and IOV</span></a> shows variances that collapse. A held parameter is not a reason by itself: a fit whose covariance step holds a collapsed variance stays <code>"converged"</code>, with the parameter listed here, so read <code>fit$held_at_bound</code> beside the status (<a href="24-mbma.html" class="quarto-xref"><span>Model-based meta-analysis</span></a> shows such a fit).</p>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -1027,23 +1027,23 @@ Figure&nbsp;7.8: NPDE against time and their normal quantile plot.
 Table&nbsp;7.1: NPDE settings.
 </figcaption><div aria-describedby="tbl-settings-npde-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<div id="rwroeakxzj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#rwroeakxzj table {
+<div id="asoaaqwmss" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#asoaaqwmss table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#rwroeakxzj thead, #rwroeakxzj tbody, #rwroeakxzj tfoot, #rwroeakxzj tr, #rwroeakxzj td, #rwroeakxzj th {
+#asoaaqwmss thead, #asoaaqwmss tbody, #asoaaqwmss tfoot, #asoaaqwmss tr, #asoaaqwmss td, #asoaaqwmss th {
   border-style: none;
 }
 
-#rwroeakxzj p {
+#asoaaqwmss p {
   margin: 0;
   padding: 0;
 }
 
-#rwroeakxzj .gt_table {
+#asoaaqwmss .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1069,12 +1069,12 @@ Table&nbsp;7.1: NPDE settings.
   border-left-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_caption {
+#asoaaqwmss .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#rwroeakxzj .gt_title {
+#asoaaqwmss .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1086,7 +1086,7 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-width: 0;
 }
 
-#rwroeakxzj .gt_subtitle {
+#asoaaqwmss .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1098,7 +1098,7 @@ Table&nbsp;7.1: NPDE settings.
   border-top-width: 0;
 }
 
-#rwroeakxzj .gt_heading {
+#asoaaqwmss .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1110,13 +1110,13 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_bottom_border {
+#asoaaqwmss .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_col_headings {
+#asoaaqwmss .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1131,7 +1131,7 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_col_heading {
+#asoaaqwmss .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1151,7 +1151,7 @@ Table&nbsp;7.1: NPDE settings.
   overflow-x: hidden;
 }
 
-#rwroeakxzj .gt_column_spanner_outer {
+#asoaaqwmss .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1163,15 +1163,15 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 4px;
 }
 
-#rwroeakxzj .gt_column_spanner_outer:first-child {
+#asoaaqwmss .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#rwroeakxzj .gt_column_spanner_outer:last-child {
+#asoaaqwmss .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#rwroeakxzj .gt_column_spanner {
+#asoaaqwmss .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1183,11 +1183,11 @@ Table&nbsp;7.1: NPDE settings.
   width: 100%;
 }
 
-#rwroeakxzj .gt_spanner_row {
+#asoaaqwmss .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#rwroeakxzj .gt_group_heading {
+#asoaaqwmss .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1213,7 +1213,7 @@ Table&nbsp;7.1: NPDE settings.
   text-align: left;
 }
 
-#rwroeakxzj .gt_empty_group_heading {
+#asoaaqwmss .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1228,15 +1228,15 @@ Table&nbsp;7.1: NPDE settings.
   vertical-align: middle;
 }
 
-#rwroeakxzj .gt_from_md > :first-child {
+#asoaaqwmss .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#rwroeakxzj .gt_from_md > :last-child {
+#asoaaqwmss .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#rwroeakxzj .gt_row {
+#asoaaqwmss .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1255,7 +1255,7 @@ Table&nbsp;7.1: NPDE settings.
   overflow-x: hidden;
 }
 
-#rwroeakxzj .gt_stub {
+#asoaaqwmss .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1268,7 +1268,7 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#rwroeakxzj .gt_stub_row_group {
+#asoaaqwmss .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1282,15 +1282,15 @@ Table&nbsp;7.1: NPDE settings.
   vertical-align: top;
 }
 
-#rwroeakxzj .gt_row_group_first td {
+#asoaaqwmss .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#rwroeakxzj .gt_row_group_first th {
+#asoaaqwmss .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#rwroeakxzj .gt_summary_row {
+#asoaaqwmss .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1300,16 +1300,16 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#rwroeakxzj .gt_first_summary_row {
+#asoaaqwmss .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_first_summary_row.thick {
+#asoaaqwmss .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#rwroeakxzj .gt_last_summary_row {
+#asoaaqwmss .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1319,7 +1319,7 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_grand_summary_row {
+#asoaaqwmss .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1329,7 +1329,7 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#rwroeakxzj .gt_first_grand_summary_row {
+#asoaaqwmss .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1339,7 +1339,7 @@ Table&nbsp;7.1: NPDE settings.
   border-top-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_last_grand_summary_row_top {
+#asoaaqwmss .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1349,11 +1349,11 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_striped {
+#asoaaqwmss .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#rwroeakxzj .gt_table_body {
+#asoaaqwmss .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1362,7 +1362,7 @@ Table&nbsp;7.1: NPDE settings.
   border-bottom-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_footnotes {
+#asoaaqwmss .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1376,7 +1376,7 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_footnote {
+#asoaaqwmss .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1385,7 +1385,7 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#rwroeakxzj .gt_sourcenotes {
+#asoaaqwmss .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1399,7 +1399,7 @@ Table&nbsp;7.1: NPDE settings.
   border-right-color: #D3D3D3;
 }
 
-#rwroeakxzj .gt_sourcenote {
+#asoaaqwmss .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1407,72 +1407,72 @@ Table&nbsp;7.1: NPDE settings.
   padding-right: 5px;
 }
 
-#rwroeakxzj .gt_left {
+#asoaaqwmss .gt_left {
   text-align: left;
 }
 
-#rwroeakxzj .gt_center {
+#asoaaqwmss .gt_center {
   text-align: center;
 }
 
-#rwroeakxzj .gt_right {
+#asoaaqwmss .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#rwroeakxzj .gt_font_normal {
+#asoaaqwmss .gt_font_normal {
   font-weight: normal;
 }
 
-#rwroeakxzj .gt_font_bold {
+#asoaaqwmss .gt_font_bold {
   font-weight: bold;
 }
 
-#rwroeakxzj .gt_font_italic {
+#asoaaqwmss .gt_font_italic {
   font-style: italic;
 }
 
-#rwroeakxzj .gt_super {
+#asoaaqwmss .gt_super {
   font-size: 65%;
 }
 
-#rwroeakxzj .gt_footnote_marks {
+#asoaaqwmss .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#rwroeakxzj .gt_asterisk {
+#asoaaqwmss .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#rwroeakxzj .gt_indent_1 {
+#asoaaqwmss .gt_indent_1 {
   text-indent: 5px;
 }
 
-#rwroeakxzj .gt_indent_2 {
+#asoaaqwmss .gt_indent_2 {
   text-indent: 10px;
 }
 
-#rwroeakxzj .gt_indent_3 {
+#asoaaqwmss .gt_indent_3 {
   text-indent: 15px;
 }
 
-#rwroeakxzj .gt_indent_4 {
+#asoaaqwmss .gt_indent_4 {
   text-indent: 20px;
 }
 
-#rwroeakxzj .gt_indent_5 {
+#asoaaqwmss .gt_indent_5 {
   text-indent: 25px;
 }
 
-#rwroeakxzj .katex-display {
+#asoaaqwmss .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#rwroeakxzj div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#asoaaqwmss div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
